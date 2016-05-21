@@ -6,3 +6,4 @@ codegen
 *.pyc
 *.egg-info
 vendor/
+*.apomock
