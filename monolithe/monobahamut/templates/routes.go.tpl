@@ -3,7 +3,7 @@ package {{routes_package_name}}
 import (
 	"net/http"
 
-	"github.com/aporeto-inc/cid/materia/bahamut"
+	"github.com/aporeto-inc/bahamut"
     "{{base_package}}/{{handlers_package_name}}"
 )
 

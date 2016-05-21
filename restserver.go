@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/aporeto-inc/cid/materia/elemental"
+	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
 

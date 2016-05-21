@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/aporeto-inc/cid/materia/elemental"
+	"github.com/aporeto-inc/elemental"
 )
 
 func setCommonHeader(w http.ResponseWriter) {

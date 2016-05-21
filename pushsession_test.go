@@ -7,7 +7,7 @@ package bahamut
 import (
 	"testing"
 
-	"github.com/aporeto-inc/cid/materia/elemental"
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/websocket"
 )

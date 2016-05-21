@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/aporeto-inc/cid/materia/elemental"
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

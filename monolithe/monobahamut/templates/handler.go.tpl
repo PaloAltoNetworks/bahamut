@@ -5,8 +5,8 @@ import (
   "net/http"
 
     log "github.com/Sirupsen/logrus"
-    "github.com/aporeto-inc/cid/materia/bahamut"
-    "github.com/aporeto-inc/cid/materia/elemental"
+    "github.com/aporeto-inc/bahamut"
+    "github.com/aporeto-inc/elemental"
 
     "{{ models_package_package }}"
 )

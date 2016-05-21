@@ -7,7 +7,7 @@ package bahamut
 import (
 	"fmt"
 
-	"github.com/aporeto-inc/cid/materia/elemental"
+	"github.com/aporeto-inc/elemental"
 )
 
 // ListIdentity represents the Identity of the object
