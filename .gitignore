@@ -1,0 +1,8 @@
+.DS_Store
+.tags
+
+*/debug
+codegen
+*.pyc
+*.egg-info
+vendor/
