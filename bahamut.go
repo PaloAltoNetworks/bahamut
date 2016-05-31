@@ -24,6 +24,8 @@ func DefaultBahamut() *Bahamut {
 
 // Bahamut is crazy
 type Bahamut struct {
+	certificatePath string
+	keyPath         string
 	address         string
 	apiServer       *apiServer
 	pushServer      *pushServer
@@ -72,6 +74,14 @@ func NewBahamut(address string, routes []*Route, enabledAPI, enablePush, enableP
 	defaultBahamut = srv
 
 	return srv
+}
+
+// SetTLSInformation sets the certificate and private key to be used.
+// If one of them are not set, Bahamut will be started without TLS support.
+func (b *Bahamut) SetTLSInformation(certPath, keyPath string) {
+
+	b.certificatePath = certPath
+	b.keyPath = keyPath
 }
 
 // RegisterProcessor registers a new Processor for a particular Identity.
@@ -146,16 +156,29 @@ func (b *Bahamut) Start() {
 		go b.pushServer.start()
 	}
 
-	log.WithFields(log.Fields{
-		"endpoint": b.address,
-	}).Info("starting bahamut")
-
 	go func() {
 
-		if err := http.ListenAndServe(b.address, b.multiplexer); err != nil {
+		if b.certificatePath != "" && b.keyPath != "" {
 			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Fatal("unable to start the bahamut")
+				"endpoint": b.address,
+			}).Info("starting bahamut with TLS")
+
+			if err := http.ListenAndServeTLS(b.address, b.certificatePath, b.keyPath, b.multiplexer); err != nil {
+				log.WithFields(log.Fields{
+					"error": err.Error(),
+				}).Fatal("unable to start the bahamut")
+			}
+
+		} else {
+			log.WithFields(log.Fields{
+				"endpoint": b.address,
+			}).Info("starting bahamut without TLS")
+
+			if err := http.ListenAndServe(b.address, b.multiplexer); err != nil {
+				log.WithFields(log.Fields{
+					"error": err.Error(),
+				}).Fatal("unable to start the bahamut")
+			}
 		}
 	}()
 

@@ -157,3 +157,26 @@ func TestBahamut_Authenticator(t *testing.T) {
 		})
 	})
 }
+
+func TestBahamut_SetTLSInformation(t *testing.T) {
+
+	Convey("Given I create a new Bahamut", t, func() {
+
+		b := NewBahamut("fake", []*Route{}, false, false, false)
+
+		Convey("Then it should not have any certificate information", func() {
+			So(b.certificatePath, ShouldBeEmpty)
+			So(b.keyPath, ShouldBeEmpty)
+		})
+
+		Convey("When I set some TLS information", func() {
+
+			b.SetTLSInformation("server.pem", "server.key")
+
+			Convey("Then TLS information should be set", func() {
+				So(b.certificatePath, ShouldEqual, "server.pem")
+				So(b.keyPath, ShouldEqual, "server.key")
+			})
+		})
+	})
+}
