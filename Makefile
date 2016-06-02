@@ -84,6 +84,7 @@ update_glide:
 install_dependencies: clean_vendor get install_glide
 	@echo "Install: Process directories with Makefiles" $(DIRS_WITH_MAKEFILES)
 	@$(foreach dir,$(DIRS_WITH_MAKEFILES),echo "Install Dependencies in" $(dir) && pushd $(dir) && make install_dependencies && popd;)
+	go get -u github.com/golang/lint/golint
 	go get -u github.com/smartystreets/goconvey/convey
 	go get -u github.com/aporeto-inc/kennebec/apomock
 	go get -u github.com/golang/mock/gomock
@@ -92,7 +93,7 @@ init_glide:
 	glide init
 	glide install
 
-MOCK_PACKAGES = 
+MOCK_PACKAGES =
 
 install_mock:
 	@if [ ! -d vendor ]; then mkdir vendor; fi
