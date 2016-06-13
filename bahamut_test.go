@@ -171,7 +171,7 @@ func TestBahamut_SetTLSInformation(t *testing.T) {
 
 		Convey("When I set some TLS information", func() {
 
-			b.SetTLSInformation("server.pem", "server.key")
+			b.SetTLSInformation("ca.pem", "server.pem", "server.key")
 
 			Convey("Then TLS information should be set", func() {
 				So(b.certificatePath, ShouldEqual, "server.pem")
