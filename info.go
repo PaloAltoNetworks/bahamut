@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,12 +16,13 @@ import (
 
 // Info represents general information about the initial request.
 type Info struct {
-	Parameters       url.Values
-	BaseRawURL       string
-	ParentIdentifier string
-	ParentIdentity   elemental.Identity
-	ChildrenIdentity elemental.Identity
-	Headers          http.Header
+	Parameters         url.Values
+	BaseRawURL         string
+	ParentIdentifier   string
+	ParentIdentity     elemental.Identity
+	ChildrenIdentity   elemental.Identity
+	Headers            http.Header
+	TLSConnectionState *tls.ConnectionState
 }
 
 // NewInfo creates a new *Info.
@@ -37,11 +39,11 @@ func (i *Info) FromRequest(req *http.Request) {
 	}
 
 	i.Parameters = req.URL.Query()
-
 	i.Headers = req.Header
+	i.TLSConnectionState = req.TLS
 
 	var scheme string
-	if req.TLS != nil {
+	if i.TLSConnectionState != nil {
 		scheme = "https"
 	} else {
 		scheme = "http"
