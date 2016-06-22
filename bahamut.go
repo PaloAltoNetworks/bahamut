@@ -5,7 +5,10 @@
 package bahamut
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
 
@@ -26,6 +29,7 @@ func DefaultBahamut() *Bahamut {
 type Bahamut struct {
 	certificatePath string
 	keyPath         string
+	caPath          string
 	address         string
 	apiServer       *apiServer
 	pushServer      *pushServer
@@ -78,10 +82,12 @@ func NewBahamut(address string, routes []*Route, enabledAPI, enablePush, enableP
 
 // SetTLSInformation sets the certificate and private key to be used.
 // If one of them are not set, Bahamut will be started without TLS support.
-func (b *Bahamut) SetTLSInformation(certPath, keyPath string) {
+func (b *Bahamut) SetTLSInformation(caPath, certPath, keyPath string) {
 
 	b.certificatePath = certPath
 	b.keyPath = keyPath
+	b.caPath = caPath
+
 }
 
 // RegisterProcessor registers a new Processor for a particular Identity.
@@ -143,6 +149,45 @@ func (b *Bahamut) Authenticator() (Authenticator, error) {
 	return b.authenticator, nil
 }
 
+// CreateCertPool creates the cert pool
+func (b *Bahamut) createCertPool(ca string) *x509.CertPool {
+
+	caCert, err := ioutil.ReadFile(ca)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("Cannot open CA certificate file")
+		return nil
+	}
+
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caCert)
+
+	return pool
+}
+
+// createSecureHttpServer creates a secure http server for mutual TLS
+// authentication
+func (b *Bahamut) createSecureHTTPServer() *http.Server {
+	clientCertPool := b.createCertPool(b.caPath)
+
+	tlsConfig := &tls.Config{
+		// Reject any TLS certificate that cannot be validated
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		// Ensure that we only use our "CA" to validate certificates
+		ClientCAs: clientCertPool,
+	}
+
+	tlsConfig.BuildNameToCertificate()
+
+	httpServer := &http.Server{
+		Addr:      b.address,
+		TLSConfig: tlsConfig,
+	}
+
+	return httpServer
+}
+
 // Start starts the Bahamut server.
 func (b *Bahamut) Start() {
 
@@ -163,7 +208,11 @@ func (b *Bahamut) Start() {
 				"endpoint": b.address,
 			}).Info("starting bahamut with TLS")
 
-			if err := http.ListenAndServeTLS(b.address, b.certificatePath, b.keyPath, b.multiplexer); err != nil {
+			httpServer := b.createSecureHTTPServer()
+
+			http.Handle("/", b.multiplexer)
+
+			if err := httpServer.ListenAndServeTLS(b.certificatePath, b.keyPath); err != nil {
 				log.WithFields(log.Fields{
 					"error": err.Error(),
 				}).Fatal("unable to start the bahamut")
