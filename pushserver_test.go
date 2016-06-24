@@ -44,7 +44,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 		Convey("Then stop channel should be initialized", func() {
 			var m chan bool
-			So(srv.stop, ShouldHaveSameTypeAs, m)
+			So(srv.close, ShouldHaveSameTypeAs, m)
 		})
 
 		Convey("Then events channel should be initialized", func() {
@@ -73,7 +73,7 @@ func TestSession_registerSession(t *testing.T) {
 		session := newSession(ws, srv)
 
 		go srv.start()
-		defer srv.Stop()
+		defer srv.stop()
 
 		Convey("When I register a session", func() {
 
@@ -98,7 +98,7 @@ func TestSession_registerSession(t *testing.T) {
 		session := newSession(ws, srv)
 
 		go srv.start()
-		defer srv.Stop()
+		defer srv.stop()
 
 		srv.registerSession(session)
 		time.Sleep(300 * time.Millisecond)
@@ -152,7 +152,7 @@ func TestSession_startStop(t *testing.T) {
 			srv.registerSession(session)
 			time.Sleep(300 * time.Millisecond)
 
-			srv.Stop()
+			srv.stop()
 			wg.Wait()
 
 			Convey("Then the len of sessions should be 0", func() {

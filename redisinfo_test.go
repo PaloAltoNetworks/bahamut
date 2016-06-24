@@ -99,7 +99,7 @@ func TestRedisInfo_makeRedisClient(t *testing.T) {
 			c := redisInfo.makeRedisClient()
 
 			Convey("Then the client should be correctly set", func() {
-				So(c, ShouldNotBeNil)
+				So(c, ShouldBeNil)
 			})
 		})
 	})
@@ -113,7 +113,7 @@ func TestRedisInfo_makeRedisClient(t *testing.T) {
 			c := redisInfo.makeRedisClient()
 
 			Convey("Then the client should be correctly set", func() {
-				So(c, ShouldNotBeNil)
+				So(c, ShouldBeNil)
 			})
 		})
 	})

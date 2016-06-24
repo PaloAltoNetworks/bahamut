@@ -27,7 +27,7 @@ type pushServer struct {
 	register    chan *pushSession
 	unregister  chan *pushSession
 	events      chan *elemental.Event
-	stop        chan bool
+	close       chan bool
 	multiplexer *bone.Mux
 	redisClient *redis.Client
 }
@@ -39,7 +39,7 @@ func newPushServer(address string, multiplexer *bone.Mux, redisClient *redis.Cli
 		sessions:    map[string]*pushSession{},
 		register:    make(chan *pushSession),
 		unregister:  make(chan *pushSession),
-		stop:        make(chan bool),
+		close:       make(chan bool),
 		events:      make(chan *elemental.Event),
 		multiplexer: multiplexer,
 		redisClient: redisClient,
@@ -50,75 +50,35 @@ func newPushServer(address string, multiplexer *bone.Mux, redisClient *redis.Cli
 	return srv
 }
 
-func (n *pushServer) handleConnection(ws *websocket.Conn) {
-
-	session := newSession(ws, n)
-	n.registerSession(session)
-	session.listen()
-}
-
+// adds a new push session to register in the push server
 func (n *pushServer) registerSession(session *pushSession) {
 
 	n.register <- session
 }
 
+// adds a new push session to unregister from the push server
 func (n *pushServer) unregisterSession(session *pushSession) {
 
 	n.unregister <- session
 }
 
-func (n *pushServer) pushEvents(events ...*elemental.Event) {
-
-	if n.redisClient == nil {
-		for _, e := range events {
-			n.events <- e
-		}
-
-		return
-	}
-
-	sessionKeys := n.globalSessionIDs()
-
-	// TODO: add a hook here to decide if we should publish the event here or not.
-
-	n.redisClient.Pipelined(func(pipeline *redis.Pipeline) error {
-		for _, sKey := range sessionKeys {
-
-			for _, event := range events {
-
-				eventQueueKey := fmt.Sprintf("%s:%s", redisSessionEventQueuesKey, sKey)
-
-				buffer := &bytes.Buffer{}
-				if err := json.NewEncoder(buffer).Encode(event); err != nil {
-					log.WithFields(log.Fields{
-						"redis": n.redisClient,
-						"event": event,
-					}).Error("unable to encode event.")
-				}
-
-				pipeline.LPush(eventQueueKey, buffer.String())
-			}
-		}
-		return nil
-	})
-}
-
-func (n *pushServer) createRedisSession(session *pushSession) {
+// publish the given session to the global registry system
+func (n *pushServer) publishSession(session *pushSession) {
 
 	if n.redisClient == nil {
 		return
 	}
 
-	// add the session to the global registry
 	n.redisClient.SAdd(redisGlobalSessionsKey, session.id)
 
 	log.WithFields(log.Fields{
 		"redis":      n.redisClient,
 		"session.id": session.id,
-	}).Debug("session added to redis.")
+	}).Debug("session added to redis")
 }
 
-func (n *pushServer) deleteRedisSession(session *pushSession) {
+// unpublish the given session from the global registry system
+func (n *pushServer) unpublishSession(session *pushSession) {
 
 	if n.redisClient == nil {
 		return
@@ -133,15 +93,11 @@ func (n *pushServer) deleteRedisSession(session *pushSession) {
 	log.WithFields(log.Fields{
 		"redis":      n.redisClient,
 		"session.id": session.id,
-	}).Debug("session deleted from redis.")
+	}).Debug("session deleted from redis")
 }
 
-func (n *pushServer) globalSessionIDs() []string {
-
-	return n.redisClient.SMembers(redisGlobalSessionsKey).Val()
-}
-
-func (n *pushServer) redisFlushLocalSessions() {
+// unpublish all local sessions from the global registry system
+func (n *pushServer) unpublishLocalSessions() {
 
 	if n.redisClient == nil {
 		return
@@ -157,24 +113,69 @@ func (n *pushServer) redisFlushLocalSessions() {
 
 	log.WithFields(log.Fields{
 		"redis": n.redisClient,
-	}).Debug("sessions flushed from redis.")
+	}).Debug("sessions flushed from redis")
 }
 
+// retrieve all published sessions from the global registry system
+func (n *pushServer) publishedSessions() []string {
+
+	return n.redisClient.SMembers(redisGlobalSessionsKey).Val()
+}
+
+// unpublish all local sessions from the global registry system
+func (n *pushServer) handleConnection(ws *websocket.Conn) {
+
+	session := newSession(ws, n)
+	n.registerSession(session)
+	session.listen()
+}
+
+// push a new event. If the global push system is available, it will be used.
+// otherwise, only local sessions will receive the push
+func (n *pushServer) pushEvents(events ...*elemental.Event) {
+
+	// if we don't have a valid redis connection, we simply manually push the events
+	if n.redisClient == nil {
+		for _, e := range events {
+			n.events <- e
+		}
+		return
+	}
+
+	sessionKeys := n.publishedSessions()
+
+	// TODO: add a hook here to decide if we should publish the event here or not.
+	n.redisClient.Pipelined(func(pipeline *redis.Pipeline) error {
+		for _, sKey := range sessionKeys {
+			for _, event := range events {
+
+				eventQueueKey := fmt.Sprintf("%s:%s", redisSessionEventQueuesKey, sKey)
+				buffer := &bytes.Buffer{}
+				if err := json.NewEncoder(buffer).Encode(event); err != nil {
+					log.WithFields(log.Fields{
+						"redis": n.redisClient,
+						"event": event,
+					}).Error("unable to encode event")
+				}
+
+				pipeline.LPush(eventQueueKey, buffer.String())
+			}
+		}
+		return nil
+	})
+}
+
+// starts the push server
 func (n *pushServer) start() {
 
 	if n.redisClient != nil {
-		_, err := n.redisClient.Ping().Result()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"redis": n.redisClient,
-			}).Warn("unable to contact redis: unclustered push system.")
-		} else {
-			log.WithFields(log.Fields{
-				"redis": n.redisClient,
-			}).Info("connected to redis: clustered push system.")
-
-			n.redisClient.ConfigSet("notify-keyspace-events", "KEA")
-		}
+		log.WithFields(log.Fields{
+			"redis": n.redisClient,
+		}).Info("global push system is active")
+	} else {
+		log.WithFields(log.Fields{
+			"redis": n.redisClient,
+		}).Warn("global push system is inactive")
 	}
 
 	log.WithFields(log.Fields{
@@ -191,7 +192,7 @@ func (n *pushServer) start() {
 			}
 
 			n.sessions[session.id] = session
-			n.createRedisSession(session)
+			n.publishSession(session)
 
 			log.WithFields(log.Fields{
 				"total":  len(n.sessions),
@@ -204,7 +205,7 @@ func (n *pushServer) start() {
 				break
 			}
 
-			n.deleteRedisSession(session)
+			n.unpublishSession(session)
 			delete(n.sessions, session.id)
 
 			log.WithFields(log.Fields{
@@ -227,9 +228,9 @@ func (n *pushServer) start() {
 				}
 			}()
 
-		case <-n.stop:
+		case <-n.close:
 
-			n.redisFlushLocalSessions()
+			n.unpublishLocalSessions()
 
 			for _, session := range n.sessions {
 				session.socket.Close()
@@ -241,8 +242,9 @@ func (n *pushServer) start() {
 	}
 }
 
-func (n *pushServer) Stop() {
+// stops the push server
+func (n *pushServer) stop() {
 
-	n.redisFlushLocalSessions()
-	n.stop <- true
+	n.unpublishLocalSessions()
+	n.close <- true
 }

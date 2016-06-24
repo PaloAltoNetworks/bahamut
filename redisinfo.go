@@ -7,6 +7,7 @@ package bahamut
 import (
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/redis.v3"
 )
 
@@ -37,20 +38,48 @@ func (r *RedisInfo) IsSentinelModeActive() bool {
 
 func (r *RedisInfo) makeRedisClient() *redis.Client {
 
+	var redisClient *redis.Client
+
 	if r.IsSentinelModeActive() {
-		return redis.NewFailoverClient(&redis.FailoverOptions{
+
+		log.WithFields(log.Fields{
+			"redisInfo": r,
+		}).Info("creating failover redis client")
+
+		redisClient = redis.NewFailoverClient(&redis.FailoverOptions{
 			MasterName:    r.ClusterName,
 			SentinelAddrs: r.Addresses,
 			Password:      r.Password,
 			DB:            r.DBNumber,
 		})
+	} else {
+		log.WithFields(log.Fields{
+			"redisInfo": r,
+		}).Info("creating single instance redis client")
+
+		redisClient = redis.NewClient(&redis.Options{
+			Addr:     r.Addresses[0],
+			Password: r.Password,
+			DB:       r.DBNumber,
+		})
 	}
 
-	return redis.NewClient(&redis.Options{
-		Addr:     r.Addresses[0],
-		Password: r.Password,
-		DB:       r.DBNumber,
-	})
+	_, err := redisClient.Ping().Result()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"redis":     redisClient,
+			"connected": false,
+		}).Error("redis is unreachable")
+
+		return nil
+	}
+
+	log.WithFields(log.Fields{
+		"redis":     redisClient,
+		"connected": true,
+	}).Info("redis server is reachable")
+
+	return redisClient
 }
 
 func (r *RedisInfo) String() string {

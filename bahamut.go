@@ -11,6 +11,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"os/signal"
 
 	"gopkg.in/redis.v3"
 
@@ -196,6 +198,15 @@ func (b *Bahamut) createSecureHTTPServer() *http.Server {
 // Start starts the Bahamut server.
 func (b *Bahamut) Start() {
 
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		log.Info("shuting down...")
+		b.Stop()
+		log.Info("bye!")
+	}()
+
 	if b.enableProfiling {
 		log.WithFields(log.Fields{
 			"endpoint": b.address + "/debug/pprof/",
@@ -243,7 +254,7 @@ func (b *Bahamut) Start() {
 func (b *Bahamut) Stop() {
 
 	if b.pushServer != nil {
-		b.pushServer.Stop()
+		b.pushServer.stop()
 	}
 
 	b.stop <- true
