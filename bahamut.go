@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"gopkg.in/redis.v3"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -42,9 +44,14 @@ type Bahamut struct {
 }
 
 // NewBahamut creates a new Bahamut.
-func NewBahamut(address string, routes []*Route, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
+func NewBahamut(address string, routes []*Route, redisInfo *RedisInfo, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
 
 	mux := bone.New()
+
+	var redisClient *redis.Client
+	if redisInfo != nil {
+		redisClient = redisInfo.makeRedisClient()
+	}
 
 	var apiServer *apiServer
 	if enabledAPI {
@@ -53,7 +60,7 @@ func NewBahamut(address string, routes []*Route, enabledAPI, enablePush, enableP
 
 	var pushServer *pushServer
 	if enablePush {
-		pushServer = newPushServer(address, mux)
+		pushServer = newPushServer(address, mux, redisClient)
 	}
 
 	if enableProfiling {
@@ -172,10 +179,8 @@ func (b *Bahamut) createSecureHTTPServer() *http.Server {
 	clientCertPool := b.createCertPool(b.caPath)
 
 	tlsConfig := &tls.Config{
-		// Reject any TLS certificate that cannot be validated
 		ClientAuth: tls.RequireAndVerifyClientCert,
-		// Ensure that we only use our "CA" to validate certificates
-		ClientCAs: clientCertPool,
+		ClientCAs:  clientCertPool,
 	}
 
 	tlsConfig.BuildNameToCertificate()

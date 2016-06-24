@@ -81,7 +81,7 @@ func TestContext_WriteResponse(t *testing.T) {
 		c.Count.Total = 40
 		c.OutputData = []*Entity{e1, e2}
 
-		Convey("When I write the response from a context with no error", func() {
+		Convey("When I write the response from a context with no error for a retrieve", func() {
 
 			w := httptest.NewRecorder()
 			c.WriteResponse(w)
@@ -97,8 +97,20 @@ func TestContext_WriteResponse(t *testing.T) {
 				So(w.Header().Get("X-Page-Last"), ShouldEqual, "http://link.com/path?page=4&per_page=10")
 			})
 
-			Convey("Then the body should be correct", func() {
+			Convey("Then the status should be 200", func() {
 				So(string(w.Body.Bytes()), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
+			})
+
+		})
+
+		Convey("When I write the response from a context with no error for a create", func() {
+
+			w := httptest.NewRecorder()
+			c.Operation = OperationCreate
+			c.WriteResponse(w)
+
+			Convey("Then the status code should be default to 201", func() {
+				So(w.Code, ShouldEqual, 201)
 			})
 		})
 

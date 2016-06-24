@@ -18,7 +18,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, false, false, false)
+		b := NewBahamut("fake", []*Route{}, nil, false, false, false)
 
 		Convey("Then apiServer should be nil", func() {
 			So(b.apiServer, ShouldBeNil)
@@ -39,7 +39,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, true, true, true)
+		b := NewBahamut("fake", []*Route{}, nil, true, true, true)
 
 		Convey("Then apiServer should not be nil", func() {
 			So(b.apiServer, ShouldNotBeNil)
@@ -59,7 +59,7 @@ func TestBahamut_DefaultBahamut(t *testing.T) {
 
 	Convey("Given I create a Bahamut", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, false, false, false)
+		b := NewBahamut("fake", []*Route{}, nil, false, false, false)
 
 		Convey("Then the defaultBahamut should be set", func() {
 			So(DefaultBahamut(), ShouldEqual, b)
@@ -73,7 +73,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		p := &FakeProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
-		b := NewBahamut("fake", []*Route{}, false, false, false)
+		b := NewBahamut("fake", []*Route{}, nil, false, false, false)
 
 		Convey("When I register it for an identity", func() {
 
@@ -132,7 +132,7 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, false, false, false)
+		b := NewBahamut("fake", []*Route{}, nil, false, false, false)
 		auth := &Auth{}
 
 		Convey("When I access an Authenticator while there is none", func() {
@@ -162,7 +162,7 @@ func TestBahamut_SetTLSInformation(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, false, false, false)
+		b := NewBahamut("fake", []*Route{}, nil, false, false, false)
 
 		Convey("Then it should not have any certificate information", func() {
 			So(b.certificatePath, ShouldBeEmpty)

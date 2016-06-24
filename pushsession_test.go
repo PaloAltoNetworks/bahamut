@@ -7,7 +7,7 @@ package bahamut
 import (
 	"testing"
 
-	"github.com/aporeto-inc/elemental"
+	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/websocket"
 )
@@ -19,7 +19,7 @@ func TestSession_newSession(t *testing.T) {
 		Convey("When I create a new session", func() {
 
 			ws := &websocket.Conn{}
-			session := newSession(ws, nil)
+			session := newSession(ws, newPushServer("fake", bone.New(), nil))
 
 			Convey("Then the session id should not be empty", func() {
 				So(session.id, ShouldNotBeEmpty)
@@ -30,7 +30,7 @@ func TestSession_newSession(t *testing.T) {
 			})
 
 			Convey("Then the events channel should be a chan of bytes", func() {
-				So(session.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
+				So(session.events, ShouldHaveSameTypeAs, make(chan string))
 			})
 		})
 	})

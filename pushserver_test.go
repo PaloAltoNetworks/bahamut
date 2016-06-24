@@ -22,7 +22,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 	Convey("Given I create a new EventServer", t, func() {
 
-		srv := newPushServer("fake", bone.New())
+		srv := newPushServer("fake", bone.New(), nil)
 
 		Convey("Then address should be set", func() {
 			So(srv.address, ShouldEqual, "fake")
@@ -69,7 +69,7 @@ func TestSession_registerSession(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New())
+		srv := newPushServer("fake", bone.New(), nil)
 		session := newSession(ws, srv)
 
 		go srv.start()
@@ -94,7 +94,7 @@ func TestSession_registerSession(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New())
+		srv := newPushServer("fake", bone.New(), nil)
 		session := newSession(ws, srv)
 
 		go srv.start()
@@ -132,7 +132,7 @@ func TestSession_startStop(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New())
+		srv := newPushServer("fake", bone.New(), nil)
 		session := newSession(ws, srv)
 
 		go session.listen()

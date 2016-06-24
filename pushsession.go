@@ -5,36 +5,86 @@
 package bahamut
 
 import (
-	"github.com/aporeto-inc/elemental"
+	"fmt"
+	"time"
+
+	"gopkg.in/redis.v3"
+
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
 )
 
+const (
+	redisSessionEventQueuesKey = "bahamut:sessions:eventqueues"
+)
+
 // pushSession represents a client session.
 type pushSession struct {
-	id     string
-	socket *websocket.Conn
-	events chan *elemental.Event
-	close  chan bool
-	server *pushServer
+	events      chan string
+	id          string
+	redisClient *redis.Client
+	redisKey    string
+	server      *pushServer
+	socket      *websocket.Conn
+	stop        chan bool
 }
 
 func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
 
+	id := uuid.NewV4().String()
+
 	return &pushSession{
-		id:     uuid.NewV4().String(),
-		socket: ws,
-		events: make(chan *elemental.Event),
-		close:  make(chan bool, 1),
-		server: server,
+		events:      make(chan string),
+		id:          id,
+		redisClient: server.redisClient,
+		redisKey:    fmt.Sprintf("%s:%s", redisSessionEventQueuesKey, id),
+		server:      server,
+		socket:      ws,
+		stop:        make(chan bool, 1),
 	}
+}
+
+func (s *pushSession) startEventQueueListener() {
+
+	if s.redisClient == nil {
+		return
+	}
+
+	for {
+		select {
+		case <-s.stop:
+			return
+
+		default:
+			resp := s.redisClient.BRPop(5*time.Second, s.redisKey).Val()
+
+			if len(resp) == 2 {
+				s.events <- resp[1]
+			}
+		}
+	}
+}
+
+func (s *pushSession) stopEventQueueListener() {
+
+	if s.redisClient == nil {
+		return
+	}
+
+	s.stop <- true
+}
+
+func (s *pushSession) terminate() {
+
+	s.server.unregisterSession(s)
+	s.stopEventQueueListener()
 }
 
 func (s *pushSession) read() {
 
 	for {
 		if _, err := s.socket.Read(nil); err != nil {
-			s.server.unregisterSession(s)
+			s.terminate()
 			break
 		}
 	}
@@ -45,20 +95,12 @@ func (s *pushSession) listen() {
 	defer s.socket.Close()
 
 	go s.read()
+	go s.startEventQueueListener()
 
 	for {
-		select {
-		case event := <-s.events:
-
-			err := websocket.JSON.Send(s.socket, event)
-
-			if err != nil {
-				s.server.unregisterSession(s)
-			}
-
-		case <-s.close:
-			s.socket.Close()
-			return
+		if err := websocket.Message.Send(s.socket, <-s.events); err != nil {
+			s.terminate()
+			break
 		}
 	}
 }
