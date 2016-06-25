@@ -94,6 +94,7 @@ func (s *pushSession) listenToKafkaMessages() {
 				return
 			}
 		case <-s.stop:
+			s.server.unregisterSession(s)
 			return
 		}
 	}
@@ -109,6 +110,7 @@ func (s *pushSession) listenToLocalMessages() {
 				return
 			}
 		case <-s.stop:
+			s.server.unregisterSession(s)
 			return
 		}
 	}
