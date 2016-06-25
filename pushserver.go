@@ -7,32 +7,28 @@ package bahamut
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"golang.org/x/net/websocket"
-	"gopkg.in/redis.v3"
 
+	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
 
-const (
-	redisGlobalSessionsKey = "bahamut:global:sessions"
-)
-
 type pushServer struct {
-	address     string
-	sessions    map[string]*pushSession
-	register    chan *pushSession
-	unregister  chan *pushSession
-	events      chan *elemental.Event
-	close       chan bool
-	multiplexer *bone.Mux
-	redisClient *redis.Client
+	address       string
+	sessions      map[string]*pushSession
+	register      chan *pushSession
+	unregister    chan *pushSession
+	events        chan *elemental.Event
+	close         chan bool
+	multiplexer   *bone.Mux
+	kafkaInfo     *KafkaInfo
+	kafkaProducer sarama.SyncProducer
 }
 
-func newPushServer(address string, multiplexer *bone.Mux, redisClient *redis.Client) *pushServer {
+func newPushServer(address string, multiplexer *bone.Mux, kafkaInfo *KafkaInfo) *pushServer {
 
 	srv := &pushServer{
 		address:     address,
@@ -42,7 +38,7 @@ func newPushServer(address string, multiplexer *bone.Mux, redisClient *redis.Cli
 		close:       make(chan bool),
 		events:      make(chan *elemental.Event),
 		multiplexer: multiplexer,
-		redisClient: redisClient,
+		kafkaInfo:   kafkaInfo,
 	}
 
 	srv.multiplexer.Handle("/events", websocket.Handler(srv.handleConnection))
@@ -62,66 +58,6 @@ func (n *pushServer) unregisterSession(session *pushSession) {
 	n.unregister <- session
 }
 
-// publish the given session to the global registry system
-func (n *pushServer) publishSession(session *pushSession) {
-
-	if n.redisClient == nil {
-		return
-	}
-
-	n.redisClient.SAdd(redisGlobalSessionsKey, session.id)
-
-	log.WithFields(log.Fields{
-		"redis":      n.redisClient,
-		"session.id": session.id,
-	}).Debug("session added to redis")
-}
-
-// unpublish the given session from the global registry system
-func (n *pushServer) unpublishSession(session *pushSession) {
-
-	if n.redisClient == nil {
-		return
-	}
-
-	n.redisClient.Pipelined(func(pipeline *redis.Pipeline) error {
-		pipeline.SRem(redisGlobalSessionsKey, session.id)
-		pipeline.Del(session.redisKey)
-		return nil
-	})
-
-	log.WithFields(log.Fields{
-		"redis":      n.redisClient,
-		"session.id": session.id,
-	}).Debug("session deleted from redis")
-}
-
-// unpublish all local sessions from the global registry system
-func (n *pushServer) unpublishLocalSessions() {
-
-	if n.redisClient == nil {
-		return
-	}
-
-	n.redisClient.Pipelined(func(pipeline *redis.Pipeline) error {
-		for _, session := range n.sessions {
-			pipeline.SRem(redisGlobalSessionsKey, session.id)
-			pipeline.Del(session.redisKey)
-		}
-		return nil
-	})
-
-	log.WithFields(log.Fields{
-		"redis": n.redisClient,
-	}).Debug("sessions flushed from redis")
-}
-
-// retrieve all published sessions from the global registry system
-func (n *pushServer) publishedSessions() []string {
-
-	return n.redisClient.SMembers(redisGlobalSessionsKey).Val()
-}
-
 // unpublish all local sessions from the global registry system
 func (n *pushServer) handleConnection(ws *websocket.Conn) {
 
@@ -134,48 +70,48 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 // otherwise, only local sessions will receive the push
 func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
-	// if we don't have a valid redis connection, we simply manually push the events
-	if n.redisClient == nil {
+	// if we don't have a valid kafka producer, we simply manually push the events
+	if n.kafkaProducer == nil {
 		for _, e := range events {
 			n.events <- e
 		}
 		return
 	}
 
-	sessionKeys := n.publishedSessions()
+	for _, event := range events {
 
-	// TODO: add a hook here to decide if we should publish the event here or not.
-	n.redisClient.Pipelined(func(pipeline *redis.Pipeline) error {
-		for _, sKey := range sessionKeys {
-			for _, event := range events {
-
-				eventQueueKey := fmt.Sprintf("%s:%s", redisSessionEventQueuesKey, sKey)
-				buffer := &bytes.Buffer{}
-				if err := json.NewEncoder(buffer).Encode(event); err != nil {
-					log.WithFields(log.Fields{
-						"redis": n.redisClient,
-						"event": event,
-					}).Error("unable to encode event")
-				}
-
-				pipeline.LPush(eventQueueKey, buffer.String())
-			}
+		buffer := &bytes.Buffer{}
+		if err := json.NewEncoder(buffer).Encode(event); err != nil {
+			log.WithFields(log.Fields{
+				"producer": n.kafkaProducer,
+				"event":    event,
+			}).Error("unable to encode event")
 		}
-		return nil
-	})
+
+		message := &sarama.ProducerMessage{
+			Topic: n.kafkaInfo.Topic,
+			Key:   sarama.StringEncoder("namespace=default"),
+			Value: sarama.ByteEncoder(buffer.Bytes()),
+		}
+
+		n.kafkaProducer.SendMessage(message)
+	}
 }
 
 // starts the push server
 func (n *pushServer) start() {
 
-	if n.redisClient != nil {
+	if n.kafkaInfo != nil {
+		n.kafkaProducer = n.kafkaInfo.makeProducer()
+		// n.kafkaInfo.createTopicsIfNeeded([]string{"bahamut:push:events"})
+
+		defer n.kafkaProducer.Close()
+
 		log.WithFields(log.Fields{
-			"redis": n.redisClient,
+			"info": n.kafkaInfo,
 		}).Info("global push system is active")
 	} else {
-		log.WithFields(log.Fields{
-			"redis": n.redisClient,
-		}).Warn("global push system is inactive")
+		log.Warn("global push system is inactive")
 	}
 
 	log.WithFields(log.Fields{
@@ -192,7 +128,6 @@ func (n *pushServer) start() {
 			}
 
 			n.sessions[session.id] = session
-			n.publishSession(session)
 
 			log.WithFields(log.Fields{
 				"total":  len(n.sessions),
@@ -205,7 +140,6 @@ func (n *pushServer) start() {
 				break
 			}
 
-			n.unpublishSession(session)
 			delete(n.sessions, session.id)
 
 			log.WithFields(log.Fields{
@@ -230,10 +164,8 @@ func (n *pushServer) start() {
 
 		case <-n.close:
 
-			n.unpublishLocalSessions()
-
 			for _, session := range n.sessions {
-				session.socket.Close()
+				session.close()
 			}
 			n.sessions = map[string]*pushSession{}
 
@@ -245,6 +177,5 @@ func (n *pushServer) start() {
 // stops the push server
 func (n *pushServer) stop() {
 
-	n.unpublishLocalSessions()
 	n.close <- true
 }

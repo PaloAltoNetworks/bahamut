@@ -14,8 +14,6 @@ import (
 	"os"
 	"os/signal"
 
-	"gopkg.in/redis.v3"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -46,14 +44,9 @@ type Bahamut struct {
 }
 
 // NewBahamut creates a new Bahamut.
-func NewBahamut(address string, routes []*Route, redisInfo *RedisInfo, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
+func NewBahamut(address string, routes []*Route, kafkaInfo *KafkaInfo, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
 
 	mux := bone.New()
-
-	var redisClient *redis.Client
-	if redisInfo != nil {
-		redisClient = redisInfo.makeRedisClient()
-	}
 
 	var apiServer *apiServer
 	if enabledAPI {
@@ -62,7 +55,7 @@ func NewBahamut(address string, routes []*Route, redisInfo *RedisInfo, enabledAP
 
 	var pushServer *pushServer
 	if enablePush {
-		pushServer = newPushServer(address, mux, redisClient)
+		pushServer = newPushServer(address, mux, kafkaInfo)
 	}
 
 	if enableProfiling {
