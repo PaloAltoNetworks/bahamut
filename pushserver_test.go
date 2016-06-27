@@ -135,22 +135,16 @@ func TestSession_startStop(t *testing.T) {
 		srv := newPushServer("fake", bone.New(), nil)
 		session := newSession(ws, srv)
 
-		go session.listen()
-
 		var wg sync.WaitGroup
-
-		startFunct := func() {
+		wg.Add(1)
+		go func() {
 			srv.start()
 			wg.Done()
-		}
+		}()
 
-		wg.Add(1)
-		go startFunct()
+		srv.registerSession(session)
 
 		Convey("When I stop it", func() {
-
-			srv.registerSession(session)
-			time.Sleep(300 * time.Millisecond)
 
 			srv.stop()
 			wg.Wait()
