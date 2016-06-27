@@ -18,9 +18,9 @@ import (
 
 type pushServer struct {
 	address       string
-	sessions      map[string]*pushSession
-	register      chan *pushSession
-	unregister    chan *pushSession
+	sessions      map[string]*PushSession
+	register      chan *PushSession
+	unregister    chan *PushSession
 	events        chan *elemental.Event
 	close         chan bool
 	multiplexer   *bone.Mux
@@ -32,9 +32,9 @@ func newPushServer(address string, multiplexer *bone.Mux, config *PushServerConf
 
 	srv := &pushServer{
 		address:     address,
-		sessions:    map[string]*pushSession{},
-		register:    make(chan *pushSession),
-		unregister:  make(chan *pushSession),
+		sessions:    map[string]*PushSession{},
+		register:    make(chan *PushSession),
+		unregister:  make(chan *PushSession),
 		close:       make(chan bool),
 		events:      make(chan *elemental.Event),
 		multiplexer: multiplexer,
@@ -47,13 +47,13 @@ func newPushServer(address string, multiplexer *bone.Mux, config *PushServerConf
 }
 
 // adds a new push session to register in the push server
-func (n *pushServer) registerSession(session *pushSession) {
+func (n *pushServer) registerSession(session *PushSession) {
 
 	n.register <- session
 }
 
 // adds a new push session to unregister from the push server
-func (n *pushServer) unregisterSession(session *pushSession) {
+func (n *pushServer) unregisterSession(session *PushSession) {
 
 	n.unregister <- session
 }
@@ -61,7 +61,7 @@ func (n *pushServer) unregisterSession(session *pushSession) {
 // unpublish all local sessions from the global registry system
 func (n *pushServer) handleConnection(ws *websocket.Conn) {
 
-	session := newSession(ws, n)
+	session := newPushSession(ws, n)
 	n.registerSession(session)
 	session.listen()
 }
@@ -134,7 +134,7 @@ func (n *pushServer) start() {
 
 			if n.kafkaProducer != nil {
 				message := &sarama.ProducerMessage{
-					Topic: n.config.Topic,
+					Topic: n.config.DefaultTopic,
 					Key:   sarama.StringEncoder("namespace=default"),
 					Value: sarama.ByteEncoder(buffer.Bytes()),
 				}
@@ -151,7 +151,7 @@ func (n *pushServer) start() {
 			for _, session := range n.sessions {
 				session.close()
 			}
-			n.sessions = map[string]*pushSession{}
+			n.sessions = map[string]*PushSession{}
 
 			return
 		}

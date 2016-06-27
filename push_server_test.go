@@ -34,12 +34,12 @@ func TestPushServer_newPushServer(t *testing.T) {
 		})
 
 		Convey("Then register channel should be initialized", func() {
-			var m chan *pushSession
+			var m chan *PushSession
 			So(srv.register, ShouldHaveSameTypeAs, m)
 		})
 
 		Convey("Then unregister channel should be initialized", func() {
-			var m chan *pushSession
+			var m chan *PushSession
 			So(srv.unregister, ShouldHaveSameTypeAs, m)
 		})
 
@@ -71,7 +71,7 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		srv := newPushServer("fake", bone.New(), nil)
-		session := newSession(ws, srv)
+		session := newPushSession(ws, srv)
 
 		go srv.start()
 		defer srv.stop()
@@ -96,7 +96,7 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		srv := newPushServer("fake", bone.New(), nil)
-		session := newSession(ws, srv)
+		session := newPushSession(ws, srv)
 
 		go srv.start()
 		defer srv.stop()
@@ -130,7 +130,7 @@ func TestSession_startStop(t *testing.T) {
 		defer ws.Close()
 
 		srv := newPushServer("fake", bone.New(), nil)
-		session := newSession(ws, srv)
+		session := newPushSession(ws, srv)
 
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -256,7 +256,7 @@ func TestSession_LocalEvents(t *testing.T) {
 		defer ws1.Close()
 
 		srv := newPushServer("fake", bone.New(), nil)
-		session1 := newSession(ws1, srv)
+		session1 := newPushSession(ws1, srv)
 
 		go srv.start()
 		srv.registerSession(session1)

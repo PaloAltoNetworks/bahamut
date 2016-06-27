@@ -13,24 +13,26 @@ import (
 
 // PushServerConfig represents Redis connection information
 type PushServerConfig struct {
-	Addresses []string
-	Topic     string
+	Addresses     []string
+	DefaultTopic  string
+	Authorizer    Authorizer
+	Authenticator Authenticator
 }
 
 // NewPushServerConfig returns a new RedisInfo
-func NewPushServerConfig(addresses []string, topic string) *PushServerConfig {
+func NewPushServerConfig(addresses []string, defaultTopic string) *PushServerConfig {
 
 	if len(addresses) < 1 {
 		panic("at least one address should be provided to PushServerConfig")
 	}
 
-	if topic == "" {
-		panic("a valid topic should be provided to PushServerConfig")
+	if defaultTopic == "" {
+		panic("a valid default topic should be provided to PushServerConfig")
 	}
 
 	return &PushServerConfig{
-		Addresses: addresses,
-		Topic:     topic,
+		Addresses:    addresses,
+		DefaultTopic: defaultTopic,
 	}
 }
 
@@ -66,5 +68,5 @@ func (k *PushServerConfig) makeConsumer() sarama.Consumer {
 
 func (k *PushServerConfig) String() string {
 
-	return fmt.Sprintf("<PushServerConfig addresses: %v topic: %s>", k.Addresses, k.Topic)
+	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.Addresses, k.DefaultTopic)
 }

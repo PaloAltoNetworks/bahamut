@@ -15,12 +15,12 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func TestSession_newSession(t *testing.T) {
+func TestSession_newPushSession(t *testing.T) {
 
 	Convey("When I create have a new pushSession", t, func() {
 
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), nil))
 
 		Convey("Then the session id should not be empty", func() {
 			So(session.id, ShouldNotBeEmpty)
@@ -55,7 +55,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 			go session.listenToKafkaMessages()
@@ -114,7 +114,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -132,7 +132,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 	Convey("Given I create have a new pushSession with no valid kafka info", t, func() {
 
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), nil))
 
 		Convey("When I listen for local messages", func() {
 			go session.listenToLocalMessages()
@@ -192,7 +192,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -219,7 +219,7 @@ func TestSession_write(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), nil))
 
 		Convey("When I send some data to the session", func() {
 
@@ -295,7 +295,7 @@ func TestSession_read(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), nil))
 
 		Convey("When I receive some data to the session", func() {
 
@@ -331,7 +331,7 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), nil))
 
 		c := make(chan bool, 1)
 		go func() {
@@ -398,7 +398,7 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
 
 		c := make(chan bool, 1)
 		go func() {

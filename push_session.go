@@ -12,8 +12,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// pushSession represents a client session.
-type pushSession struct {
+// PushSession represents a client session.
+type PushSession struct {
 	events           chan string
 	id               string
 	pushServerConfig *PushServerConfig
@@ -23,9 +23,9 @@ type pushSession struct {
 	out              chan []byte
 }
 
-func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
+func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 
-	return &pushSession{
+	return &PushSession{
 		events:           make(chan string),
 		id:               uuid.NewV4().String(),
 		pushServerConfig: server.config,
@@ -37,7 +37,7 @@ func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
 }
 
 // continuously read data from the websocket
-func (s *pushSession) read() {
+func (s *PushSession) read() {
 
 	for {
 		var data []byte
@@ -48,7 +48,7 @@ func (s *pushSession) read() {
 	}
 }
 
-func (s *pushSession) write() {
+func (s *PushSession) write() {
 
 	for {
 		select {
@@ -65,19 +65,19 @@ func (s *pushSession) write() {
 }
 
 // send given bytes to the websocket
-func (s *pushSession) send(message []byte) {
+func (s *PushSession) send(message []byte) {
 
 	s.out <- message
 }
 
 // force close the current socket
-func (s *pushSession) close() {
+func (s *PushSession) close() {
 
 	s.stop <- true
 }
 
 // listens to events, either from kafka or from local events.
-func (s *pushSession) listen() {
+func (s *PushSession) listen() {
 
 	defer s.socket.Close()
 
@@ -92,12 +92,12 @@ func (s *pushSession) listen() {
 }
 
 // continuously listens for new kafka messages
-func (s *pushSession) listenToKafkaMessages() error {
+func (s *PushSession) listenToKafkaMessages() error {
 
 	consumer := s.pushServerConfig.makeConsumer()
 	defer consumer.Close()
 
-	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.Topic, 0, sarama.OffsetNewest)
+	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.DefaultTopic, 0, sarama.OffsetNewest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"session": s,
@@ -119,7 +119,7 @@ func (s *pushSession) listenToKafkaMessages() error {
 }
 
 // continuously listens for new local messages
-func (s *pushSession) listenToLocalMessages() error {
+func (s *PushSession) listenToLocalMessages() error {
 
 	for {
 		select {

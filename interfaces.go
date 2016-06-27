@@ -46,3 +46,14 @@ type InfoProcessor interface {
 type Authenticator interface {
 	IsAuthenticated(*Context) (bool, error)
 }
+
+// Authorizer is the interface used to verify the permission
+type Authorizer interface {
+	IsAuthorized() (bool, error)
+}
+
+// PushSessionHandler is the interface used to handle sessions lyfecycle
+type PushSessionHandler interface {
+	OnSessionStart(PushSession)
+	OnSessionStop(PushSession)
+}

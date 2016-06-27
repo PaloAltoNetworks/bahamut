@@ -22,8 +22,8 @@ func TestKakfaInfo_NewPushServerConfig(t *testing.T) {
 			So(pushServerConfig.Addresses[0], ShouldEqual, ":1234")
 		})
 
-		Convey("Then the kafka info should have the topic set", func() {
-			So(pushServerConfig.Topic, ShouldEqual, "topic")
+		Convey("Then the kafka info should have the default topic set", func() {
+			So(pushServerConfig.DefaultTopic, ShouldEqual, "topic")
 		})
 	})
 
@@ -49,7 +49,7 @@ func TestKakfaInfo_String(t *testing.T) {
 		config := NewPushServerConfig([]string{"127.0.0.1:1234", "127.0.0.1:1235"}, "topic")
 
 		Convey("Then the string representation should be correct", func() {
-			So(config.String(), ShouldEqual, "<PushServerConfig addresses: [127.0.0.1:1234 127.0.0.1:1235] topic: topic>")
+			So(config.String(), ShouldEqual, "<PushServerConfig Addresses: [127.0.0.1:1234 127.0.0.1:1235] DefaultTopic: topic>")
 		})
 	})
 }
