@@ -162,6 +162,56 @@ func TestSession_startStop(t *testing.T) {
 	})
 }
 
+func TestSession_PushEvents(t *testing.T) {
+
+	Convey("Given I create a new EventServer with no kafka info", t, func() {
+
+		srv := newPushServer("fake", bone.New(), nil)
+
+		Convey("When I push an event", func() {
+
+			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
+			go func() { srv.pushEvents(inEvent) }()
+
+			var outEvent *elemental.Event
+			select {
+			case outEvent = <-srv.events:
+				break
+			case <-time.After(300 * time.Millisecond):
+				break
+			}
+
+			Convey("Then the event should be sent throught the local channel", func() {
+				So(outEvent, ShouldEqual, inEvent)
+			})
+		})
+	})
+
+	// Convey("Given I create a new EventServer with some kafka info", t, func() {
+	//
+	// 	srv := newPushServer("fake", bone.New(), nil)
+	// 	srv.kafkaProducer = sarama.NewMo{}
+	//
+	// 	Convey("When I push an event", func() {
+	//
+	// 		inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
+	// 		go func() { srv.pushEvents(inEvent) }()
+	//
+	// 		// var outEvent *elemental.Event
+	// 		// select {
+	// 		// case outEvent = <-srv.events:
+	// 		//     break
+	// 		// case <-time.After(300 * time.Millisecond):
+	// 		//     break
+	// 		// }
+	//
+	// 		Convey("Then the event should be sent throught the local channel", func() {
+	// 			So(1, ShouldEqual, 1)
+	// 		})
+	// 	})
+	// })
+}
+
 // func TestSession_Events(t *testing.T) {
 //
 // 	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {

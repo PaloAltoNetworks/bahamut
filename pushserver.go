@@ -103,7 +103,6 @@ func (n *pushServer) start() {
 
 	if n.kafkaInfo != nil {
 		n.kafkaProducer = n.kafkaInfo.makeProducer()
-		// n.kafkaInfo.createTopicsIfNeeded([]string{"bahamut:push:events"})
 
 		defer n.kafkaProducer.Close()
 
