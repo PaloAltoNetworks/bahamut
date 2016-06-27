@@ -8,3 +8,8 @@ codegen
 vendor/
 *.apomock
 test
+
+example/server/models/*.go
+example/server/handlers/*.go
+example/server/routes/*.go
+example/server/server

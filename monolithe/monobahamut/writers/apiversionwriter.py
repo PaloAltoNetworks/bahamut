@@ -19,10 +19,10 @@ class APIVersionWriter(TemplateFileWriter):
         output = monolithe_config.get_option("output", "transformer")
         self.output_directory = "%s/bahamut/%s" % (output, api_info["version"])
 
-        self.base_package = monolithe_config.get_option("base_package", "cid")
-        self.models_package_package = monolithe_config.get_option("models_package_package", "cid")
-        self.handlers_package_name = monolithe_config.get_option("handlers_package_name", "cid")
-        self.routes_package_name = monolithe_config.get_option("routes_package_name", "cid")
+        self.base_package = monolithe_config.get_option("base_package", "bahamut")
+        self.models_package_package = monolithe_config.get_option("models_package_package", "bahamut")
+        self.handlers_package_name = monolithe_config.get_option("handlers_package_name", "bahamut")
+        self.routes_package_name = monolithe_config.get_option("routes_package_name", "bahamut")
 
         handlers_folder = "%s/handlers" % self.output_directory
         if os.path.exists(handlers_folder):
@@ -34,8 +34,10 @@ class APIVersionWriter(TemplateFileWriter):
             shutil.rmtree(routes_folder)
         os.makedirs(routes_folder)
 
-        with open("%s/bahamut/__code_header" % output, "r") as f:
-            self.header_content = f.read()
+        code_header_path = "%s/bahamut/__code_header" % output
+        if os.path.exists(code_header_path):
+            with open(code_header_path, "r") as f:
+                self.header_content = f.read()
 
     def perform(self, specifications):
         """
