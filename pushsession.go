@@ -20,6 +20,7 @@ type pushSession struct {
 	server    *pushServer
 	socket    *websocket.Conn
 	stop      chan bool
+	out       chan []byte
 }
 
 func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
@@ -31,6 +32,7 @@ func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
 		server:    server,
 		socket:    ws,
 		stop:      make(chan bool, 1),
+		out:       make(chan []byte),
 	}
 }
 
@@ -38,17 +40,34 @@ func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
 func (s *pushSession) read() {
 
 	for {
-		if _, err := s.socket.Read(nil); err != nil {
-			s.close()
+		var data []byte
+		if err := websocket.Message.Receive(s.socket, &data); err != nil {
+			s.stop <- true
 			break
 		}
 	}
 }
 
-// send given bytes to the websocket
-func (s *pushSession) send(message []byte) error {
+func (s *pushSession) write() {
 
-	return websocket.Message.Send(s.socket, message)
+	for {
+		select {
+		case data := <-s.out:
+			if err := websocket.Message.Send(s.socket, data); err != nil {
+				s.stop <- true
+				return
+			}
+		case <-s.stop:
+			s.stop <- true
+			return
+		}
+	}
+}
+
+// send given bytes to the websocket
+func (s *pushSession) send(message []byte) {
+
+	s.out <- message
 }
 
 // force close the current socket
@@ -61,7 +80,9 @@ func (s *pushSession) close() {
 func (s *pushSession) listen() {
 
 	defer s.socket.Close()
+
 	go s.read()
+	go s.write()
 
 	if s.kafkaInfo != nil {
 		s.listenToKafkaMessages()
@@ -71,7 +92,7 @@ func (s *pushSession) listen() {
 }
 
 // continuously listens for new kafka messages
-func (s *pushSession) listenToKafkaMessages() {
+func (s *pushSession) listenToKafkaMessages() error {
 
 	kafkaConsumer := s.kafkaInfo.makeConsumer()
 	defer kafkaConsumer.Close()
@@ -79,39 +100,34 @@ func (s *pushSession) listenToKafkaMessages() {
 	parititionConsumer, err := kafkaConsumer.ConsumePartition(s.kafkaInfo.Topic, 0, sarama.OffsetNewest)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"session":  s,
-			"consumer": kafkaConsumer,
-			"error":    err,
-		}).Error("unable to comsume topic")
-		return
+			"session": s,
+			"error":   err,
+		}).Error("unable to consume topic")
+		return err
 	}
 	defer parititionConsumer.Close()
 
 	for {
 		select {
 		case message := <-parititionConsumer.Messages():
-			if err := s.send(message.Value); err != nil {
-				return
-			}
+			s.send(message.Value)
 		case <-s.stop:
 			s.server.unregisterSession(s)
-			return
+			return nil
 		}
 	}
 }
 
 // continuously listens for new local messages
-func (s *pushSession) listenToLocalMessages() {
+func (s *pushSession) listenToLocalMessages() error {
 
 	for {
 		select {
 		case message := <-s.events:
-			if err := s.send([]byte(message)); err != nil {
-				return
-			}
+			s.send([]byte(message))
 		case <-s.stop:
 			s.server.unregisterSession(s)
-			return
+			return nil
 		}
 	}
 }
