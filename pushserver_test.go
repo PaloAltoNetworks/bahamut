@@ -186,88 +186,60 @@ func TestSession_PushEvents(t *testing.T) {
 			})
 		})
 	})
-
-	// Convey("Given I create a new EventServer with some kafka info", t, func() {
-	//
-	// 	srv := newPushServer("fake", bone.New(), nil)
-	// 	srv.kafkaProducer = sarama.NewMo{}
-	//
-	// 	Convey("When I push an event", func() {
-	//
-	// 		inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
-	// 		go func() { srv.pushEvents(inEvent) }()
-	//
-	// 		// var outEvent *elemental.Event
-	// 		// select {
-	// 		// case outEvent = <-srv.events:
-	// 		//     break
-	// 		// case <-time.After(300 * time.Millisecond):
-	// 		//     break
-	// 		// }
-	//
-	// 		Convey("Then the event should be sent throught the local channel", func() {
-	// 			So(1, ShouldEqual, 1)
-	// 		})
-	// 	})
-	// })
 }
 
-// func TestSession_Events(t *testing.T) {
-//
-// 	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-// 		var d []byte
-// 		websocket.Message.Receive(ws, &d)
-// 		ws.Write(d)
-// 		time.Sleep(5000 * time.Millisecond)
-// 	}))
-// 	defer ts.Close()
-//
-// 	Convey("Given I have a started EventServer an 3 sessions", t, func() {
-//
-// 		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
-// 		ws2, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
-// 		ws3, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
-// 		defer ws1.Close()
-// 		defer ws2.Close()
-// 		defer ws3.Close()
-//
-// 		srv := newPushServer("fake", bone.New())
-// 		session1 := newSession(ws1, srv)
-// 		session2 := newSession(ws2, srv)
-// 		session3 := newSession(ws3, srv)
-//
-// 		go srv.start()
-// 		go session1.listen()
-// 		go session2.listen()
-// 		go session3.listen()
-//
-// 		srv.registerSession(session1)
-// 		srv.registerSession(session2)
-// 		srv.registerSession(session3)
-//
-// 		time.Sleep(300 * time.Millisecond)
-//
-// 		Convey("When push an event", func() {
-//
-// 			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
-//
-// 			var output1, output2, output3 string
-// 			websocket.Message.Receive(session1.socket, &output1)
-// 			websocket.Message.Receive(session2.socket, &output2)
-// 			websocket.Message.Receive(session3.socket, &output3)
-//
-// 			Convey("Then output1 should be correct", func() {
-// 				So(output1, ShouldNotBeEmpty)
-// 			})
-//
-// 			Convey("Then output1 should be the same than output2", func() {
-// 				So(output1, ShouldEqual, output2)
-// 			})
-//
-// 			Convey("Then output1 should be the same than output3", func() {
-// 				So(output1, ShouldEqual, output3)
-// 			})
-//
-// 		})
-// 	})
-// }
+func TestSession_LocalEvents(t *testing.T) {
+
+	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+		var d []byte
+		websocket.Message.Receive(ws, &d)
+		websocket.Message.Send(ws, d)
+	}))
+	defer ts.Close()
+
+	Convey("Given I have a started EventServer a session", t, func() {
+
+		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
+		defer ws1.Close()
+
+		srv := newPushServer("fake", bone.New(), nil)
+		session1 := newSession(ws1, srv)
+
+		go srv.start()
+		srv.registerSession(session1)
+
+		Convey("When push an event", func() {
+
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
+
+			var evt string
+			select {
+			case evt = <-session1.events:
+				break
+			case <-time.After(3 * time.Millisecond):
+				break
+			}
+
+			Convey("Then output event should be correct", func() {
+				So(evt, ShouldNotBeEmpty)
+			})
+		})
+
+		Convey("When push an event with an UnmarshalableList", func() {
+
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewUnmarshalableList()))
+
+			var evt string
+			select {
+			case evt = <-session1.events:
+				break
+			case <-time.After(3 * time.Millisecond):
+				break
+			}
+
+			Convey("Then output event should be correct", func() {
+				So(evt, ShouldBeEmpty)
+			})
+		})
+	})
+}
