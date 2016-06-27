@@ -51,10 +51,11 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
 				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
 		})
+		defer broker.Close()
 
-		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
+		session := newSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 			go session.listenToKafkaMessages()
@@ -109,9 +110,11 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 				SetLeader("topic", 0, broker.BrokerID()),
 			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
 		})
-		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
+		defer broker.Close()
+
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
+		session := newSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -185,9 +188,11 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 				SetLeader("topic", 0, broker.BrokerID()),
 			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
 		})
-		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
+		defer broker.Close()
+
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
+		session := newSession(ws, newPushServer("fake", bone.New(), config))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -383,6 +388,8 @@ func TestSession_listen(t *testing.T) {
 			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
 				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
 		})
+		defer broker.Close()
+
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
 		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))

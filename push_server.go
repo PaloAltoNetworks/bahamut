@@ -70,31 +70,8 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 // otherwise, only local sessions will receive the push
 func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
-	// if we don't have a valid kafka producer, we simply manually push the events
-	if n.kafkaProducer == nil {
-		for _, e := range events {
-			n.events <- e
-		}
-		return
-	}
-
-	for _, event := range events {
-
-		buffer := &bytes.Buffer{}
-		if err := json.NewEncoder(buffer).Encode(event); err != nil {
-			log.WithFields(log.Fields{
-				"producer": n.kafkaProducer,
-				"event":    event,
-			}).Error("unable to encode event")
-		}
-
-		message := &sarama.ProducerMessage{
-			Topic: n.config.Topic,
-			Key:   sarama.StringEncoder("namespace=default"),
-			Value: sarama.ByteEncoder(buffer.Bytes()),
-		}
-
-		n.kafkaProducer.SendMessage(message)
+	for _, e := range events {
+		n.events <- e
 	}
 }
 
@@ -147,19 +124,27 @@ func (n *pushServer) start() {
 			}).Info("closed session")
 
 		case event := <-n.events:
-			go func() {
-				for _, session := range n.sessions {
-					buffer := &bytes.Buffer{}
-					if err := json.NewEncoder(buffer).Encode(event); err != nil {
-						log.WithFields(log.Fields{
-							"data": event,
-						}).Error("unable to encode event data")
-						return
-					}
+			buffer := &bytes.Buffer{}
+			if err := json.NewEncoder(buffer).Encode(event); err != nil {
+				log.WithFields(log.Fields{
+					"data": event,
+				}).Error("unable to encode event data")
+				return
+			}
 
+			if n.kafkaProducer != nil {
+				message := &sarama.ProducerMessage{
+					Topic: n.config.Topic,
+					Key:   sarama.StringEncoder("namespace=default"),
+					Value: sarama.ByteEncoder(buffer.Bytes()),
+				}
+
+				n.kafkaProducer.SendMessage(message)
+			} else {
+				for _, session := range n.sessions {
 					session.events <- buffer.String()
 				}
-			}()
+			}
 
 		case <-n.close:
 

@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/net/websocket"
 
+	"github.com/Shopify/sarama"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 
@@ -20,7 +21,7 @@ import (
 
 func TestPushServer_newPushServer(t *testing.T) {
 
-	Convey("Given I create a new EventServer", t, func() {
+	Convey("Given I create a new PushServer", t, func() {
 
 		srv := newPushServer("fake", bone.New(), nil)
 
@@ -60,11 +61,11 @@ func TestSession_registerSession(t *testing.T) {
 	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
 		var d []byte
 		websocket.Message.Receive(ws, &d)
-		ws.Write(d)
+		websocket.Message.Send(ws, d)
 	}))
 	defer ts.Close()
 
-	Convey("Given I have an EventServer and no registered session", t, func() {
+	Convey("Given I have an PushServer and no registered session", t, func() {
 
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
@@ -89,7 +90,7 @@ func TestSession_registerSession(t *testing.T) {
 		})
 	})
 
-	Convey("Given I have an EventServer and a registered session", t, func() {
+	Convey("Given I have an PushServer and a registered session", t, func() {
 
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
@@ -120,14 +121,10 @@ func TestSession_registerSession(t *testing.T) {
 
 func TestSession_startStop(t *testing.T) {
 
-	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-		var d []byte
-		websocket.Message.Receive(ws, &d)
-		ws.Write(d)
-	}))
+	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
 	defer ts.Close()
 
-	Convey("Given I have a started EventServer with a session", t, func() {
+	Convey("Given I have a started PushServer with a session", t, func() {
 
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
@@ -156,16 +153,51 @@ func TestSession_startStop(t *testing.T) {
 	})
 }
 
+func TestSession_HandleConnection(t *testing.T) {
+
+	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+		var d []byte
+		websocket.Message.Receive(ws, &d)
+		websocket.Message.Send(ws, d)
+	}))
+	defer ts.Close()
+
+	Convey("Given I create a new PushServer", t, func() {
+
+		srv := newPushServer("fake", bone.New(), nil)
+		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
+		defer ws.Close()
+
+		Convey("When call handleConnection", func() {
+
+			go srv.handleConnection(ws)
+
+			var registered bool
+			select {
+			case <-srv.register:
+				registered = true
+				break
+			case <-time.After(300 * time.Millisecond):
+				break
+			}
+
+			Convey("Then a new session should be registered", func() {
+				So(registered, ShouldBeTrue)
+			})
+		})
+	})
+}
+
 func TestSession_PushEvents(t *testing.T) {
 
-	Convey("Given I create a new EventServer with no kafka info", t, func() {
+	Convey("Given I create a new PushServer", t, func() {
 
 		srv := newPushServer("fake", bone.New(), nil)
 
 		Convey("When I push an event", func() {
 
 			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
-			go func() { srv.pushEvents(inEvent) }()
+			go srv.pushEvents(inEvent)
 
 			var outEvent *elemental.Event
 			select {
@@ -175,8 +207,35 @@ func TestSession_PushEvents(t *testing.T) {
 				break
 			}
 
-			Convey("Then the event should be sent throught the local channel", func() {
+			Convey("Then the event should be sent throught the event channel", func() {
 				So(outEvent, ShouldEqual, inEvent)
+			})
+		})
+	})
+}
+
+func TestSession_GlobalEvents(t *testing.T) {
+
+	Convey("Given I have a started PushServer a session", t, func() {
+
+		broker := sarama.NewMockBroker(t, 1)
+		metadataResponse := new(sarama.MetadataResponse)
+		metadataResponse.AddBroker(broker.Addr(), broker.BrokerID())
+		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
+		broker.Returns(metadataResponse)
+		defer broker.Close()
+
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
+		srv := newPushServer("fake", bone.New(), config)
+
+		go srv.start()
+
+		Convey("When push an event", func() {
+
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
+
+			Convey("Then kafka should have received the message", func() {
+				So(len(broker.History()), ShouldEqual, 1)
 			})
 		})
 	})
@@ -191,7 +250,7 @@ func TestSession_LocalEvents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	Convey("Given I have a started EventServer a session", t, func() {
+	Convey("Given I have a started PushServer a session", t, func() {
 
 		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws1.Close()

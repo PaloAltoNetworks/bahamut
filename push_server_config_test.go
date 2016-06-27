@@ -63,6 +63,7 @@ func TestKakfaInfo_makeProducer(t *testing.T) {
 		metadataResponse.AddBroker(broker.Addr(), broker.BrokerID())
 		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
 		broker.Returns(metadataResponse)
+		defer broker.Close()
 
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
@@ -100,6 +101,7 @@ func TestKakfaInfo_makeConsumer(t *testing.T) {
 		metadataResponse.AddBroker(broker.Addr(), broker.BrokerID())
 		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
 		broker.Returns(metadataResponse)
+		defer broker.Close()
 
 		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
