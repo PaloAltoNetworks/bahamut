@@ -11,33 +11,33 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestKakfaInfo_NewKafkaInfo(t *testing.T) {
+func TestKakfaInfo_NewPushServerConfig(t *testing.T) {
 
 	Convey("Given I create have a new kafka info", t, func() {
 
-		kafkaInfo := NewKafkaInfo([]string{":1234"}, "topic")
+		pushServerConfig := NewPushServerConfig([]string{":1234"}, "topic")
 
 		Convey("Then the kafka info should have the address set", func() {
-			So(len(kafkaInfo.Addresses), ShouldEqual, 1)
-			So(kafkaInfo.Addresses[0], ShouldEqual, ":1234")
+			So(len(pushServerConfig.Addresses), ShouldEqual, 1)
+			So(pushServerConfig.Addresses[0], ShouldEqual, ":1234")
 		})
 
 		Convey("Then the kafka info should have the topic set", func() {
-			So(kafkaInfo.Topic, ShouldEqual, "topic")
+			So(pushServerConfig.Topic, ShouldEqual, "topic")
 		})
 	})
 
 	Convey("Given I create have a new kafka info with an empty address array", t, func() {
 
 		Convey("Then it should panic ", func() {
-			So(func() { NewKafkaInfo([]string{}, "topic") }, ShouldPanic)
+			So(func() { NewPushServerConfig([]string{}, "topic") }, ShouldPanic)
 		})
 	})
 
 	Convey("Given I create have a new kafka info with an empty topic", t, func() {
 
 		Convey("Then it should panic ", func() {
-			So(func() { NewKafkaInfo([]string{":1234"}, "") }, ShouldPanic)
+			So(func() { NewPushServerConfig([]string{":1234"}, "") }, ShouldPanic)
 		})
 	})
 }
@@ -46,10 +46,10 @@ func TestKakfaInfo_String(t *testing.T) {
 
 	Convey("Given I create have a new kafka info", t, func() {
 
-		KafkaInfo := NewKafkaInfo([]string{"127.0.0.1:1234", "127.0.0.1:1235"}, "topic")
+		config := NewPushServerConfig([]string{"127.0.0.1:1234", "127.0.0.1:1235"}, "topic")
 
 		Convey("Then the string representation should be correct", func() {
-			So(KafkaInfo.String(), ShouldEqual, "<kafkaInfo addresses: [127.0.0.1:1234 127.0.0.1:1235] topic: topic>")
+			So(config.String(), ShouldEqual, "<PushServerConfig addresses: [127.0.0.1:1234 127.0.0.1:1235] topic: topic>")
 		})
 	})
 }
@@ -64,11 +64,11 @@ func TestKakfaInfo_makeProducer(t *testing.T) {
 		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
 		broker.Returns(metadataResponse)
 
-		KafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
 		Convey("When I make a producer", func() {
 
-			p := KafkaInfo.makeProducer()
+			p := config.makeProducer()
 
 			Convey("Then the producer should be correctly set", func() {
 				So(p, ShouldNotBeNil)
@@ -78,11 +78,11 @@ func TestKakfaInfo_makeProducer(t *testing.T) {
 
 	Convey("Given I create have a new kafka info with no kafka server listen", t, func() {
 
-		KafkaInfo := NewKafkaInfo([]string{":1234"}, "topic")
+		config := NewPushServerConfig([]string{":1234"}, "topic")
 
 		Convey("When I make a producer", func() {
 
-			p := KafkaInfo.makeProducer()
+			p := config.makeProducer()
 
 			Convey("Then the producer should be nil", func() {
 				So(p, ShouldBeNil)
@@ -101,11 +101,11 @@ func TestKakfaInfo_makeConsumer(t *testing.T) {
 		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
 		broker.Returns(metadataResponse)
 
-		KafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
 		Convey("When I make a consumer", func() {
 
-			p := KafkaInfo.makeConsumer()
+			p := config.makeConsumer()
 
 			Convey("Then the consumer should be correctly set", func() {
 				So(p, ShouldNotBeNil)
@@ -115,11 +115,11 @@ func TestKakfaInfo_makeConsumer(t *testing.T) {
 
 	Convey("Given I create have a new kafka info with no kafka server listen", t, func() {
 
-		KafkaInfo := NewKafkaInfo([]string{":1234"}, "topic")
+		config := NewPushServerConfig([]string{":1234"}, "topic")
 
 		Convey("When I make a producer", func() {
 
-			p := KafkaInfo.makeConsumer()
+			p := config.makeConsumer()
 
 			Convey("Then the consumer should be nil", func() {
 				So(p, ShouldBeNil)

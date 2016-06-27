@@ -44,7 +44,7 @@ type Bahamut struct {
 }
 
 // NewBahamut creates a new Bahamut.
-func NewBahamut(address string, routes []*Route, kafkaInfo *KafkaInfo, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
+func NewBahamut(address string, routes []*Route, pushConfig *PushServerConfig, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
 
 	mux := bone.New()
 
@@ -55,7 +55,7 @@ func NewBahamut(address string, routes []*Route, kafkaInfo *KafkaInfo, enabledAP
 
 	var pushServer *pushServer
 	if enablePush {
-		pushServer = newPushServer(address, mux, kafkaInfo)
+		pushServer = newPushServer(address, mux, pushConfig)
 	}
 
 	if enableProfiling {

@@ -52,9 +52,9 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
 		})
 
-		KafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), KafkaInfo))
+		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
 
 		Convey("When I listen for kafka messages", func() {
 			go session.listenToKafkaMessages()
@@ -109,9 +109,9 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 				SetLeader("topic", 0, broker.BrokerID()),
 			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
 		})
-		KafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), KafkaInfo))
+		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -185,9 +185,9 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 				SetLeader("topic", 0, broker.BrokerID()),
 			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
 		})
-		KafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		PushServerConfig := NewPushServerConfig([]string{broker.Addr()}, "topic")
 		ws := &websocket.Conn{}
-		session := newSession(ws, newPushServer("fake", bone.New(), KafkaInfo))
+		session := newSession(ws, newPushServer("fake", bone.New(), PushServerConfig))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -383,7 +383,7 @@ func TestSession_listen(t *testing.T) {
 			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
 				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
 		})
-		kafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
 
 		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
 		defer ts.Close()
@@ -391,7 +391,7 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newSession(ws, newPushServer("fake", bone.New(), kafkaInfo))
+		session := newSession(ws, newPushServer("fake", bone.New(), config))
 
 		c := make(chan bool, 1)
 		go func() {

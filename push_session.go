@@ -14,25 +14,25 @@ import (
 
 // pushSession represents a client session.
 type pushSession struct {
-	events    chan string
-	id        string
-	kafkaInfo *KafkaInfo
-	server    *pushServer
-	socket    *websocket.Conn
-	stop      chan bool
-	out       chan []byte
+	events           chan string
+	id               string
+	pushServerConfig *PushServerConfig
+	server           *pushServer
+	socket           *websocket.Conn
+	stop             chan bool
+	out              chan []byte
 }
 
 func newSession(ws *websocket.Conn, server *pushServer) *pushSession {
 
 	return &pushSession{
-		events:    make(chan string),
-		id:        uuid.NewV4().String(),
-		kafkaInfo: server.kafkaInfo,
-		server:    server,
-		socket:    ws,
-		stop:      make(chan bool, 1),
-		out:       make(chan []byte),
+		events:           make(chan string),
+		id:               uuid.NewV4().String(),
+		pushServerConfig: server.config,
+		server:           server,
+		socket:           ws,
+		stop:             make(chan bool, 1),
+		out:              make(chan []byte),
 	}
 }
 
@@ -84,7 +84,7 @@ func (s *pushSession) listen() {
 	go s.read()
 	go s.write()
 
-	if s.kafkaInfo != nil {
+	if s.pushServerConfig != nil {
 		s.listenToKafkaMessages()
 	} else {
 		s.listenToLocalMessages()
@@ -94,10 +94,10 @@ func (s *pushSession) listen() {
 // continuously listens for new kafka messages
 func (s *pushSession) listenToKafkaMessages() error {
 
-	kafkaConsumer := s.kafkaInfo.makeConsumer()
-	defer kafkaConsumer.Close()
+	consumer := s.pushServerConfig.makeConsumer()
+	defer consumer.Close()
 
-	parititionConsumer, err := kafkaConsumer.ConsumePartition(s.kafkaInfo.Topic, 0, sarama.OffsetNewest)
+	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.Topic, 0, sarama.OffsetNewest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"session": s,

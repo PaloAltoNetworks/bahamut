@@ -24,11 +24,11 @@ type pushServer struct {
 	events        chan *elemental.Event
 	close         chan bool
 	multiplexer   *bone.Mux
-	kafkaInfo     *KafkaInfo
+	config        *PushServerConfig
 	kafkaProducer sarama.SyncProducer
 }
 
-func newPushServer(address string, multiplexer *bone.Mux, kafkaInfo *KafkaInfo) *pushServer {
+func newPushServer(address string, multiplexer *bone.Mux, config *PushServerConfig) *pushServer {
 
 	srv := &pushServer{
 		address:     address,
@@ -38,7 +38,7 @@ func newPushServer(address string, multiplexer *bone.Mux, kafkaInfo *KafkaInfo) 
 		close:       make(chan bool),
 		events:      make(chan *elemental.Event),
 		multiplexer: multiplexer,
-		kafkaInfo:   kafkaInfo,
+		config:      config,
 	}
 
 	srv.multiplexer.Handle("/events", websocket.Handler(srv.handleConnection))
@@ -89,7 +89,7 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 		}
 
 		message := &sarama.ProducerMessage{
-			Topic: n.kafkaInfo.Topic,
+			Topic: n.config.Topic,
 			Key:   sarama.StringEncoder("namespace=default"),
 			Value: sarama.ByteEncoder(buffer.Bytes()),
 		}
@@ -101,13 +101,13 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 // starts the push server
 func (n *pushServer) start() {
 
-	if n.kafkaInfo != nil {
-		n.kafkaProducer = n.kafkaInfo.makeProducer()
+	if n.config != nil {
+		n.kafkaProducer = n.config.makeProducer()
 
 		defer n.kafkaProducer.Close()
 
 		log.WithFields(log.Fields{
-			"info": n.kafkaInfo,
+			"config": n.config,
 		}).Info("global push system is active")
 	} else {
 		log.Warn("global push system is inactive")

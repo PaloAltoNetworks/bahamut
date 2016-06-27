@@ -11,30 +11,30 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// KafkaInfo represents Redis connection information
-type KafkaInfo struct {
+// PushServerConfig represents Redis connection information
+type PushServerConfig struct {
 	Addresses []string
 	Topic     string
 }
 
-// NewKafkaInfo returns a new RedisInfo
-func NewKafkaInfo(addresses []string, topic string) *KafkaInfo {
+// NewPushServerConfig returns a new RedisInfo
+func NewPushServerConfig(addresses []string, topic string) *PushServerConfig {
 
 	if len(addresses) < 1 {
-		panic("at least one address should be provided to KafkaInfo")
+		panic("at least one address should be provided to PushServerConfig")
 	}
 
 	if topic == "" {
-		panic("a valid topic should be provided to KafkaInfo")
+		panic("a valid topic should be provided to PushServerConfig")
 	}
 
-	return &KafkaInfo{
+	return &PushServerConfig{
 		Addresses: addresses,
 		Topic:     topic,
 	}
 }
 
-func (k *KafkaInfo) makeProducer() sarama.SyncProducer {
+func (k *PushServerConfig) makeProducer() sarama.SyncProducer {
 
 	producer, err := sarama.NewSyncProducer(k.Addresses, nil)
 	if err != nil {
@@ -49,7 +49,7 @@ func (k *KafkaInfo) makeProducer() sarama.SyncProducer {
 	return producer
 }
 
-func (k *KafkaInfo) makeConsumer() sarama.Consumer {
+func (k *PushServerConfig) makeConsumer() sarama.Consumer {
 
 	consumer, err := sarama.NewConsumer(k.Addresses, nil)
 	if err != nil {
@@ -64,7 +64,7 @@ func (k *KafkaInfo) makeConsumer() sarama.Consumer {
 	return consumer
 }
 
-func (k *KafkaInfo) String() string {
+func (k *PushServerConfig) String() string {
 
-	return fmt.Sprintf("<kafkaInfo addresses: %v topic: %s>", k.Addresses, k.Topic)
+	return fmt.Sprintf("<PushServerConfig addresses: %v topic: %s>", k.Addresses, k.Topic)
 }
