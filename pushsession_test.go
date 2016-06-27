@@ -315,3 +315,123 @@ func TestSession_read(t *testing.T) {
 		})
 	})
 }
+
+func TestSession_listen(t *testing.T) {
+
+	Convey("Given I create a session with a websocket and not kafka info", t, func() {
+
+		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
+		defer ts.Close()
+
+		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
+		defer ws.Close()
+
+		session := newSession(ws, newPushServer("fake", bone.New(), nil))
+
+		c := make(chan bool, 1)
+		go func() {
+			session.listen()
+			c <- true
+		}()
+
+		Convey("When I keep it alive", func() {
+
+			var returned bool
+			select {
+			case returned = <-c:
+			case <-time.After(3 * time.Millisecond):
+				break
+			}
+
+			Convey("Then the function should not return", func() {
+				So(returned, ShouldBeFalse)
+			})
+		})
+
+		Convey("When I close it", func() {
+
+			session.close()
+
+			var returned bool
+		LOOP:
+			for {
+				select {
+				case <-session.server.unregister:
+				case returned = <-c:
+					break LOOP
+				case <-time.After(3 * time.Millisecond):
+					break LOOP
+				}
+			}
+
+			Convey("Then the function should return", func() {
+				So(returned, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given I create a session with a websocket and kafka info and run listen", t, func() {
+
+		broker := sarama.NewMockBroker(t, 1)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+			"OffsetRequest": sarama.NewMockOffsetResponse(t).
+				SetOffset("topic", 0, sarama.OffsetOldest, 0).
+				SetOffset("topic", 0, sarama.OffsetNewest, 0),
+			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
+				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
+		})
+		kafkaInfo := NewKafkaInfo([]string{broker.Addr()}, "topic")
+
+		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
+		defer ts.Close()
+
+		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
+		defer ws.Close()
+
+		session := newSession(ws, newPushServer("fake", bone.New(), kafkaInfo))
+
+		c := make(chan bool, 1)
+		go func() {
+			session.listen()
+			c <- true
+		}()
+
+		Convey("When I keep it alive", func() {
+
+			var returned bool
+			select {
+			case returned = <-c:
+			case <-time.After(3 * time.Millisecond):
+				break
+			}
+
+			Convey("Then the function should not return", func() {
+				So(returned, ShouldBeFalse)
+			})
+		})
+
+		Convey("When I close it", func() {
+
+			session.close()
+
+			var returned bool
+		LOOP:
+			for {
+				select {
+				case <-session.server.unregister:
+				case returned = <-c:
+					break LOOP
+				case <-time.After(3 * time.Millisecond):
+					break LOOP
+				}
+			}
+
+			Convey("Then the function should return", func() {
+				So(returned, ShouldBeTrue)
+			})
+		})
+	})
+}

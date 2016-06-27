@@ -129,7 +129,8 @@ func (n *pushServer) start() {
 			n.sessions[session.id] = session
 
 			log.WithFields(log.Fields{
-				"total": len(n.sessions),
+				"total":  len(n.sessions),
+				"client": session.socket.RemoteAddr(),
 			}).Info("started push session")
 
 		case session := <-n.unregister:
