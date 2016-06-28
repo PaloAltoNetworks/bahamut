@@ -5,11 +5,22 @@ import (
 	"github.com/docopt/docopt-go"
 
 	"github.com/aporeto-inc/bahamut"
+	"github.com/aporeto-inc/elemental"
 
 	"github.com/aporeto-inc/bahamut/example/server/models"
 	"github.com/aporeto-inc/bahamut/example/server/processors"
 	"github.com/aporeto-inc/bahamut/example/server/routes"
 )
+
+type mySessionHandler struct{}
+
+func (h *mySessionHandler) OnPushSessionStart(session *bahamut.PushSession) {}
+func (h *mySessionHandler) OnPushSessionStop(session *bahamut.PushSession)  {}
+func (h *mySessionHandler) ShouldPush(session *bahamut.PushSession, event *elemental.Event) bool {
+
+	info := event.Entity.(map[string]interface{})
+	return info["name"] != "ignore"
+}
 
 func main() {
 
@@ -70,7 +81,7 @@ Options:
 		address = arguments["--listen"].(string)
 	}
 
-	pushConfig := bahamut.NewPushServerConfig([]string{"127.0.0.1:9092"}, "bahamut")
+	pushConfig := bahamut.MakePushServerConfig([]string{"127.0.0.1:9092"}, "bahamut", &mySessionHandler{})
 	server := bahamut.NewBahamut(address, routes.Routes(), pushConfig, apiEnabled, pushEnabled, profilingEnabled)
 	server.RegisterProcessor(processors.NewListProcessor(), models.ListIdentity)
 	server.RegisterProcessor(processors.NewTaskProcessor(), models.TaskIdentity)

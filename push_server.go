@@ -24,11 +24,11 @@ type pushServer struct {
 	events        chan *elemental.Event
 	close         chan bool
 	multiplexer   *bone.Mux
-	config        *PushServerConfig
+	config        PushServerConfig
 	kafkaProducer sarama.SyncProducer
 }
 
-func newPushServer(address string, multiplexer *bone.Mux, config *PushServerConfig) *pushServer {
+func newPushServer(address string, multiplexer *bone.Mux, config PushServerConfig) *pushServer {
 
 	srv := &pushServer{
 		address:     address,
@@ -78,21 +78,21 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 // starts the push server
 func (n *pushServer) start() {
 
-	if n.config != nil {
+	log.WithFields(log.Fields{
+		"endpoint": n.address + "/events",
+	}).Info("starting event server")
+
+	if n.config.HasKafka() {
 		n.kafkaProducer = n.config.makeProducer()
 
 		defer n.kafkaProducer.Close()
 
 		log.WithFields(log.Fields{
-			"config": n.config,
+			"producer": n.kafkaProducer,
 		}).Info("global push system is active")
 	} else {
 		log.Warn("global push system is inactive")
 	}
-
-	log.WithFields(log.Fields{
-		"endpoint": n.address + "/events",
-	}).Info("starting event server")
 
 	for {
 		select {
@@ -110,6 +110,10 @@ func (n *pushServer) start() {
 				"client": session.socket.RemoteAddr(),
 			}).Info("started push session")
 
+			if handler := n.config.sessionsHandler; handler != nil {
+				handler.OnPushSessionStart(session)
+			}
+
 		case session := <-n.unregister:
 
 			if _, ok := n.sessions[session.id]; !ok {
@@ -123,7 +127,12 @@ func (n *pushServer) start() {
 				"client": session.socket.RemoteAddr(),
 			}).Info("closed session")
 
+			if handler := n.config.sessionsHandler; handler != nil {
+				handler.OnPushSessionStop(session)
+			}
+
 		case event := <-n.events:
+
 			buffer := &bytes.Buffer{}
 			if err := json.NewEncoder(buffer).Encode(event); err != nil {
 				log.WithFields(log.Fields{

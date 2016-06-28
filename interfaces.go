@@ -4,6 +4,8 @@
 
 package bahamut
 
+import "github.com/aporeto-inc/elemental"
+
 // Processor is the interface for a Processor Unit
 type Processor interface{}
 
@@ -52,8 +54,9 @@ type Authorizer interface {
 	IsAuthorized() (bool, error)
 }
 
-// PushSessionHandler is the interface used to handle sessions lyfecycle
-type PushSessionHandler interface {
-	OnSessionStart(PushSession)
-	OnSessionStop(PushSession)
+// PushSessionsHandler is the interface used to handle sessions lyfecycle
+type PushSessionsHandler interface {
+	OnPushSessionStart(*PushSession)
+	OnPushSessionStop(*PushSession)
+	ShouldPush(*PushSession, *elemental.Event) bool
 }

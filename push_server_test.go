@@ -23,7 +23,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), nil)
+		srv := newPushServer("fake", bone.New(), PushServerConfig{})
 
 		Convey("Then address should be set", func() {
 			So(srv.address, ShouldEqual, "fake")
@@ -55,7 +55,6 @@ func TestPushServer_newPushServer(t *testing.T) {
 	})
 }
 
-//
 func TestSession_registerSession(t *testing.T) {
 
 	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
@@ -70,7 +69,8 @@ func TestSession_registerSession(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New(), nil)
+		handler := &testSessionHandler{}
+		srv := newPushServer("fake", bone.New(), MakePushServerConfig([]string{}, "", handler))
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -79,13 +79,14 @@ func TestSession_registerSession(t *testing.T) {
 		Convey("When I register a session", func() {
 
 			srv.registerSession(session)
-			time.Sleep(300 * time.Millisecond)
-
 			srv.registerSession(session)
-			time.Sleep(300 * time.Millisecond)
 
 			Convey("Then there should be 1 registered session", func() {
 				So(len(srv.sessions), ShouldEqual, 1)
+			})
+
+			Convey("Then my session handler should have one registered session", func() {
+				So(handler.sessionCount, ShouldEqual, 1)
 			})
 		})
 	})
@@ -95,25 +96,26 @@ func TestSession_registerSession(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New(), nil)
+		handler := &testSessionHandler{}
+		srv := newPushServer("fake", bone.New(), MakePushServerConfig([]string{}, "", handler))
 		session := newPushSession(ws, srv)
 
 		go srv.start()
 		defer srv.stop()
 
 		srv.registerSession(session)
-		time.Sleep(300 * time.Millisecond)
 
 		Convey("When I unregister a registered session", func() {
 
 			srv.unregisterSession(session)
-			time.Sleep(300 * time.Millisecond)
-
 			srv.unregisterSession(session)
-			time.Sleep(300 * time.Millisecond)
 
 			Convey("Then there should be 0 registered session", func() {
 				So(len(srv.sessions), ShouldEqual, 0)
+			})
+
+			Convey("Then my session handler should have zero registered session", func() {
+				So(handler.sessionCount, ShouldEqual, 0)
 			})
 		})
 	})
@@ -129,7 +131,7 @@ func TestSession_startStop(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New(), nil)
+		srv := newPushServer("fake", bone.New(), PushServerConfig{})
 		session := newPushSession(ws, srv)
 
 		var wg sync.WaitGroup
@@ -164,7 +166,7 @@ func TestSession_HandleConnection(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), nil)
+		srv := newPushServer("fake", bone.New(), PushServerConfig{})
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -192,7 +194,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), nil)
+		srv := newPushServer("fake", bone.New(), PushServerConfig{})
 
 		Convey("When I push an event", func() {
 
@@ -225,7 +227,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 		broker.Returns(metadataResponse)
 		defer broker.Close()
 
-		config := NewPushServerConfig([]string{broker.Addr()}, "topic")
+		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
 		srv := newPushServer("fake", bone.New(), config)
 
 		go srv.start()
@@ -255,7 +257,7 @@ func TestSession_LocalEvents(t *testing.T) {
 		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws1.Close()
 
-		srv := newPushServer("fake", bone.New(), nil)
+		srv := newPushServer("fake", bone.New(), PushServerConfig{})
 		session1 := newPushSession(ws1, srv)
 
 		go srv.start()

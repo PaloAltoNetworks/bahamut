@@ -5,7 +5,11 @@
 package bahamut
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
 
@@ -16,11 +20,12 @@ import (
 type PushSession struct {
 	events           chan string
 	id               string
-	pushServerConfig *PushServerConfig
+	pushServerConfig PushServerConfig
 	server           *pushServer
 	socket           *websocket.Conn
 	stop             chan bool
-	out              chan []byte
+	out              chan string
+	UserInfo         interface{}
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
@@ -32,8 +37,14 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 		server:           server,
 		socket:           ws,
 		stop:             make(chan bool, 1),
-		out:              make(chan []byte),
+		out:              make(chan string),
 	}
+}
+
+// Identifier returns the identifier of the push session
+func (s *PushSession) Identifier() string {
+
+	return s.id
 }
 
 // continuously read data from the websocket
@@ -65,9 +76,27 @@ func (s *PushSession) write() {
 }
 
 // send given bytes to the websocket
-func (s *PushSession) send(message []byte) {
+func (s *PushSession) send(message string) error {
+
+	if s.server.config.sessionsHandler != nil {
+
+		var event *elemental.Event
+		if err := json.NewDecoder(strings.NewReader(message)).Decode(&event); err != nil {
+			log.WithFields(log.Fields{
+				"session": s,
+				"message": message,
+			}).Error("unable to decode event")
+			return err
+		}
+
+		if !s.server.config.sessionsHandler.ShouldPush(s, event) {
+			return nil
+		}
+	}
 
 	s.out <- message
+
+	return nil
 }
 
 // force close the current socket
@@ -84,7 +113,7 @@ func (s *PushSession) listen() {
 	go s.read()
 	go s.write()
 
-	if s.pushServerConfig != nil {
+	if s.pushServerConfig.HasKafka() {
 		s.listenToKafkaMessages()
 	} else {
 		s.listenToLocalMessages()
@@ -110,7 +139,7 @@ func (s *PushSession) listenToKafkaMessages() error {
 	for {
 		select {
 		case message := <-parititionConsumer.Messages():
-			s.send(message.Value)
+			s.send(string(message.Value))
 		case <-s.stop:
 			s.server.unregisterSession(s)
 			return nil
@@ -124,7 +153,7 @@ func (s *PushSession) listenToLocalMessages() error {
 	for {
 		select {
 		case message := <-s.events:
-			s.send([]byte(message))
+			s.send(message)
 		case <-s.stop:
 			s.server.unregisterSession(s)
 			return nil

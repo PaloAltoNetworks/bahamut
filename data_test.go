@@ -152,3 +152,16 @@ func (o *UnmarshalableList) Validate() elemental.Errors { return nil }
 type Auth struct{}
 
 func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) { return true, nil }
+
+type testSessionHandler struct {
+	sessionCount int
+	shouldCalls  int
+	block        bool
+}
+
+func (h *testSessionHandler) OnPushSessionStart(session *PushSession) { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *PushSession)  { h.sessionCount-- }
+func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) bool {
+	h.shouldCalls++
+	return !h.block
+}

@@ -44,7 +44,7 @@ type Bahamut struct {
 }
 
 // NewBahamut creates a new Bahamut.
-func NewBahamut(address string, routes []*Route, pushConfig *PushServerConfig, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
+func NewBahamut(address string, routes []*Route, pushConfig PushServerConfig, enabledAPI, enablePush, enableProfiling bool) *Bahamut {
 
 	mux := bone.New()
 

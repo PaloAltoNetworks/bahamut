@@ -13,30 +13,32 @@ import (
 
 // PushServerConfig represents Redis connection information
 type PushServerConfig struct {
-	Addresses     []string
-	DefaultTopic  string
-	Authorizer    Authorizer
-	Authenticator Authenticator
+	Addresses       []string
+	DefaultTopic    string
+	Authorizer      Authorizer
+	Authenticator   Authenticator
+	sessionsHandler PushSessionsHandler
 }
 
-// NewPushServerConfig returns a new RedisInfo
-func NewPushServerConfig(addresses []string, defaultTopic string) *PushServerConfig {
+// MakePushServerConfig returns a new RedisInfo
+func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandler PushSessionsHandler) PushServerConfig {
 
-	if len(addresses) < 1 {
-		panic("at least one address should be provided to PushServerConfig")
+	if len(addresses) > 0 && defaultTopic == "" {
+		panic("you must pass a default topic if you provide kafka addresses")
 	}
 
-	if defaultTopic == "" {
-		panic("a valid default topic should be provided to PushServerConfig")
+	if len(addresses) == 0 && defaultTopic != "" {
+		panic("you must pass at least one kafka address if you provide default topic")
 	}
 
-	return &PushServerConfig{
-		Addresses:    addresses,
-		DefaultTopic: defaultTopic,
+	return PushServerConfig{
+		Addresses:       addresses,
+		DefaultTopic:    defaultTopic,
+		sessionsHandler: sessionsHandler,
 	}
 }
 
-func (k *PushServerConfig) makeProducer() sarama.SyncProducer {
+func (k PushServerConfig) makeProducer() sarama.SyncProducer {
 
 	producer, err := sarama.NewSyncProducer(k.Addresses, nil)
 	if err != nil {
@@ -51,7 +53,7 @@ func (k *PushServerConfig) makeProducer() sarama.SyncProducer {
 	return producer
 }
 
-func (k *PushServerConfig) makeConsumer() sarama.Consumer {
+func (k PushServerConfig) makeConsumer() sarama.Consumer {
 
 	consumer, err := sarama.NewConsumer(k.Addresses, nil)
 	if err != nil {
@@ -66,7 +68,13 @@ func (k *PushServerConfig) makeConsumer() sarama.Consumer {
 	return consumer
 }
 
-func (k *PushServerConfig) String() string {
+// HasKafka returns true is the PushServerConfig has Kafka server information
+func (k PushServerConfig) HasKafka() bool {
+
+	return len(k.Addresses) > 0
+}
+
+func (k PushServerConfig) String() string {
 
 	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.Addresses, k.DefaultTopic)
 }
