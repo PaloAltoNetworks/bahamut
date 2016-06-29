@@ -42,11 +42,6 @@ apoinit:
 	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apoinit && popd;)
 	@echo "# Running apoinit in" $(PWD)
 	go get ./...
-	go get github.com/smartystreets/goconvey/convey
-	go get github.com/aporeto-inc/kennebec
-	go get github.com/golang/mock/gomock
-	go get github.com/golang/lint/golint
-	go get golang.org/x/tools/cmd/goimports
 	@if [ -f glide.lock ]; then glide install && glide update; fi
 
 
@@ -91,30 +86,19 @@ apoclean_apomock:
 PROJECT_OWNER?=github.com/aporeto-inc
 PROJECT_NAME?=my-super-project
 BUILD_NUMBER?=latest
-GITHUB_TOKEN?=
 
 define DOCKER_FILE
-FROM golang:1.6
-
+FROM 926088932149.dkr.ecr.us-west-2.amazonaws.com/domingo
 MAINTAINER Antoine Mercadal <antoine@aporeto.com>
-
-ARG GITHUB_TOKEN
-
 ADD . /go/src/$(PROJECT_OWNER)/$(PROJECT_NAME)
-
-RUN wget https://github.com/Masterminds/glide/releases/download/0.10.2/glide-0.10.2-linux-amd64.tar.gz > /dev/null 2>&1
-RUN tar -xzf glide-*.tar.gz && cp linux-amd64/glide /go/bin/ && rm -rf linux-amd64 glide-*-.tar.gz
-RUN git config --global url."https://$$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
 WORKDIR /go/src/$(PROJECT_OWNER)/$(PROJECT_NAME)
-CMD make init && make test && make release
 endef
 export DOCKER_FILE
 
 
 create_build_container:
 	echo "$$DOCKER_FILE" > .dockerfile-test
-	docker build --file .dockerfile-test --build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
+	docker build --file .dockerfile-test -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 
 run_build_container:
 	docker run --rm $(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
