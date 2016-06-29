@@ -11,7 +11,7 @@
 MAKEFLAGS += --warn-undefined-variables
 SHELL := /bin/bash
 
-APOMOCK_FOLDER := .domingomock
+APOMOCK_FOLDER := .apomock
 APOMOCK_PACKAGES := $(shell if [ -f .apo.mock ]; then cat .apo.mock; fi)
 NOVENDOR := $(shell glide novendor)
 
