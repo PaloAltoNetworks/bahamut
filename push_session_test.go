@@ -67,7 +67,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 			var message string
 			select {
 			case message = <-session.out:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -92,7 +92,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 				case returned = <-c:
 					break LOOP
 				case <-session.server.unregister:
-				case <-time.After(3 * time.Millisecond):
+				case <-time.After(300 * time.Millisecond):
 					break LOOP
 				}
 			}
@@ -145,7 +145,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 			var message string
 			select {
 			case message = <-session.out:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -170,7 +170,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 				case returned = <-c:
 					break LOOP
 				case <-session.server.unregister:
-				case <-time.After(3 * time.Millisecond):
+				case <-time.After(300 * time.Millisecond):
 					break LOOP
 				}
 			}
@@ -226,7 +226,7 @@ func TestSession_send(t *testing.T) {
 			case <-session.out:
 				processed = true
 				break
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -245,7 +245,7 @@ func TestSession_send(t *testing.T) {
 			case <-session.out:
 				processed = true
 				break
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -309,7 +309,7 @@ func TestSession_write(t *testing.T) {
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -332,7 +332,7 @@ func TestSession_write(t *testing.T) {
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -371,7 +371,7 @@ func TestSession_read(t *testing.T) {
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -405,7 +405,7 @@ func TestSession_listen(t *testing.T) {
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -425,7 +425,7 @@ func TestSession_listen(t *testing.T) {
 				case <-session.server.unregister:
 				case returned = <-c:
 					break LOOP
-				case <-time.After(3 * time.Millisecond):
+				case <-time.After(300 * time.Millisecond):
 					break LOOP
 				}
 			}
@@ -472,7 +472,7 @@ func TestSession_listen(t *testing.T) {
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(3 * time.Millisecond):
+			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
@@ -492,7 +492,7 @@ func TestSession_listen(t *testing.T) {
 				case <-session.server.unregister:
 				case returned = <-c:
 					break LOOP
-				case <-time.After(3 * time.Millisecond):
+				case <-time.After(300 * time.Millisecond):
 					break LOOP
 				}
 			}
