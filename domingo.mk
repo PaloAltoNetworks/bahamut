@@ -11,7 +11,7 @@
 MAKEFLAGS += --warn-undefined-variables
 SHELL := /bin/bash
 
-APOMOCK_FOLDER := .apomock
+APOMOCK_FOLDER := .domingomock
 APOMOCK_PACKAGES := $(shell if [ -f .apo.mock ]; then cat .apo.mock; fi)
 NOVENDOR := $(shell glide novendor)
 
@@ -30,55 +30,59 @@ MOCK_DIRS := $(addprefix ./,$(MOCK_DIRS))
 TEST_DIRS := $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
 TEST_DIRS := $(filter-out $(MOCK_DIRS),$(TEST_DIRS))
 
+GITHUB_TOKEN?=
+
 ## Update
 
-apomakeupdate:
-	@echo "# Running apomakeupdate in" $(PWD)
-	@echo "NOT IMPLEMENTED YET"
+domingoupdate:
+	@echo "# Running domingoupdate in" $(PWD)
+	@echo "REMINDER: you need to export GITHUB_TOKEN for this to work"
+	@curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
+	@echo "domingo.mk updated!"
 
 ## Dependencies
 
-apoinit:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apoinit && popd;)
-	@echo "# Running apoinit in" $(PWD)
+domingoinit:
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingoinit && popd;)
+	@echo "# Running domingoinit in" $(PWD)
 	go get ./...
 	@if [ -f glide.lock ]; then glide install && glide update; fi
 
 
 ## Testing
 
-apotest: apolint apomock
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apotest && popd;)
+domingotest: domingolint domingomock
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingotest && popd;)
 	@echo "# Running test in" $(PWD)
 	[ -z "${TEST_DIRS}" ] || go vet ${TEST_DIRS}
 	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS}
 
-apolint:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apolint && popd;)
+domingolint:
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingolint && popd;)
 	@echo "# Running lint in" $(PWD)
 	golint .
 
-apomock: apoclean_apomock apoclean_vendor
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apomock && popd;)
-	@echo "# Running apomock in" $(PWD)
+domingomock: domingocleanmock domingocleanvendor
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingomock && popd;)
+	@echo "# Running domingomock in" $(PWD)
 	rm -rf ${APOMOCK_FOLDER}
 	mkdir -p ${APOMOCK_FOLDER}
-	touch ${APOMOCK_FOLDER}/apomock.log
-	kennebec --package="${APOMOCK_PACKAGES}" --output-dir=${APOMOCK_FOLDER} -v=4 -logtostderr=true>>${PWD}/${APOMOCK_FOLDER}/apomock.log 2>&1
+	touch ${APOMOCK_FOLDER}/domingomock.log
+	kennebec --package="${APOMOCK_PACKAGES}" --output-dir=${APOMOCK_FOLDER} -v=4 -logtostderr=true>>${PWD}/${APOMOCK_FOLDER}/domingomock.log 2>&1
 	@if [ ! -d vendor ]; then mkdir vendor; fi;
 	@if [ -d ${APOMOCK_FOLDER} ]; then cp -r ${APOMOCK_FOLDER}/* vendor; fi;
 
 
 ## Cleaning
 
-apoclean_vendor:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apoclean_vendor && popd;)
-	@echo "# Running apoclean_vendor in" $(PWD)
+domingocleanvendor:
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingocleanvendor && popd;)
+	@echo "# Running domingocleanvendor in" $(PWD)
 	rm -rf vendor
 
-apoclean_apomock:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make apoclean_apomock && popd;)
-	@echo "# Running apoclean_apomock in" $(PWD)
+domingocleanmock:
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingocleanmock && popd;)
+	@echo "# Running domingocleanmock in" $(PWD)
 	rm -rf ${APOMOCK_FOLDER}
 
 

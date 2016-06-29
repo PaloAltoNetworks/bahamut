@@ -2,9 +2,9 @@ include domingo.mk
 
 PROJECT_NAME := bahamut
 
-clean: apoclean_vendor apoclean_apomock
-init: apoinit
-test: apotest
+clean: domingocleanvendor domingocleanmock
+init: domingoinit
+test: domingotest
 release:
 
 ci: create_build_container run_build_container clean_build_container

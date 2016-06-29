@@ -6,5 +6,5 @@ codegen
 *.pyc
 *.egg-info
 vendor/
-*.apomock
+*.domingomock
 test
