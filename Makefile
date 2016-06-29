@@ -7,4 +7,4 @@ init: apoinit
 test: apotest
 release:
 
-ci: create_test_container run_test_container clean_test_container
+ci: create_build_container run_build_container clean_build_container

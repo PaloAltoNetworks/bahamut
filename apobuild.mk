@@ -112,13 +112,13 @@ endef
 export DOCKER_FILE
 
 
-create_test_container:
+create_build_container:
 	echo "$$DOCKER_FILE" > .dockerfile-test
 	docker build --file .dockerfile-test --build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 
-run_test_container:
+run_build_container:
 	docker run --rm $(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
 
-clean_test_container:
+clean_build_container:
 	docker rmi $(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
 	rm -f .dockerfile-test
