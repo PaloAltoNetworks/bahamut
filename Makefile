@@ -1,4 +1,4 @@
-include apobuild.mk
+include domingo.mk
 
 PROJECT_NAME := bahamut
 
