@@ -75,15 +75,15 @@ domingo_lint:
 domingo_apomock:
 	@$(foreach dir,$(MANAGED_DIRS),pushd $(dir) && make domingo_apomock && popd;)
 	@echo "# Running ApoMock in" $(dir)
-	if [ -f $(APOMOCK_FILE) ]; then make dominingo_init_apomock; fi;
+	if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
 	go test -v -race -cover $(TEST_DIRS) | tee >(go2xunit -fail | tail -n +2 >> $(ROOT_DIR)/testresults.xml)
-	if [ -f $(APOMOCK_FILE) ]; then make dominingo_deinit_apomock; fi;
+	if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi;
 
-dominingo_init_apomock:
+domingo_init_apomock:
 	@make domingo_save_vendor
 	kennebec --package="$(APOMOCK_PACKAGES)" --output-dir=vendor -v=4 -logtostderr=true >> /dev/null 2>&1
 
-dominingo_deinit_apomock:
+domingo_deinit_apomock:
 	@make domingo_restore_vendor
 
 domingo_save_vendor:
