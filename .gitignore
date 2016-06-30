@@ -6,5 +6,4 @@ codegen
 *.pyc
 *.egg-info
 vendor/
-*.domingomock
 testresults.xml
