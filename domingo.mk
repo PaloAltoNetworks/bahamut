@@ -42,7 +42,7 @@ DOCKER_IMAGE_TAG?=$(BUILD_NUMBER)
 ## Update
 
 domingo_update:
-	@echo "# Running domingo_update"
+	@echo "# Updating Domingo..."
 	@echo "REMINDER: you need to export GITHUB_TOKEN for this to work"
 	@curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
 	@echo "domingo.mk updated!"
@@ -53,47 +53,36 @@ domingo_update:
 domingo_init:
 	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_init && popd;)
 	@echo "# Running domingo_init in" $(PWD)
-	go get ./...
-	@if [ -f glide.lock ]; then glide install; fi
+	@if [ -f glide.lock ]; then glide install; else go get ./...; fi
 
 
 ## Testing
-
-domingo_test: domingo_lint domingo_mock
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_test && popd;)
-	@echo "# Running test in" $(PWD)
-	[ -z "${TEST_DIRS}" ] || go vet ${TEST_DIRS}
-	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS}
-	make domingo_clean
 
 domingo_lint:
 	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_lint && popd;)
 	@echo "# Running lint in" $(PWD)
 	golint .
 
-domingo_mock: domingo_clean
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_mock && popd;)
-	@echo "# Running domingo_mock in" $(PWD)
-	mkdir -p ${APOMOCK_FOLDER}
-	touch ${APOMOCK_FOLDER}/apomock.log
+domingo_test: domingo_lint
+	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_test && popd;)
+	@echo "# Running Domingo Tests in" $(PWD)
+	@make domingo_save_vendor
+	mkdir -p ${APOMOCK_FOLDER} vendor
 	kennebec --package="${APOMOCK_PACKAGES}" --output-dir=${APOMOCK_FOLDER} -v=4 -logtostderr=true>>${PWD}/${APOMOCK_FOLDER}/apomock.log 2>&1
-	@if [ ! -d vendor ]; then mkdir vendor; fi;
 	@if [ -d ${APOMOCK_FOLDER} ]; then cp -r ${APOMOCK_FOLDER}/* vendor; fi;
-
-
-## Cleaning
-
-domingo_clean: domingo_clean_vendor domingo_clean_mock
-
-domingo_clean_vendor:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_clean_vendor && popd;)
-	@echo "# Running domingo_clean_vendor in" $(PWD)
-	rm -rf vendor
-
-domingo_clean_mock:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_clean_mock && popd;)
-	@echo "# Running domingo_clean_mock in" $(PWD)
+	@echo "# Running test in" $(PWD)
+	[ -z "${TEST_DIRS}" ] || go vet ${TEST_DIRS}
+	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS}
+	@make domingo_restore_vendor
 	rm -rf ${APOMOCK_FOLDER}
+
+domingo_save_vendor:
+	@echo "# Saving vendor directory in" $(PWD)
+	@if [ -d vendor ]; then cp -a vendor vendor.lock; fi
+
+domingo_restore_vendor:
+	@echo "# Restoring vendor directory in" $(PWD)
+	@if [ -d vendor.lock ]; then rm -rf vendor && mv vendor.lock vendor; else rm -rf vendor; fi
 
 
 ## Docker Test Container
