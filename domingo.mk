@@ -8,29 +8,7 @@
 #
 # ------------------------------------------------
 
-MAKEFLAGS += --warn-undefined-variables
-SHELL := /bin/bash
-
-APOMOCK_FOLDER := .apomock
-APOMOCK_PACKAGES := $(shell if [ -f .apo.mock ]; then cat .apo.mock; fi)
-NOVENDOR := $(shell glide novendor)
-
-DIRS_WITH_MAKEFILES := $(sort $(dir $(wildcard */Makefile)))
-
-# Remove directories which have Makefiles from being tested by top level
-NOTEST_DIRS := $(DIRS_WITH_MAKEFILES)
-NOTEST_DIRS := $(addsuffix ...,$(NOTEST_DIRS))
-NOTEST_DIRS := $(addprefix ./,$(NOTEST_DIRS))
-
-# Remove directories which are mock directories from being tested by top level
-MOCK_DIRS := $(sort $(dir $(wildcard ./mock*)))
-MOCK_DIRS := $(addsuffix ...,$(MOCK_DIRS))
-MOCK_DIRS := $(addprefix ./,$(MOCK_DIRS))
-
-TEST_DIRS := $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
-TEST_DIRS := $(filter-out $(MOCK_DIRS),$(TEST_DIRS))
-
-DOMINGO_BASE_IMAGE?=926088932149.dkr.ecr.us-west-2.amazonaws.com/domingo:1.0-1
+## configure this throught environment variables
 PROJECT_OWNER?=github.com/aporeto-inc
 PROJECT_NAME?=my-super-project
 BUILD_NUMBER?=latest
@@ -42,43 +20,71 @@ DOCKER_IMAGE_TAG?=$(BUILD_NUMBER)
 DOCKER_ENABLE_BUILD?=0
 DOCKER_ENABLE_PUSH?=0
 DOCKER_ENABLE_RETAG?=0
+DOMINGO_BASE_IMAGE?=$(DOCKER_REGISTRY)/domingo:1.0-2
+
+######################################################################
+######################################################################
+
+export ROOT_DIR?=$(PWD)
+
+MAKEFLAGS += --warn-undefined-variables
+SHELL := /bin/bash
+
+APOMOCK_FILE 			:= .apomock
+APOMOCK_PACKAGES 	:= $(shell if [ -f $(APOMOCK_FILE) ]; then cat $(APOMOCK_FILE); fi)
+NOVENDOR 					:= $(shell glide novendor)
+MANAGED_DIRS 			:= $(sort $(dir $(wildcard */Makefile)))
+MOCK_DIRS 				:= $(sort $(dir $(wildcard */.apo.mock)))
+NOTEST_DIRS 			:= $(MANAGED_DIRS)
+NOTEST_DIRS 			:= $(addsuffix ...,$(NOTEST_DIRS))
+NOTEST_DIRS 			:= $(addprefix ./,$(NOTEST_DIRS))
+TEST_DIRS 				:= $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
 
 ## Update
 
 domingo_update:
 	@echo "# Updating Domingo..."
 	@echo "REMINDER: you need to export GITHUB_TOKEN for this to work"
-	@curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
+	curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
 	@echo "domingo.mk updated!"
 
 
 ## initialization
 
 domingo_init:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_init && popd;)
 	@echo "# Running domingo_init in" $(PWD)
 	@if [ -f glide.lock ]; then glide install; else go get ./...; fi
 
 
 ## Testing
 
-domingo_lint:
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_lint && popd;)
-	@echo "# Running lint in" $(PWD)
-	golint .
+domingo_test:
+	echo > $(ROOT_DIR)/testresults.xml
+	make domingo_lint domingo_apomock
+	echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><testsuites>" | cat - $(ROOT_DIR)/testresults.xml > $(ROOT_DIR)/.testresults.xml
+	echo '</testsuites>' >> $(ROOT_DIR)/.testresults.xml
+	rm -f $(ROOT_DIR)/testresults.xml
+	mv $(ROOT_DIR)/.testresults.xml $(ROOT_DIR)/testresults.xml
+	if [ -d /outside_world ]; then cp $(ROOT_DIR)/testresults.xml /outside_world; fi
 
-domingo_test: domingo_lint
-	@$(foreach dir,$(DIRS_WITH_MAKEFILES),pushd $(dir) && make domingo_test && popd;)
-	@echo "# Running Domingo Tests in" $(PWD)
+domingo_lint:
+	@echo "# Running lint & vet"
+	golint ./...
+	go vet ./...
+
+domingo_apomock:
+	@$(foreach dir,$(MANAGED_DIRS),pushd $(dir) && make domingo_apomock && popd;)
+	@echo "# Running ApoMock in" $(dir)
+	if [ -f $(APOMOCK_FILE) ]; then make dominingo_init_apomock; fi;
+	go test -v -race -cover $(TEST_DIRS) | tee >(go2xunit -fail | tail -n +2 >> $(ROOT_DIR)/testresults.xml)
+	if [ -f $(APOMOCK_FILE) ]; then make dominingo_deinit_apomock; fi;
+
+dominingo_init_apomock:
 	@make domingo_save_vendor
-	mkdir -p ${APOMOCK_FOLDER} vendor
-	kennebec --package="${APOMOCK_PACKAGES}" --output-dir=${APOMOCK_FOLDER} -v=4 -logtostderr=true>>${PWD}/${APOMOCK_FOLDER}/apomock.log 2>&1
-	@if [ -d ${APOMOCK_FOLDER} ]; then cp -r ${APOMOCK_FOLDER}/* vendor; fi;
-	@echo "# Running test in" $(PWD)
-	[ -z "${TEST_DIRS}" ] || go vet ${TEST_DIRS}
-	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS} #| tee >(go2xunit -fail -output ./testresults.xml)
+	kennebec --package="$(APOMOCK_PACKAGES)" --output-dir=vendor -v=4 -logtostderr=true >> /dev/null 2>&1
+
+dominingo_deinit_apomock:
 	@make domingo_restore_vendor
-	rm -rf ${APOMOCK_FOLDER}
 
 domingo_save_vendor:
 	@echo "# Saving vendor directory in" $(PWD)
@@ -107,8 +113,10 @@ domingo_contained_build:
 	docker build --file .dockerfile-domingo -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 	rm -f .dockerfile-domingo
 	docker run \
+		-t \
 		--rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(ROOT_DIR):/outside_world \
 		-e BUILD_NUMBER="$(BUILD_NUMBER)" \
 		-e DOCKER_LOGIN_COMMAND="$(DOCKER_LOGIN_COMMAND)" \
 		-e DOCKER_ENABLE_BUILD="$(DOCKER_ENABLE_BUILD)" \
