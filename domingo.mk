@@ -30,6 +30,7 @@ MOCK_DIRS := $(addprefix ./,$(MOCK_DIRS))
 TEST_DIRS := $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
 TEST_DIRS := $(filter-out $(MOCK_DIRS),$(TEST_DIRS))
 
+DOMINGO_BASE_IMAGE?=926088932149.dkr.ecr.us-west-2.amazonaws.com/domingo:1.0-1
 PROJECT_OWNER?=github.com/aporeto-inc
 PROJECT_NAME?=my-super-project
 BUILD_NUMBER?=latest
@@ -37,7 +38,9 @@ GITHUB_TOKEN?=
 DOCKER_REGISTRY?=926088932149.dkr.ecr.us-west-2.amazonaws.com
 DOCKER_IMAGE_NAME?=$(PROJECT_NAME)
 DOCKER_IMAGE_TAG?=$(BUILD_NUMBER)
-
+DOCKER_ENABLE_BUILD?=0
+DOCKER_ENABLE_PUSH?=0
+AWS_ECR_LOGIN_COMMAND?=
 
 ## Update
 
@@ -88,7 +91,7 @@ domingo_restore_vendor:
 ## Docker Test Container
 
 define DOCKER_FILE
-FROM 926088932149.dkr.ecr.us-west-2.amazonaws.com/domingo
+FROM $(DOMINGO_BASE_IMAGE)
 MAINTAINER Antoine Mercadal <antoine@aporeto.com>
 ADD . /go/src/$(PROJECT_OWNER)/$(PROJECT_NAME)
 WORKDIR /go/src/$(PROJECT_OWNER)/$(PROJECT_NAME)
@@ -99,20 +102,34 @@ domingo_contained_build:
 	@echo "# Running domingo_build"
 	echo "$$DOCKER_FILE" > .dockerfile-test
 	mkdir -p /tmp/$(PROJECT_NAME)/$(BUILD_NUMBER)
+	docker pull $(DOMINGO_BASE_IMAGE)
 	docker build --file .dockerfile-test -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 	rm -f .dockerfile-test
 	docker run --rm \
 		-v /tmp/$(PROJECT_NAME)/$(BUILD_NUMBER):/export \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-e DOCKER_ENABLE_BUILD=$(DOCKER_ENABLE_BUILD) \
+		-e DOCKER_ENABLE_PUSH=$(DOCKER_ENABLE_PUSH) \
+		-e AWS_ECR_LOGIN_COMMAND="$(AWS_ECR_LOGIN_COMMAND)" \
 		$(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
 	docker rmi $(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
 
 domingo_docker_build:
 	@echo "# Running domingo_docker_build"
 	@if [ ! -f ./docker/Dockerfile ]; then echo "Error: No docker/Dockerfile!" && exit 1; fi;
-	docker -H unix:///var/run/docker.sock build -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) docker
+	if [ $(DOCKER_ENABLE_BUILD) -eq 1 ]; \
+	then \
+		docker -H unix:///var/run/docker.sock build -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) docker; \
+	else \
+		echo "# Docker build not explicitely enabled. To enable 'export DOCKER_ENABLE_BUILD=1'"; \
+	fi;
 
 domingo_docker_push:
 	@echo "# Running domingo_docker_push"
-	docker -H unix:///var/run/docker.sock push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	@echo "push!"
+	if [ $(DOCKER_ENABLE_PUSH) -eq 1 ]; \
+	then \
+		eval $(AWS_ECR_LOGIN_COMMAND); \
+		docker -H unix:///var/run/docker.sock push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG); \
+	else \
+		echo "# Docker push not explicitely enabled. To enable 'export DOCKER_ENABLE_PUSH=1'"; \
+	fi;
