@@ -75,7 +75,7 @@ domingo_test: domingo_lint
 	@if [ -d ${APOMOCK_FOLDER} ]; then cp -r ${APOMOCK_FOLDER}/* vendor; fi;
 	@echo "# Running test in" $(PWD)
 	[ -z "${TEST_DIRS}" ] || go vet ${TEST_DIRS}
-	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS}
+	[ -z "${TEST_DIRS}" ] || go test -v -race -cover ${TEST_DIRS} #| tee >(go2xunit -fail -output ./testresults.xml)
 	@make domingo_restore_vendor
 	rm -rf ${APOMOCK_FOLDER}
 
@@ -106,7 +106,6 @@ domingo_contained_build:
 	docker build --file .dockerfile-test -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 	rm -f .dockerfile-test
 	docker run --rm \
-		-v /tmp/$(PROJECT_NAME)/$(BUILD_NUMBER):/export \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-e DOCKER_ENABLE_BUILD=$(DOCKER_ENABLE_BUILD) \
 		-e DOCKER_ENABLE_PUSH=$(DOCKER_ENABLE_PUSH) \
