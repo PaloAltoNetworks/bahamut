@@ -69,8 +69,8 @@ domingo_test:
 
 domingo_lint:
 	@echo "# Running lint & vet"
-	golint ./...
-	go vet ./...
+	golint $(NOVENDOR)
+	go vet $(NOVENDOR)
 
 domingo_apomock:
 	@$(foreach dir,$(MANAGED_DIRS),pushd $(dir) && make domingo_apomock && popd;)
