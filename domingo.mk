@@ -61,6 +61,8 @@ domingo_init:
 domingo_test:
 	echo > $(ROOT_DIR)/testresults.xml
 	make domingo_lint domingo_apomock
+	sed -i.bak -E 's/(<testsuites>|<\/testsuites>)//g' $(ROOT_DIR)/testresults.xml
+	rm -rf $(ROOT_DIR)/testresults.xml.bak
 	echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><testsuites>" | cat - $(ROOT_DIR)/testresults.xml > $(ROOT_DIR)/.testresults.xml
 	echo '</testsuites>' >> $(ROOT_DIR)/.testresults.xml
 	rm -f $(ROOT_DIR)/testresults.xml
