@@ -20,7 +20,9 @@ DOCKER_IMAGE_TAG?=$(BUILD_NUMBER)
 DOCKER_ENABLE_BUILD?=0
 DOCKER_ENABLE_PUSH?=0
 DOCKER_ENABLE_RETAG?=0
-DOMINGO_BASE_IMAGE?=$(DOCKER_REGISTRY)/domingo:1.0-2
+DOCKER_LATEST_TAG?=latest
+DOMINGO_EXPORT_FOLDER?=/outside_world
+DOMINGO_BASE_IMAGE?=$(DOCKER_REGISTRY)/domingo
 
 ######################################################################
 ######################################################################
@@ -67,7 +69,7 @@ domingo_test:
 	echo '</testsuites>' >> $(ROOT_DIR)/.testresults.xml
 	rm -f $(ROOT_DIR)/testresults.xml
 	mv $(ROOT_DIR)/.testresults.xml $(ROOT_DIR)/testresults.xml
-	if [ -d /outside_world ]; then cp $(ROOT_DIR)/testresults.xml /outside_world; fi
+	if [ -d $(DOMINGO_EXPORT_FOLDER) ]; then cp $(ROOT_DIR)/testresults.xml $(DOMINGO_EXPORT_FOLDER); fi
 
 domingo_lint:
 	@echo "# Running lint & vet"
@@ -115,11 +117,15 @@ domingo_contained_build:
 	docker build --file .dockerfile-domingo -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 	rm -f .dockerfile-domingo
 	docker run \
+		--privileged \
+		--net host \
 		-t \
 		--rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(ROOT_DIR):/outside_world \
+		-v $(ROOT_DIR):$(DOMINGO_EXPORT_FOLDER) \
 		-e BUILD_NUMBER="$(BUILD_NUMBER)" \
+		-e DOMINGO_EXPORT_FOLDER="$(DOMINGO_EXPORT_FOLDER)" \
+		-e DOCKER_HOST="unix:///var/run/docker.sock" \
 		-e DOCKER_LOGIN_COMMAND="$(DOCKER_LOGIN_COMMAND)" \
 		-e DOCKER_ENABLE_BUILD="$(DOCKER_ENABLE_BUILD)" \
 		-e DOCKER_ENABLE_PUSH="$(DOCKER_ENABLE_PUSH)" \
@@ -163,10 +169,10 @@ domingo_docker_retag:
 	docker -H unix:///var/run/docker.sock \
 		tag \
 		$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) \
-		$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):master_latest
+		$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_LATEST_TAG)
 	docker -H unix:///var/run/docker.sock \
 		push \
-		$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):master_latest
+		$(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_LATEST_TAG)
 else
 domingo_docker_retag:
 	@echo " - docker retag not explicitely enabled: run 'export DOCKER_ENABLE_RETAG=1'"
