@@ -13,11 +13,12 @@ import (
 
 // PushServerConfig represents Redis connection information
 type PushServerConfig struct {
-	Addresses       []string
+	KafkaAddresses  []string
 	DefaultTopic    string
 	Authorizer      Authorizer
 	Authenticator   Authenticator
 	sessionsHandler PushSessionsHandler
+	enabled         bool
 }
 
 // MakePushServerConfig returns a new RedisInfo
@@ -32,15 +33,16 @@ func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandl
 	}
 
 	return PushServerConfig{
-		Addresses:       addresses,
+		KafkaAddresses:  addresses,
 		DefaultTopic:    defaultTopic,
 		sessionsHandler: sessionsHandler,
+		enabled:         true,
 	}
 }
 
 func (k PushServerConfig) makeProducer() sarama.SyncProducer {
 
-	producer, err := sarama.NewSyncProducer(k.Addresses, nil)
+	producer, err := sarama.NewSyncProducer(k.KafkaAddresses, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"info":  k,
@@ -55,7 +57,7 @@ func (k PushServerConfig) makeProducer() sarama.SyncProducer {
 
 func (k PushServerConfig) makeConsumer() sarama.Consumer {
 
-	consumer, err := sarama.NewConsumer(k.Addresses, nil)
+	consumer, err := sarama.NewConsumer(k.KafkaAddresses, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"info":  k,
@@ -71,10 +73,10 @@ func (k PushServerConfig) makeConsumer() sarama.Consumer {
 // HasKafka returns true is the PushServerConfig has Kafka server information
 func (k PushServerConfig) HasKafka() bool {
 
-	return len(k.Addresses) > 0
+	return len(k.KafkaAddresses) > 0
 }
 
 func (k PushServerConfig) String() string {
 
-	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.Addresses, k.DefaultTopic)
+	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.KafkaAddresses, k.DefaultTopic)
 }

@@ -20,7 +20,7 @@ func TestSession_newPushSession(t *testing.T) {
 	Convey("When I create have a new pushSession", t, func() {
 
 		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer("fake", bone.New(), PushServerConfig{}))
+		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		Convey("Then the session id should not be empty", func() {
 			So(session.id, ShouldNotBeEmpty)
@@ -59,7 +59,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
 		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer(config, bone.New()))
 
 		Convey("When I listen for kafka messages", func() {
 			go session.listenToKafkaMessages()
@@ -118,7 +118,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
 		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer(config, bone.New()))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -136,7 +136,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 	Convey("Given I create have a new pushSession with no valid kafka info", t, func() {
 
 		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer("fake", bone.New(), PushServerConfig{}))
+		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		Convey("When I listen for local messages", func() {
 			go session.listenToLocalMessages()
@@ -196,7 +196,7 @@ func TestSession_listenToLocalMessages(t *testing.T) {
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
 		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer(config, bone.New()))
 
 		Convey("When I listen for kafka messages", func() {
 
@@ -214,7 +214,8 @@ func TestSession_send(t *testing.T) {
 	Convey("Given I create a session with a websocket with a session handler", t, func() {
 
 		handler := &testSessionHandler{}
-		session := newPushSession(&websocket.Conn{}, newPushServer("fake", bone.New(), MakePushServerConfig([]string{}, "", handler)))
+
+		session := newPushSession(&websocket.Conn{}, newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New()))
 
 		Convey("When I send some data to the session", func() {
 
@@ -280,7 +281,7 @@ func TestSession_write(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer("fake", bone.New(), PushServerConfig{}))
+		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		Convey("When I send some data to the session", func() {
 
@@ -356,7 +357,7 @@ func TestSession_read(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer("fake", bone.New(), PushServerConfig{}))
+		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		Convey("When I receive some data to the session", func() {
 
@@ -392,7 +393,7 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer("fake", bone.New(), PushServerConfig{}))
+		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		c := make(chan bool, 1)
 		go func() {
@@ -459,7 +460,7 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer("fake", bone.New(), config))
+		session := newPushSession(ws, newPushServer(config, bone.New()))
 
 		c := make(chan bool, 1)
 		go func() {

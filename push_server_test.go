@@ -23,11 +23,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), PushServerConfig{})
-
-		Convey("Then address should be set", func() {
-			So(srv.address, ShouldEqual, "fake")
-		})
+		srv := newPushServer(PushServerConfig{}, bone.New())
 
 		Convey("Then sessions should be initialized", func() {
 			So(len(srv.sessions), ShouldEqual, 0)
@@ -70,7 +66,7 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer("fake", bone.New(), MakePushServerConfig([]string{}, "", handler))
+		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -97,7 +93,7 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer("fake", bone.New(), MakePushServerConfig([]string{}, "", handler))
+		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -131,7 +127,7 @@ func TestSession_startStop(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer("fake", bone.New(), PushServerConfig{})
+		srv := newPushServer(PushServerConfig{}, bone.New())
 		session := newPushSession(ws, srv)
 
 		var wg sync.WaitGroup
@@ -166,7 +162,7 @@ func TestSession_HandleConnection(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), PushServerConfig{})
+		srv := newPushServer(PushServerConfig{}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -194,7 +190,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer("fake", bone.New(), PushServerConfig{})
+		srv := newPushServer(PushServerConfig{}, bone.New())
 
 		Convey("When I push an event", func() {
 
@@ -228,7 +224,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 		defer broker.Close()
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		srv := newPushServer("fake", bone.New(), config)
+		srv := newPushServer(config, bone.New())
 
 		go srv.start()
 
@@ -257,7 +253,7 @@ func TestSession_LocalEvents(t *testing.T) {
 		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws1.Close()
 
-		srv := newPushServer("fake", bone.New(), PushServerConfig{})
+		srv := newPushServer(PushServerConfig{}, bone.New())
 		session1 := newPushSession(ws1, srv)
 
 		go srv.start()

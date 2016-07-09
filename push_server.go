@@ -28,10 +28,9 @@ type pushServer struct {
 	kafkaProducer sarama.SyncProducer
 }
 
-func newPushServer(address string, multiplexer *bone.Mux, config PushServerConfig) *pushServer {
+func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
-		address:     address,
 		sessions:    map[string]*PushSession{},
 		register:    make(chan *PushSession),
 		unregister:  make(chan *PushSession),

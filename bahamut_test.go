@@ -18,7 +18,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, false, false, false)
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then apiServer should be nil", func() {
 			So(b.apiServer, ShouldBeNil)
@@ -39,7 +39,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, true, true, true)
+		b := NewBahamut(APIServerConfig{enabled: true}, PushServerConfig{enabled: true})
 
 		Convey("Then apiServer should not be nil", func() {
 			So(b.apiServer, ShouldNotBeNil)
@@ -50,7 +50,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		})
 
 		Convey("Then number of routes should be 0", func() {
-			So(len(b.multiplexer.Routes), ShouldEqual, 8)
+			So(len(b.multiplexer.Routes), ShouldEqual, 7)
 		})
 	})
 }
@@ -59,7 +59,7 @@ func TestBahamut_DefaultBahamut(t *testing.T) {
 
 	Convey("Given I create a Bahamut", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, false, false, false)
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then the defaultBahamut should be set", func() {
 			So(DefaultBahamut(), ShouldEqual, b)
@@ -73,7 +73,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		p := &FakeProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, false, false, false)
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 
 		Convey("When I register it for an identity", func() {
 
@@ -132,7 +132,7 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, false, false, false)
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
 		Convey("When I access an Authenticator while there is none", func() {
@@ -153,29 +153,6 @@ func TestBahamut_Authenticator(t *testing.T) {
 			Convey("Then the authenticator should be set", func() {
 				So(a, ShouldNotBeNil)
 				So(err, ShouldBeNil)
-			})
-		})
-	})
-}
-
-func TestBahamut_SetTLSInformation(t *testing.T) {
-
-	Convey("Given I create a new Bahamut", t, func() {
-
-		b := NewBahamut("fake", []*Route{}, PushServerConfig{}, false, false, false)
-
-		Convey("Then it should not have any certificate information", func() {
-			So(b.certificatePath, ShouldBeEmpty)
-			So(b.keyPath, ShouldBeEmpty)
-		})
-
-		Convey("When I set some TLS information", func() {
-
-			b.SetTLSInformation("ca.pem", "server.pem", "server.key")
-
-			Convey("Then TLS information should be set", func() {
-				So(b.certificatePath, ShouldEqual, "server.pem")
-				So(b.keyPath, ShouldEqual, "server.key")
 			})
 		})
 	})

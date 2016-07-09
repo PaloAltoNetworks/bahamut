@@ -15,15 +15,19 @@ func TestKakfaInfo_MakePushServerConfig(t *testing.T) {
 
 	Convey("Given I create have a new config", t, func() {
 
-		pushServerConfig := MakePushServerConfig([]string{":1234"}, "topic", nil)
+		config := MakePushServerConfig([]string{":1234"}, "topic", nil)
 
 		Convey("Then the kafka info should have the address set", func() {
-			So(len(pushServerConfig.Addresses), ShouldEqual, 1)
-			So(pushServerConfig.Addresses[0], ShouldEqual, ":1234")
+			So(len(config.KafkaAddresses), ShouldEqual, 1)
+			So(config.KafkaAddresses[0], ShouldEqual, ":1234")
 		})
 
 		Convey("Then the kafka info should have the default topic set", func() {
-			So(pushServerConfig.DefaultTopic, ShouldEqual, "topic")
+			So(config.DefaultTopic, ShouldEqual, "topic")
+		})
+
+		Convey("Then enabled flag should be set", func() {
+			So(config.enabled, ShouldBeTrue)
 		})
 	})
 
