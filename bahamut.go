@@ -119,17 +119,17 @@ func (b *Bahamut) Authenticator() (Authenticator, error) {
 	return b.authenticator, nil
 }
 
+func (b *Bahamut) handleExit() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	log.Info("shutting down...")
+	b.Stop()
+	log.Info("bye!")
+}
+
 // Start starts the Bahamut server.
 func (b *Bahamut) Start() {
-
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		<-c
-		log.Info("shutting down...")
-		b.Stop()
-		log.Info("bye!")
-	}()
 
 	if b.apiServer != nil {
 		go b.apiServer.start()
@@ -138,6 +138,8 @@ func (b *Bahamut) Start() {
 	if b.pushServer != nil {
 		go b.pushServer.start()
 	}
+
+	go b.handleExit()
 
 	<-b.stop
 }
