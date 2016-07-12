@@ -26,32 +26,12 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
     ctx := bahamut.NewContext(bahamut.OperationRetrieveMany)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
@@ -84,32 +64,12 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
     ctx := bahamut.NewContext(bahamut.OperationRetrieve)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
@@ -142,32 +102,12 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     ctx := bahamut.NewContext(bahamut.OperationCreate)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
@@ -176,7 +116,6 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
-
 
     defer req.Body.Close()
     var obj *models.{{ specification.entity_name }}
@@ -227,32 +166,12 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     ctx := bahamut.NewContext(bahamut.OperationUpdate)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
@@ -311,32 +230,12 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     ctx := bahamut.NewContext(bahamut.OperationDelete)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
@@ -380,32 +279,12 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
     ctx := bahamut.NewContext(bahamut.OperationPatch)
     ctx.ReadRequest(req)
 
-    if authenticator, err := server.Authenticator(); err == nil {
-        ok, err := authenticator.IsAuthenticated(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
-            return
-        }
+    if !bahamut.CheckAuthentication(ctx, w) {
+        return
     }
 
-    if authorizer, err := server.Authorizer(); err == nil {
-        ok, err := authorizer.IsAuthorized(ctx);
-
-        if err != nil {
-            bahamut.WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
-            return
-        }
-
-        if !ok {
-            bahamut.WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
-            return
-        }
+    if !bahamut.CheckAuthorization(ctx, w) {
+        return
     }
 
     proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
