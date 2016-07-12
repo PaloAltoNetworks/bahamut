@@ -157,3 +157,33 @@ func TestBahamut_Authenticator(t *testing.T) {
 		})
 	})
 }
+
+func TestBahamut_Authorizer(t *testing.T) {
+
+	Convey("Given I create a new Bahamut", t, func() {
+
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		auth := &Auth{}
+
+		Convey("When I access an Authorizer while there is none", func() {
+
+			a, err := b.Authorizer()
+
+			Convey("Then the authorizer should be set", func() {
+				So(a, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("When I set an Authorizer", func() {
+
+			b.SetAuthorizer(auth)
+			a, err := b.Authorizer()
+
+			Convey("Then the Authorizer should be set", func() {
+				So(a, ShouldNotBeNil)
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}

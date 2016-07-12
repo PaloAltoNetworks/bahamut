@@ -149,9 +149,28 @@ func (o *UnmarshalableList) MarshalJSON() ([]byte, error) {
 
 func (o *UnmarshalableList) Validate() elemental.Errors { return nil }
 
-type Auth struct{}
+type Auth struct {
+	authenticated bool
+	authorized    bool
+	errored       bool
+}
 
-func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) { return true, nil }
+func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) {
+
+	if a.errored {
+		return false, fmt.Errorf("this is an %s", "error")
+	}
+
+	return a.authenticated, nil
+}
+func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
+
+	if a.errored {
+		return false, fmt.Errorf("this is an %s", "error")
+	}
+
+	return a.authorized, nil
+}
 
 type testSessionHandler struct {
 	sessionCount int
