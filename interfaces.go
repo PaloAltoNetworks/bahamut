@@ -51,7 +51,7 @@ type Authenticator interface {
 
 // Authorizer is the interface used to verify the permission
 type Authorizer interface {
-	IsAuthorized() (bool, error)
+	IsAuthorized(*Context) (bool, error)
 }
 
 // PushSessionsHandler is the interface used to handle sessions lyfecycle

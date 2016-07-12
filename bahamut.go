@@ -24,12 +24,16 @@ func DefaultBahamut() *Bahamut {
 
 // Bahamut is crazy
 type Bahamut struct {
-	apiServer     *apiServer
-	pushServer    *pushServer
-	multiplexer   *bone.Mux
-	stop          chan bool
-	processors    map[string]Processor
+	multiplexer *bone.Mux
+	processors  map[string]Processor
+
+	apiServer  *apiServer
+	pushServer *pushServer
+
 	authenticator Authenticator
+	authorizer    Authorizer
+
+	stop chan bool
 }
 
 // NewBahamut creates a new Bahamut.
@@ -117,6 +121,22 @@ func (b *Bahamut) Authenticator() (Authenticator, error) {
 	}
 
 	return b.authenticator, nil
+}
+
+// SetAuthorizer sets the Authenticator to use for the Bahamut server.
+func (b *Bahamut) SetAuthorizer(authorizer Authorizer) {
+
+	b.authorizer = authorizer
+}
+
+// Authorizer returns the current authenticator
+func (b *Bahamut) Authorizer() (Authorizer, error) {
+
+	if b.authorizer == nil {
+		return nil, fmt.Errorf("no authorizer set")
+	}
+
+	return b.authorizer, nil
 }
 
 func (b *Bahamut) handleExit() {
