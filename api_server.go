@@ -35,7 +35,7 @@ func (a *apiServer) isTLSEnabled() bool {
 	return a.config.TLSCAPath != "" && a.config.TLSCertificatePath != "" && a.config.TLSKeyPath != ""
 }
 
-func (a *apiServer) createSecureHTTPServer() (*http.Server, error) {
+func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	caCert, err := ioutil.ReadFile(a.config.TLSCAPath)
 	if err != nil {
@@ -52,21 +52,17 @@ func (a *apiServer) createSecureHTTPServer() (*http.Server, error) {
 
 	tlsConfig.BuildNameToCertificate()
 
-	httpServer := &http.Server{
-		Addr:      a.config.ListenAddress,
+	return &http.Server{
+		Addr:      address,
 		TLSConfig: tlsConfig,
-	}
-
-	return httpServer, nil
+	}, nil
 }
 
-func (a *apiServer) createUnsecureHTTPServer() (*http.Server, error) {
+func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
 
-	httpServer := &http.Server{
-		Addr: a.config.ListenAddress,
-	}
-
-	return httpServer, nil
+	return &http.Server{
+		Addr: address,
+	}, nil
 }
 
 func (a *apiServer) installRoutes() {
@@ -126,23 +122,40 @@ func (a *apiServer) start() {
 
 	a.installRoutes()
 
-	var server *http.Server
-	var err error
-
 	if a.isTLSEnabled() {
 
+		if a.config.HealthHandler != nil {
+
+			log.WithFields(log.Fields{
+				"address":  a.config.HealthListenAddress,
+				"endpoint": a.config.HealthEndpoint,
+			}).Info("creating health check server.")
+
+			srv, err := a.createUnsecureHTTPServer(a.config.HealthListenAddress)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Fatal("unable to create health check server")
+			}
+
+			mux := bone.New()
+			mux.Get(a.config.HealthEndpoint, a.config.HealthHandler)
+			srv.Handler = mux
+			go srv.ListenAndServe()
+		}
+
 		log.WithFields(log.Fields{
-			"endpoint": a.config.ListenAddress,
+			"address": a.config.ListenAddress,
 		}).Info("creating secure http server.")
 
-		server, err = a.createSecureHTTPServer()
+		server, err := a.createSecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Fatal("unable to create secure http server")
 		}
 
-		http.Handle("/", a.multiplexer)
+		server.Handler = a.multiplexer
 		err = server.ListenAndServeTLS(a.config.TLSCertificatePath, a.config.TLSKeyPath)
 
 		if err != nil {
@@ -152,18 +165,28 @@ func (a *apiServer) start() {
 		}
 
 	} else {
-		log.WithFields(log.Fields{
-			"endpoint": a.config.ListenAddress,
-		}).Warn("creating unsecure http server")
 
-		server, err = a.createUnsecureHTTPServer()
+		if a.config.HealthHandler != nil {
+			log.WithFields(log.Fields{
+				"address":  a.config.ListenAddress,
+				"endpoint": a.config.HealthEndpoint,
+			}).Info("registering health check handler.")
+
+			a.multiplexer.Get(a.config.HealthEndpoint, a.config.HealthHandler)
+		}
+
+		log.WithFields(log.Fields{
+			"address": a.config.ListenAddress,
+		}).Info("creating unsecure http server")
+
+		server, err := a.createUnsecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
 			}).Fatal("unable to create unsecure http server")
 		}
 
-		http.Handle("/", a.multiplexer)
+		server.Handler = a.multiplexer
 		err = server.ListenAndServe()
 
 		if err != nil {

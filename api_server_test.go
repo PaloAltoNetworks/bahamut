@@ -17,7 +17,7 @@ func TestServer_Initialization(t *testing.T) {
 
 	Convey("Given I create a new api server", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then it should be correctly initialized", func() {
@@ -31,7 +31,7 @@ func TestServer_isTLSEnabled(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then TLS should not be active", func() {
@@ -41,7 +41,7 @@ func TestServer_isTLSEnabled(t *testing.T) {
 
 	Convey("Given I create a new api server without all tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "a", "b", "c", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "a", "b", "c", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then TLS should be active", func() {
@@ -54,11 +54,11 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without all valid tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "fixtures/ca.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "fixtures/ca.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer()
+			srv, err := c.createSecureHTTPServer(cfg.ListenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -72,11 +72,11 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without invalid ca info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "fixtures/nope.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "fixtures/nope.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer()
+			srv, err := c.createSecureHTTPServer(cfg.ListenAddress)
 
 			Convey("Then error should not be nil", func() {
 				So(err, ShouldNotBeNil)
@@ -93,11 +93,11 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{})
+		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make an unsecure server", func() {
-			srv, err := c.createUnsecureHTTPServer()
+			srv, err := c.createUnsecureHTTPServer(cfg.ListenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -124,7 +124,7 @@ func TestServer_RouteInstallation(t *testing.T) {
 		routes = append(routes, NewRoute("/lists", http.MethodHead, h))
 		routes = append(routes, NewRoute("/lists", http.MethodPut, h))
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", routes)
+		cfg := MakeAPIServerConfig("address:80", "", "", "", routes, nil, "", "/h")
 		cfg.EnableProfiling = true
 		c := newAPIServer(cfg, bone.New())
 
@@ -154,7 +154,7 @@ func TestServer_Start(t *testing.T) {
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 			routes := []*Route{NewRoute("/hello", http.MethodGet, h)}
 
-			cfg := MakeAPIServerConfig("127.0.0.1:3123", "", "", "", routes)
+			cfg := MakeAPIServerConfig("127.0.0.1:3123", "", "", "", routes, nil, "", "/h")
 			c := newAPIServer(cfg, bone.New())
 
 			go c.start()

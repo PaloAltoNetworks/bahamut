@@ -4,26 +4,48 @@
 
 package bahamut
 
+import "net/http"
+
 // APIServerConfig holds the configuration for the Bahamut API Server
 type APIServerConfig struct {
-	TLSCertificatePath string
-	TLSKeyPath         string
-	TLSCAPath          string
-	ListenAddress      string
-	Routes             []*Route
-	enabled            bool
-	EnableProfiling    bool
+	EnableProfiling     bool
+	HealthEndpoint      string
+	HealthHandler       http.HandlerFunc
+	HealthListenAddress string
+	ListenAddress       string
+	Routes              []*Route
+	TLSCAPath           string
+	TLSCertificatePath  string
+	TLSKeyPath          string
+
+	enabled bool
 }
 
 // MakeAPIServerConfig returns a new APIServerConfig
-func MakeAPIServerConfig(listen string, caPath, certPath, keyPath string, routes []*Route) APIServerConfig {
+func MakeAPIServerConfig(
+	listen string,
+
+	caPath string,
+	certPath string,
+	keyPath string,
+
+	routes []*Route,
+
+	healthHandler http.HandlerFunc,
+	healthListenAddress string,
+	healthEndpoint string,
+) APIServerConfig {
 
 	return APIServerConfig{
-		TLSCertificatePath: certPath,
-		TLSKeyPath:         keyPath,
-		TLSCAPath:          caPath,
-		ListenAddress:      listen,
-		Routes:             routes,
-		enabled:            true,
+		HealthEndpoint:      healthEndpoint,
+		HealthHandler:       healthHandler,
+		HealthListenAddress: healthListenAddress,
+		ListenAddress:       listen,
+		Routes:              routes,
+		TLSCAPath:           caPath,
+		TLSCertificatePath:  certPath,
+		TLSKeyPath:          keyPath,
+
+		enabled: true,
 	}
 }
