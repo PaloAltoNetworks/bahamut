@@ -232,7 +232,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 
 			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
 
-			time.Sleep(2 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 
 			Convey("Then kafka should have received the message", func() {
 				So(len(broker.History()), ShouldEqual, 2)
