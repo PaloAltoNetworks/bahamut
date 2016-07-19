@@ -70,7 +70,10 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 	for _, e := range events {
-		n.events <- e
+		select {
+		case n.events <- e:
+		default:
+		}
 	}
 }
 

@@ -31,13 +31,13 @@ type PushSession struct {
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 
 	return &PushSession{
-		events:           make(chan string),
+		events:           make(chan string, 1024),
 		id:               uuid.NewV4().String(),
 		pushServerConfig: server.config,
 		server:           server,
 		socket:           ws,
 		stop:             make(chan bool, 1),
-		out:              make(chan string),
+		out:              make(chan string, 1024),
 	}
 }
 
@@ -94,7 +94,10 @@ func (s *PushSession) send(message string) error {
 		}
 	}
 
-	s.out <- message
+	select {
+	case s.out <- message:
+	default:
+	}
 
 	return nil
 }
