@@ -56,9 +56,14 @@ domingo_update:
 domingo_init:
 	@echo "# Running domingo_init in" $(PWD)
 	@if [ -f glide.lock ]; then glide install; else go get ./...; fi
-
+	go get -u github.com/aporeto-inc/kennebec
 
 ## Testing
+
+domingo_goconvey:
+	make domingo_lint domingo_init_apomock
+	goconvey .
+	make domingo_deinit_apomock
 
 domingo_test:
 	echo > $(ROOT_DIR)/testresults.xml
@@ -117,10 +122,10 @@ domingo_contained_build:
 	docker build --file .dockerfile-domingo -t $(PROJECT_NAME)-build-image:$(BUILD_NUMBER) .
 	rm -f .dockerfile-domingo
 	docker run \
+		--name $(PROJECT_NAME)-build-container_$(BUILD_NUMBER) \
 		--privileged \
 		--net host \
 		-t \
-		--rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(ROOT_DIR):$(DOMINGO_EXPORT_FOLDER) \
 		-e BUILD_NUMBER="$(BUILD_NUMBER)" \
@@ -136,6 +141,7 @@ domingo_contained_build:
 		-e PROJECT_NAME="$(PROJECT_NAME)" \
 		-e PROJECT_OWNER="$(PROJECT_OWNER)" \
 		$(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
+	docker rm -f $(PROJECT_NAME)-build-container_$(BUILD_NUMBER)
 	docker rmi $(PROJECT_NAME)-build-image:$(BUILD_NUMBER)
 
 ifeq ($(DOCKER_ENABLE_BUILD),1)
