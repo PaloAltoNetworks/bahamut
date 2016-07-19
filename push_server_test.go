@@ -195,7 +195,7 @@ func TestSession_PushEvents(t *testing.T) {
 		Convey("When I push an event", func() {
 
 			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
-			go srv.pushEvents(inEvent)
+			srv.pushEvents(inEvent)
 
 			var outEvent *elemental.Event
 			select {
@@ -232,8 +232,10 @@ func TestSession_GlobalEvents(t *testing.T) {
 
 			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
 
+			time.Sleep(2 * time.Millisecond)
+
 			Convey("Then kafka should have received the message", func() {
-				So(len(broker.History()), ShouldEqual, 1)
+				So(len(broker.History()), ShouldEqual, 2)
 			})
 		})
 	})
