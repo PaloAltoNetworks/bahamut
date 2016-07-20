@@ -23,6 +23,7 @@ class APIVersionWriter(TemplateFileWriter):
         self.models_package_package = monolithe_config.get_option("models_package_package", "bahamut")
         self.handlers_package_name = monolithe_config.get_option("handlers_package_name", "bahamut")
         self.routes_package_name = monolithe_config.get_option("routes_package_name", "bahamut")
+        self.models_package_name = monolithe_config.get_option("models_package_name", "bahamut")
 
         handlers_folder = "%s/handlers" % self.output_directory
         if os.path.exists(handlers_folder):
@@ -58,7 +59,8 @@ class APIVersionWriter(TemplateFileWriter):
                    base_package=self.base_package,
                    handlers_package_name=self.handlers_package_name,
                    routes_package_name=self.routes_package_name,
-                   models_package_package=self.models_package_package)
+                   models_package_package=self.models_package_package,
+                   models_package_name=self.models_package_name)
 
     def _write_routes(self, specifications):
         """
@@ -70,7 +72,8 @@ class APIVersionWriter(TemplateFileWriter):
                    base_package=self.base_package,
                    handlers_package_name=self.handlers_package_name,
                    routes_package_name=self.routes_package_name,
-                   models_package_package=self.models_package_package)
+                   models_package_package=self.models_package_package,
+                   models_package_name=self.models_package_name)
 
     def _format(self):
         """

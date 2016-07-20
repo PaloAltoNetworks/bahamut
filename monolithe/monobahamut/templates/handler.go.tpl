@@ -34,7 +34,7 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveManyProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
@@ -72,7 +72,7 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
@@ -110,7 +110,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.CreateProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
@@ -118,7 +118,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     defer req.Body.Close()
-    var obj *models.{{ specification.entity_name }}
+    var obj *{{ models_package_name }}.{{ specification.entity_name }}
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
@@ -144,7 +144,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         }
 
         if ctx.OutputData != nil {
-            server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*models.{{ specification.entity_name }})))
+            server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
         }
     }
 
@@ -174,7 +174,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
@@ -182,7 +182,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     defer req.Body.Close()
-    var obj *models.{{ specification.entity_name }}
+    var obj *{{ models_package_name }}.{{ specification.entity_name }}
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
@@ -208,7 +208,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         }
 
         if ctx.OutputData != nil {
-            server.Push(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*models.{{ specification.entity_name }})))
+            server.Push(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
         }
     }
 
@@ -238,7 +238,7 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
@@ -257,7 +257,7 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         }
 
         if ctx.OutputData != nil {
-          server.Push(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(*models.{{ specification.entity_name }})))
+          server.Push(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
         }
     }
 
@@ -287,7 +287,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         return
     }
 
-    proc, _ := server.ProcessorForIdentity(models.{{ specification.entity_name }}Identity)
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.PatchProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for patching a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
