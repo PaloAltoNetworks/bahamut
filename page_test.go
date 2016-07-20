@@ -20,7 +20,7 @@ func TestPage_FromQuery(t *testing.T) {
 		Convey("When I pass an empty query", func() {
 
 			q := url.Values{}
-			p.FromValues(q)
+			p.fromValues(q)
 
 			Convey("Then the current page should be 1", func() {
 				So(p.Current, ShouldEqual, 1)
@@ -36,7 +36,7 @@ func TestPage_FromQuery(t *testing.T) {
 			q := url.Values{}
 			q.Set("page", "42")
 			q.Set("per_page", "4242")
-			p.FromValues(q)
+			p.fromValues(q)
 
 			Convey("Then the current page should be 42", func() {
 				So(p.Current, ShouldEqual, 42)
@@ -109,7 +109,7 @@ func TestPage_Compute(t *testing.T) {
 
 	Convey("Given I have Response", t, func() {
 
-		p := NewPage()
+		p := newPage()
 
 		Convey("When I get the first page and there is no element", func() {
 
@@ -118,7 +118,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "1")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 0)
 
 			Convey("Then the first page should be correct", func() {
@@ -145,7 +145,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "1")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 20)
 
 			Convey("Then the first page should be correct", func() {
@@ -172,7 +172,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "2")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 20)
 
 			Convey("Then the first page should be correct", func() {
@@ -200,7 +200,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "2")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 30)
 
 			Convey("Then the first page should be correct", func() {
@@ -227,7 +227,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "2")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 40)
 
 			Convey("Then the first page should be correct", func() {
@@ -254,7 +254,7 @@ func TestPage_Compute(t *testing.T) {
 			q.Set("page", "2")
 			q.Set("per_page", "10")
 
-			p.FromValues(q)
+			p.fromValues(q)
 			p.compute("http://link.com/path", q, 41)
 
 			Convey("Then the first page should be correct", func() {

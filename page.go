@@ -15,7 +15,7 @@ const (
 	DefaultPageSize = 100
 )
 
-// Page represents a current data page.
+// Page holds pagination information.
 type Page struct {
 	Current int
 	Size    int
@@ -25,8 +25,8 @@ type Page struct {
 	Last    string
 }
 
-// NewPage returns a new *Page.
-func NewPage() *Page {
+// newPage returns a new *Page.
+func newPage() *Page {
 
 	return &Page{
 		Current: 1,
@@ -34,8 +34,7 @@ func NewPage() *Page {
 	}
 }
 
-// IndexRange returns the index range of data that needs to be retrieved according to current
-// Page's values.
+// IndexRange returns the index range of data that needs to be retrieved according to current Page's values.
 func (p *Page) IndexRange() (start, end int) {
 
 	start = p.Size * (p.Current - 1)
@@ -45,7 +44,7 @@ func (p *Page) IndexRange() (start, end int) {
 }
 
 // FromValues populates the Page from an url.Values.
-func (p *Page) FromValues(query url.Values) {
+func (p *Page) fromValues(query url.Values) {
 
 	var err error
 	p.Current, err = strconv.Atoi(query.Get("page"))
@@ -59,6 +58,7 @@ func (p *Page) FromValues(query url.Values) {
 	}
 }
 
+// compute computes the various fields of the Page, like the neighbor page links, etc.
 func (p *Page) compute(baseURL string, query url.Values, totalCount int) {
 
 	query.Set("page", strconv.Itoa(1))

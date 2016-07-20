@@ -22,7 +22,12 @@ func DefaultBahamut() *Bahamut {
 	return defaultBahamut
 }
 
-// Bahamut is crazy
+// A Bahamut is an application server.
+//
+// It serves various configured api routes, routes the calls to the
+// correct processors, creates a push notification system using websocket.
+//
+// This is the main entrypoint of the library.
 type Bahamut struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
@@ -36,7 +41,9 @@ type Bahamut struct {
 	stop chan bool
 }
 
-// NewBahamut creates a new Bahamut.
+// NewBahamut returns a new Bahamut.
+//
+// It will use the given apiConfig and pushConfig to initialize the various servers.
 func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut {
 
 	mux := bone.New()
@@ -99,6 +106,10 @@ func (b *Bahamut) ProcessorForIdentity(identity elemental.Identity) (Processor, 
 }
 
 // Push pushes the given events to all active sessions.
+//
+// Depending on the configuration of the pushServer, it may use
+// internal local push system, or may use Kafka to publish the events
+// to a cluster of Bahamut Servers.
 func (b *Bahamut) Push(events ...*elemental.Event) {
 
 	if b.apiServer == nil {
@@ -108,12 +119,16 @@ func (b *Bahamut) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-// SetAuthenticator sets the Authenticator to use for the Bahamut server.
+// SetAuthenticator sets the main Authenticator to use for the Bahamut server.
+//
+// An authenticator must implement the Authenticator interface.
 func (b *Bahamut) SetAuthenticator(authenticator Authenticator) {
 	b.authenticator = authenticator
 }
 
-// Authenticator returns the current authenticator
+// Authenticator returns the current authenticator.
+//
+// It will return an error if none is set.
 func (b *Bahamut) Authenticator() (Authenticator, error) {
 
 	if b.authenticator == nil {
@@ -123,13 +138,17 @@ func (b *Bahamut) Authenticator() (Authenticator, error) {
 	return b.authenticator, nil
 }
 
-// SetAuthorizer sets the Authenticator to use for the Bahamut server.
+// SetAuthorizer sets the main Authorizer to use for the Bahamut server.
+//
+// An authorizer must implement the Authorizer interface.
 func (b *Bahamut) SetAuthorizer(authorizer Authorizer) {
 
 	b.authorizer = authorizer
 }
 
-// Authorizer returns the current authenticator
+// Authorizer returns the current authenticator.
+//
+// It will return an error if none is set.
 func (b *Bahamut) Authorizer() (Authorizer, error) {
 
 	if b.authorizer == nil {
@@ -139,6 +158,8 @@ func (b *Bahamut) Authorizer() (Authorizer, error) {
 	return b.authorizer, nil
 }
 
+// handleExit handle the interupt signal an will try
+// to cleanly stop all current routines.
 func (b *Bahamut) handleExit() {
 
 	c := make(chan os.Signal, 1)

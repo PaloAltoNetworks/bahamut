@@ -126,7 +126,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     ctx.AddErrors(obj.Validate()...)
     if ctx.HasErrors() {
-        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors...)
+        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors()...)
         return
     }
 
@@ -139,8 +139,8 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     if !ctx.HasErrors() {
 
-        if len(ctx.EventsQueue) > 0 {
-            server.Push(ctx.EventsQueue[0])
+        if ctx.HasEvents() {
+            server.Push(ctx.Events()...)
         }
 
         if ctx.OutputData != nil {
@@ -190,7 +190,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     ctx.AddErrors(obj.Validate()...)
     if ctx.HasErrors() {
-        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors...)
+        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors()...)
         return
     }
 
@@ -203,8 +203,8 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     if !ctx.HasErrors() {
 
-        if len(ctx.EventsQueue) > 0 {
-            server.Push(ctx.EventsQueue...)
+        if ctx.HasEvents() {
+            server.Push(ctx.Events()...)
         }
 
         if ctx.OutputData != nil {
@@ -252,8 +252,8 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     if !ctx.HasErrors() {
 
-        if len(ctx.EventsQueue) > 0 {
-          server.Push(ctx.EventsQueue...)
+        if ctx.HasEvents() {
+          server.Push(ctx.Events()...)
         }
 
         if ctx.OutputData != nil {
@@ -310,8 +310,8 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
 
     if !ctx.HasErrors() {
 
-        if len(ctx.EventsQueue) > 0 {
-            server.Push(ctx.EventsQueue[0])
+        if ctx.HasEvents() {
+            server.Push(ctx.Events()...)
         }
 
         if ctx.OutputData != nil {

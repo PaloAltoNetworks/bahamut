@@ -6,14 +6,14 @@ package bahamut
 
 import "net/http"
 
-// Route represents a Cid Route
+// A Route represents a Bahamut Route.
 type Route struct {
 	Method  string
 	Handler http.HandlerFunc
 	Pattern string
 }
 
-// NewRoute Creates a new *Route.
+// NewRoute returns a new Route.
 func NewRoute(pattern, method string, handler http.HandlerFunc) *Route {
 
 	return &Route{

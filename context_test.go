@@ -170,14 +170,28 @@ func TestContext_Errors(t *testing.T) {
 
 			c.AddErrors(elemental.NewError("title", "description", "subject", 42))
 
-			Convey("Then the context should not some Errors", func() {
+			Convey("Then the context should have some Errors", func() {
 				So(c.HasErrors(), ShouldBeTrue)
+				So(len(c.Errors()), ShouldEqual, 1)
+			})
+		})
+
+		Convey("When I set the Errors", func() {
+
+			c.SetErrors(elemental.NewErrors(
+				elemental.NewError("title", "description", "subject", 42),
+				elemental.NewError("title", "description", "subject", 42),
+			))
+
+			Convey("Then the context should have some Errors", func() {
+				So(c.HasErrors(), ShouldBeTrue)
+				So(len(c.Errors()), ShouldEqual, 2)
 			})
 		})
 	})
 }
 
-func TestContext_EnqueueEvent(t *testing.T) {
+func TestContext_Events(t *testing.T) {
 
 	Convey("Given I create a Context", t, func() {
 
@@ -185,10 +199,32 @@ func TestContext_EnqueueEvent(t *testing.T) {
 
 		Convey("When I enqueue 2 events", func() {
 
-			c.EnqueueEvents(elemental.NewEvent(elemental.EventCreate, NewList()), elemental.NewEvent(elemental.EventCreate, NewList()))
+			c.EnqueueEvents(
+				elemental.NewEvent(elemental.EventCreate, NewList()),
+				elemental.NewEvent(elemental.EventCreate, NewList()))
 
 			Convey("Then I should have 2 events in the queue", func() {
-				So(len(c.EventsQueue), ShouldEqual, 2)
+				So(c.HasEvents(), ShouldBeTrue)
+				So(len(c.Events()), ShouldEqual, 2)
+			})
+		})
+
+		Convey("When I set the Events", func() {
+
+			c.EnqueueEvents(
+				elemental.NewEvent(elemental.EventCreate, NewList()),
+				elemental.NewEvent(elemental.EventCreate, NewList()),
+			)
+
+			c.SetEvents(
+				elemental.NewEvents(
+					elemental.NewEvent(elemental.EventCreate, NewList()),
+				),
+			)
+
+			Convey("Then the context should have some Event", func() {
+				So(c.HasEvents(), ShouldBeTrue)
+				So(len(c.Events()), ShouldEqual, 1)
 			})
 		})
 	})

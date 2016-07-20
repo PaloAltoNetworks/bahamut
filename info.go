@@ -14,7 +14,7 @@ import (
 	"github.com/go-zoo/bone"
 )
 
-// Info represents general information about the initial request.
+// Info contains general information about the initial request.
 type Info struct {
 	Parameters         url.Values
 	BaseRawURL         string
@@ -25,14 +25,14 @@ type Info struct {
 	TLSConnectionState *tls.ConnectionState
 }
 
-// NewInfo creates a new *Info.
-func NewInfo() *Info {
+// newInfo returns a new Info.
+func newInfo() *Info {
 
 	return &Info{}
 }
 
 // FromRequest populates the Info from an http.Request.
-func (i *Info) FromRequest(req *http.Request) {
+func (i *Info) fromRequest(req *http.Request) {
 
 	if req.URL == nil {
 		panic("request must have an url")

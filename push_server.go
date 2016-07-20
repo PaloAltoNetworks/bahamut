@@ -84,7 +84,7 @@ func (n *pushServer) start() {
 		"endpoint": n.address + "/events",
 	}).Info("starting event server")
 
-	if n.config.HasKafka() {
+	if n.config.hasKafka() {
 		n.kafkaProducer = n.config.makeProducer()
 
 		defer n.kafkaProducer.Close()
@@ -145,7 +145,7 @@ func (n *pushServer) start() {
 
 			if n.kafkaProducer != nil {
 				message := &sarama.ProducerMessage{
-					Topic: n.config.DefaultTopic,
+					Topic: n.config.defaultTopic,
 					Key:   sarama.StringEncoder("namespace=default"),
 					Value: sarama.ByteEncoder(buffer.Bytes()),
 				}

@@ -18,12 +18,12 @@ func TestKakfaInfo_MakePushServerConfig(t *testing.T) {
 		config := MakePushServerConfig([]string{":1234"}, "topic", nil)
 
 		Convey("Then the kafka info should have the address set", func() {
-			So(len(config.KafkaAddresses), ShouldEqual, 1)
-			So(config.KafkaAddresses[0], ShouldEqual, ":1234")
+			So(len(config.kafkaAddresses), ShouldEqual, 1)
+			So(config.kafkaAddresses[0], ShouldEqual, ":1234")
 		})
 
 		Convey("Then the kafka info should have the default topic set", func() {
-			So(config.DefaultTopic, ShouldEqual, "topic")
+			So(config.defaultTopic, ShouldEqual, "topic")
 		})
 
 		Convey("Then enabled flag should be set", func() {
@@ -65,7 +65,7 @@ func TestKakfaInfo_HasKafka(t *testing.T) {
 		config := MakePushServerConfig([]string{"127.0.0.1:1234", "127.0.0.1:1235"}, "topic", nil)
 
 		Convey("Then HasKafka should return true", func() {
-			So(config.HasKafka(), ShouldBeTrue)
+			So(config.hasKafka(), ShouldBeTrue)
 		})
 	})
 
@@ -74,7 +74,7 @@ func TestKakfaInfo_HasKafka(t *testing.T) {
 		config := MakePushServerConfig([]string{}, "", nil)
 
 		Convey("Then HasKafka should return false", func() {
-			So(config.HasKafka(), ShouldBeFalse)
+			So(config.hasKafka(), ShouldBeFalse)
 		})
 	})
 }

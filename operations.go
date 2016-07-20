@@ -8,24 +8,24 @@ package bahamut
 type Operation int
 
 const (
-	// OperationRetrieveMany is the operation used to get multiple objects
+	// OperationRetrieveMany is the operation used to get multiple objects.
 	OperationRetrieveMany Operation = iota + 1
 
-	// OperationRetrieve is the operation used to get a single object
+	// OperationRetrieve is the operation used to get a single object.
 	OperationRetrieve
 
-	// OperationCreate is the operation used to create a single object
+	// OperationCreate is the operation used to create a single object.
 	OperationCreate
 
-	// OperationUpdate is the operation used to update a single object
+	// OperationUpdate is the operation used to update a single object.
 	OperationUpdate
 
-	// OperationDelete is the operation used to delete a single object
+	// OperationDelete is the operation used to delete a single object.
 	OperationDelete
 
-	// OperationPatch is the operation used to patcj a single object
+	// OperationPatch is the operation used to patcj a single object.
 	OperationPatch
 
-	// OperationInfo is the operation used to get info for a single object
+	// OperationInfo is the operation used to get info for a single object.
 	OperationInfo
 )

@@ -16,12 +16,14 @@ import (
 	"github.com/go-zoo/bone"
 )
 
+// an apiServer is the structure serving the api routes.
 type apiServer struct {
 	config      APIServerConfig
 	address     string
 	multiplexer *bone.Mux
 }
 
+// newAPIServer returns a new apiServer.
 func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 
 	return &apiServer{
@@ -30,11 +32,18 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 	}
 }
 
+// isTLSEnabled checks if the current configuration contains sufficient information
+// to estabish of TLS connection.
+//
+// It basically checks that the TLSCAPath, TLSCertificatePath and TLSKeyPath all correctly defined.
 func (a *apiServer) isTLSEnabled() bool {
 
 	return a.config.TLSCAPath != "" && a.config.TLSCertificatePath != "" && a.config.TLSKeyPath != ""
 }
 
+// createSecureHTTPServer returns a secure HTTP Server.
+//
+// It will return an error if any.
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	caCert, err := ioutil.ReadFile(a.config.TLSCAPath)
@@ -58,6 +67,9 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 	}, nil
 }
 
+// createSecureHTTPServer returns a insecure HTTP Server.
+//
+// It will return an error if any.
 func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
 
 	return &http.Server{
@@ -65,6 +77,7 @@ func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, erro
 	}, nil
 }
 
+// installRoutes installs all the routes declared in the APIServerConfig.
 func (a *apiServer) installRoutes() {
 
 	for _, route := range a.config.Routes {
@@ -118,6 +131,7 @@ func (a *apiServer) installRoutes() {
 	}).Info("all routes installed")
 }
 
+// start starts the apiServer.
 func (a *apiServer) start() {
 
 	a.installRoutes()
@@ -197,6 +211,9 @@ func (a *apiServer) start() {
 	}
 }
 
+// stop stops the apiServer.
+//
+// In reality right now, it does nothing :).
 func (a *apiServer) stop() {
 
 }

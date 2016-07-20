@@ -9,52 +9,62 @@ import "github.com/aporeto-inc/elemental"
 // Processor is the interface for a Processor Unit
 type Processor interface{}
 
-// RetrieveManyProcessor is an interface.
+// RetrieveManyProcessor is the interface a processor must implement
+// in order to be able to manage OperationRetrieveMany.
 type RetrieveManyProcessor interface {
 	ProcessRetrieveMany(*Context) error
 }
 
-// RetrieveProcessor is an interface.
+// RetrieveProcessor is the interface a processor must implement
+// in order to be able to manage OperationRetrieve.
 type RetrieveProcessor interface {
 	ProcessRetrieve(*Context) error
 }
 
-// CreateProcessor is an interface.
+// CreateProcessor is the interface a processor must implement
+// in order to be able to manage OperationCreate.
 type CreateProcessor interface {
 	ProcessCreate(*Context) error
 }
 
-// UpdateProcessor is an interface.
+// UpdateProcessor is the interface a processor must implement
+// in order to be able to manage OperationUpdate.
 type UpdateProcessor interface {
 	ProcessUpdate(*Context) error
 }
 
-// DeleteProcessor is an interface.
+// DeleteProcessor is the interface a processor must implement
+// in order to be able to manage OperationDelete.
 type DeleteProcessor interface {
 	ProcessDelete(*Context) error
 }
 
-// PatchProcessor is an interface.
+// PatchProcessor is the interface a processor must implement
+// in order to be able to manage OperationPatch.
 type PatchProcessor interface {
 	ProcessPatch(*Context) error
 }
 
-// InfoProcessor is an interface.
+// InfoProcessor is the interface a processor must implement
+// in order to be able to manage OperationInfo.
 type InfoProcessor interface {
 	ProcessInfo(*Context) error
 }
 
-// Authenticator is the interface used to verify the authentication
+// Authenticator is the interface that must be implemented in order to
+// to be used as the Bahamut main Authenticator.
 type Authenticator interface {
 	IsAuthenticated(*Context) (bool, error)
 }
 
-// Authorizer is the interface used to verify the permission
+// Authorizer is the interface that must be implemented in order to
+// to be used as the Bahamut main Authorizer.
 type Authorizer interface {
 	IsAuthorized(*Context) (bool, error)
 }
 
-// PushSessionsHandler is the interface used to handle sessions lyfecycle
+// PushSessionsHandler is the interface that must be implemented in order to
+// to be used as the Bahamut Push Server handler.
 type PushSessionsHandler interface {
 	OnPushSessionStart(*PushSession)
 	OnPushSessionStop(*PushSession)

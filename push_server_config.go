@@ -11,17 +11,22 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// PushServerConfig represents Redis connection information
+// A PushServerConfig contains the configuration for the Bahamut Push Server.
 type PushServerConfig struct {
-	KafkaAddresses  []string
-	DefaultTopic    string
-	Authorizer      Authorizer
-	Authenticator   Authenticator
+	kafkaAddresses  []string
+	defaultTopic    string
 	sessionsHandler PushSessionsHandler
 	enabled         bool
 }
 
-// MakePushServerConfig returns a new RedisInfo
+// MakePushServerConfig returns a new PushServerConfig.
+//
+// addresses represents the list of optional Kafka server endpoint to use in order to
+// enable the distributed push mechanism. If it empty, Bahamut will only push to local session.
+//
+// defaultTopic defines the default kafka topic to use. This is used only if addresses are set.
+//
+// sessionsHandler is an optional object that implements the PushSessionsHandler.
 func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandler PushSessionsHandler) PushServerConfig {
 
 	if len(addresses) > 0 && defaultTopic == "" {
@@ -33,8 +38,8 @@ func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandl
 	}
 
 	return PushServerConfig{
-		KafkaAddresses:  addresses,
-		DefaultTopic:    defaultTopic,
+		kafkaAddresses:  addresses,
+		defaultTopic:    defaultTopic,
 		sessionsHandler: sessionsHandler,
 		enabled:         true,
 	}
@@ -42,7 +47,7 @@ func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandl
 
 func (k PushServerConfig) makeProducer() sarama.SyncProducer {
 
-	producer, err := sarama.NewSyncProducer(k.KafkaAddresses, nil)
+	producer, err := sarama.NewSyncProducer(k.kafkaAddresses, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"info":  k,
@@ -57,7 +62,7 @@ func (k PushServerConfig) makeProducer() sarama.SyncProducer {
 
 func (k PushServerConfig) makeConsumer() sarama.Consumer {
 
-	consumer, err := sarama.NewConsumer(k.KafkaAddresses, nil)
+	consumer, err := sarama.NewConsumer(k.kafkaAddresses, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"info":  k,
@@ -70,13 +75,12 @@ func (k PushServerConfig) makeConsumer() sarama.Consumer {
 	return consumer
 }
 
-// HasKafka returns true is the PushServerConfig has Kafka server information
-func (k PushServerConfig) HasKafka() bool {
+func (k PushServerConfig) hasKafka() bool {
 
-	return len(k.KafkaAddresses) > 0
+	return len(k.kafkaAddresses) > 0
 }
 
 func (k PushServerConfig) String() string {
 
-	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.KafkaAddresses, k.DefaultTopic)
+	return fmt.Sprintf("<PushServerConfig Addresses: %v DefaultTopic: %s>", k.kafkaAddresses, k.defaultTopic)
 }

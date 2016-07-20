@@ -116,7 +116,7 @@ func (s *PushSession) listen() {
 	go s.read()
 	go s.write()
 
-	if s.pushServerConfig.HasKafka() {
+	if s.pushServerConfig.hasKafka() {
 		s.listenToKafkaMessages()
 	} else {
 		s.listenToLocalMessages()
@@ -129,7 +129,7 @@ func (s *PushSession) listenToKafkaMessages() error {
 	consumer := s.pushServerConfig.makeConsumer()
 	defer consumer.Close()
 
-	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.DefaultTopic, 0, sarama.OffsetNewest)
+	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.defaultTopic, 0, sarama.OffsetNewest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"session": s,

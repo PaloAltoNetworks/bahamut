@@ -4,14 +4,14 @@
 
 package bahamut
 
-// Count holds various counter for a context.
+// Count holds various counter for a Context.
 type Count struct {
 	Total   int
 	Current int
 }
 
-// NewCount creates a new Count.
-func NewCount() *Count {
+// newCount returns a new Count.
+func newCount() *Count {
 
 	return &Count{}
 }

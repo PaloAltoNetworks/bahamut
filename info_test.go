@@ -20,7 +20,7 @@ func TestInfo_BaseRawURL(t *testing.T) {
 
 		elemental.RegisterIdentity(elemental.MakeIdentity("parent", "parents"))
 
-		i := NewInfo()
+		i := newInfo()
 
 		Convey("When I read from an invalid http request", func() {
 
@@ -29,7 +29,7 @@ func TestInfo_BaseRawURL(t *testing.T) {
 			}
 
 			Convey("Then it should panic", func() {
-				So(func() { i.FromRequest(req) }, ShouldPanic)
+				So(func() { i.fromRequest(req) }, ShouldPanic)
 			})
 		})
 
@@ -41,7 +41,7 @@ func TestInfo_BaseRawURL(t *testing.T) {
 				URL:  u,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("Then BaseRawURL should be correct", func() {
 				So(i.BaseRawURL, ShouldEqual, "http://test.com/path")
@@ -57,7 +57,7 @@ func TestInfo_BaseRawURL(t *testing.T) {
 				URL:  u,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("Then BaseRawURL should be correct", func() {
 				So(i.BaseRawURL, ShouldEqual, "https://test.com/path")
@@ -71,7 +71,7 @@ func TestInfo_Parameters(t *testing.T) {
 
 	Convey("Given create a new Info", t, func() {
 
-		i := NewInfo()
+		i := newInfo()
 
 		Convey("When I read a request with parameters", func() {
 
@@ -82,7 +82,7 @@ func TestInfo_Parameters(t *testing.T) {
 				Method: http.MethodGet,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("Then parameters 'param1' should be correct", func() {
 				So(i.Parameters.Get("param1"), ShouldEqual, "1")
@@ -99,7 +99,7 @@ func TestInfo_Headers(t *testing.T) {
 
 	Convey("Given create a new Info", t, func() {
 
-		i := NewInfo()
+		i := newInfo()
 
 		Convey("When I read a request with headers", func() {
 
@@ -114,7 +114,7 @@ func TestInfo_Headers(t *testing.T) {
 			req.Header.Add("X-Hello", "hello")
 			req.Header.Add("X-World", "world")
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("Then the value of Header for X-Hello should be hello", func() {
 				So(i.Headers.Get("x-hello"), ShouldEqual, "hello")
@@ -136,7 +136,7 @@ func TestInfo_Components(t *testing.T) {
 
 	Convey("Given create a new Info and an identity", t, func() {
 
-		i := NewInfo()
+		i := newInfo()
 
 		Convey("When I read for a root object", func() {
 
@@ -146,7 +146,7 @@ func TestInfo_Components(t *testing.T) {
 				URL:  u,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("The the Parent Identity should be correct", func() {
 				So(i.ParentIdentity.Name, ShouldEqual, parentIdentity.Name)
@@ -165,7 +165,7 @@ func TestInfo_Components(t *testing.T) {
 				URL:  u,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("The the Parent Identity should be correct", func() {
 				So(i.ParentIdentity.Name, ShouldEqual, parentIdentity.Name)
@@ -184,7 +184,7 @@ func TestInfo_Components(t *testing.T) {
 				URL:  u,
 			}
 
-			i.FromRequest(req)
+			i.fromRequest(req)
 
 			Convey("The the Parent Identity should be correct", func() {
 				So(i.ParentIdentity.Name, ShouldEqual, parentIdentity.Name)

@@ -6,7 +6,9 @@ package bahamut
 
 import "fmt"
 
-// PrintBanner prints the Cid Banner
+// PrintBanner prints the Bahamut Banner.
+//
+// Yey!
 func PrintBanner() {
 	fmt.Println(`
    ____        _                           _           .
