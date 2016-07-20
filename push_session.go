@@ -7,6 +7,7 @@ package bahamut
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/aporeto-inc/elemental"
@@ -85,7 +86,8 @@ func (s *PushSession) send(message string) error {
 			log.WithFields(log.Fields{
 				"session": s,
 				"message": message,
-			}).Error("unable to decode event")
+				"materia": "bahamut",
+			}).Error("Unable to decode event.")
 			return err
 		}
 
@@ -126,7 +128,30 @@ func (s *PushSession) listen() {
 // continuously listens for new kafka messages
 func (s *PushSession) listenToKafkaMessages() error {
 
-	consumer := s.pushServerConfig.makeConsumer()
+	var consumer sarama.Consumer
+	var err error
+
+	for consumer == nil {
+
+		if consumer, err = s.pushServerConfig.makeConsumer(); err == nil {
+			break
+		}
+
+		log.WithFields(log.Fields{
+			"context": "bahamut",
+			"session": s,
+			"materia": "bahamut",
+		}).Warn("Unable to create consumer. Retrying in 5 seconds...")
+
+		select {
+		case <-time.After(5 * time.Second):
+			continue
+		case <-s.stop:
+			s.server.unregisterSession(s)
+			return nil
+		}
+	}
+
 	defer consumer.Close()
 
 	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.defaultTopic, 0, sarama.OffsetNewest)
@@ -134,7 +159,8 @@ func (s *PushSession) listenToKafkaMessages() error {
 		log.WithFields(log.Fields{
 			"session": s,
 			"error":   err,
-		}).Error("unable to consume topic")
+			"materia": "bahamut",
+		}).Error("Unable to consume topic.")
 		return err
 	}
 	defer parititionConsumer.Close()

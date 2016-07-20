@@ -7,6 +7,7 @@ package bahamut
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"golang.org/x/net/websocket"
 
@@ -77,23 +78,54 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 	}
 }
 
+func (n *pushServer) closeAllSessions() {
+
+	for _, session := range n.sessions {
+		session.close()
+	}
+	n.sessions = map[string]*PushSession{}
+}
+
 // starts the push server
 func (n *pushServer) start() {
 
 	log.WithFields(log.Fields{
 		"endpoint": n.address + "/events",
-	}).Info("starting event server")
+		"materia":  "bahamut",
+	}).Info("Starting event server.")
 
 	if n.config.hasKafka() {
-		n.kafkaProducer = n.config.makeProducer()
+
+		for n.kafkaProducer == nil {
+
+			var err error
+			if n.kafkaProducer, err = n.config.makeProducer(); err == nil {
+				break
+			}
+
+			log.WithFields(log.Fields{
+				"materia": "bahamut",
+			}).Warn("Unable to create kafka producer. Retrying in 5 seconds...")
+
+			select {
+			case <-time.After(5 * time.Second):
+				continue
+			case <-n.close:
+				n.closeAllSessions()
+				return
+			}
+		}
 
 		defer n.kafkaProducer.Close()
 
 		log.WithFields(log.Fields{
 			"producer": n.kafkaProducer,
-		}).Info("global push system is active")
+			"materia":  "bahamut",
+		}).Info("Global push system is active.")
 	} else {
-		log.Warn("global push system is inactive")
+		log.WithFields(log.Fields{
+			"materia": "bahamut",
+		}).Warn("Global push system is inactive.")
 	}
 
 	for {
@@ -108,9 +140,10 @@ func (n *pushServer) start() {
 			n.sessions[session.id] = session
 
 			log.WithFields(log.Fields{
-				"total":  len(n.sessions),
-				"client": session.socket.RemoteAddr(),
-			}).Info("started push session")
+				"total":   len(n.sessions),
+				"client":  session.socket.RemoteAddr(),
+				"materia": "bahamut",
+			}).Info("Push session started.")
 
 			if handler := n.config.sessionsHandler; handler != nil {
 				handler.OnPushSessionStart(session)
@@ -125,9 +158,10 @@ func (n *pushServer) start() {
 			delete(n.sessions, session.id)
 
 			log.WithFields(log.Fields{
-				"total":  len(n.sessions),
-				"client": session.socket.RemoteAddr(),
-			}).Info("closed session")
+				"total":   len(n.sessions),
+				"client":  session.socket.RemoteAddr(),
+				"materia": "bahamut",
+			}).Info("Push session closed.")
 
 			if handler := n.config.sessionsHandler; handler != nil {
 				handler.OnPushSessionStop(session)
@@ -138,8 +172,9 @@ func (n *pushServer) start() {
 			buffer := &bytes.Buffer{}
 			if err := json.NewEncoder(buffer).Encode(event); err != nil {
 				log.WithFields(log.Fields{
-					"data": event,
-				}).Error("unable to encode event data")
+					"data":    event,
+					"materia": "bahamut",
+				}).Error("Unable to encode event data.")
 				return
 			}
 
@@ -158,12 +193,7 @@ func (n *pushServer) start() {
 			}
 
 		case <-n.close:
-
-			for _, session := range n.sessions {
-				session.close()
-			}
-			n.sessions = map[string]*PushSession{}
-
+			n.closeAllSessions()
 			return
 		}
 	}

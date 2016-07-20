@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	log "github.com/Sirupsen/logrus"
 )
 
 // A PushServerConfig contains the configuration for the Bahamut Push Server.
@@ -45,34 +44,24 @@ func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandl
 	}
 }
 
-func (k PushServerConfig) makeProducer() sarama.SyncProducer {
+func (k PushServerConfig) makeProducer() (sarama.SyncProducer, error) {
 
 	producer, err := sarama.NewSyncProducer(k.kafkaAddresses, nil)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"info":  k,
-			"error": err,
-		}).Error("unable to create kafka producer")
-
-		return nil
+		return nil, err
 	}
 
-	return producer
+	return producer, nil
 }
 
-func (k PushServerConfig) makeConsumer() sarama.Consumer {
+func (k PushServerConfig) makeConsumer() (sarama.Consumer, error) {
 
 	consumer, err := sarama.NewConsumer(k.kafkaAddresses, nil)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"info":  k,
-			"error": err,
-		}).Error("unable to create kafka consumer")
-
-		return nil
+		return nil, err
 	}
 
-	return consumer
+	return consumer, nil
 }
 
 func (k PushServerConfig) hasKafka() bool {
