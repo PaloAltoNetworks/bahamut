@@ -127,6 +127,7 @@ domingo_contained_build:
 		--net host \
 		-t \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /dev/shm:/dev/shm \
 		-v $(ROOT_DIR):$(DOMINGO_EXPORT_FOLDER) \
 		-e BUILD_NUMBER="$(BUILD_NUMBER)" \
 		-e DOMINGO_EXPORT_FOLDER="$(DOMINGO_EXPORT_FOLDER)" \

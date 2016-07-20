@@ -6,12 +6,39 @@ package bahamut
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func TestServer_corsHandler(t *testing.T) {
+
+	Convey("Given I call the corsHandler", t, func() {
+
+		w := httptest.NewRecorder()
+		corsHandler(w, nil)
+
+		Convey("Then the response should be correct", func() {
+			So(w.Code, ShouldEqual, http.StatusOK)
+		})
+	})
+}
+
+func TestServer_notFoundHandler(t *testing.T) {
+
+	Convey("Given I call the notFoundHandler", t, func() {
+
+		w := httptest.NewRecorder()
+		notFoundHandler(w, nil)
+
+		Convey("Then the response should be correct", func() {
+			So(w.Code, ShouldEqual, http.StatusNotFound)
+		})
+	})
+}
 
 func TestServer_Initialization(t *testing.T) {
 
@@ -154,7 +181,7 @@ func TestServer_Start(t *testing.T) {
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 			routes := []*Route{NewRoute("/hello", http.MethodGet, h)}
 
-			cfg := MakeAPIServerConfig("127.0.0.1:3123", "", "", "", routes, nil, "", "/h")
+			cfg := MakeAPIServerConfig("127.0.0.1:3123", "", "", "", routes, func(w http.ResponseWriter, r *http.Request) {}, "", "/h")
 			c := newAPIServer(cfg, bone.New())
 
 			go c.start()

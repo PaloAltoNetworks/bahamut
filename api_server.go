@@ -16,6 +16,15 @@ import (
 	"github.com/go-zoo/bone"
 )
 
+func corsHandler(w http.ResponseWriter, r *http.Request) {
+	setCommonHeader(w)
+	w.WriteHeader(http.StatusOK)
+}
+
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+	WriteHTTPError(w, http.StatusNotFound, elemental.NewError("Not Found", "Unable to find the requested resource", "http", http.StatusNotFound))
+}
+
 // an apiServer is the structure serving the api routes.
 type apiServer struct {
 	config      APIServerConfig
@@ -102,19 +111,11 @@ func (a *apiServer) installRoutes() {
 		}).Debug("api route installed")
 	}
 
-	a.multiplexer.Options("*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeader(w)
-		w.WriteHeader(http.StatusOK)
-	}))
+	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 
-	a.multiplexer.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeader(w)
-		w.WriteHeader(http.StatusOK)
-	}))
+	a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 
-	a.multiplexer.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		WriteHTTPError(w, http.StatusNotFound, elemental.NewError("Not Found", "Unable to find the requested resource", "http", http.StatusNotFound))
-	}))
+	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
 
 	if a.config.EnableProfiling {
 		a.multiplexer.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
