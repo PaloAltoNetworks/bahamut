@@ -94,7 +94,11 @@ func TestKakfaInfo_makeProducer(t *testing.T) {
 
 		Convey("When I make a producer", func() {
 
-			p := config.makeProducer()
+			p, err := config.makeProducer()
+
+			Convey("Then the errr should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 
 			Convey("Then the producer should be correctly set", func() {
 				So(p, ShouldNotBeNil)
@@ -108,8 +112,11 @@ func TestKakfaInfo_makeProducer(t *testing.T) {
 
 		Convey("When I make a producer", func() {
 
-			p := config.makeProducer()
+			p, err := config.makeProducer()
 
+			Convey("Then the error should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
 			Convey("Then the producer should be nil", func() {
 				So(p, ShouldBeNil)
 			})
@@ -132,7 +139,11 @@ func TestKakfaInfo_makeConsumer(t *testing.T) {
 
 		Convey("When I make a consumer", func() {
 
-			p := config.makeConsumer()
+			p, err := config.makeConsumer()
+
+			Convey("Then the err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
 
 			Convey("Then the consumer should be correctly set", func() {
 				So(p, ShouldNotBeNil)
@@ -146,7 +157,11 @@ func TestKakfaInfo_makeConsumer(t *testing.T) {
 
 		Convey("When I make a producer", func() {
 
-			p := config.makeConsumer()
+			p, err := config.makeConsumer()
+
+			Convey("Then the err should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
 
 			Convey("Then the consumer should be nil", func() {
 				So(p, ShouldBeNil)

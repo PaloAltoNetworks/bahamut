@@ -20,7 +20,7 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
         "method":     req.Method,
         "operation":  bahamut.OperationRetrieveMany,
         "path":       req.URL.Path,
-    }).Debug("handling retrieve many {{ specification.entity_name|lower }} request")
+    }).Debug("Handling retrieve many {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationRetrieveMany)
@@ -58,7 +58,7 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
         "method":     req.Method,
         "operation":  bahamut.OperationRetrieve,
         "path":       req.URL.Path,
-    }).Debug("handling retrieve {{ specification.entity_name|lower }} request")
+    }).Debug("Handling retrieve {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationRetrieve)
@@ -96,7 +96,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
       "method":     req.Method,
       "operation":  bahamut.OperationCreate,
       "path":       req.URL.Path,
-    }).Debug("handling create request")
+    }).Debug("Handling create {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationCreate)
@@ -160,7 +160,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "method":     req.Method,
         "operation":  bahamut.OperationUpdate,
         "path":       req.URL.Path,
-    }).Debug("handling update {{ specification.entity_name|lower }} request")
+    }).Debug("Handling update {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationUpdate)
@@ -224,7 +224,7 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "method":     req.Method,
         "operation":  bahamut.OperationDelete,
         "path":       req.URL.Path,
-    }).Debug("handling delete {{ specification.entity_name|lower }} request")
+    }).Debug("Handling delete {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationDelete)
@@ -273,7 +273,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         "method":     req.Method,
         "operation":  bahamut.OperationPatch,
         "path":       req.URL.Path,
-    }).Debug("handling patch {{ specification.entity_name|lower }} request")
+    }).Debug("Handling patch {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
     ctx := bahamut.NewContext(bahamut.OperationPatch)
@@ -331,7 +331,7 @@ func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reques
         "method":     req.Method,
         "operation":  bahamut.OperationInfo,
         "path":       req.URL.Path,
-    }).Debug("handling info {{ specification.entity_name|lower }} request")
+    }).Debug("Handling info {{ specification.entity_name|lower }} request.")
 
     bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented in Cid yet", "http", http.StatusNotImplemented))
 }

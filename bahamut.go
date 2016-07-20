@@ -168,7 +168,9 @@ func (b *Bahamut) handleExit() {
 	<-c
 
 	b.Stop()
-	log.Info("bye!")
+	log.WithFields(log.Fields{
+		"materia": "bahamut",
+	}).Info("Bye!")
 }
 
 // Start starts the Bahamut server.
