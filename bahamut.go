@@ -32,8 +32,9 @@ type Bahamut struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
 
-	apiServer  *apiServer
-	pushServer *pushServer
+	apiServer    *apiServer
+	pushServer   *pushServer
+	pubSubServer *publishServer
 
 	authenticator Authenticator
 	authorizer    Authorizer
@@ -54,13 +55,17 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	}
 
 	var pushServer *pushServer
+	var pubsubServer *publishServer
 	if pushConfig.enabled {
-		pushServer = newPushServer(pushConfig, mux)
+		pubsubServer = newPublishServer(pushConfig.kafkaAddresses)
+		pushServer = newPushServer(pushConfig, pubsubServer, mux)
 	}
 
 	srv := &Bahamut{
-		apiServer:   apiServer,
-		pushServer:  pushServer,
+		apiServer:    apiServer,
+		pushServer:   pushServer,
+		pubSubServer: pubsubServer,
+
 		multiplexer: mux,
 		stop:        make(chan bool),
 		processors:  make(map[string]Processor),
@@ -180,6 +185,10 @@ func (b *Bahamut) Start() {
 		go b.apiServer.start()
 	}
 
+	if b.pubSubServer != nil {
+		go b.pubSubServer.start()
+	}
+
 	if b.pushServer != nil {
 		go b.pushServer.start()
 	}
@@ -198,6 +207,10 @@ func (b *Bahamut) Stop() {
 
 	if b.pushServer != nil {
 		b.pushServer.stop()
+	}
+
+	if b.pubSubServer != nil {
+		b.pubSubServer.stop()
 	}
 
 	b.stop <- true

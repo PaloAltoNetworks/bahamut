@@ -4,11 +4,7 @@
 
 package bahamut
 
-import (
-	"fmt"
-
-	"github.com/Shopify/sarama"
-)
+import "fmt"
 
 // A PushServerConfig contains the configuration for the Bahamut Push Server.
 type PushServerConfig struct {
@@ -42,31 +38,6 @@ func MakePushServerConfig(addresses []string, defaultTopic string, sessionsHandl
 		sessionsHandler: sessionsHandler,
 		enabled:         true,
 	}
-}
-
-func (k PushServerConfig) makeProducer() (sarama.SyncProducer, error) {
-
-	producer, err := sarama.NewSyncProducer(k.kafkaAddresses, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
-}
-
-func (k PushServerConfig) makeConsumer() (sarama.Consumer, error) {
-
-	consumer, err := sarama.NewConsumer(k.kafkaAddresses, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return consumer, nil
-}
-
-func (k PushServerConfig) hasKafka() bool {
-
-	return len(k.kafkaAddresses) > 0
 }
 
 func (k PushServerConfig) String() string {

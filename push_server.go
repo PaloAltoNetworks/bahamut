@@ -7,38 +7,37 @@ package bahamut
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"golang.org/x/net/websocket"
 
-	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
 
 type pushServer struct {
-	address       string
-	sessions      map[string]*PushSession
-	register      chan *PushSession
-	unregister    chan *PushSession
-	events        chan *elemental.Event
-	close         chan bool
-	multiplexer   *bone.Mux
-	config        PushServerConfig
-	kafkaProducer sarama.SyncProducer
+	address      string
+	sessions     map[string]*PushSession
+	register     chan *PushSession
+	unregister   chan *PushSession
+	events       chan *elemental.Event
+	close        chan bool
+	multiplexer  *bone.Mux
+	config       PushServerConfig
+	pubSubServer *publishServer
 }
 
-func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
+func newPushServer(config PushServerConfig, pubSubServer *publishServer, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
-		sessions:    map[string]*PushSession{},
-		register:    make(chan *PushSession),
-		unregister:  make(chan *PushSession),
-		close:       make(chan bool),
-		events:      make(chan *elemental.Event, 1024),
-		multiplexer: multiplexer,
-		config:      config,
+		sessions:     map[string]*PushSession{},
+		register:     make(chan *PushSession),
+		unregister:   make(chan *PushSession),
+		close:        make(chan bool),
+		events:       make(chan *elemental.Event, 1024),
+		multiplexer:  multiplexer,
+		config:       config,
+		pubSubServer: pubSubServer,
 	}
 
 	srv.multiplexer.Handle("/events", websocket.Handler(srv.handleConnection))
@@ -94,40 +93,6 @@ func (n *pushServer) start() {
 		"materia":  "bahamut",
 	}).Info("Starting event server.")
 
-	if n.config.hasKafka() {
-
-		for n.kafkaProducer == nil {
-
-			var err error
-			if n.kafkaProducer, err = n.config.makeProducer(); err == nil {
-				break
-			}
-
-			log.WithFields(log.Fields{
-				"materia": "bahamut",
-			}).Warn("Unable to create kafka producer. Retrying in 5 seconds...")
-
-			select {
-			case <-time.After(5 * time.Second):
-				continue
-			case <-n.close:
-				n.closeAllSessions()
-				return
-			}
-		}
-
-		defer n.kafkaProducer.Close()
-
-		log.WithFields(log.Fields{
-			"producer": n.kafkaProducer,
-			"materia":  "bahamut",
-		}).Info("Global push system is active.")
-	} else {
-		log.WithFields(log.Fields{
-			"materia": "bahamut",
-		}).Warn("Global push system is inactive.")
-	}
-
 	for {
 		select {
 
@@ -169,24 +134,24 @@ func (n *pushServer) start() {
 
 		case event := <-n.events:
 
-			buffer := &bytes.Buffer{}
-			if err := json.NewEncoder(buffer).Encode(event); err != nil {
-				log.WithFields(log.Fields{
-					"data":    event,
-					"materia": "bahamut",
-				}).Error("Unable to encode event data.")
-				return
-			}
+			if n.pubSubServer != nil {
 
-			if n.kafkaProducer != nil {
-				message := &sarama.ProducerMessage{
-					Topic: n.config.defaultTopic,
-					Key:   sarama.StringEncoder("namespace=default"),
-					Value: sarama.ByteEncoder(buffer.Bytes()),
+				publication := NewPublication(n.config.defaultTopic)
+				publication.Encode(event)
+				n.pubSubServer.Publish(publication)
+
+			} else {
+
+				buffer := &bytes.Buffer{}
+				if err := json.NewEncoder(buffer).Encode(event); err != nil {
+					log.WithFields(log.Fields{
+						"data":    event,
+						"materia": "bahamut",
+					}).Error("Unable to encode event data.")
+
+					return
 				}
 
-				n.kafkaProducer.SendMessage(message)
-			} else {
 				for _, session := range n.sessions {
 					session.events <- buffer.String()
 				}
