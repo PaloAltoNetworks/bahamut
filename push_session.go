@@ -19,26 +19,22 @@ import (
 
 // PushSession represents a client session.
 type PushSession struct {
-	events           chan string
-	id               string
-	pushServerConfig PushServerConfig
-	server           *pushServer
-	socket           *websocket.Conn
-	out              chan string
-	UserInfo         interface{}
-	multicast        *multistop.MultiStop
+	id        string
+	server    *pushServer
+	socket    *websocket.Conn
+	out       chan string
+	UserInfo  interface{}
+	multicast *multistop.MultiStop
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 
 	return &PushSession{
-		events:           make(chan string, 1024),
-		id:               uuid.NewV4().String(),
-		pushServerConfig: server.config,
-		server:           server,
-		socket:           ws,
-		out:              make(chan string, 1024),
-		multicast:        multistop.NewMultiStop(),
+		id:        uuid.NewV4().String(),
+		server:    server,
+		socket:    ws,
+		out:       make(chan string, 1024),
+		multicast: multistop.NewMultiStop(),
 	}
 }
 
@@ -54,8 +50,8 @@ func (s *PushSession) read() {
 	for {
 		var data []byte
 		if err := websocket.Message.Receive(s.socket, &data); err != nil {
-			s.multicast.Send(true)
-			break
+			go s.close()
+			return
 		}
 	}
 }
@@ -81,7 +77,7 @@ func (s *PushSession) write() {
 // send given bytes to the websocket
 func (s *PushSession) send(message string) error {
 
-	if s.server.config.sessionsHandler != nil {
+	if s.server.config.SessionsHandler != nil {
 
 		var event *elemental.Event
 		if err := json.NewDecoder(strings.NewReader(message)).Decode(&event); err != nil {
@@ -93,7 +89,7 @@ func (s *PushSession) send(message string) error {
 			return err
 		}
 
-		if !s.server.config.sessionsHandler.ShouldPush(s, event) {
+		if !s.server.config.SessionsHandler.ShouldPush(s, event) {
 			return nil
 		}
 	}
@@ -115,54 +111,24 @@ func (s *PushSession) close() {
 // listens to events, either from kafka or from local events.
 func (s *PushSession) listen() {
 
-	defer s.socket.Close()
-
-	go s.read()
-	go s.write()
-
-	if s.server.pubSubServer != nil {
-		s.listenToGlobalMessages()
-	} else {
-		s.listenToLocalMessages()
-	}
-}
-
-// continuously listens for new global messages
-func (s *PushSession) listenToGlobalMessages() {
+	publications := make(chan *pubsub.Publication)
+	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
 
 	stopCh := make(chan bool)
 	s.multicast.Register(stopCh)
 
 	defer s.multicast.Unregister(stopCh)
 	defer s.server.unregisterSession(s)
+	defer s.socket.Close()
+	defer unsubscribe()
 
-	publications := make(chan *pubsub.Publication)
-	unsubscribe := s.server.pubSubServer.Subscribe(publications, s.pushServerConfig.defaultTopic)
+	go s.read()
+	go s.write()
 
 	for {
 		select {
 		case message := <-publications:
 			s.send(string(message.Data()))
-		case <-stopCh:
-			unsubscribe()
-			return
-		}
-	}
-}
-
-// continuously listens for new local messages
-func (s *PushSession) listenToLocalMessages() {
-
-	stopCh := make(chan bool)
-	s.multicast.Register(stopCh)
-
-	defer s.multicast.Unregister(stopCh)
-	defer s.server.unregisterSession(s)
-
-	for {
-		select {
-		case message := <-s.events:
-			s.send(message)
 		case <-stopCh:
 			return
 		}

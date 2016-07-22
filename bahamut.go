@@ -10,7 +10,6 @@ import (
 	"os/signal"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -33,9 +32,8 @@ type Bahamut struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
 
-	apiServer    *apiServer
-	pushServer   *pushServer
-	pubSubServer pubsub.Server
+	apiServer  *apiServer
+	pushServer *pushServer
 
 	authenticator Authenticator
 	authorizer    Authorizer
@@ -51,22 +49,18 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	mux := bone.New()
 
 	var apiServer *apiServer
-	if apiConfig.enabled {
+	if !apiConfig.Disabled {
 		apiServer = newAPIServer(apiConfig, mux)
 	}
 
 	var pushServer *pushServer
-	var pubsubServer pubsub.Server
-	if pushConfig.enabled {
-		pubsubServer = pubsub.NewServer(pushConfig.kafkaAddresses)
-		pushServer = newPushServer(pushConfig, pubsubServer, mux)
+	if !pushConfig.Disabled {
+		pushServer = newPushServer(pushConfig, mux)
 	}
 
 	srv := &Bahamut{
-		apiServer:    apiServer,
-		pushServer:   pushServer,
-		pubSubServer: pubsubServer,
-
+		apiServer:   apiServer,
+		pushServer:  pushServer,
 		multiplexer: mux,
 		stop:        make(chan bool),
 		processors:  make(map[string]Processor),
@@ -186,10 +180,6 @@ func (b *Bahamut) Start() {
 		go b.apiServer.start()
 	}
 
-	if b.pubSubServer != nil {
-		go b.pubSubServer.Start()
-	}
-
 	if b.pushServer != nil {
 		go b.pushServer.start()
 	}
@@ -208,10 +198,6 @@ func (b *Bahamut) Stop() {
 
 	if b.pushServer != nil {
 		b.pushServer.stop()
-	}
-
-	if b.pubSubServer != nil {
-		b.pubSubServer.Stop()
 	}
 
 	b.stop <- true

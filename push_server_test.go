@@ -25,7 +25,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, nil, bone.New())
+		srv := newPushServer(PushServerConfig{}, bone.New())
 
 		Convey("Then sessions should be initialized", func() {
 			So(len(srv.sessions), ShouldEqual, 0)
@@ -68,7 +68,10 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), nil, bone.New())
+		cfg := PushServerConfig{
+			SessionsHandler: handler,
+		}
+		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -95,7 +98,10 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), nil, bone.New())
+		cfg := PushServerConfig{
+			SessionsHandler: &testSessionHandler{},
+		}
+		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -129,7 +135,7 @@ func TestSession_startStop(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer(PushServerConfig{}, nil, bone.New())
+		srv := newPushServer(PushServerConfig{}, bone.New())
 		session := newPushSession(ws, srv)
 
 		var wg sync.WaitGroup
@@ -164,7 +170,7 @@ func TestSession_HandleConnection(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, nil, bone.New())
+		srv := newPushServer(PushServerConfig{}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -192,7 +198,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, nil, bone.New())
+		srv := newPushServer(PushServerConfig{}, bone.New())
 
 		Convey("When I push an event", func() {
 
@@ -225,13 +231,17 @@ func TestSession_GlobalEvents(t *testing.T) {
 		broker.Returns(metadataResponse)
 		defer broker.Close()
 
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		pubsubServer := pubsub.NewServer([]string{broker.Addr()})
-		go pubsubServer.Start()
+		config := PushServerConfig{
+			Service:         pubsub.NewServer([]string{broker.Addr()}),
+			SessionsHandler: &testSessionHandler{},
+			Topic:           "topic",
+		}
+
+		go config.Service.Start()
 		<-time.After(3 * time.Millisecond)
 		// defer pubsubServer.Stop()
 
-		srv := newPushServer(config, pubsubServer, bone.New())
+		srv := newPushServer(config, bone.New())
 
 		go srv.start()
 
@@ -243,62 +253,6 @@ func TestSession_GlobalEvents(t *testing.T) {
 
 			Convey("Then kafka should have received the message", func() {
 				So(len(broker.History()), ShouldEqual, 2)
-			})
-		})
-	})
-}
-
-func TestSession_LocalEvents(t *testing.T) {
-
-	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-		var d []byte
-		websocket.Message.Receive(ws, &d)
-		websocket.Message.Send(ws, d)
-	}))
-	defer ts.Close()
-
-	Convey("Given I have a started PushServer a session", t, func() {
-
-		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
-		defer ws1.Close()
-
-		srv := newPushServer(PushServerConfig{}, nil, bone.New())
-		session1 := newPushSession(ws1, srv)
-
-		go srv.start()
-		srv.registerSession(session1)
-
-		Convey("When push an event", func() {
-
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
-
-			var evt string
-			select {
-			case evt = <-session1.events:
-				break
-			case <-time.After(3 * time.Millisecond):
-				break
-			}
-
-			Convey("Then output event should be correct", func() {
-				So(evt, ShouldNotBeEmpty)
-			})
-		})
-
-		Convey("When push an event with an UnmarshalableList", func() {
-
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewUnmarshalableList()))
-
-			var evt string
-			select {
-			case evt = <-session1.events:
-				break
-			case <-time.After(3 * time.Millisecond):
-				break
-			}
-
-			Convey("Then output event should be correct", func() {
-				So(evt, ShouldBeEmpty)
 			})
 		})
 	})

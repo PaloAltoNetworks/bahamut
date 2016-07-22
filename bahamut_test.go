@@ -56,7 +56,14 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		b := NewBahamut(
+			APIServerConfig{
+				Disabled: true,
+			},
+			PushServerConfig{
+				Disabled: true,
+			},
+		)
 
 		Convey("Then apiServer should be nil", func() {
 			So(b.apiServer, ShouldBeNil)
@@ -77,7 +84,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewBahamut(APIServerConfig{enabled: true}, PushServerConfig{enabled: true})
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then apiServer should not be nil", func() {
 			So(b.apiServer, ShouldNotBeNil)

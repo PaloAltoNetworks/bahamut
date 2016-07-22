@@ -5,9 +5,6 @@
 package bahamut
 
 import (
-	"bytes"
-	"encoding/json"
-
 	"golang.org/x/net/websocket"
 
 	log "github.com/Sirupsen/logrus"
@@ -17,28 +14,26 @@ import (
 )
 
 type pushServer struct {
-	address      string
-	sessions     map[string]*PushSession
-	register     chan *PushSession
-	unregister   chan *PushSession
-	events       chan *elemental.Event
-	close        chan bool
-	multiplexer  *bone.Mux
-	config       PushServerConfig
-	pubSubServer pubsub.Server
+	address     string
+	sessions    map[string]*PushSession
+	register    chan *PushSession
+	unregister  chan *PushSession
+	events      chan *elemental.Event
+	close       chan bool
+	multiplexer *bone.Mux
+	config      PushServerConfig
 }
 
-func newPushServer(config PushServerConfig, pubSubServer pubsub.Server, multiplexer *bone.Mux) *pushServer {
+func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
-		sessions:     map[string]*PushSession{},
-		register:     make(chan *PushSession),
-		unregister:   make(chan *PushSession),
-		close:        make(chan bool),
-		events:       make(chan *elemental.Event, 1024),
-		multiplexer:  multiplexer,
-		config:       config,
-		pubSubServer: pubSubServer,
+		sessions:    map[string]*PushSession{},
+		register:    make(chan *PushSession),
+		unregister:  make(chan *PushSession),
+		close:       make(chan bool),
+		events:      make(chan *elemental.Event, 1024),
+		multiplexer: multiplexer,
+		config:      config,
 	}
 
 	srv.multiplexer.Handle("/events", websocket.Handler(srv.handleConnection))
@@ -111,7 +106,7 @@ func (n *pushServer) start() {
 				"materia": "bahamut",
 			}).Info("Push session started.")
 
-			if handler := n.config.sessionsHandler; handler != nil {
+			if handler := n.config.SessionsHandler; handler != nil {
 				handler.OnPushSessionStart(session)
 			}
 
@@ -129,33 +124,16 @@ func (n *pushServer) start() {
 				"materia": "bahamut",
 			}).Info("Push session closed.")
 
-			if handler := n.config.sessionsHandler; handler != nil {
+			if handler := n.config.SessionsHandler; handler != nil {
 				handler.OnPushSessionStop(session)
 			}
 
 		case event := <-n.events:
 
-			if n.pubSubServer != nil {
-
-				publication := pubsub.NewPublication(n.config.defaultTopic)
+			if n.config.Service != nil {
+				publication := pubsub.NewPublication(n.config.Topic)
 				publication.Encode(event)
-				n.pubSubServer.Publish(publication)
-
-			} else {
-
-				buffer := &bytes.Buffer{}
-				if err := json.NewEncoder(buffer).Encode(event); err != nil {
-					log.WithFields(log.Fields{
-						"data":    event,
-						"materia": "bahamut",
-					}).Error("Unable to encode event data.")
-
-					return
-				}
-
-				for _, session := range n.sessions {
-					session.events <- buffer.String()
-				}
+				n.config.Service.Publish(publication)
 			}
 
 		case <-n.close:
