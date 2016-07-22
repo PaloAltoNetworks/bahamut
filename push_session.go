@@ -36,7 +36,7 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 	}
 }
 
-// Identifier returns the identifier of the push session
+// Identifier returns the identifier of the push session.
 func (s *PushSession) Identifier() string {
 
 	return s.id

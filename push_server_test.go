@@ -241,6 +241,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 			"OffsetRequest": sarama.NewMockOffsetResponse(t).
 				SetOffset("topic", 0, sarama.OffsetOldest, 0).
 				SetOffset("topic", 0, sarama.OffsetNewest, 0),
+			"ProduceRequest": sarama.NewMockProduceResponse(t),
 		})
 		defer broker.Close()
 
@@ -252,11 +253,10 @@ func TestSession_GlobalEvents(t *testing.T) {
 		config.Service.Connect().Wait(300 * time.Millisecond)
 
 		srv := newPushServer(config, bone.New())
-
 		go srv.start()
 
-		// defer config.Service.Disconnect()
-		// defer srv.stop()
+		defer srv.stop()
+		defer config.Service.Disconnect()
 
 		Convey("When push an event", func() {
 

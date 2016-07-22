@@ -29,7 +29,7 @@ func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
 		sessions:    map[string]*PushSession{},
 		register:    make(chan *PushSession),
 		unregister:  make(chan *PushSession),
-		close:       make(chan bool),
+		close:       make(chan bool, 2),
 		events:      make(chan *elemental.Event, 1024),
 		multiplexer: multiplexer,
 		config:      config,
