@@ -8,24 +8,24 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// kafkaPubSubServer implements a PubSubServer using Kafka
-type kafkaPubSubServer struct {
+// kafkaPubSub implements a PubSubServer using Kafka
+type kafkaPubSub struct {
 	services      []string
 	producer      sarama.SyncProducer
 	retryInterval time.Duration
 }
 
-// newPubSubServer Initializes the publishing.
-func newKafkaPubSubServer(services []string) *kafkaPubSubServer {
+// newKafkaPubSub Initializes the publishing.
+func newKafkaPubSub(services []string) *kafkaPubSub {
 
-	return &kafkaPubSubServer{
+	return &kafkaPubSub{
 		services:      services,
 		retryInterval: 5 * time.Second,
 	}
 }
 
 // Publish publishes a publication.
-func (p *kafkaPubSubServer) Publish(publication *Publication) error {
+func (p *kafkaPubSub) Publish(publication *Publication) error {
 
 	if p.producer == nil {
 		return fmt.Errorf("Not connected to kafka. Messages dropped.")
@@ -44,7 +44,7 @@ func (p *kafkaPubSubServer) Publish(publication *Publication) error {
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *kafkaPubSubServer) Subscribe(c chan *Publication, topic string) func() {
+func (p *kafkaPubSub) Subscribe(c chan *Publication, topic string) func() {
 
 	unsubscribe := make(chan bool)
 
@@ -101,7 +101,7 @@ func (p *kafkaPubSubServer) Subscribe(c chan *Publication, topic string) func() 
 }
 
 // Connect connects the PubSubServer to the remote service.
-func (p *kafkaPubSubServer) Connect() Waiter {
+func (p *kafkaPubSub) Connect() Waiter {
 
 	abort := make(chan bool, 2)
 	connected := make(chan bool, 2)
@@ -139,7 +139,7 @@ func (p *kafkaPubSubServer) Connect() Waiter {
 }
 
 // Disconnect disconnects the PubSubServer from the remote service..
-func (p *kafkaPubSubServer) Disconnect() {
+func (p *kafkaPubSub) Disconnect() {
 
 	if p.producer != nil {
 		p.producer.Close()

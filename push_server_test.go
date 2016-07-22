@@ -179,7 +179,7 @@ func TestSession_HandleConnection(t *testing.T) {
 		defer broker.Close()
 
 		srv := newPushServer(PushServerConfig{
-			Service: pubsub.NewServer([]string{broker.Addr()}),
+			Service: pubsub.NewService([]string{broker.Addr()}),
 			Topic:   "topic",
 		}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
@@ -247,7 +247,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 		defer broker.Close()
 
 		config := PushServerConfig{
-			Service:         pubsub.NewServer([]string{broker.Addr()}),
+			Service:         pubsub.NewService([]string{broker.Addr()}),
 			SessionsHandler: &testSessionHandler{},
 			Topic:           "topic",
 		}

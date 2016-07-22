@@ -64,7 +64,7 @@ type APIServerConfig struct {
 type PushServerConfig struct {
 
 	// Service defines the pubsub service to user.
-	Service pubsub.Server
+	Service pubsub.PublisherSubscriber
 
 	// Topic defines the default notification topic to use.
 	Topic string

@@ -242,7 +242,7 @@ func TestSession_listen(t *testing.T) {
 		defer ws.Close()
 
 		config := PushServerConfig{
-			Service: pubsub.NewServer([]string{broker.Addr()}),
+			Service: pubsub.NewService([]string{broker.Addr()}),
 			Topic:   "topic",
 		}
 
@@ -315,7 +315,7 @@ func TestSession_listen2(t *testing.T) {
 		defer ws.Close()
 
 		config := PushServerConfig{
-			Service: pubsub.NewServer([]string{broker.Addr()}),
+			Service: pubsub.NewService([]string{broker.Addr()}),
 			Topic:   "topic",
 		}
 

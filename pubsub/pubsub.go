@@ -2,18 +2,18 @@ package pubsub
 
 import "time"
 
-// A Server is a structure that provides publish subscribe mechanism.
-type Server interface {
+// A PublisherSubscriber is a structure that provides a publish/subscribe mechanism.
+type PublisherSubscriber interface {
 	Publish(publication *Publication) error
 	Subscribe(c chan *Publication, topic string) func()
 	Connect() Waiter
 	Disconnect()
 }
 
-// NewServer Initializes the PubSubServer.
-func NewServer(services []string) Server {
+// NewService returns a PublisherSubscriber.
+func NewService(services []string) PublisherSubscriber {
 
-	return newKafkaPubSubServer(services)
+	return newKafkaPubSub(services)
 }
 
 // A Waiter is the interface returned by Server.Connect

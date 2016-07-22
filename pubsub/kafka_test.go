@@ -13,7 +13,7 @@ func TestKafka_NewPubSubServer(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := newKafkaPubSubServer([]string{"123:123"})
+		ps := newKafkaPubSub([]string{"123:123"})
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps.services[0], ShouldEqual, "123:123")
@@ -36,7 +36,7 @@ func TestKafka_StartStop(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := newKafkaPubSubServer([]string{})
+		ps := newKafkaPubSub([]string{})
 		ps.retryInterval = 1 * time.Millisecond
 
 		Convey("When I start the server", func() {
@@ -62,7 +62,7 @@ func TestKafka_StartStop(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := newKafkaPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSub([]string{broker.Addr()})
 
 		Convey("When I start the server", func() {
 
@@ -89,7 +89,7 @@ func TestKafka_Publish(t *testing.T) {
 
 	Convey("Given I try to publish while not connected", t, func() {
 
-		ps := newKafkaPubSubServer([]string{})
+		ps := newKafkaPubSub([]string{})
 
 		Convey("When I publish something", func() {
 
@@ -122,7 +122,7 @@ func TestKafka_Publish(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := newKafkaPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSub([]string{broker.Addr()})
 		ps.Connect().Wait(300 * time.Millisecond)
 
 		defer ps.Disconnect()
@@ -159,7 +159,7 @@ func TestKafka_Publish(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := newKafkaPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSub([]string{broker.Addr()})
 		ps.Connect().Wait(300 * time.Millisecond)
 
 		defer ps.Disconnect()
@@ -181,7 +181,7 @@ func TestKafka_Subscribe(t *testing.T) {
 
 	Convey("Given I try to subscribe but I cannot connect", t, func() {
 
-		ps := newKafkaPubSubServer([]string{})
+		ps := newKafkaPubSub([]string{})
 		ps.retryInterval = 1 * time.Millisecond
 
 		Convey("When I subscribe to something", func() {
@@ -211,7 +211,7 @@ func TestKafka_Subscribe(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := newKafkaPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSub([]string{broker.Addr()})
 
 		Convey("When I subscribe", func() {
 
