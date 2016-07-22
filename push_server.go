@@ -132,7 +132,14 @@ func (n *pushServer) start() {
 			if n.config.Service != nil {
 				publication := NewPublication(n.config.Topic)
 				publication.Encode(event)
-				n.config.Service.Publish(publication)
+				err := n.config.Service.Publish(publication)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"topic":   publication.Topic,
+						"event":   event,
+						"package": "bahamut",
+					}).Warn("Unable to publish. Message dropped.")
+				}
 			}
 
 		case <-n.close:
