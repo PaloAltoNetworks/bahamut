@@ -1,4 +1,4 @@
-package bahamut
+package multicaststop
 
 // A MultiCastBooleanChannel is a struct that allows
 // to send a boolean that will be sent to all registered

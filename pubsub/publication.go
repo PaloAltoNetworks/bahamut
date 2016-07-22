@@ -1,4 +1,4 @@
-package bahamut
+package pubsub
 
 import (
 	"bytes"

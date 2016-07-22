@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/aporeto-inc/bahamut/multicaststop"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
@@ -24,7 +26,7 @@ type PushSession struct {
 	socket           *websocket.Conn
 	out              chan string
 	UserInfo         interface{}
-	multicast        *MultiCastBooleanChannel
+	multicast        *multicaststop.MultiCastBooleanChannel
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
@@ -36,7 +38,7 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 		server:           server,
 		socket:           ws,
 		out:              make(chan string, 1024),
-		multicast:        NewMultiCastBooleanChannel(),
+		multicast:        multicaststop.NewMultiCastBooleanChannel(),
 	}
 }
 
@@ -119,14 +121,14 @@ func (s *PushSession) listen() {
 	go s.write()
 
 	if s.server.pubSubServer != nil {
-		s.listenToKafkaMessages()
+		s.listenToGlobalMessages()
 	} else {
 		s.listenToLocalMessages()
 	}
 }
 
-// continuously listens for new kafka messages
-func (s *PushSession) listenToKafkaMessages() {
+// continuously listens for new global messages
+func (s *PushSession) listenToGlobalMessages() {
 
 	stopCh := make(chan bool)
 	s.multicast.Register(stopCh)
@@ -134,7 +136,7 @@ func (s *PushSession) listenToKafkaMessages() {
 	defer s.multicast.Unregister(stopCh)
 	defer s.server.unregisterSession(s)
 
-	publications := make(chan *Publication)
+	publications := make(chan *pubsub.Publication)
 	unsubscribe := s.server.pubSubServer.Subscribe(publications, s.pushServerConfig.defaultTopic)
 
 	for {
@@ -142,7 +144,7 @@ func (s *PushSession) listenToKafkaMessages() {
 		case message := <-publications:
 			s.send(string(message.Data()))
 		case <-stopCh:
-			unsubscribe <- true
+			unsubscribe()
 			return
 		}
 	}

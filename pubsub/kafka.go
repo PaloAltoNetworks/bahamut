@@ -1,4 +1,4 @@
-package bahamut
+package pubsub
 
 import (
 	"fmt"
@@ -6,30 +6,31 @@ import (
 
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
+	"github.com/aporeto-inc/bahamut/multicaststop"
 )
 
-// A PubSubServer is a structure that provides publish subscribe mechanism.
-type PubSubServer struct {
+// kafkaPubSubServer implements a PubSubServer using Kafka
+type kafkaPubSubServer struct {
 	services      []string
 	producer      sarama.SyncProducer
 	publications  chan *Publication
 	retryInterval time.Duration
-	multicast     *MultiCastBooleanChannel
+	multicast     *multicaststop.MultiCastBooleanChannel
 }
 
-// NewPubSubServer Initializes the publishing.
-func NewPubSubServer(services []string) *PubSubServer {
+// newPubSubServer Initializes the publishing.
+func newKafkaPubSubServer(services []string) *kafkaPubSubServer {
 
-	return &PubSubServer{
+	return &kafkaPubSubServer{
 		services:      services,
 		publications:  make(chan *Publication, 1024),
-		multicast:     NewMultiCastBooleanChannel(),
+		multicast:     multicaststop.NewMultiCastBooleanChannel(),
 		retryInterval: 5 * time.Second,
 	}
 }
 
 // listen listens from the channel, and publishes messages to kafka
-func (p *PubSubServer) listen() {
+func (p *kafkaPubSubServer) listen() {
 
 	stopCh := make(chan bool)
 	p.multicast.Register(stopCh)
@@ -60,7 +61,7 @@ func (p *PubSubServer) listen() {
 
 // Publish sends multiple messages. Creates the message and puts it
 // in the queue, but doesn't wait for this to be transmitted
-func (p *PubSubServer) Publish(publications ...*Publication) error {
+func (p *kafkaPubSubServer) Publish(publications ...*Publication) error {
 
 	if p.producer == nil {
 		return fmt.Errorf("Not connected to kafka. Messages dropped.")
@@ -78,7 +79,7 @@ func (p *PubSubServer) Publish(publications ...*Publication) error {
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *PubSubServer) Subscribe(c chan *Publication, topic string) chan bool {
+func (p *kafkaPubSubServer) Subscribe(c chan *Publication, topic string) func() {
 
 	unsubscribe := make(chan bool)
 
@@ -130,11 +131,11 @@ func (p *PubSubServer) Subscribe(c chan *Publication, topic string) chan bool {
 		}
 	}()
 
-	return unsubscribe
+	return func() { unsubscribe <- true }
 }
 
 // Start starts the publisher
-func (p *PubSubServer) Start() {
+func (p *kafkaPubSubServer) Start() {
 
 	stopCh := make(chan bool)
 	p.multicast.Register(stopCh)
@@ -167,12 +168,13 @@ func (p *PubSubServer) Start() {
 			return
 		}
 	}
+
 	p.multicast.Unregister(stopCh)
 	p.listen()
 }
 
 // Stop stops the publishing.
-func (p *PubSubServer) Stop() {
+func (p *kafkaPubSubServer) Stop() {
 
 	p.multicast.Send(true)
 }

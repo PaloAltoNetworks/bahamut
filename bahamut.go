@@ -10,6 +10,7 @@ import (
 	"os/signal"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -34,7 +35,7 @@ type Bahamut struct {
 
 	apiServer    *apiServer
 	pushServer   *pushServer
-	pubSubServer *PubSubServer
+	pubSubServer pubsub.Server
 
 	authenticator Authenticator
 	authorizer    Authorizer
@@ -55,9 +56,9 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	}
 
 	var pushServer *pushServer
-	var pubsubServer *PubSubServer
+	var pubsubServer pubsub.Server
 	if pushConfig.enabled {
-		pubsubServer = NewPubSubServer(pushConfig.kafkaAddresses)
+		pubsubServer = pubsub.NewServer(pushConfig.kafkaAddresses)
 		pushServer = newPushServer(pushConfig, pubsubServer, mux)
 	}
 

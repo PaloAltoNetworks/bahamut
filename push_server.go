@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/websocket"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -24,10 +25,10 @@ type pushServer struct {
 	close        chan bool
 	multiplexer  *bone.Mux
 	config       PushServerConfig
-	pubSubServer *PubSubServer
+	pubSubServer pubsub.Server
 }
 
-func newPushServer(config PushServerConfig, pubSubServer *PubSubServer, multiplexer *bone.Mux) *pushServer {
+func newPushServer(config PushServerConfig, pubSubServer pubsub.Server, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
 		sessions:     map[string]*PushSession{},
@@ -136,7 +137,7 @@ func (n *pushServer) start() {
 
 			if n.pubSubServer != nil {
 
-				publication := NewPublication(n.config.defaultTopic)
+				publication := pubsub.NewPublication(n.config.defaultTopic)
 				publication.Encode(event)
 				n.pubSubServer.Publish(publication)
 

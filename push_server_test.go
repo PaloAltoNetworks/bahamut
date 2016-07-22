@@ -13,6 +13,8 @@ import (
 	"golang.org/x/net/websocket"
 
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/mock"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 
@@ -194,7 +196,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 		Convey("When I push an event", func() {
 
-			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
+			inEvent := elemental.NewEvent(elemental.EventCreate, mock.NewList())
 			srv.pushEvents(inEvent)
 
 			var outEvent *elemental.Event
@@ -224,7 +226,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 		defer broker.Close()
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		pubsubServer := NewPubSubServer([]string{broker.Addr()})
+		pubsubServer := pubsub.NewServer([]string{broker.Addr()})
 		go pubsubServer.Start()
 		<-time.After(3 * time.Millisecond)
 		// defer pubsubServer.Stop()
@@ -235,7 +237,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 
 		Convey("When push an event", func() {
 
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
 
 			time.Sleep(5 * time.Millisecond)
 
@@ -268,7 +270,7 @@ func TestSession_LocalEvents(t *testing.T) {
 
 		Convey("When push an event", func() {
 
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
 
 			var evt string
 			select {
@@ -285,7 +287,7 @@ func TestSession_LocalEvents(t *testing.T) {
 
 		Convey("When push an event with an UnmarshalableList", func() {
 
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewUnmarshalableList()))
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewUnmarshalableList()))
 
 			var evt string
 			select {

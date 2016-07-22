@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/websocket"
@@ -59,14 +60,14 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 
 		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
 		ws := &websocket.Conn{}
-		pubsubServer := NewPubSubServer([]string{broker.Addr()})
+		pubsubServer := pubsub.NewServer([]string{broker.Addr()})
 		go pubsubServer.Start()
 		<-time.After(3 * time.Millisecond)
 		defer pubsubServer.Stop()
 		session := newPushSession(ws, newPushServer(config, pubsubServer, bone.New()))
 
 		Convey("When I listen for kafka messages", func() {
-			go session.listenToKafkaMessages()
+			go session.listenToGlobalMessages()
 
 			var message string
 			select {
@@ -85,7 +86,7 @@ func TestSession_listenToKafkaMessages(t *testing.T) {
 			c := make(chan bool, 1)
 
 			go func() {
-				session.listenToKafkaMessages()
+				session.listenToGlobalMessages()
 				c <- true
 			}()
 

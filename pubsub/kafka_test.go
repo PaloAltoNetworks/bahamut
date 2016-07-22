@@ -1,28 +1,30 @@
-package bahamut
+package pubsub
 
 import (
 	"testing"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/mock"
+	"github.com/aporeto-inc/bahamut/multicaststop"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestPubSubServer_NewPubSubServer(t *testing.T) {
+func TestKafka_NewPubSubServer(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := NewPubSubServer([]string{"123:123"})
+		ps := newKafkaPubSubServer([]string{"123:123"})
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps.services[0], ShouldEqual, "123:123")
 			So(ps.publications, ShouldHaveSameTypeAs, make(chan *Publication, 1024))
-			So(ps.multicast, ShouldHaveSameTypeAs, NewMultiCastBooleanChannel())
+			So(ps.multicast, ShouldHaveSameTypeAs, multicaststop.NewMultiCastBooleanChannel())
 		})
 	})
 }
 
-func TestPubSubServer_StartStop(t *testing.T) {
+func TestKafka_StartStop(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer with a bad kafka address", t, func() {
 
@@ -37,7 +39,7 @@ func TestPubSubServer_StartStop(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := NewPubSubServer([]string{})
+		ps := newKafkaPubSubServer([]string{})
 		ps.retryInterval = 1 * time.Millisecond
 
 		Convey("When I start the server", func() {
@@ -66,7 +68,7 @@ func TestPubSubServer_StartStop(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := NewPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSubServer([]string{broker.Addr()})
 
 		Convey("When I start the server", func() {
 
@@ -91,15 +93,15 @@ func TestPubSubServer_StartStop(t *testing.T) {
 	})
 }
 
-func TestPubSubServer_Publish(t *testing.T) {
+func TestKafka_Publish(t *testing.T) {
 
 	Convey("Given I try to publish while not connected", t, func() {
 
-		ps := NewPubSubServer([]string{})
+		ps := newKafkaPubSubServer([]string{})
 
 		Convey("When I publish something", func() {
 
-			list := NewList()
+			list := mock.NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -128,14 +130,14 @@ func TestPubSubServer_Publish(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := NewPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSubServer([]string{broker.Addr()})
 		go ps.Start()
 		defer ps.Stop()
 		<-time.After(3 * time.Millisecond)
 
 		Convey("When I publish something", func() {
 
-			list := NewList()
+			list := mock.NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -151,11 +153,11 @@ func TestPubSubServer_Publish(t *testing.T) {
 	})
 }
 
-func TestPubSubServer_Subscribe(t *testing.T) {
+func TestKafka_Subscribe(t *testing.T) {
 
 	Convey("Given I try to subscribe but I cannot connect", t, func() {
 
-		ps := NewPubSubServer([]string{})
+		ps := newKafkaPubSubServer([]string{})
 		ps.retryInterval = 1 * time.Millisecond
 
 		Convey("When I subscribe to something", func() {
@@ -165,7 +167,7 @@ func TestPubSubServer_Subscribe(t *testing.T) {
 			<-time.After(2 * time.Millisecond)
 
 			Convey("Then error it should retry until I unsubscribe", func() {
-				u <- true
+				u()
 			})
 		})
 	})
@@ -185,7 +187,7 @@ func TestPubSubServer_Subscribe(t *testing.T) {
 		})
 		defer broker.Close()
 
-		ps := NewPubSubServer([]string{broker.Addr()})
+		ps := newKafkaPubSubServer([]string{broker.Addr()})
 		go ps.Start()
 		defer ps.Stop()
 		<-time.After(3 * time.Millisecond)
@@ -207,7 +209,7 @@ func TestPubSubServer_Subscribe(t *testing.T) {
 				})
 
 				Convey("When I use the unsubscribe channel", func() {
-					u <- true
+					u()
 					_, ok := <-c
 
 					Convey("Then my channel should be closed", func() {

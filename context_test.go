@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/aporeto-inc/bahamut/mock"
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -134,7 +135,7 @@ func TestContext_WriteResponse(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			e := elemental.NewError("error", "description", "subject", 42)
-			e.Data = NewUnmarshalableList()
+			e.Data = mock.NewUnmarshalableList()
 			c.AddErrors(e)
 			err := c.WriteResponse(w)
 
@@ -146,7 +147,7 @@ func TestContext_WriteResponse(t *testing.T) {
 		Convey("When I try write the response with an unmarshallable object", func() {
 
 			w := httptest.NewRecorder()
-			c.OutputData = NewUnmarshalableList()
+			c.OutputData = mock.NewUnmarshalableList()
 			err := c.WriteResponse(w)
 
 			Convey("Then err should not be nil", func() {
@@ -200,8 +201,8 @@ func TestContext_Events(t *testing.T) {
 		Convey("When I enqueue 2 events", func() {
 
 			c.EnqueueEvents(
-				elemental.NewEvent(elemental.EventCreate, NewList()),
-				elemental.NewEvent(elemental.EventCreate, NewList()))
+				elemental.NewEvent(elemental.EventCreate, mock.NewList()),
+				elemental.NewEvent(elemental.EventCreate, mock.NewList()))
 
 			Convey("Then I should have 2 events in the queue", func() {
 				So(c.HasEvents(), ShouldBeTrue)
@@ -212,13 +213,13 @@ func TestContext_Events(t *testing.T) {
 		Convey("When I set the Events", func() {
 
 			c.EnqueueEvents(
-				elemental.NewEvent(elemental.EventCreate, NewList()),
-				elemental.NewEvent(elemental.EventCreate, NewList()),
+				elemental.NewEvent(elemental.EventCreate, mock.NewList()),
+				elemental.NewEvent(elemental.EventCreate, mock.NewList()),
 			)
 
 			c.SetEvents(
 				elemental.NewEvents(
-					elemental.NewEvent(elemental.EventCreate, NewList()),
+					elemental.NewEvent(elemental.EventCreate, mock.NewList()),
 				),
 			)
 
