@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/websocket"
@@ -242,7 +241,7 @@ func TestSession_listen(t *testing.T) {
 		defer ws.Close()
 
 		config := PushServerConfig{
-			Service: pubsub.NewService([]string{broker.Addr()}),
+			Service: NewPubSub([]string{broker.Addr()}),
 			Topic:   "topic",
 		}
 
@@ -315,7 +314,7 @@ func TestSession_listen2(t *testing.T) {
 		defer ws.Close()
 
 		config := PushServerConfig{
-			Service: pubsub.NewService([]string{broker.Addr()}),
+			Service: NewPubSub([]string{broker.Addr()}),
 			Topic:   "topic",
 		}
 

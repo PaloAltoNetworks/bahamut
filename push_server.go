@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/websocket"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -131,7 +130,7 @@ func (n *pushServer) start() {
 		case event := <-n.events:
 
 			if n.config.Service != nil {
-				publication := pubsub.NewPublication(n.config.Topic)
+				publication := NewPublication(n.config.Topic)
 				publication.Encode(event)
 				n.config.Service.Publish(publication)
 			}

@@ -1,11 +1,10 @@
-package pubsub
+package bahamut
 
 import (
 	"testing"
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/aporeto-inc/bahamut/mock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -93,7 +92,7 @@ func TestKafka_Publish(t *testing.T) {
 
 		Convey("When I publish something", func() {
 
-			list := mock.NewList()
+			list := NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -129,7 +128,7 @@ func TestKafka_Publish(t *testing.T) {
 
 		Convey("When I publish something", func() {
 
-			list := mock.NewList()
+			list := NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 

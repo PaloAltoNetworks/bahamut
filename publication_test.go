@@ -1,9 +1,8 @@
-package pubsub
+package bahamut
 
 import (
 	"testing"
 
-	"github.com/aporeto-inc/bahamut/mock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -27,7 +26,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 		Convey("When I encode some object", func() {
 
-			list := mock.NewList()
+			list := NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -43,7 +42,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the object", func() {
 
-				var l2 *mock.List
+				var l2 *List
 				err := publication.Decode(l2)
 
 				Convey("Then err should be nil", func() {
@@ -58,7 +57,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 		Convey("When I encode some unencodable object", func() {
 
-			list := mock.NewUnmarshalableList()
+			list := NewUnmarshalableList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -74,7 +73,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the non existing object", func() {
 
-				var l2 *mock.List
+				var l2 *List
 				err := publication.Decode(l2)
 
 				Convey("Then err should not be nil", func() {

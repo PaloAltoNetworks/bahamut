@@ -13,8 +13,6 @@ import (
 	"golang.org/x/net/websocket"
 
 	"github.com/Shopify/sarama"
-	"github.com/aporeto-inc/bahamut/mock"
-	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 
@@ -179,7 +177,7 @@ func TestSession_HandleConnection(t *testing.T) {
 		defer broker.Close()
 
 		srv := newPushServer(PushServerConfig{
-			Service: pubsub.NewService([]string{broker.Addr()}),
+			Service: NewPubSub([]string{broker.Addr()}),
 			Topic:   "topic",
 		}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
@@ -213,7 +211,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 		Convey("When I push an event", func() {
 
-			inEvent := elemental.NewEvent(elemental.EventCreate, mock.NewList())
+			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
 			srv.pushEvents(inEvent)
 
 			var outEvent *elemental.Event
@@ -247,7 +245,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 		defer broker.Close()
 
 		config := PushServerConfig{
-			Service:         pubsub.NewService([]string{broker.Addr()}),
+			Service:         NewPubSub([]string{broker.Addr()}),
 			SessionsHandler: &testSessionHandler{},
 			Topic:           "topic",
 		}
@@ -262,7 +260,7 @@ func TestSession_GlobalEvents(t *testing.T) {
 
 		Convey("When push an event", func() {
 
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
 
 			<-time.After(5 * time.Millisecond)
 

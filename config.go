@@ -4,11 +4,7 @@
 
 package bahamut
 
-import (
-	"net/http"
-
-	"github.com/aporeto-inc/bahamut/pubsub"
-)
+import "net/http"
 
 // An APIServerConfig represents the configuration for the APIServer.
 type APIServerConfig struct {
@@ -64,7 +60,7 @@ type APIServerConfig struct {
 type PushServerConfig struct {
 
 	// Service defines the pubsub service to user.
-	Service pubsub.PublisherSubscriber
+	Service PublisherSubscriber
 
 	// Topic defines the default notification topic to use.
 	Topic string

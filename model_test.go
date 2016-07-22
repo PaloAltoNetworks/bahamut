@@ -2,7 +2,7 @@
 // See LICENSE file for full LICENSE
 // Copyright 2016 Aporeto.
 
-package mock
+package bahamut
 
 import (
 	"fmt"

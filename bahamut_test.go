@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aporeto-inc/bahamut/mock"
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -78,7 +77,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		})
 
 		Convey("Then pushing an event should panic", func() {
-			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, mock.NewList())) }, ShouldPanic)
+			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, NewList())) }, ShouldPanic)
 		})
 	})
 

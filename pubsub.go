@@ -1,4 +1,4 @@
-package pubsub
+package bahamut
 
 import "time"
 
@@ -10,8 +10,8 @@ type PublisherSubscriber interface {
 	Disconnect()
 }
 
-// NewService returns a PublisherSubscriber.
-func NewService(services []string) PublisherSubscriber {
+// NewPubSub returns a PublisherSubscriber.
+func NewPubSub(services []string) PublisherSubscriber {
 
 	return newKafkaPubSub(services)
 }

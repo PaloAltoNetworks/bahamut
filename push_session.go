@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
@@ -107,7 +106,7 @@ func (s *PushSession) close() {
 // listens to events, either from kafka or from local events.
 func (s *PushSession) listen() {
 
-	publications := make(chan *pubsub.Publication)
+	publications := make(chan *Publication)
 	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
 
 	defer s.server.unregisterSession(s)

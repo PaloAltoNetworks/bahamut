@@ -1,4 +1,4 @@
-package pubsub
+package bahamut
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ func TestPubsub_NewServer(t *testing.T) {
 
 	Convey("Given I create a new pubsub.Server", t, func() {
 
-		ps := NewService([]string{"123:123"})
+		ps := NewPubSub([]string{"123:123"})
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps, ShouldImplement, (*PublisherSubscriber)(nil))
