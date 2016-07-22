@@ -6,7 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
-	"github.com/aporeto-inc/bahamut/multicaststop"
+	"github.com/aporeto-inc/bahamut/multistop"
 )
 
 // kafkaPubSubServer implements a PubSubServer using Kafka
@@ -15,7 +15,7 @@ type kafkaPubSubServer struct {
 	producer      sarama.SyncProducer
 	publications  chan *Publication
 	retryInterval time.Duration
-	multicast     *multicaststop.MultiCastBooleanChannel
+	multicast     *multistop.MultiStop
 }
 
 // newPubSubServer Initializes the publishing.
@@ -24,7 +24,7 @@ func newKafkaPubSubServer(services []string) *kafkaPubSubServer {
 	return &kafkaPubSubServer{
 		services:      services,
 		publications:  make(chan *Publication, 1024),
-		multicast:     multicaststop.NewMultiCastBooleanChannel(),
+		multicast:     multistop.NewMultiStop(),
 		retryInterval: 5 * time.Second,
 	}
 }

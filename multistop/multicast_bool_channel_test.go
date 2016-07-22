@@ -1,4 +1,4 @@
-package multicaststop
+package multistop
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestMultiCastBoolChannel_NewMultiCastBoolChannel(t *testing.T) {
+func TestMultiStop_NewMultiStop(t *testing.T) {
 
 	Convey("Given create a new MultiCastBoolChannel", t, func() {
 
-		mc := NewMultiCastBooleanChannel()
+		mc := NewMultiStop()
 
 		Convey("Then the MultiCastBoolChannel should be correctly initialized", func() {
 			So(mc.channels, ShouldHaveSameTypeAs, []chan bool{})
@@ -18,11 +18,11 @@ func TestMultiCastBoolChannel_NewMultiCastBoolChannel(t *testing.T) {
 	})
 }
 
-func TestMultiCastBoolChannel_RegisterUnregister(t *testing.T) {
+func TestMultiStop_RegisterUnregister(t *testing.T) {
 
 	Convey("Given create a new MultiCastBoolChannel", t, func() {
 
-		mc := NewMultiCastBooleanChannel()
+		mc := NewMultiStop()
 
 		Convey("when I register a channel", func() {
 			c1 := make(chan bool)
@@ -45,11 +45,11 @@ func TestMultiCastBoolChannel_RegisterUnregister(t *testing.T) {
 	})
 }
 
-func TestMultiCastBoolChannel_Send(t *testing.T) {
+func TestMultiStop_Send(t *testing.T) {
 
 	Convey("Given create a new MultiCastBoolChannel and I register 3 channels", t, func() {
 
-		mc := NewMultiCastBooleanChannel()
+		mc := NewMultiStop()
 
 		c1 := make(chan bool)
 		c2 := make(chan bool)

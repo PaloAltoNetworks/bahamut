@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/aporeto-inc/bahamut/multicaststop"
+	"github.com/aporeto-inc/bahamut/multistop"
 	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
@@ -26,7 +26,7 @@ type PushSession struct {
 	socket           *websocket.Conn
 	out              chan string
 	UserInfo         interface{}
-	multicast        *multicaststop.MultiCastBooleanChannel
+	multicast        *multistop.MultiStop
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
@@ -38,7 +38,7 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 		server:           server,
 		socket:           ws,
 		out:              make(chan string, 1024),
-		multicast:        multicaststop.NewMultiCastBooleanChannel(),
+		multicast:        multistop.NewMultiStop(),
 	}
 }
 

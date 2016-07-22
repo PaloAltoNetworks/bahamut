@@ -1,28 +1,28 @@
-package multicaststop
+package multistop
 
-// A MultiCastBooleanChannel is a struct that allows
+// A MultiStop is a struct that allows
 // to send a boolean that will be sent to all registered
 // channel
-type MultiCastBooleanChannel struct {
+type MultiStop struct {
 	channels []chan bool
 }
 
-// NewMultiCastBooleanChannel returns a new MultiCastBooleanChannel.
-func NewMultiCastBooleanChannel() *MultiCastBooleanChannel {
+// NewMultiStop returns a new MultiCastBooleanChannel.
+func NewMultiStop() *MultiStop {
 
-	return &MultiCastBooleanChannel{
+	return &MultiStop{
 		channels: []chan bool{},
 	}
 }
 
 // Register registers the given channel to the multicast.
-func (p *MultiCastBooleanChannel) Register(ch chan bool) {
+func (p *MultiStop) Register(ch chan bool) {
 
 	p.channels = append(p.channels, ch)
 }
 
 // Unregister unregisters the given channel from the multicast.
-func (p *MultiCastBooleanChannel) Unregister(ch chan bool) {
+func (p *MultiStop) Unregister(ch chan bool) {
 
 	var i int
 	var c chan bool
@@ -36,7 +36,7 @@ func (p *MultiCastBooleanChannel) Unregister(ch chan bool) {
 }
 
 // Send sends the given boolean to all registered channels
-func (p *MultiCastBooleanChannel) Send(b bool) {
+func (p *MultiStop) Send(b bool) {
 
 	for _, c := range p.channels {
 		c <- b

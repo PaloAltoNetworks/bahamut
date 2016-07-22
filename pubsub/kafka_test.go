@@ -6,7 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/aporeto-inc/bahamut/mock"
-	"github.com/aporeto-inc/bahamut/multicaststop"
+	"github.com/aporeto-inc/bahamut/multistop"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -19,7 +19,7 @@ func TestKafka_NewPubSubServer(t *testing.T) {
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps.services[0], ShouldEqual, "123:123")
 			So(ps.publications, ShouldHaveSameTypeAs, make(chan *Publication, 1024))
-			So(ps.multicast, ShouldHaveSameTypeAs, multicaststop.NewMultiCastBooleanChannel())
+			So(ps.multicast, ShouldHaveSameTypeAs, multistop.NewMultiStop())
 		})
 	})
 }
