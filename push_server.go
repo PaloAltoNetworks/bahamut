@@ -86,7 +86,7 @@ func (n *pushServer) start() {
 
 	log.WithFields(log.Fields{
 		"endpoint": n.address + "/events",
-		"materia":  "bahamut",
+		"package":  "bahamut",
 	}).Info("Starting event server.")
 
 	for {
@@ -103,7 +103,7 @@ func (n *pushServer) start() {
 			log.WithFields(log.Fields{
 				"total":   len(n.sessions),
 				"client":  session.socket.RemoteAddr(),
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Info("Push session started.")
 
 			if handler := n.config.SessionsHandler; handler != nil {
@@ -121,7 +121,7 @@ func (n *pushServer) start() {
 			log.WithFields(log.Fields{
 				"total":   len(n.sessions),
 				"client":  session.socket.RemoteAddr(),
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Info("Push session closed.")
 
 			if handler := n.config.SessionsHandler; handler != nil {

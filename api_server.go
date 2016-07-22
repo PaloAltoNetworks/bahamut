@@ -108,7 +108,7 @@ func (a *apiServer) installRoutes() {
 		log.WithFields(log.Fields{
 			"pattern": route.Pattern,
 			"method":  route.Method,
-			"materia": "bahamut",
+			"package": "bahamut",
 		}).Debug("API route installed.")
 	}
 
@@ -126,13 +126,13 @@ func (a *apiServer) installRoutes() {
 		a.multiplexer.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 		log.WithFields(log.Fields{
-			"materia": "bahamut",
+			"package": "bahamut",
 		}).Warn("Profiling routes installed.")
 	}
 
 	log.WithFields(log.Fields{
 		"routes":  len(a.multiplexer.Routes),
-		"materia": "bahamut",
+		"package": "bahamut",
 	}).Info("All routes installed.")
 }
 
@@ -148,14 +148,14 @@ func (a *apiServer) start() {
 			log.WithFields(log.Fields{
 				"address":  a.config.HealthListenAddress,
 				"endpoint": a.config.HealthEndpoint,
-				"materia":  "bahamut",
+				"package":  "bahamut",
 			}).Info("Creating health check server.")
 
 			srv, err := a.createUnsecureHTTPServer(a.config.HealthListenAddress)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error":   err,
-					"materia": "bahamut",
+					"package": "bahamut",
 				}).Fatal("unable to create health check server")
 			}
 
@@ -167,14 +167,14 @@ func (a *apiServer) start() {
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,
-			"materia": "bahamut",
+			"package": "bahamut",
 		}).Info("Creating secure http server.")
 
 		server, err := a.createSecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Fatal("unable to create secure http server")
 		}
 
@@ -184,7 +184,7 @@ func (a *apiServer) start() {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Fatal("unable to start secure http server")
 		}
 
@@ -194,7 +194,7 @@ func (a *apiServer) start() {
 			log.WithFields(log.Fields{
 				"address":  a.config.ListenAddress,
 				"endpoint": a.config.HealthEndpoint,
-				"materia":  "bahamut",
+				"package":  "bahamut",
 			}).Info("Registering health check handler.")
 
 			a.multiplexer.Get(a.config.HealthEndpoint, a.config.HealthHandler)
@@ -202,14 +202,14 @@ func (a *apiServer) start() {
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,
-			"materia": "bahamut",
+			"package": "bahamut",
 		}).Info("Creating unsecure http server.")
 
 		server, err := a.createUnsecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Fatal("unable to create unsecure http server")
 		}
 
@@ -219,7 +219,7 @@ func (a *apiServer) start() {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Fatal("unable to start unsecure http server")
 		}
 	}

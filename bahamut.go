@@ -169,7 +169,7 @@ func (b *Bahamut) handleExit() {
 
 	b.Stop()
 	log.WithFields(log.Fields{
-		"materia": "bahamut",
+		"package": "bahamut",
 	}).Info("Bye!")
 }
 

@@ -161,16 +161,27 @@ func TestSession_startStop(t *testing.T) {
 
 func TestSession_HandleConnection(t *testing.T) {
 
-	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-		var d []byte
-		websocket.Message.Receive(ws, &d)
-		websocket.Message.Send(ws, d)
-	}))
-	defer ts.Close()
-
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, bone.New())
+		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+			var d []byte
+			websocket.Message.Receive(ws, &d)
+			websocket.Message.Send(ws, d)
+		}))
+		defer ts.Close()
+
+		broker := sarama.NewMockBroker(t, 1)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+		})
+		defer broker.Close()
+
+		srv := newPushServer(PushServerConfig{
+			Service: pubsub.NewServer([]string{broker.Addr()}),
+			Topic:   "topic",
+		}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -225,10 +236,11 @@ func TestSession_GlobalEvents(t *testing.T) {
 	Convey("Given I have a started PushServer a session", t, func() {
 
 		broker := sarama.NewMockBroker(t, 1)
-		metadataResponse := new(sarama.MetadataResponse)
-		metadataResponse.AddBroker(broker.Addr(), broker.BrokerID())
-		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
-		broker.Returns(metadataResponse)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+		})
 		defer broker.Close()
 
 		config := PushServerConfig{

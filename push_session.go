@@ -50,7 +50,7 @@ func (s *PushSession) read() {
 	for {
 		var data []byte
 		if err := websocket.Message.Receive(s.socket, &data); err != nil {
-			go s.close()
+			s.close()
 			return
 		}
 	}
@@ -84,7 +84,7 @@ func (s *PushSession) send(message string) error {
 			log.WithFields(log.Fields{
 				"session": s,
 				"message": message,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Error("Unable to decode event.")
 			return err
 		}

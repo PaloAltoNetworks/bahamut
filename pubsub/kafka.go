@@ -48,7 +48,7 @@ func (p *kafkaPubSubServer) listen() {
 
 			if _, _, err := p.producer.SendMessage(saramaMsg); err != nil {
 				log.WithFields(log.Fields{
-					"publication": saramaMsg,
+					"publication": string(publication.data),
 					"materia":     "bahamut",
 				}).Warn("Unable to publish message to Kafka. Message dropped.")
 			}

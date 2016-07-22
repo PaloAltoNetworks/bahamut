@@ -118,7 +118,7 @@ func TestKafka_Publish(t *testing.T) {
 
 	Convey("Given I start a PubSubServer with a good kafka address", t, func() {
 
-		broker := sarama.NewMockBroker(t, 2)
+		broker := sarama.NewMockBroker(t, 1)
 		broker.SetHandlerByMap(map[string]sarama.MockResponse{
 			"MetadataRequest": sarama.NewMockMetadataResponse(t).
 				SetBroker(broker.Addr(), broker.BrokerID()).
@@ -151,6 +151,38 @@ func TestKafka_Publish(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given I start a PubSubServer with a good kafka address but I can't produce", t, func() {
+
+		broker := sarama.NewMockBroker(t, 1)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+			"OffsetRequest": sarama.NewMockOffsetResponse(t).
+				SetOffset("topic", 0, sarama.OffsetOldest, 0).
+				SetOffset("topic", 0, sarama.OffsetNewest, 0),
+			"ProduceRequest": sarama.NewMockProduceResponse(t).
+				SetError("topic", 0, sarama.ErrBrokerNotAvailable),
+		})
+		defer broker.Close()
+
+		ps := newKafkaPubSubServer([]string{broker.Addr()})
+		go ps.Start()
+		defer ps.Stop()
+		<-time.After(3 * time.Millisecond)
+
+		Convey("When I publish something", func() {
+
+			publication := NewPublication("topic")
+
+			err := ps.Publish(publication)
+
+			Convey("TODOD: Then I'm not really sure how to retrieve the error. ", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
 }
 
 func TestKafka_Subscribe(t *testing.T) {
@@ -174,7 +206,7 @@ func TestKafka_Subscribe(t *testing.T) {
 
 	Convey("Given I try to subscribe", t, func() {
 
-		broker := sarama.NewMockBroker(t, 2)
+		broker := sarama.NewMockBroker(t, 1)
 		broker.SetHandlerByMap(map[string]sarama.MockResponse{
 			"MetadataRequest": sarama.NewMockMetadataResponse(t).
 				SetBroker(broker.Addr(), broker.BrokerID()).
@@ -188,9 +220,6 @@ func TestKafka_Subscribe(t *testing.T) {
 		defer broker.Close()
 
 		ps := newKafkaPubSubServer([]string{broker.Addr()})
-		go ps.Start()
-		defer ps.Stop()
-		<-time.After(3 * time.Millisecond)
 
 		Convey("When I subscribe", func() {
 
