@@ -5,6 +5,9 @@
 package bahamut
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -99,8 +102,8 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			ListenAddress:      "address:80",
 			Routes:             []*Route{},
 			TLSCAPath:          "fixtures/ca.pem",
-			TLSCertificatePath: "fixtures/cert.pem",
-			TLSKeyPath:         "fixtures/key.pem",
+			TLSCertificatePath: "fixtures/server.pem",
+			TLSKeyPath:         "fixtures/server.key",
 		}
 
 		c := newAPIServer(cfg, bone.New())
@@ -124,8 +127,8 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			ListenAddress:      "address:80",
 			Routes:             []*Route{},
 			TLSCAPath:          "fixtures/nope.pem",
-			TLSCertificatePath: "fixtures/cert.pem",
-			TLSKeyPath:         "fixtures/key.pem",
+			TLSCertificatePath: "fixtures/server.pem",
+			TLSKeyPath:         "fixtures/server.key",
 		}
 
 		c := newAPIServer(cfg, bone.New())
@@ -229,6 +232,49 @@ func TestServer_Start(t *testing.T) {
 			time.Sleep(1 * time.Second)
 
 			resp, err := http.Get("http://127.0.0.1:3123")
+
+			Convey("Then the status code should be 200", func() {
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, 200)
+			})
+		})
+	})
+
+	Convey("Given I create an api with tls server", t, func() {
+
+		Convey("When I start the server", func() {
+
+			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
+
+			cfg := APIServerConfig{
+				ListenAddress:      "127.0.0.1:3143",
+				TLSCAPath:          "fixtures/ca.pem",
+				TLSCertificatePath: "fixtures/server.pem",
+				TLSKeyPath:         "fixtures/server.key",
+				Routes:             []*Route{NewRoute("/hello", http.MethodGet, h)},
+				EnableProfiling:    true,
+				HealthHandler:      h,
+				HealthEndpoint:     "/h",
+			}
+
+			c := newAPIServer(cfg, bone.New())
+
+			go c.start()
+			time.Sleep(1 * time.Second)
+
+			cert, _ := tls.LoadX509KeyPair("fixtures/client.pem", "fixtures/client.key")
+			cacert, _ := ioutil.ReadFile("fixtures/ca.pem")
+			pool := x509.NewCertPool()
+			pool.AppendCertsFromPEM(cacert)
+			tlsConfig := &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				RootCAs:      pool,
+			}
+			tlsConfig.BuildNameToCertificate()
+			transport := &http.Transport{TLSClientConfig: tlsConfig}
+			client := &http.Client{Transport: transport}
+
+			resp, err := client.Get("https://localhost:3143")
 
 			Convey("Then the status code should be 200", func() {
 				So(err, ShouldBeNil)
