@@ -2,16 +2,16 @@ package bahamut
 
 import "time"
 
-// A PublisherSubscriber is a structure that provides a publish/subscribe mechanism.
-type PublisherSubscriber interface {
+// A PubSubServer is a structure that provides a publish/subscribe mechanism.
+type PubSubServer interface {
 	Publish(publication *Publication) error
 	Subscribe(c chan *Publication, topic string) func()
 	Connect() Waiter
 	Disconnect()
 }
 
-// NewPubSub returns a PublisherSubscriber.
-func NewPubSub(services []string) PublisherSubscriber {
+// NewPubSubServer returns a PubSubServer.
+func NewPubSubServer(services []string) PubSubServer {
 
 	return newKafkaPubSub(services)
 }
