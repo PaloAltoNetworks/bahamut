@@ -10,10 +10,16 @@ type PubSubServer interface {
 	Disconnect()
 }
 
-// NewPubSubServer returns a PubSubServer.
-func NewPubSubServer(services []string) PubSubServer {
+// NewKafkaPubSubServer returns a PubSubServer backed by Kafka.
+func NewKafkaPubSubServer(services []string) PubSubServer {
 
 	return newKafkaPubSub(services)
+}
+
+// NewLocalPubSubServer returns a PubSubServer backed by local channels.
+func NewLocalPubSubServer(services []string) PubSubServer {
+
+	return newlocalPubSub(nil)
 }
 
 // A Waiter is the interface returned by Server.Connect
