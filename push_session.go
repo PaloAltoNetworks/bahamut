@@ -22,9 +22,9 @@ type PushSession struct {
 	pushServerConfig PushServerConfig
 	server           *pushServer
 	socket           *websocket.Conn
-	stop             chan bool
 	out              chan string
 	UserInfo         interface{}
+	multicast        *MultiCastBooleanChannel
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
@@ -35,8 +35,8 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 		pushServerConfig: server.config,
 		server:           server,
 		socket:           ws,
-		stop:             make(chan bool, 1),
 		out:              make(chan string, 1024),
+		multicast:        NewMultiCastBooleanChannel(),
 	}
 }
 
@@ -52,7 +52,7 @@ func (s *PushSession) read() {
 	for {
 		var data []byte
 		if err := websocket.Message.Receive(s.socket, &data); err != nil {
-			s.stop <- true
+			s.multicast.Send(true)
 			break
 		}
 	}
@@ -60,15 +60,17 @@ func (s *PushSession) read() {
 
 func (s *PushSession) write() {
 
+	stopCh := make(chan bool)
+	s.multicast.Register(stopCh)
+	defer s.multicast.Unregister(stopCh)
+
 	for {
 		select {
 		case data := <-s.out:
 			if err := websocket.Message.Send(s.socket, data); err != nil {
-				s.stop <- true
-				return
+				go s.close()
 			}
-		case <-s.stop:
-			s.stop <- true
+		case <-stopCh:
 			return
 		}
 	}
@@ -105,7 +107,7 @@ func (s *PushSession) send(message string) error {
 // force close the current socket
 func (s *PushSession) close() {
 
-	s.stop <- true
+	s.multicast.Send(true)
 }
 
 // listens to events, either from kafka or from local events.
@@ -124,34 +126,43 @@ func (s *PushSession) listen() {
 }
 
 // continuously listens for new kafka messages
-func (s *PushSession) listenToKafkaMessages() error {
+func (s *PushSession) listenToKafkaMessages() {
 
-	ch := make(chan *Publication)
+	stopCh := make(chan bool)
+	s.multicast.Register(stopCh)
 
-	unsubscribe := s.server.pubSubServer.Subscribe(ch, s.pushServerConfig.defaultTopic)
+	defer s.multicast.Unregister(stopCh)
+	defer s.server.unregisterSession(s)
+
+	publications := make(chan *Publication)
+	unsubscribe := s.server.pubSubServer.Subscribe(publications, s.pushServerConfig.defaultTopic)
 
 	for {
 		select {
-		case message := <-ch:
+		case message := <-publications:
 			s.send(string(message.Data()))
-		case <-s.stop:
+		case <-stopCh:
 			unsubscribe <- true
-			s.server.unregisterSession(s)
-			return nil
+			return
 		}
 	}
 }
 
 // continuously listens for new local messages
-func (s *PushSession) listenToLocalMessages() error {
+func (s *PushSession) listenToLocalMessages() {
+
+	stopCh := make(chan bool)
+	s.multicast.Register(stopCh)
+
+	defer s.multicast.Unregister(stopCh)
+	defer s.server.unregisterSession(s)
 
 	for {
 		select {
 		case message := <-s.events:
 			s.send(message)
-		case <-s.stop:
-			s.server.unregisterSession(s)
-			return nil
+		case <-stopCh:
+			return
 		}
 	}
 }

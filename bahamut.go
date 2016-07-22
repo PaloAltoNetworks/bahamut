@@ -34,7 +34,7 @@ type Bahamut struct {
 
 	apiServer    *apiServer
 	pushServer   *pushServer
-	pubSubServer *publishServer
+	pubSubServer *PubSubServer
 
 	authenticator Authenticator
 	authorizer    Authorizer
@@ -55,9 +55,9 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	}
 
 	var pushServer *pushServer
-	var pubsubServer *publishServer
+	var pubsubServer *PubSubServer
 	if pushConfig.enabled {
-		pubsubServer = newPublishServer(pushConfig.kafkaAddresses)
+		pubsubServer = NewPubSubServer(pushConfig.kafkaAddresses)
 		pushServer = newPushServer(pushConfig, pubsubServer, mux)
 	}
 
@@ -186,7 +186,7 @@ func (b *Bahamut) Start() {
 	}
 
 	if b.pubSubServer != nil {
-		go b.pubSubServer.start()
+		go b.pubSubServer.Start()
 	}
 
 	if b.pushServer != nil {
@@ -210,7 +210,7 @@ func (b *Bahamut) Stop() {
 	}
 
 	if b.pubSubServer != nil {
-		b.pubSubServer.stop()
+		b.pubSubServer.Stop()
 	}
 
 	b.stop <- true

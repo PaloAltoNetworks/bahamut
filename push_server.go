@@ -24,10 +24,10 @@ type pushServer struct {
 	close        chan bool
 	multiplexer  *bone.Mux
 	config       PushServerConfig
-	pubSubServer *publishServer
+	pubSubServer *PubSubServer
 }
 
-func newPushServer(config PushServerConfig, pubSubServer *publishServer, multiplexer *bone.Mux) *pushServer {
+func newPushServer(config PushServerConfig, pubSubServer *PubSubServer, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
 		sessions:     map[string]*PushSession{},
