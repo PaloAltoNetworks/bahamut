@@ -2,7 +2,7 @@
 // See LICENSE file for full LICENSE
 // Copyright 2016 Aporeto.
 
-package bahamut
+package mock
 
 import (
 	"fmt"
@@ -127,60 +127,31 @@ func (o *Task) Validate() elemental.Errors {
 	return errors
 }
 
+// UnmarshalableListIdentity is mock
 var UnmarshalableListIdentity = elemental.Identity{Name: "list", Category: "lists"}
 
+// UnmarshalableList is mock.
 type UnmarshalableList struct {
 	List
 }
 
+// NewUnmarshalableList returns a new UnmarshalableListIdentity
 func NewUnmarshalableList() *UnmarshalableList {
 	return &UnmarshalableList{List: List{}}
 }
 
+// Identity is mock.
 func (o *UnmarshalableList) Identity() elemental.Identity { return UnmarshalableListIdentity }
 
+// UnmarshalJSON is mock.
 func (o *UnmarshalableList) UnmarshalJSON([]byte) error {
 	return fmt.Errorf("error unmarshalling")
 }
 
+// MarshalJSON is mock.
 func (o *UnmarshalableList) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("error marshalling")
 }
 
+// Validate is mock.
 func (o *UnmarshalableList) Validate() elemental.Errors { return nil }
-
-type Auth struct {
-	authenticated bool
-	authorized    bool
-	errored       bool
-}
-
-func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) {
-
-	if a.errored {
-		return false, fmt.Errorf("this is an %s", "error")
-	}
-
-	return a.authenticated, nil
-}
-func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
-
-	if a.errored {
-		return false, fmt.Errorf("this is an %s", "error")
-	}
-
-	return a.authorized, nil
-}
-
-type testSessionHandler struct {
-	sessionCount int
-	shouldCalls  int
-	block        bool
-}
-
-func (h *testSessionHandler) OnPushSessionStart(session *PushSession) { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *PushSession)  { h.sessionCount-- }
-func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) bool {
-	h.shouldCalls++
-	return !h.block
-}

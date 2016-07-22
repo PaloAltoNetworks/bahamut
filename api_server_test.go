@@ -44,7 +44,10 @@ func TestServer_Initialization(t *testing.T) {
 
 	Convey("Given I create a new api server", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress: "address:80",
+			Routes:        []*Route{},
+		}
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then it should be correctly initialized", func() {
@@ -58,7 +61,11 @@ func TestServer_isTLSEnabled(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress: "address:80",
+			Routes:        []*Route{},
+		}
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then TLS should not be active", func() {
@@ -68,7 +75,14 @@ func TestServer_isTLSEnabled(t *testing.T) {
 
 	Convey("Given I create a new api server without all tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "a", "b", "c", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress:      "address:80",
+			Routes:             []*Route{},
+			TLSCAPath:          "a",
+			TLSCertificatePath: "b",
+			TLSKeyPath:         "c",
+		}
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then TLS should be active", func() {
@@ -81,7 +95,14 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without all valid tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "fixtures/ca.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress:      "address:80",
+			Routes:             []*Route{},
+			TLSCAPath:          "fixtures/ca.pem",
+			TLSCertificatePath: "fixtures/cert.pem",
+			TLSKeyPath:         "fixtures/key.pem",
+		}
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make a secure server", func() {
@@ -99,7 +120,14 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without invalid ca info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "fixtures/nope.pem", "fixtures/cert.pem", "fixtures/key.pem", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress:      "address:80",
+			Routes:             []*Route{},
+			TLSCAPath:          "fixtures/nope.pem",
+			TLSCertificatePath: "fixtures/cert.pem",
+			TLSKeyPath:         "fixtures/key.pem",
+		}
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make a secure server", func() {
@@ -120,7 +148,10 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", []*Route{}, nil, "", "/h")
+		cfg := APIServerConfig{
+			ListenAddress: "address:80",
+			Routes:        []*Route{},
+		}
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make an unsecure server", func() {
@@ -151,8 +182,12 @@ func TestServer_RouteInstallation(t *testing.T) {
 		routes = append(routes, NewRoute("/lists", http.MethodHead, h))
 		routes = append(routes, NewRoute("/lists", http.MethodPut, h))
 
-		cfg := MakeAPIServerConfig("address:80", "", "", "", routes, nil, "", "/h")
-		cfg.EnableProfiling = true
+		cfg := APIServerConfig{
+			ListenAddress:   "address:80",
+			Routes:          routes,
+			EnableProfiling: true,
+		}
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I install the routes", func() {
@@ -179,9 +214,15 @@ func TestServer_Start(t *testing.T) {
 		Convey("When I start the server", func() {
 
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
-			routes := []*Route{NewRoute("/hello", http.MethodGet, h)}
 
-			cfg := MakeAPIServerConfig("127.0.0.1:3123", "", "", "", routes, func(w http.ResponseWriter, r *http.Request) {}, "", "/h")
+			cfg := APIServerConfig{
+				ListenAddress:   "127.0.0.1:3123",
+				Routes:          []*Route{NewRoute("/hello", http.MethodGet, h)},
+				EnableProfiling: true,
+				HealthHandler:   h,
+				HealthEndpoint:  "/h",
+			}
+
 			c := newAPIServer(cfg, bone.New())
 
 			go c.start()

@@ -5,8 +5,10 @@
 package bahamut
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/aporeto-inc/bahamut/mock"
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -14,11 +16,54 @@ import (
 type FakeProcessor struct {
 }
 
+type Auth struct {
+	authenticated bool
+	authorized    bool
+	errored       bool
+}
+
+func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) {
+
+	if a.errored {
+		return false, fmt.Errorf("this is an %s", "error")
+	}
+
+	return a.authenticated, nil
+}
+func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
+
+	if a.errored {
+		return false, fmt.Errorf("this is an %s", "error")
+	}
+
+	return a.authorized, nil
+}
+
+type testSessionHandler struct {
+	sessionCount int
+	shouldCalls  int
+	block        bool
+}
+
+func (h *testSessionHandler) OnPushSessionStart(session *PushSession) { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *PushSession)  { h.sessionCount-- }
+func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) bool {
+	h.shouldCalls++
+	return !h.block
+}
+
 func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		b := NewBahamut(
+			APIServerConfig{
+				Disabled: true,
+			},
+			PushServerConfig{
+				Disabled: true,
+			},
+		)
 
 		Convey("Then apiServer should be nil", func() {
 			So(b.apiServer, ShouldBeNil)
@@ -33,13 +78,13 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		})
 
 		Convey("Then pushing an event should panic", func() {
-			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, NewList())) }, ShouldPanic)
+			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, mock.NewList())) }, ShouldPanic)
 		})
 	})
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewBahamut(APIServerConfig{enabled: true}, PushServerConfig{enabled: true})
+		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then apiServer should not be nil", func() {
 			So(b.apiServer, ShouldNotBeNil)

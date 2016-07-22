@@ -4,7 +4,11 @@
 
 package bahamut
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/aporeto-inc/bahamut/pubsub"
+)
 
 // An APIServerConfig represents the configuration for the APIServer.
 type APIServerConfig struct {
@@ -52,34 +56,23 @@ type APIServerConfig struct {
 	// without TLS support.
 	TLSKeyPath string
 
-	enabled bool
+	// Disabled defines if the API system should be enabled.
+	Disabled bool
 }
 
-// MakeAPIServerConfig returns a new APIServerConfig.
-func MakeAPIServerConfig(
-	listen string,
+// A PushServerConfig contains the configuration for the Bahamut Push Server.
+type PushServerConfig struct {
 
-	caPath string,
-	certPath string,
-	keyPath string,
+	// Service defines the pubsub service to user.
+	Service pubsub.PublisherSubscriber
 
-	routes []*Route,
+	// Topic defines the default notification topic to use.
+	Topic string
 
-	healthHandler http.HandlerFunc,
-	healthListenAddress string,
-	healthEndpoint string,
-) APIServerConfig {
+	// SessionsHandler defines the handler that will be used to
+	// manage push session lifecycle.
+	SessionsHandler PushSessionsHandler
 
-	return APIServerConfig{
-		HealthEndpoint:      healthEndpoint,
-		HealthHandler:       healthHandler,
-		HealthListenAddress: healthListenAddress,
-		ListenAddress:       listen,
-		Routes:              routes,
-		TLSCAPath:           caPath,
-		TLSCertificatePath:  certPath,
-		TLSKeyPath:          keyPath,
-
-		enabled: true,
-	}
+	// Disabled defines if the Push system should be enabled.
+	Disabled bool
 }

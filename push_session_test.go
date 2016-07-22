@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/websocket"
@@ -30,181 +31,8 @@ func TestSession_newPushSession(t *testing.T) {
 			So(session.socket, ShouldEqual, ws)
 		})
 
-		Convey("Then the events channel should be a chan of bytes", func() {
-			So(session.events, ShouldHaveSameTypeAs, make(chan string))
-		})
-
 		Convey("Then the Identifier() should return the id", func() {
 			So(session.Identifier(), ShouldEqual, session.id)
-		})
-	})
-}
-
-func TestSession_listenToKafkaMessages(t *testing.T) {
-
-	Convey("Given I create have a new pushSession with valid kafka info", t, func() {
-
-		broker := sarama.NewMockBroker(t, 1)
-		broker.SetHandlerByMap(map[string]sarama.MockResponse{
-			"MetadataRequest": sarama.NewMockMetadataResponse(t).
-				SetBroker(broker.Addr(), broker.BrokerID()).
-				SetLeader("topic", 0, broker.BrokerID()),
-			"OffsetRequest": sarama.NewMockOffsetResponse(t).
-				SetOffset("topic", 0, sarama.OffsetOldest, 0).
-				SetOffset("topic", 0, sarama.OffsetNewest, 0),
-			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
-				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"hello":"world"}`)),
-		})
-		defer broker.Close()
-
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer(config, bone.New()))
-
-		Convey("When I listen for kafka messages", func() {
-			go session.listenToKafkaMessages()
-
-			var message string
-			select {
-			case message = <-session.out:
-			case <-time.After(300 * time.Millisecond):
-				break
-			}
-
-			Convey("Then the messge should be correct", func() {
-				So(message, ShouldEqual, `{"hello":"world"}`)
-			})
-		})
-
-		Convey("When I get a stop while I listen for messages", func() {
-			c := make(chan bool, 1)
-			go func() {
-				session.listenToKafkaMessages()
-				c <- true
-			}()
-
-			session.close()
-
-			var returned bool
-		LOOP:
-			for {
-				select {
-				case returned = <-c:
-					break LOOP
-				case <-session.server.unregister:
-				case <-time.After(300 * time.Millisecond):
-					break LOOP
-				}
-			}
-
-			Convey("Then the function should exit correctly", func() {
-				So(returned, ShouldBeTrue)
-			})
-		})
-	})
-
-	Convey("Given I create have a new pushSession with invalid kafka info", t, func() {
-
-		broker := sarama.NewMockBroker(t, 1)
-		errorResponse := &sarama.FetchResponse{}
-		errorResponse.AddError("topic", 0, sarama.ErrInvalidTopic)
-		broker.SetHandlerByMap(map[string]sarama.MockResponse{
-			"MetadataRequest": sarama.NewMockMetadataResponse(t).
-				SetBroker(broker.Addr(), broker.BrokerID()).
-				SetLeader("topic", 0, broker.BrokerID()),
-			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
-		})
-		defer broker.Close()
-
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer(config, bone.New()))
-
-		Convey("When I listen for kafka messages", func() {
-
-			err := session.listenToKafkaMessages()
-
-			Convey("Then it should return right an error", func() {
-				So(err, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
-func TestSession_listenToLocalMessages(t *testing.T) {
-
-	Convey("Given I create have a new pushSession with no valid kafka info", t, func() {
-
-		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
-
-		Convey("When I listen for local messages", func() {
-			go session.listenToLocalMessages()
-
-			session.events <- `{"hello":"world"}`
-			var message string
-			select {
-			case message = <-session.out:
-			case <-time.After(300 * time.Millisecond):
-				break
-			}
-
-			Convey("Then the messge should be correct", func() {
-				So(message, ShouldEqual, `{"hello":"world"}`)
-			})
-		})
-
-		Convey("When I get a stop while I listen for messages", func() {
-			c := make(chan bool, 1)
-			go func() {
-				session.listenToLocalMessages()
-				c <- true
-			}()
-
-			session.close()
-
-			var returned bool
-		LOOP:
-			for {
-				select {
-				case returned = <-c:
-					break LOOP
-				case <-session.server.unregister:
-				case <-time.After(300 * time.Millisecond):
-					break LOOP
-				}
-			}
-
-			Convey("Then the function should exit correctly", func() {
-				So(returned, ShouldBeTrue)
-			})
-		})
-	})
-
-	Convey("Given I create have a new pushSession with invalid kafka info", t, func() {
-
-		broker := sarama.NewMockBroker(t, 1)
-		errorResponse := &sarama.FetchResponse{}
-		errorResponse.AddError("topic", 0, sarama.ErrInvalidTopic)
-		broker.SetHandlerByMap(map[string]sarama.MockResponse{
-			"MetadataRequest": sarama.NewMockMetadataResponse(t).
-				SetBroker(broker.Addr(), broker.BrokerID()).
-				SetLeader("topic", 0, broker.BrokerID()),
-			"OffsetRequest": sarama.NewMockWrapper(errorResponse),
-		})
-		defer broker.Close()
-
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-		ws := &websocket.Conn{}
-		session := newPushSession(ws, newPushServer(config, bone.New()))
-
-		Convey("When I listen for kafka messages", func() {
-
-			err := session.listenToKafkaMessages()
-
-			Convey("Then it should return right an error", func() {
-				So(err, ShouldNotBeNil)
-			})
 		})
 	})
 }
@@ -215,7 +43,12 @@ func TestSession_send(t *testing.T) {
 
 		handler := &testSessionHandler{}
 
-		session := newPushSession(&websocket.Conn{}, newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New()))
+		config := PushServerConfig{
+			Topic:           "topic",
+			SessionsHandler: handler,
+		}
+
+		session := newPushSession(&websocket.Conn{}, newPushServer(config, bone.New()))
 
 		Convey("When I send some data to the session", func() {
 
@@ -299,12 +132,14 @@ func TestSession_write(t *testing.T) {
 
 		Convey("When I stop the session while listening to the websocket", func() {
 
-			c := make(chan bool, 1)
+			c := make(chan bool)
+
 			go func() {
 				session.write()
 				c <- true
 			}()
 
+			<-time.After(3 * time.Millisecond)
 			session.close()
 
 			var returned bool
@@ -321,19 +156,21 @@ func TestSession_write(t *testing.T) {
 
 		Convey("When the websocket is closed while I'm listening", func() {
 
-			c := make(chan bool, 1)
+			c := make(chan bool)
+
 			go func() {
 				session.write()
 				c <- true
 			}()
 
 			ws.Close()
-			session.out <- "hello world"
+			session.out <- "hey!"
+			<-time.After(3 * time.Millisecond)
 
 			var returned bool
 			select {
 			case returned = <-c:
-			case <-time.After(300 * time.Millisecond):
+			case <-time.After(800 * time.Millisecond):
 				break
 			}
 
@@ -385,7 +222,18 @@ func TestSession_read(t *testing.T) {
 
 func TestSession_listen(t *testing.T) {
 
-	Convey("Given I create a session with a websocket and not kafka info", t, func() {
+	Convey("Given I create a session with a websocket and pubsub server and run listen", t, func() {
+
+		broker := sarama.NewMockBroker(t, 1)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+			"OffsetRequest": sarama.NewMockOffsetResponse(t).
+				SetOffset("topic", 0, sarama.OffsetOldest, 0).
+				SetOffset("topic", 0, sarama.OffsetNewest, 0),
+		})
+		defer broker.Close()
 
 		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
 		defer ts.Close()
@@ -393,9 +241,14 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
+		config := PushServerConfig{
+			Service: pubsub.NewService([]string{broker.Addr()}),
+			Topic:   "topic",
+		}
 
-		c := make(chan bool, 1)
+		session := newPushSession(ws, newPushServer(config, bone.New()))
+
+		c := make(chan bool)
 		go func() {
 			session.listen()
 			c <- true
@@ -436,8 +289,11 @@ func TestSession_listen(t *testing.T) {
 			})
 		})
 	})
+}
 
-	Convey("Given I create a session with a websocket and kafka info and run listen", t, func() {
+func TestSession_listen2(t *testing.T) {
+
+	Convey("Given I create have a new pushSession with valid pubsubserver", t, func() {
 
 		broker := sarama.NewMockBroker(t, 1)
 		broker.SetHandlerByMap(map[string]sarama.MockResponse{
@@ -452,53 +308,60 @@ func TestSession_listen(t *testing.T) {
 		})
 		defer broker.Close()
 
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
-
-		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {}))
+		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) { <-time.After(1 * time.Second) }))
 		defer ts.Close()
 
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
+		config := PushServerConfig{
+			Service: pubsub.NewService([]string{broker.Addr()}),
+			Topic:   "topic",
+		}
+
 		session := newPushSession(ws, newPushServer(config, bone.New()))
 
-		c := make(chan bool, 1)
-		go func() {
-			session.listen()
-			c <- true
-		}()
+		Convey("When I listen for kafka messages", func() {
 
-		Convey("When I keep it alive", func() {
+			go session.listen()
 
-			var returned bool
+			var message string
 			select {
-			case returned = <-c:
+			case message = <-session.out:
 			case <-time.After(300 * time.Millisecond):
 				break
 			}
 
-			Convey("Then the function should not return", func() {
-				So(returned, ShouldBeFalse)
+			Convey("Then the messge should be correct", func() {
+				So(message, ShouldEqual, `{"hello":"world"}`)
 			})
 		})
 
-		Convey("When I close it", func() {
+		Convey("When I get a stop while I listen for messages", func() {
 
+			c := make(chan bool)
+
+			go func() {
+				session.listen()
+				c <- true
+			}()
+
+			<-time.After(3 * time.Millisecond)
 			session.close()
 
 			var returned bool
 		LOOP:
 			for {
 				select {
-				case <-session.server.unregister:
 				case returned = <-c:
 					break LOOP
+				case <-session.server.unregister:
 				case <-time.After(300 * time.Millisecond):
 					break LOOP
 				}
 			}
 
-			Convey("Then the function should return", func() {
+			Convey("Then the function should exit correctly", func() {
 				So(returned, ShouldBeTrue)
 			})
 		})

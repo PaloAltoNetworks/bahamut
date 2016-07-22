@@ -49,12 +49,12 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	mux := bone.New()
 
 	var apiServer *apiServer
-	if apiConfig.enabled {
+	if !apiConfig.Disabled {
 		apiServer = newAPIServer(apiConfig, mux)
 	}
 
 	var pushServer *pushServer
-	if pushConfig.enabled {
+	if !pushConfig.Disabled {
 		pushServer = newPushServer(pushConfig, mux)
 	}
 
@@ -169,7 +169,7 @@ func (b *Bahamut) handleExit() {
 
 	b.Stop()
 	log.WithFields(log.Fields{
-		"materia": "bahamut",
+		"package": "bahamut",
 	}).Info("Bye!")
 }
 

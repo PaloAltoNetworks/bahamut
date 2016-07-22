@@ -13,6 +13,8 @@ import (
 	"golang.org/x/net/websocket"
 
 	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/mock"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 
@@ -66,7 +68,10 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New())
+		cfg := PushServerConfig{
+			SessionsHandler: handler,
+		}
+		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -93,7 +98,10 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		srv := newPushServer(MakePushServerConfig([]string{}, "", handler), bone.New())
+		cfg := PushServerConfig{
+			SessionsHandler: &testSessionHandler{},
+		}
+		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
 		go srv.start()
@@ -153,16 +161,27 @@ func TestSession_startStop(t *testing.T) {
 
 func TestSession_HandleConnection(t *testing.T) {
 
-	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-		var d []byte
-		websocket.Message.Receive(ws, &d)
-		websocket.Message.Send(ws, d)
-	}))
-	defer ts.Close()
-
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, bone.New())
+		ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
+			var d []byte
+			websocket.Message.Receive(ws, &d)
+			websocket.Message.Send(ws, d)
+		}))
+		defer ts.Close()
+
+		broker := sarama.NewMockBroker(t, 1)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+		})
+		defer broker.Close()
+
+		srv := newPushServer(PushServerConfig{
+			Service: pubsub.NewService([]string{broker.Addr()}),
+			Topic:   "topic",
+		}, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -194,7 +213,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 		Convey("When I push an event", func() {
 
-			inEvent := elemental.NewEvent(elemental.EventCreate, NewList())
+			inEvent := elemental.NewEvent(elemental.EventCreate, mock.NewList())
 			srv.pushEvents(inEvent)
 
 			var outEvent *elemental.Event
@@ -217,81 +236,38 @@ func TestSession_GlobalEvents(t *testing.T) {
 	Convey("Given I have a started PushServer a session", t, func() {
 
 		broker := sarama.NewMockBroker(t, 1)
-		metadataResponse := new(sarama.MetadataResponse)
-		metadataResponse.AddBroker(broker.Addr(), broker.BrokerID())
-		metadataResponse.AddTopicPartition("topic", 0, broker.BrokerID(), nil, nil, sarama.ErrNoError)
-		broker.Returns(metadataResponse)
+		broker.SetHandlerByMap(map[string]sarama.MockResponse{
+			"MetadataRequest": sarama.NewMockMetadataResponse(t).
+				SetBroker(broker.Addr(), broker.BrokerID()).
+				SetLeader("topic", 0, broker.BrokerID()),
+			"OffsetRequest": sarama.NewMockOffsetResponse(t).
+				SetOffset("topic", 0, sarama.OffsetOldest, 0).
+				SetOffset("topic", 0, sarama.OffsetNewest, 0),
+		})
 		defer broker.Close()
 
-		config := MakePushServerConfig([]string{broker.Addr()}, "topic", nil)
+		config := PushServerConfig{
+			Service:         pubsub.NewService([]string{broker.Addr()}),
+			SessionsHandler: &testSessionHandler{},
+			Topic:           "topic",
+		}
+		config.Service.Connect().Wait(300 * time.Millisecond)
+
 		srv := newPushServer(config, bone.New())
 
 		go srv.start()
 
+		// defer config.Service.Disconnect()
+		// defer srv.stop()
+
 		Convey("When push an event", func() {
 
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
+			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
 
-			time.Sleep(5 * time.Millisecond)
+			<-time.After(5 * time.Millisecond)
 
 			Convey("Then kafka should have received the message", func() {
 				So(len(broker.History()), ShouldEqual, 2)
-			})
-		})
-	})
-}
-
-func TestSession_LocalEvents(t *testing.T) {
-
-	ts := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) {
-		var d []byte
-		websocket.Message.Receive(ws, &d)
-		websocket.Message.Send(ws, d)
-	}))
-	defer ts.Close()
-
-	Convey("Given I have a started PushServer a session", t, func() {
-
-		ws1, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
-		defer ws1.Close()
-
-		srv := newPushServer(PushServerConfig{}, bone.New())
-		session1 := newPushSession(ws1, srv)
-
-		go srv.start()
-		srv.registerSession(session1)
-
-		Convey("When push an event", func() {
-
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewList()))
-
-			var evt string
-			select {
-			case evt = <-session1.events:
-				break
-			case <-time.After(3 * time.Millisecond):
-				break
-			}
-
-			Convey("Then output event should be correct", func() {
-				So(evt, ShouldNotBeEmpty)
-			})
-		})
-
-		Convey("When push an event with an UnmarshalableList", func() {
-
-			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, NewUnmarshalableList()))
-
-			var evt string
-			select {
-			case evt = <-session1.events:
-				break
-			case <-time.After(3 * time.Millisecond):
-				break
-			}
-
-			Convey("Then output event should be correct", func() {
-				So(evt, ShouldBeEmpty)
 			})
 		})
 	})

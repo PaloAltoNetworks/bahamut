@@ -7,9 +7,8 @@ package bahamut
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
@@ -19,26 +18,22 @@ import (
 
 // PushSession represents a client session.
 type PushSession struct {
-	events           chan string
-	id               string
-	pushServerConfig PushServerConfig
-	server           *pushServer
-	socket           *websocket.Conn
-	stop             chan bool
-	out              chan string
-	UserInfo         interface{}
+	id       string
+	server   *pushServer
+	socket   *websocket.Conn
+	out      chan string
+	UserInfo interface{}
+	stop     chan bool
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 
 	return &PushSession{
-		events:           make(chan string, 1024),
-		id:               uuid.NewV4().String(),
-		pushServerConfig: server.config,
-		server:           server,
-		socket:           ws,
-		stop:             make(chan bool, 1),
-		out:              make(chan string, 1024),
+		id:     uuid.NewV4().String(),
+		server: server,
+		socket: ws,
+		out:    make(chan string, 1024),
+		stop:   make(chan bool, 2),
 	}
 }
 
@@ -54,8 +49,8 @@ func (s *PushSession) read() {
 	for {
 		var data []byte
 		if err := websocket.Message.Receive(s.socket, &data); err != nil {
-			s.stop <- true
-			break
+			s.close()
+			return
 		}
 	}
 }
@@ -66,8 +61,7 @@ func (s *PushSession) write() {
 		select {
 		case data := <-s.out:
 			if err := websocket.Message.Send(s.socket, data); err != nil {
-				s.stop <- true
-				return
+				go s.close()
 			}
 		case <-s.stop:
 			s.stop <- true
@@ -79,19 +73,19 @@ func (s *PushSession) write() {
 // send given bytes to the websocket
 func (s *PushSession) send(message string) error {
 
-	if s.server.config.sessionsHandler != nil {
+	if s.server.config.SessionsHandler != nil {
 
 		var event *elemental.Event
 		if err := json.NewDecoder(strings.NewReader(message)).Decode(&event); err != nil {
 			log.WithFields(log.Fields{
 				"session": s,
 				"message": message,
-				"materia": "bahamut",
+				"package": "bahamut",
 			}).Error("Unable to decode event.")
 			return err
 		}
 
-		if !s.server.config.sessionsHandler.ShouldPush(s, event) {
+		if !s.server.config.SessionsHandler.ShouldPush(s, event) {
 			return nil
 		}
 	}
@@ -113,79 +107,23 @@ func (s *PushSession) close() {
 // listens to events, either from kafka or from local events.
 func (s *PushSession) listen() {
 
+	publications := make(chan *pubsub.Publication)
+	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
+
+	defer s.server.unregisterSession(s)
 	defer s.socket.Close()
+	defer unsubscribe()
 
 	go s.read()
 	go s.write()
 
-	if s.pushServerConfig.hasKafka() {
-		s.listenToKafkaMessages()
-	} else {
-		s.listenToLocalMessages()
-	}
-}
-
-// continuously listens for new kafka messages
-func (s *PushSession) listenToKafkaMessages() error {
-
-	var consumer sarama.Consumer
-	var err error
-
-	for consumer == nil {
-
-		if consumer, err = s.pushServerConfig.makeConsumer(); err == nil {
-			break
-		}
-
-		log.WithFields(log.Fields{
-			"context": "bahamut",
-			"session": s,
-			"materia": "bahamut",
-		}).Warn("Unable to create consumer. Retrying in 5 seconds...")
-
-		select {
-		case <-time.After(5 * time.Second):
-			continue
-		case <-s.stop:
-			s.server.unregisterSession(s)
-			return nil
-		}
-	}
-
-	defer consumer.Close()
-
-	parititionConsumer, err := consumer.ConsumePartition(s.pushServerConfig.defaultTopic, 0, sarama.OffsetNewest)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"session": s,
-			"error":   err,
-			"materia": "bahamut",
-		}).Error("Unable to consume topic.")
-		return err
-	}
-	defer parititionConsumer.Close()
-
 	for {
 		select {
-		case message := <-parititionConsumer.Messages():
-			s.send(string(message.Value))
+		case message := <-publications:
+			s.send(string(message.Data()))
 		case <-s.stop:
-			s.server.unregisterSession(s)
-			return nil
-		}
-	}
-}
-
-// continuously listens for new local messages
-func (s *PushSession) listenToLocalMessages() error {
-
-	for {
-		select {
-		case message := <-s.events:
-			s.send(message)
-		case <-s.stop:
-			s.server.unregisterSession(s)
-			return nil
+			s.stop <- true
+			return
 		}
 	}
 }
