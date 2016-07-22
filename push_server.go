@@ -137,6 +137,10 @@ func (n *pushServer) start() {
 			}
 
 		case <-n.close:
+			log.WithFields(log.Fields{
+				"package": "bahamut",
+			}).Info("Stopping push server.")
+
 			n.closeAllSessions()
 			return
 		}

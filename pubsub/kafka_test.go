@@ -6,7 +6,6 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/aporeto-inc/bahamut/mock"
-	"github.com/aporeto-inc/bahamut/multistop"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -18,8 +17,6 @@ func TestKafka_NewPubSubServer(t *testing.T) {
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps.services[0], ShouldEqual, "123:123")
-			So(ps.publications, ShouldHaveSameTypeAs, make(chan *Publication, 1024))
-			So(ps.multicast, ShouldHaveSameTypeAs, multistop.NewMultiStop())
 		})
 	})
 }
@@ -44,13 +41,10 @@ func TestKafka_StartStop(t *testing.T) {
 
 		Convey("When I start the server", func() {
 
-			go ps.Start()
-			defer ps.Stop()
-
-			<-time.After(2 * time.Millisecond)
+			connected := ps.Connect().Wait(2 * time.Millisecond)
 
 			Convey("Then the producer should be nil", func() {
-				So(ps.producer, ShouldBeNil)
+				So(connected, ShouldBeFalse)
 			})
 		})
 	})
@@ -72,9 +66,8 @@ func TestKafka_StartStop(t *testing.T) {
 
 		Convey("When I start the server", func() {
 
-			go ps.Start()
-			defer ps.Stop()
-			<-time.After(3 * time.Millisecond)
+			ps.Connect().Wait(300 * time.Millisecond)
+			defer ps.Disconnect()
 
 			Convey("Then the producer should not be nil", func() {
 				So(ps.producer, ShouldNotBeNil)
@@ -82,8 +75,7 @@ func TestKafka_StartStop(t *testing.T) {
 
 			Convey("When I stop the server", func() {
 
-				ps.Stop()
-				<-time.After(5 * time.Millisecond)
+				ps.Disconnect()
 
 				Convey("Then the producer should be closed", func() {
 					So(ps.producer, ShouldBeNil)
@@ -131,9 +123,9 @@ func TestKafka_Publish(t *testing.T) {
 		defer broker.Close()
 
 		ps := newKafkaPubSubServer([]string{broker.Addr()})
-		go ps.Start()
-		defer ps.Stop()
-		<-time.After(3 * time.Millisecond)
+		ps.Connect().Wait(300 * time.Millisecond)
+
+		defer ps.Disconnect()
 
 		Convey("When I publish something", func() {
 
@@ -168,9 +160,9 @@ func TestKafka_Publish(t *testing.T) {
 		defer broker.Close()
 
 		ps := newKafkaPubSubServer([]string{broker.Addr()})
-		go ps.Start()
-		defer ps.Stop()
-		<-time.After(3 * time.Millisecond)
+		ps.Connect().Wait(300 * time.Millisecond)
+
+		defer ps.Disconnect()
 
 		Convey("When I publish something", func() {
 
@@ -178,8 +170,8 @@ func TestKafka_Publish(t *testing.T) {
 
 			err := ps.Publish(publication)
 
-			Convey("TODOD: Then I'm not really sure how to retrieve the error. ", func() {
-				So(err, ShouldBeNil)
+			Convey("Then the error should not be nil. ", func() {
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})

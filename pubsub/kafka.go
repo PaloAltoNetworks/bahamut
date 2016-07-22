@@ -6,16 +6,13 @@ import (
 
 	"github.com/Shopify/sarama"
 	log "github.com/Sirupsen/logrus"
-	"github.com/aporeto-inc/bahamut/multistop"
 )
 
 // kafkaPubSubServer implements a PubSubServer using Kafka
 type kafkaPubSubServer struct {
 	services      []string
 	producer      sarama.SyncProducer
-	publications  chan *Publication
 	retryInterval time.Duration
-	multicast     *multistop.MultiStop
 }
 
 // newPubSubServer Initializes the publishing.
@@ -23,56 +20,24 @@ func newKafkaPubSubServer(services []string) *kafkaPubSubServer {
 
 	return &kafkaPubSubServer{
 		services:      services,
-		publications:  make(chan *Publication, 1024),
-		multicast:     multistop.NewMultiStop(),
 		retryInterval: 5 * time.Second,
 	}
 }
 
-// listen listens from the channel, and publishes messages to kafka
-func (p *kafkaPubSubServer) listen() {
-
-	stopCh := make(chan bool)
-	p.multicast.Register(stopCh)
-
-	defer p.multicast.Unregister(stopCh)
-
-	for {
-		select {
-		case publication := <-p.publications:
-
-			saramaMsg := &sarama.ProducerMessage{
-				Topic: publication.Topic,
-				Value: sarama.ByteEncoder(publication.data),
-			}
-
-			if _, _, err := p.producer.SendMessage(saramaMsg); err != nil {
-				log.WithFields(log.Fields{
-					"publication": string(publication.data),
-					"materia":     "bahamut",
-				}).Warn("Unable to publish message to Kafka. Message dropped.")
-			}
-
-		case <-stopCh:
-			return
-		}
-	}
-}
-
-// Publish sends multiple messages. Creates the message and puts it
-// in the queue, but doesn't wait for this to be transmitted
-func (p *kafkaPubSubServer) Publish(publications ...*Publication) error {
+// Publish publishes a publication.
+func (p *kafkaPubSubServer) Publish(publication *Publication) error {
 
 	if p.producer == nil {
 		return fmt.Errorf("Not connected to kafka. Messages dropped.")
 	}
 
-	for _, publication := range publications {
-		select {
-		case p.publications <- publication:
-		default:
-			return fmt.Errorf("Queue is full. Messages dropped.")
-		}
+	saramaMsg := &sarama.ProducerMessage{
+		Topic: publication.Topic,
+		Value: sarama.ByteEncoder(publication.data),
+	}
+
+	if _, _, err := p.producer.SendMessage(saramaMsg); err != nil {
+		return err
 	}
 
 	return nil
@@ -110,7 +75,8 @@ func (p *kafkaPubSubServer) Subscribe(c chan *Publication, topic string) func() 
 				"topic":          topic,
 				"consumerError":  err1,
 				"partitionError": err2,
-			}).Warn("Unable to create paritition consumer. Retrying in 5 seconds...")
+				"retryIn":        p.retryInterval,
+			}).Warn("Unable to create partition consumer. Retrying...")
 
 			select {
 			case <-time.After(p.retryInterval):
@@ -134,47 +100,49 @@ func (p *kafkaPubSubServer) Subscribe(c chan *Publication, topic string) func() 
 	return func() { unsubscribe <- true }
 }
 
-// Start starts the publisher
-func (p *kafkaPubSubServer) Start() {
+// Connect connects the PubSubServer to the remote service.
+func (p *kafkaPubSubServer) Connect() Waiter {
 
-	stopCh := make(chan bool)
-	p.multicast.Register(stopCh)
+	abort := make(chan bool, 2)
+	connected := make(chan bool, 2)
 
-	defer func() {
-		if p.producer != nil {
-			p.producer.Close()
-			p.producer = nil
+	go func() {
+		for p.producer == nil {
+
+			var err error
+			p.producer, err = sarama.NewSyncProducer(p.services, nil)
+
+			if err == nil {
+				break
+			}
+
+			log.WithFields(log.Fields{
+				"services": p.services,
+				"package":  "bahamut",
+				"retryIn":  p.retryInterval,
+			}).Warn("Unable to create to kafka producer retrying in 5 seconds.")
+
+			select {
+			case <-time.After(p.retryInterval):
+			case <-abort:
+				connected <- false
+				return
+			}
 		}
+		connected <- true
 	}()
 
-	for p.producer == nil {
-
-		var err error
-		p.producer, err = sarama.NewSyncProducer(p.services, nil)
-
-		if err == nil {
-			break
-		}
-
-		log.WithFields(log.Fields{
-			"services": p.services,
-		}).Warn("Unable to create to kafka producer retrying in 5 seconds.")
-
-		select {
-		case <-time.After(p.retryInterval):
-			continue
-		case <-stopCh:
-			p.multicast.Unregister(stopCh)
-			return
-		}
+	return connectionWaiter{
+		ok:    connected,
+		abort: abort,
 	}
-
-	p.multicast.Unregister(stopCh)
-	p.listen()
 }
 
-// Stop stops the publishing.
-func (p *kafkaPubSubServer) Stop() {
+// Disconnect disconnects the PubSubServer from the remote service..
+func (p *kafkaPubSubServer) Disconnect() {
 
-	p.multicast.Send(true)
+	if p.producer != nil {
+		p.producer.Close()
+		p.producer = nil
+	}
 }

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/aporeto-inc/bahamut/multistop"
 	"github.com/aporeto-inc/bahamut/pubsub"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
@@ -19,22 +18,22 @@ import (
 
 // PushSession represents a client session.
 type PushSession struct {
-	id        string
-	server    *pushServer
-	socket    *websocket.Conn
-	out       chan string
-	UserInfo  interface{}
-	multicast *multistop.MultiStop
+	id       string
+	server   *pushServer
+	socket   *websocket.Conn
+	out      chan string
+	UserInfo interface{}
+	stop     chan bool
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 
 	return &PushSession{
-		id:        uuid.NewV4().String(),
-		server:    server,
-		socket:    ws,
-		out:       make(chan string, 1024),
-		multicast: multistop.NewMultiStop(),
+		id:     uuid.NewV4().String(),
+		server: server,
+		socket: ws,
+		out:    make(chan string, 1024),
+		stop:   make(chan bool, 2),
 	}
 }
 
@@ -58,17 +57,14 @@ func (s *PushSession) read() {
 
 func (s *PushSession) write() {
 
-	stopCh := make(chan bool)
-	s.multicast.Register(stopCh)
-	defer s.multicast.Unregister(stopCh)
-
 	for {
 		select {
 		case data := <-s.out:
 			if err := websocket.Message.Send(s.socket, data); err != nil {
 				go s.close()
 			}
-		case <-stopCh:
+		case <-s.stop:
+			s.stop <- true
 			return
 		}
 	}
@@ -105,7 +101,7 @@ func (s *PushSession) send(message string) error {
 // force close the current socket
 func (s *PushSession) close() {
 
-	s.multicast.Send(true)
+	s.stop <- true
 }
 
 // listens to events, either from kafka or from local events.
@@ -114,10 +110,6 @@ func (s *PushSession) listen() {
 	publications := make(chan *pubsub.Publication)
 	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
 
-	stopCh := make(chan bool)
-	s.multicast.Register(stopCh)
-
-	defer s.multicast.Unregister(stopCh)
 	defer s.server.unregisterSession(s)
 	defer s.socket.Close()
 	defer unsubscribe()
@@ -129,7 +121,8 @@ func (s *PushSession) listen() {
 		select {
 		case message := <-publications:
 			s.send(string(message.Data()))
-		case <-stopCh:
+		case <-s.stop:
+			s.stop <- true
 			return
 		}
 	}

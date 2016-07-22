@@ -240,6 +240,9 @@ func TestSession_GlobalEvents(t *testing.T) {
 			"MetadataRequest": sarama.NewMockMetadataResponse(t).
 				SetBroker(broker.Addr(), broker.BrokerID()).
 				SetLeader("topic", 0, broker.BrokerID()),
+			"OffsetRequest": sarama.NewMockOffsetResponse(t).
+				SetOffset("topic", 0, sarama.OffsetOldest, 0).
+				SetOffset("topic", 0, sarama.OffsetNewest, 0),
 		})
 		defer broker.Close()
 
@@ -248,20 +251,20 @@ func TestSession_GlobalEvents(t *testing.T) {
 			SessionsHandler: &testSessionHandler{},
 			Topic:           "topic",
 		}
-
-		go config.Service.Start()
-		<-time.After(3 * time.Millisecond)
-		// defer pubsubServer.Stop()
+		config.Service.Connect().Wait(300 * time.Millisecond)
 
 		srv := newPushServer(config, bone.New())
 
 		go srv.start()
 
+		// defer config.Service.Disconnect()
+		// defer srv.stop()
+
 		Convey("When push an event", func() {
 
 			srv.pushEvents(elemental.NewEvent(elemental.EventCreate, mock.NewList()))
 
-			time.Sleep(5 * time.Millisecond)
+			<-time.After(5 * time.Millisecond)
 
 			Convey("Then kafka should have received the message", func() {
 				So(len(broker.History()), ShouldEqual, 2)
