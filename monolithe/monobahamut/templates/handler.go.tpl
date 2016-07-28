@@ -124,9 +124,8 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    ctx.AddErrors(obj.Validate()...)
-    if ctx.HasErrors() {
-        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors()...)
+    if errs := obj.Validate(); errs != nil {
+        bahamut.WriteHTTPError(w, http.StatusConflict, errs...)
         return
     }
 
@@ -176,7 +175,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
-    if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
+    if _, ok := proc.(bahamut.UpdateProcessor); !ok {
         bahamut.WriteHTTPError(w, http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
@@ -188,9 +187,8 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    ctx.AddErrors(obj.Validate()...)
-    if ctx.HasErrors() {
-        bahamut.WriteHTTPError(w, http.StatusConflict, ctx.Errors()...)
+    if errs := obj.Validate(); errs != nil {
+        bahamut.WriteHTTPError(w, http.StatusConflict, errs...)
         return
     }
 
