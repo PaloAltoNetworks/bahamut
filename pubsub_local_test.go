@@ -27,7 +27,7 @@ func TestLocalPubSub_ConnectDisconnect(t *testing.T) {
 
 		Convey("When I connect", func() {
 
-			connected := ps.Connect().Wait(1 * time.Nanosecond)
+			connected := ps.Connect().Wait(1 * time.Millisecond)
 
 			Convey("Then call Connect should connect right away", func() {
 				So(connected, ShouldBeTrue)
