@@ -3,6 +3,7 @@ package bahamut
 import (
 	"testing"
 
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -21,7 +22,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.CreationOnly = "cvalue"
 			l2.CreationOnly = "cvalue"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationCreate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationCreate)
 
 			Convey("Then errs should not nil", func() {
 				So(errs, ShouldBeNil)
@@ -33,7 +34,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.ReadOnly = "value"
 			l2.ReadOnly = "not value"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationCreate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationCreate)
 
 			Convey("Then errs should not be nil", func() {
 				So(errs, ShouldNotBeNil)
@@ -46,7 +47,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.ReadOnly = "value"
 			l2.ReadOnly = "not value"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationUpdate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationUpdate)
 
 			Convey("Then errs should not be nil", func() {
 				So(errs, ShouldNotBeNil)
@@ -59,7 +60,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.CreationOnly = "value"
 			l2.CreationOnly = "not value"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationCreate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationCreate)
 
 			Convey("Then errs should be nil", func() {
 				So(errs, ShouldBeNil)
@@ -71,7 +72,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.CreationOnly = "value"
 			l2.CreationOnly = "not value"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationUpdate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationUpdate)
 
 			Convey("Then errs should not be nil", func() {
 				So(errs, ShouldNotBeNil)
@@ -87,7 +88,7 @@ func TestVerify_ValidateAdvancedSpecification(t *testing.T) {
 			l1.CreationOnly = "value"
 			l2.CreationOnly = "not value"
 
-			errs := ValidateAdvancedSpecification(l1, l2, OperationUpdate)
+			errs := ValidateAdvancedSpecification(l1, l2, elemental.OperationUpdate)
 
 			Convey("Then errs should not be nil", func() {
 				So(errs, ShouldNotBeNil)

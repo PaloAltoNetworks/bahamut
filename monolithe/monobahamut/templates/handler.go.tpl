@@ -18,12 +18,12 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationRetrieveMany,
+        "operation":  elemental.OperationRetrieveMany,
         "path":       req.URL.Path,
     }).Debug("Handling retrieve many {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationRetrieveMany)
+    ctx := bahamut.NewContext(elemental.OperationRetrieveMany)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -56,12 +56,12 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationRetrieve,
+        "operation":  elemental.OperationRetrieve,
         "path":       req.URL.Path,
     }).Debug("Handling retrieve {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationRetrieve)
+    ctx := bahamut.NewContext(elemental.OperationRetrieve)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -94,12 +94,12 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
       "context":    "handler",
       "origin":     req.RemoteAddr,
       "method":     req.Method,
-      "operation":  bahamut.OperationCreate,
+      "operation":  elemental.OperationCreate,
       "path":       req.URL.Path,
     }).Debug("Handling create {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationCreate)
+    ctx := bahamut.NewContext(elemental.OperationCreate)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -157,12 +157,12 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationUpdate,
+        "operation":  elemental.OperationUpdate,
         "path":       req.URL.Path,
     }).Debug("Handling update {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationUpdate)
+    ctx := bahamut.NewContext(elemental.OperationUpdate)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -220,12 +220,12 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationDelete,
+        "operation":  elemental.OperationDelete,
         "path":       req.URL.Path,
     }).Debug("Handling delete {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationDelete)
+    ctx := bahamut.NewContext(elemental.OperationDelete)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -269,12 +269,12 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationPatch,
+        "operation":  elemental.OperationPatch,
         "path":       req.URL.Path,
     }).Debug("Handling patch {{ specification.entity_name|lower }} request.")
 
     server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(bahamut.OperationPatch)
+    ctx := bahamut.NewContext(elemental.OperationPatch)
     ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
@@ -327,7 +327,7 @@ func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reques
         "context":    "handler",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
-        "operation":  bahamut.OperationInfo,
+        "operation":  elemental.OperationInfo,
         "path":       req.URL.Path,
     }).Debug("Handling info {{ specification.entity_name|lower }} request.")
 

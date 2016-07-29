@@ -10,7 +10,7 @@ import (
 //
 // For instance, it will check if the given Manipulable has field marked as
 // readonly, that it has not changed according to the db.
-func ValidateAdvancedSpecification(obj elemental.AttributeSpecifiable, pristine elemental.AttributeSpecifiable, op Operation) elemental.Errors {
+func ValidateAdvancedSpecification(obj elemental.AttributeSpecifiable, pristine elemental.AttributeSpecifiable, op elemental.Operation) elemental.Errors {
 
 	errors := elemental.NewErrors()
 
@@ -34,7 +34,7 @@ func ValidateAdvancedSpecification(obj elemental.AttributeSpecifiable, pristine 
 
 		// Create Only
 		if spec.CreationOnly &&
-			op != OperationCreate &&
+			op != elemental.OperationCreate &&
 			!fieldValuesEquals(field, obj, pristine) {
 			errors = append(
 				errors,

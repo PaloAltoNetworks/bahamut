@@ -25,7 +25,7 @@ func TestContext_MakeContext(t *testing.T) {
 			Method: http.MethodGet,
 		}
 
-		c := NewContext(OperationRetrieveMany)
+		c := NewContext(elemental.OperationRetrieveMany)
 		c.ReadRequest(req)
 
 		Convey("Then it should be correctly initialized", func() {
@@ -46,7 +46,7 @@ func TestContext_MakeContext(t *testing.T) {
 			Method: http.MethodGet,
 		}
 
-		c := NewContext(OperationRetrieveMany)
+		c := NewContext(elemental.OperationRetrieveMany)
 		c.ReadRequest(req)
 
 		Convey("Then it should be correctly initialized", func() {
@@ -75,7 +75,7 @@ func TestContext_WriteResponse(t *testing.T) {
 			Method: http.MethodGet,
 		}
 
-		c := NewContext(OperationRetrieveMany)
+		c := NewContext(elemental.OperationRetrieveMany)
 		c.ReadRequest(req)
 
 		c.Count.Total = 40
@@ -106,7 +106,7 @@ func TestContext_WriteResponse(t *testing.T) {
 		Convey("When I write the response from a context with no error for a create", func() {
 
 			w := httptest.NewRecorder()
-			c.Operation = OperationCreate
+			c.Operation = elemental.OperationCreate
 			c.WriteResponse(w)
 
 			Convey("Then the status code should be default to 201", func() {
@@ -160,7 +160,7 @@ func TestContext_Errors(t *testing.T) {
 
 	Convey("Given I create a Context", t, func() {
 
-		c := NewContext(OperationRetrieveMany)
+		c := NewContext(elemental.OperationRetrieveMany)
 
 		Convey("Then the context should not have any Error", func() {
 			So(c.HasErrors(), ShouldBeFalse)
@@ -195,7 +195,7 @@ func TestContext_Events(t *testing.T) {
 
 	Convey("Given I create a Context", t, func() {
 
-		c := NewContext(OperationRetrieveMany)
+		c := NewContext(elemental.OperationRetrieveMany)
 
 		Convey("When I enqueue 2 events", func() {
 
