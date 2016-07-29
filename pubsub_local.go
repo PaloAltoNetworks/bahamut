@@ -7,22 +7,22 @@ type registration struct {
 
 // localPubSub implements a PubSubServer using local channels
 type localPubSub struct {
-	input       chan *Publication
-	subscribers map[string][]chan *Publication
-	register    chan *registration
-	unregister  chan *registration
-	stop        chan bool
+	subscribers  map[string][]chan *Publication
+	register     chan *registration
+	unregister   chan *registration
+	publications chan *Publication
+	stop         chan bool
 }
 
 // newlocalPubSub returns a new localPubSub.
 func newlocalPubSub(services []string) *localPubSub {
 
 	return &localPubSub{
-		input:       make(chan *Publication, 1024),
-		subscribers: map[string][]chan *Publication{},
-		register:    make(chan *registration, 2),
-		unregister:  make(chan *registration, 2),
-		stop:        make(chan bool, 2),
+		subscribers:  map[string][]chan *Publication{},
+		register:     make(chan *registration, 2),
+		unregister:   make(chan *registration, 2),
+		stop:         make(chan bool, 2),
+		publications: make(chan *Publication, 1024),
 	}
 }
 
@@ -55,6 +55,12 @@ func (p *localPubSub) listen() {
 					break
 				}
 			}
+
+		case publication := <-p.publications:
+			for _, sub := range p.subscribers[publication.Topic] {
+				go func(c chan *Publication) { c <- publication }(sub)
+			}
+
 		case <-p.stop:
 			p.subscribers = map[string][]chan *Publication{}
 			return
@@ -65,9 +71,7 @@ func (p *localPubSub) listen() {
 // Publish publishes a publication.
 func (p *localPubSub) Publish(publication *Publication) error {
 
-	for _, sub := range p.subscribers[publication.Topic] {
-		go func(c chan *Publication) { c <- publication }(sub)
-	}
+	p.publications <- publication
 
 	return nil
 }
