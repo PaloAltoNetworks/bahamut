@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/aporeto-inc/elemental"
+	uuid "github.com/satori/go.uuid"
 )
 
 // setCommonHeader will write the common HTTP header using the given http.ResponseWriter.
@@ -65,6 +66,7 @@ type Context struct {
 	// Operation contains the current request Operation.
 	Operation elemental.Operation
 
+	id     string
 	events elemental.Events
 	errors elemental.Errors
 }
@@ -79,6 +81,7 @@ func NewContext(operation elemental.Operation) *Context {
 		Page:      newPage(),
 		Count:     newCount(),
 		Operation: operation,
+		id:        uuid.NewV4().String(),
 
 		errors: elemental.Errors{},
 		events: elemental.Events{},
@@ -92,6 +95,12 @@ func (c *Context) ReadRequest(req *http.Request) error {
 	c.Page.fromValues(req.URL.Query())
 
 	return nil
+}
+
+// Identifier returns the unique identifier of the context.
+func (c *Context) Identifier() string {
+
+	return c.id
 }
 
 // EnqueueEvents enqueues the given event to the Context.

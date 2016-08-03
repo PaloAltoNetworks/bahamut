@@ -57,6 +57,23 @@ func TestContext_MakeContext(t *testing.T) {
 	})
 }
 
+func TestContext_Identifier(t *testing.T) {
+
+	Convey("Given I have a context", t, func() {
+
+		ctx := NewContext(elemental.OperationCreate)
+
+		Convey("When I get its Identifier", func() {
+
+			id := ctx.Identifier()
+
+			Convey("Then the identifier should not be empty", func() {
+				So(id, ShouldNotBeEmpty)
+			})
+		})
+	})
+}
+
 func TestContext_WriteResponse(t *testing.T) {
 
 	type Entity struct {
