@@ -28,7 +28,9 @@ type Info struct {
 // newInfo returns a new Info.
 func newInfo() *Info {
 
-	return &Info{}
+	return &Info{
+		Headers: make(http.Header),
+	}
 }
 
 // FromRequest populates the Info from an http.Request.
