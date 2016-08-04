@@ -327,7 +327,7 @@ func TestSession_listen2(t *testing.T) {
 			var message string
 			select {
 			case message = <-session.out:
-			case <-time.After(300 * time.Millisecond):
+			case <-time.After(400 * time.Millisecond):
 				break
 			}
 
