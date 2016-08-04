@@ -104,6 +104,7 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			TLSCAPath:          "fixtures/ca.pem",
 			TLSCertificatePath: "fixtures/server.pem",
 			TLSKeyPath:         "fixtures/server.key",
+			TLSAuthType:        tls.RequireAndVerifyClientCert,
 		}
 
 		c := newAPIServer(cfg, bone.New())
@@ -129,6 +130,7 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			TLSCAPath:          "fixtures/nope.pem",
 			TLSCertificatePath: "fixtures/server.pem",
 			TLSKeyPath:         "fixtures/server.key",
+			TLSAuthType:        tls.RequireAndVerifyClientCert,
 		}
 
 		c := newAPIServer(cfg, bone.New())

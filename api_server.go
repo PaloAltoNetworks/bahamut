@@ -64,7 +64,7 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 	clientCertPool.AppendCertsFromPEM(caCert)
 
 	tlsConfig := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: a.config.TLSAuthType,
 		ClientCAs:  clientCertPool,
 	}
 

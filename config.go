@@ -4,7 +4,10 @@
 
 package bahamut
 
-import "net/http"
+import (
+	"crypto/tls"
+	"net/http"
+)
 
 // An APIServerConfig represents the configuration for the APIServer.
 type APIServerConfig struct {
@@ -55,6 +58,11 @@ type APIServerConfig struct {
 	// This is optional. If you don't provide it, then Bahamut will start
 	// without TLS support.
 	TLSKeyPath string
+
+	// TLSAuthType defines the tls authentication mode to use for a secure
+	// api server.
+	//
+	TLSAuthType tls.ClientAuthType
 
 	// Disabled defines if the API system should be enabled.
 	Disabled bool
