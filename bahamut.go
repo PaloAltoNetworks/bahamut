@@ -105,6 +105,12 @@ func (b *Bahamut) ProcessorForIdentity(identity elemental.Identity) (Processor, 
 	return b.processors[identity.Name], nil
 }
 
+// ProcessorsCount returns the number of registered processors.
+func (b *Bahamut) ProcessorsCount() int {
+
+	return len(b.processors)
+}
+
 // Push pushes the given events to all active sessions.
 //
 // Depending on the configuration of the pushServer, it may use

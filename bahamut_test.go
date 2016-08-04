@@ -132,6 +132,10 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 				So(processor, ShouldEqual, p)
 				So(err, ShouldBeNil)
 			})
+
+			Convey("Then the number of registered processors should be 1", func() {
+				So(b.ProcessorsCount(), ShouldEqual, 1)
+			})
 		})
 
 		Convey("When I register it twie", func() {
@@ -141,6 +145,10 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the number of registered processors should be 1", func() {
+				So(b.ProcessorsCount(), ShouldEqual, 1)
 			})
 		})
 
@@ -157,6 +165,10 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 				processor, err := b.ProcessorForIdentity(ident)
 				So(processor, ShouldBeNil)
 				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Then the number of registered processors should be 0", func() {
+				So(b.ProcessorsCount(), ShouldEqual, 0)
 			})
 		})
 
