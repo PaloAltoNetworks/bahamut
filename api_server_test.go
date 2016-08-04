@@ -186,9 +186,10 @@ func TestServer_RouteInstallation(t *testing.T) {
 		routes = append(routes, NewRoute("/lists", http.MethodPut, h))
 
 		cfg := APIServerConfig{
-			ListenAddress:   "address:80",
-			Routes:          routes,
-			EnableProfiling: true,
+			ListenAddress:          "address:80",
+			ProfilingListenAddress: "address:3434",
+			Routes:                 routes,
+			EnableProfiling:        true,
 		}
 
 		c := newAPIServer(cfg, bone.New())
@@ -198,13 +199,13 @@ func TestServer_RouteInstallation(t *testing.T) {
 			c.installRoutes()
 
 			Convey("Then the bone Multiplexer should have correct number of handlers", func() {
-				So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 5)
-				So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 6)
-				So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 5)
-				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 5)
-				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 5)
-				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 5)
-				So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 5)
+				So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 1)
+				So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 2)
+				So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 1)
+				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 1)
+				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 1)
+				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 1)
+				So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 1)
 			})
 		})
 	})
@@ -219,11 +220,12 @@ func TestServer_Start(t *testing.T) {
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
 			cfg := APIServerConfig{
-				ListenAddress:   "127.0.0.1:3123",
-				Routes:          []*Route{NewRoute("/hello", http.MethodGet, h)},
-				EnableProfiling: true,
-				HealthHandler:   h,
-				HealthEndpoint:  "/h",
+				ListenAddress:          "127.0.0.1:3123",
+				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
+				EnableProfiling:        true,
+				ProfilingListenAddress: "127.0.0.1:55353",
+				HealthHandler:          h,
+				HealthEndpoint:         "/h",
 			}
 
 			c := newAPIServer(cfg, bone.New())
@@ -247,14 +249,16 @@ func TestServer_Start(t *testing.T) {
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
 			cfg := APIServerConfig{
-				ListenAddress:      "127.0.0.1:3143",
-				TLSCAPath:          "fixtures/ca.pem",
-				TLSCertificatePath: "fixtures/server.pem",
-				TLSKeyPath:         "fixtures/server.key",
-				Routes:             []*Route{NewRoute("/hello", http.MethodGet, h)},
-				EnableProfiling:    true,
-				HealthHandler:      h,
-				HealthEndpoint:     "/h",
+				ListenAddress:          "127.0.0.1:3143",
+				TLSCAPath:              "fixtures/ca.pem",
+				TLSCertificatePath:     "fixtures/server.pem",
+				TLSKeyPath:             "fixtures/server.key",
+				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
+				EnableProfiling:        true,
+				ProfilingListenAddress: "127.0.0.1:5343",
+				HealthHandler:          h,
+				HealthEndpoint:         "/h",
+				HealthListenAddress:    "127.0.0.1:5348",
 			}
 
 			c := newAPIServer(cfg, bone.New())

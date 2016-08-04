@@ -13,6 +13,10 @@ type APIServerConfig struct {
 	// be created. You should only use this when debugging.
 	EnableProfiling bool
 
+	// ProfilingListenAddress is the custom listening address to use.
+	// It will be only used if EnableProfiling is set to true.
+	ProfilingListenAddress string
+
 	// HealthEndpoint represents the api endpoint to use for the
 	// health check handler.
 	HealthEndpoint string

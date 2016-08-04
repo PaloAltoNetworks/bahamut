@@ -113,114 +113,135 @@ func (a *apiServer) installRoutes() {
 	}
 
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
-
 	a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
-
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
+}
 
-	if a.config.EnableProfiling {
-		a.multiplexer.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		a.multiplexer.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		a.multiplexer.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		a.multiplexer.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		a.multiplexer.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-		log.WithFields(log.Fields{
-			"package": "bahamut",
-		}).Warn("Profiling routes installed.")
-	}
+func (a *apiServer) startProfilingServer() {
 
 	log.WithFields(log.Fields{
-		"routes":  len(a.multiplexer.Routes),
+		"address": a.config.ProfilingListenAddress,
 		"package": "bahamut",
-	}).Info("All routes installed.")
+	}).Info("Starting profiling server.")
+
+	srv, err := a.createUnsecureHTTPServer(a.config.ProfilingListenAddress)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"package": "bahamut",
+		}).Fatal("Unable to create profiling server.")
+	}
+
+	mux := bone.New()
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+	srv.Handler = mux
+	if err := srv.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"package": "bahamut",
+		}).Fatal("Unable to start profiling http server.")
+	}
+}
+
+func (a *apiServer) startHealthServer() {
+
+	log.WithFields(log.Fields{
+		"address":  a.config.HealthListenAddress,
+		"endpoint": a.config.HealthEndpoint,
+		"package":  "bahamut",
+	}).Info("Starting health server.")
+
+	srv, err := a.createUnsecureHTTPServer(a.config.HealthListenAddress)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"package": "bahamut",
+		}).Fatal("Unable to create health server.")
+	}
+
+	mux := bone.New()
+	mux.Get(a.config.HealthEndpoint, a.config.HealthHandler)
+
+	srv.Handler = mux
+	if err := srv.ListenAndServe(); err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"package": "bahamut",
+		}).Fatal("Unable to start health server.")
+	}
 }
 
 // start starts the apiServer.
 func (a *apiServer) start() {
 
+	if a.config.EnableProfiling {
+		go a.startProfilingServer()
+	}
+
 	a.installRoutes()
 
 	if a.isTLSEnabled() {
 
+		// if TLS is enabled, we start the dedicated health server.
 		if a.config.HealthHandler != nil {
-
-			log.WithFields(log.Fields{
-				"address":  a.config.HealthListenAddress,
-				"endpoint": a.config.HealthEndpoint,
-				"package":  "bahamut",
-			}).Info("Creating health check server.")
-
-			srv, err := a.createUnsecureHTTPServer(a.config.HealthListenAddress)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"error":   err,
-					"package": "bahamut",
-				}).Fatal("unable to create health check server")
-			}
-
-			mux := bone.New()
-			mux.Get(a.config.HealthEndpoint, a.config.HealthHandler)
-			srv.Handler = mux
-			go srv.ListenAndServe()
+			go a.startHealthServer()
 		}
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,
 			"package": "bahamut",
-		}).Info("Creating secure http server.")
+			"routes":  len(a.config.Routes),
+		}).Info("Starting secure api server.")
 
 		server, err := a.createSecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",
-			}).Fatal("unable to create secure http server")
+			}).Fatal("Unable to create secure api server.")
 		}
 
 		server.Handler = a.multiplexer
-		err = server.ListenAndServeTLS(a.config.TLSCertificatePath, a.config.TLSKeyPath)
 
-		if err != nil {
+		if err = server.ListenAndServeTLS(a.config.TLSCertificatePath, a.config.TLSKeyPath); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",
-			}).Fatal("unable to start secure http server")
+			}).Fatal("Unable to start secure api server.")
 		}
 
 	} else {
 
+		// if TLS is not enabled, we simply add the health handler to the existing server.
 		if a.config.HealthHandler != nil {
-			log.WithFields(log.Fields{
-				"address":  a.config.ListenAddress,
-				"endpoint": a.config.HealthEndpoint,
-				"package":  "bahamut",
-			}).Info("Registering health check handler.")
-
 			a.multiplexer.Get(a.config.HealthEndpoint, a.config.HealthHandler)
 		}
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,
 			"package": "bahamut",
-		}).Info("Creating unsecure http server.")
+			"routes":  len(a.config.Routes),
+		}).Info("Starting unsecure api server.")
 
 		server, err := a.createUnsecureHTTPServer(a.config.ListenAddress)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",
-			}).Fatal("unable to create unsecure http server")
+			}).Fatal("Unable to create unsecure api server.")
 		}
 
 		server.Handler = a.multiplexer
-		err = server.ListenAndServe()
-
-		if err != nil {
+		if server.ListenAndServe(); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",
-			}).Fatal("unable to start unsecure http server")
+			}).Fatal("Unable to start unsecure api server.")
 		}
 	}
 }
