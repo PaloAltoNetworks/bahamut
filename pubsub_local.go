@@ -1,5 +1,7 @@
 package bahamut
 
+import "sync"
+
 type registration struct {
 	topic string
 	ch    chan *Publication
@@ -12,6 +14,8 @@ type localPubSub struct {
 	unregister   chan *registration
 	publications chan *Publication
 	stop         chan bool
+
+	lock *sync.Mutex
 }
 
 // newlocalPubSub returns a new localPubSub.
@@ -23,48 +27,7 @@ func newlocalPubSub(services []string) *localPubSub {
 		unregister:   make(chan *registration, 2),
 		stop:         make(chan bool, 2),
 		publications: make(chan *Publication, 1024),
-	}
-}
-
-func (p *localPubSub) registerSubscriberChannel(c chan *Publication, topic string) {
-
-	p.register <- &registration{ch: c, topic: topic}
-}
-
-func (p *localPubSub) unregisterSubscriberChannel(c chan *Publication, topic string) {
-
-	p.unregister <- &registration{ch: c, topic: topic}
-}
-
-func (p *localPubSub) listen() {
-
-	for {
-		select {
-		case reg := <-p.register:
-			if _, ok := p.subscribers[reg.topic]; !ok {
-				p.subscribers[reg.topic] = []chan *Publication{}
-			}
-
-			p.subscribers[reg.topic] = append(p.subscribers[reg.topic], reg.ch)
-
-		case reg := <-p.unregister:
-			for i, sub := range p.subscribers[reg.topic] {
-				if sub == reg.ch {
-					p.subscribers[reg.topic] = append(p.subscribers[reg.topic][:i], p.subscribers[reg.topic][i+1:]...)
-					close(sub)
-					break
-				}
-			}
-
-		case publication := <-p.publications:
-			for _, sub := range p.subscribers[publication.Topic] {
-				go func(c chan *Publication) { c <- publication }(sub)
-			}
-
-		case <-p.stop:
-			p.subscribers = map[string][]chan *Publication{}
-			return
-		}
+		lock:         &sync.Mutex{},
 	}
 }
 
@@ -117,4 +80,62 @@ func (p *localPubSub) Connect() Waiter {
 func (p *localPubSub) Disconnect() {
 
 	p.stop <- true
+}
+
+func (p *localPubSub) registerSubscriberChannel(c chan *Publication, topic string) {
+
+	p.register <- &registration{ch: c, topic: topic}
+}
+
+func (p *localPubSub) unregisterSubscriberChannel(c chan *Publication, topic string) {
+
+	p.unregister <- &registration{ch: c, topic: topic}
+}
+
+func (p *localPubSub) listen() {
+
+	for {
+		select {
+		case reg := <-p.register:
+			p.lock.Lock()
+			if _, ok := p.subscribers[reg.topic]; !ok {
+				p.subscribers[reg.topic] = []chan *Publication{}
+			}
+
+			p.subscribers[reg.topic] = append(p.subscribers[reg.topic], reg.ch)
+			p.lock.Unlock()
+
+		case reg := <-p.unregister:
+			p.lock.Lock()
+			subs := p.subscribers[reg.topic]
+			for i, sub := range subs {
+				if sub == reg.ch {
+					subs = append(subs[:i], subs[i+1:]...)
+					close(sub)
+					break
+				}
+			}
+			p.lock.Unlock()
+
+		case publication := <-p.publications:
+			p.lock.Lock()
+			for _, sub := range p.subscribers[publication.Topic] {
+				go func(c chan *Publication) { c <- publication }(sub)
+			}
+			p.lock.Unlock()
+
+		case <-p.stop:
+			p.lock.Lock()
+			p.subscribers = map[string][]chan *Publication{}
+			p.lock.Unlock()
+			return
+		}
+	}
+}
+
+func (p *localPubSub) chansForTopic(topic string) []chan *Publication {
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	return p.subscribers[topic]
 }
