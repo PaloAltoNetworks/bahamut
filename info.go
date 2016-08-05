@@ -29,7 +29,8 @@ type Info struct {
 func newInfo() *Info {
 
 	return &Info{
-		Headers: make(http.Header),
+		Headers:    make(http.Header),
+		Parameters: make(url.Values),
 	}
 }
 

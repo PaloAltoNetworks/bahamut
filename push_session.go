@@ -64,6 +64,7 @@ func (s *PushSession) write() {
 			}
 		case <-s.stop:
 			s.stop <- true
+			close(s.out)
 			return
 		}
 	}
@@ -109,9 +110,11 @@ func (s *PushSession) listen() {
 	publications := make(chan *Publication)
 	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
 
-	defer s.server.unregisterSession(s)
-	defer s.socket.Close()
-	defer unsubscribe()
+	defer func() {
+		s.server.unregisterSession(s)
+		s.socket.Close()
+		unsubscribe()
+	}()
 
 	go s.read()
 	go s.write()
