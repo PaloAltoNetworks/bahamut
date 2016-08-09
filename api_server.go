@@ -237,7 +237,7 @@ func (a *apiServer) start() {
 		}
 
 		server.Handler = a.multiplexer
-		if server.ListenAndServe(); err != nil {
+		if err := server.ListenAndServe(); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",

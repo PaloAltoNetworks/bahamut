@@ -131,12 +131,20 @@ func (n *pushServer) start() {
 
 			if n.config.Service != nil {
 				publication := NewPublication(n.config.Topic)
-				publication.Encode(event)
+				if err := publication.Encode(event); err != nil {
+					log.WithFields(log.Fields{
+						"topic":   publication.Topic,
+						"event":   event,
+						"error":   err,
+						"package": "bahamut",
+					}).Error("Unable to encode ervent. Message dropped.")
+				}
 				err := n.config.Service.Publish(publication)
 				if err != nil {
 					log.WithFields(log.Fields{
 						"topic":   publication.Topic,
 						"event":   event,
+						"error":   err,
 						"package": "bahamut",
 					}).Warn("Unable to publish. Message dropped.")
 				}

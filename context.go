@@ -31,7 +31,9 @@ func setCommonHeader(w http.ResponseWriter) {
 func WriteHTTPError(w http.ResponseWriter, code int, errs ...*elemental.Error) {
 	setCommonHeader(w)
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(errs)
+	if err := json.NewEncoder(w).Encode(errs); err != nil {
+		panic("Unable to encode errors. What could I do now?")
+	}
 }
 
 // A Context contains all information about a current operation.

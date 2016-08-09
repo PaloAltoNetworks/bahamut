@@ -142,7 +142,13 @@ func (p *kafkaPubSub) Connect() Waiter {
 func (p *kafkaPubSub) Disconnect() {
 
 	if p.producer != nil {
-		p.producer.Close()
+		if err := p.producer.Close(); err != nil {
+			log.WithFields(log.Fields{
+				"package": "bahamut",
+				"error":   err,
+			}).Error("Unable to close to kafka producer.")
+		}
+
 		p.producer = nil
 	}
 }

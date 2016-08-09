@@ -112,7 +112,7 @@ func (s *PushSession) listen() {
 
 	defer func() {
 		s.server.unregisterSession(s)
-		s.socket.Close()
+		_ = s.socket.Close()
 		unsubscribe()
 	}()
 
@@ -122,7 +122,7 @@ func (s *PushSession) listen() {
 	for {
 		select {
 		case message := <-publications:
-			s.send(string(message.Data()))
+			_ = s.send(string(message.Data()))
 		case <-s.stop:
 			s.stop <- true
 			return
