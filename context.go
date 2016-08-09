@@ -175,7 +175,7 @@ func (c *Context) WriteResponse(w http.ResponseWriter) error {
 	if c.HasErrors() {
 
 		if c.StatusCode == 0 {
-			c.StatusCode = http.StatusInternalServerError
+			c.StatusCode = c.Errors()[0].Code
 		}
 
 		if err := json.NewEncoder(buffer).Encode(c.errors); err != nil {

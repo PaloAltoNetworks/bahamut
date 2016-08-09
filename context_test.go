@@ -134,16 +134,15 @@ func TestContext_WriteResponse(t *testing.T) {
 		Convey("When I write the response from a context with errors", func() {
 
 			w := httptest.NewRecorder()
-			c.AddErrors(elemental.NewError("error", "description", "subject", 42))
-			c.StatusCode = 404
+			c.AddErrors(elemental.NewError("error", "description", "subject", 4042))
 			c.WriteResponse(w)
 
 			Convey("Then the status code should be correct", func() {
-				So(w.Code, ShouldEqual, 404)
+				So(w.Code, ShouldEqual, 4042)
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"error\",\"data\":null}]\n")
+				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":4042,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"error\",\"data\":null}]\n")
 			})
 		})
 
