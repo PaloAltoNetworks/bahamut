@@ -118,7 +118,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     defer req.Body.Close()
-    var obj *{{ models_package_name }}.{{ specification.entity_name }}
+    obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
@@ -181,7 +181,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     defer req.Body.Close()
-    var obj *{{ models_package_name }}.{{ specification.entity_name }}
+    obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
