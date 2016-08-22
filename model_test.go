@@ -15,25 +15,25 @@ type ListsList []*List
 // List represents the model of a list
 type List struct {
 	// The identifier
-	ID string `json:"ID,omitempty" cql:"id,omitempty"`
+	ID string `json:"ID" cql:"id,omitempty"`
 
 	// A creation only only attribute
-	CreationOnly string `json:"creationOnly,omitempty" cql:"creationonly,omitempty"`
+	CreationOnly string `json:"creationOnly" cql:"creationonly,omitempty"`
 
 	// The description
-	Description string `json:"description,omitempty" cql:"description,omitempty"`
+	Description string `json:"description" cql:"description,omitempty"`
 
 	// The name
-	Name string `json:"name,omitempty" cql:"name,omitempty"`
+	Name string `json:"name" cql:"name,omitempty"`
 
 	// The identifier of the parent of the object
-	ParentID string `json:"parentID,omitempty" cql:"parentid,omitempty"`
+	ParentID string `json:"parentID" cql:"parentid,omitempty"`
 
 	// The type of the parent of the object
-	ParentType string `json:"parentType,omitempty" cql:"parenttype,omitempty"`
+	ParentType string `json:"parentType" cql:"parenttype,omitempty"`
 
 	// A read only attribute
-	ReadOnly string `json:"readOnly,omitempty" cql:"readonly,omitempty"`
+	ReadOnly string `json:"readOnly" cql:"readonly,omitempty"`
 }
 
 // NewList returns a new *List
@@ -235,22 +235,22 @@ type TasksList []*Task
 // Task represents the model of a task
 type Task struct {
 	// The identifier
-	ID string `json:"ID,omitempty" cql:"id,omitempty"`
+	ID string `json:"ID" cql:"id,omitempty"`
 
 	// The description
-	Description string `json:"description,omitempty" cql:"description,omitempty"`
+	Description string `json:"description" cql:"description,omitempty"`
 
 	// The name
-	Name string `json:"name,omitempty" cql:"name,omitempty"`
+	Name string `json:"name" cql:"name,omitempty"`
 
 	// The identifier of the parent of the object
-	ParentID string `json:"parentID,omitempty" cql:"parentid,omitempty"`
+	ParentID string `json:"parentID" cql:"parentid,omitempty"`
 
 	// The type of the parent of the object
-	ParentType string `json:"parentType,omitempty" cql:"parenttype,omitempty"`
+	ParentType string `json:"parentType" cql:"parenttype,omitempty"`
 
 	// The status of the task
-	Status TaskStatusValue `json:"status,omitempty" cql:"status,omitempty"`
+	Status TaskStatusValue `json:"status" cql:"status,omitempty"`
 }
 
 // NewTask returns a new *Task

@@ -102,8 +102,8 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			ListenAddress:      "address:80",
 			Routes:             []*Route{},
 			TLSCAPath:          "fixtures/ca.pem",
-			TLSCertificatePath: "fixtures/server.pem",
-			TLSKeyPath:         "fixtures/server.key",
+			TLSCertificatePath: "fixtures/server-cert.pem",
+			TLSKeyPath:         "fixtures/server-key.pem",
 			TLSAuthType:        tls.RequireAndVerifyClientCert,
 		}
 
@@ -128,8 +128,8 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			ListenAddress:      "address:80",
 			Routes:             []*Route{},
 			TLSCAPath:          "fixtures/nope.pem",
-			TLSCertificatePath: "fixtures/server.pem",
-			TLSKeyPath:         "fixtures/server.key",
+			TLSCertificatePath: "fixtures/server-cert.pem",
+			TLSKeyPath:         "fixtures/server-key.pem",
 			TLSAuthType:        tls.RequireAndVerifyClientCert,
 		}
 
@@ -253,8 +253,8 @@ func TestServer_Start(t *testing.T) {
 			cfg := APIServerConfig{
 				ListenAddress:          "127.0.0.1:3143",
 				TLSCAPath:              "fixtures/ca.pem",
-				TLSCertificatePath:     "fixtures/server.pem",
-				TLSKeyPath:             "fixtures/server.key",
+				TLSCertificatePath:     "fixtures/server-cert.pem",
+				TLSKeyPath:             "fixtures/server-key.pem",
 				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
 				EnableProfiling:        true,
 				ProfilingListenAddress: "127.0.0.1:5343",
@@ -268,7 +268,7 @@ func TestServer_Start(t *testing.T) {
 			go c.start()
 			time.Sleep(1 * time.Second)
 
-			cert, _ := tls.LoadX509KeyPair("fixtures/client.pem", "fixtures/client.key")
+			cert, _ := tls.LoadX509KeyPair("fixtures/client-cert.pem", "fixtures/client-key.pem")
 			cacert, _ := ioutil.ReadFile("fixtures/ca.pem")
 			pool := x509.NewCertPool()
 			pool.AppendCertsFromPEM(cacert)

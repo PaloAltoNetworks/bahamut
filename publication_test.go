@@ -37,7 +37,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 
 			Convey("Then the publication contains the correct data", func() {
-				So(string(publication.Data()), ShouldEqual, "{\"ID\":\"xxx\",\"name\":\"l1\"}\n")
+				So(string(publication.Data()), ShouldEqual, "{\"ID\":\"xxx\",\"creationOnly\":\"\",\"description\":\"\",\"name\":\"l1\",\"parentID\":\"\",\"parentType\":\"\",\"readOnly\":\"\"}\n")
 			})
 
 			Convey("When I decode the object", func() {
