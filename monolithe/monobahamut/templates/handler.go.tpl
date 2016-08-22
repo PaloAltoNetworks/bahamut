@@ -125,7 +125,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     if errs := obj.Validate(); errs != nil {
-        bahamut.WriteHTTPError(w, http.StatusExpectationFailed, errs...)
+        bahamut.WriteHTTPError(w, http.StatusUnprocessableEntity, errs...)
         return
     }
 
@@ -188,7 +188,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     if errs := obj.Validate(); errs != nil {
-        bahamut.WriteHTTPError(w, http.StatusExpectationFailed, errs...)
+        bahamut.WriteHTTPError(w, http.StatusUnprocessableEntity, errs...)
         return
     }
 
