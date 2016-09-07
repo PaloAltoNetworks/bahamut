@@ -7,6 +7,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
@@ -60,12 +61,23 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 		return nil, err
 	}
 
-	clientCertPool := x509.NewCertPool()
-	clientCertPool.AppendCertsFromPEM(caCert)
+	CAPool := x509.NewCertPool()
+	if !CAPool.AppendCertsFromPEM(caCert) {
+		return nil, errors.New("Unable to import CA certificate")
+	}
+
+	cert, err := tls.LoadX509KeyPair(a.config.TLSCertificatePath, a.config.TLSKeyPath)
+	if err != nil {
+		return nil, err
+	}
 
 	tlsConfig := &tls.Config{
-		ClientAuth: a.config.TLSAuthType,
-		ClientCAs:  clientCertPool,
+		Certificates:           []tls.Certificate{cert},
+		ClientAuth:             a.config.TLSAuthType,
+		ClientCAs:              CAPool,
+		RootCAs:                CAPool,
+		SessionTicketsDisabled: true,
+		MinVersion:             tls.VersionSSL30,
 	}
 
 	tlsConfig.BuildNameToCertificate()
@@ -207,8 +219,9 @@ func (a *apiServer) start() {
 		}
 
 		server.Handler = a.multiplexer
+		server.SetKeepAlivesEnabled(true)
 
-		if err = server.ListenAndServeTLS(a.config.TLSCertificatePath, a.config.TLSKeyPath); err != nil {
+		if err = server.ListenAndServeTLS("", ""); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
 				"package": "bahamut",
