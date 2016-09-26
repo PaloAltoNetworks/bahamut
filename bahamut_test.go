@@ -76,8 +76,8 @@ func TestBahamut_NewBahamut(t *testing.T) {
 			So(len(b.multiplexer.Routes), ShouldEqual, 0)
 		})
 
-		Convey("Then pushing an event should panic", func() {
-			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, NewList())) }, ShouldPanic)
+		Convey("Then pushing an event should not panic", func() {
+			So(func() { b.Push(elemental.NewEvent(elemental.EventCreate, NewList())) }, ShouldNotPanic)
 		})
 	})
 

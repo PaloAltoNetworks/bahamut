@@ -118,8 +118,8 @@ func (b *Bahamut) ProcessorsCount() int {
 // to a cluster of Bahamut Servers.
 func (b *Bahamut) Push(events ...*elemental.Event) {
 
-	if b.apiServer == nil {
-		panic("you cannot push events as it is not enabled.")
+	if b.pushServer == nil {
+		return
 	}
 
 	b.pushServer.pushEvents(events...)
