@@ -68,6 +68,9 @@ type Context struct {
 	// Operation contains the current request Operation.
 	Operation elemental.Operation
 
+	// UserInfo allows you to store any additional opaque data.
+	UserInfo interface{}
+
 	id     string
 	events elemental.Events
 	errors elemental.Errors
