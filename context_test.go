@@ -275,7 +275,7 @@ func TestError_commonHeaders(t *testing.T) {
 
 		Convey("When I use setCommonHeader with a referer", func() {
 
-			setCommonHeader(w, "http://toto.com:8443")
+			setCommonHeader(w, "http://toto.com:8443/")
 
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
