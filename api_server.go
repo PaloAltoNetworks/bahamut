@@ -18,7 +18,7 @@ import (
 )
 
 func corsHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w)
+	setCommonHeader(w, r.Referer())
 	w.WriteHeader(http.StatusOK)
 }
 

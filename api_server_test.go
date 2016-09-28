@@ -21,8 +21,11 @@ func TestServer_corsHandler(t *testing.T) {
 
 	Convey("Given I call the corsHandler", t, func() {
 
+		h := http.Header{}
+		h.Add("Referer", "toto")
+
 		w := httptest.NewRecorder()
-		corsHandler(w, nil)
+		corsHandler(w, &http.Request{Header: h})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusOK)
