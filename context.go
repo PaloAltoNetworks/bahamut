@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/aporeto-inc/elemental"
 	uuid "github.com/satori/go.uuid"
@@ -21,8 +21,14 @@ func setCommonHeader(w http.ResponseWriter, referer string) {
 
 	if referer == "" {
 		referer = "*"
-	} else {
-		referer = strings.Trim(referer, "/")
+	}
+
+	if referer != "*" {
+		u, err := url.Parse(referer)
+		if err != nil {
+			panic("setCommonHeader: Bad referer: " + err.Error())
+		}
+		referer = u.Scheme + "://" + u.Host
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
