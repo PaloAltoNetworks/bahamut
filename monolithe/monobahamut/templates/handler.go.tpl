@@ -331,5 +331,8 @@ func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reques
         "path":       req.URL.Path,
     }).Debug("Handling info {{ specification.entity_name|lower }} request.")
 
+    ctx := bahamut.NewContext(elemental.OperationInfo)
+    ctx.ReadRequest(req)
+
     bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented in Cid yet", "http", http.StatusNotImplemented))
 }
