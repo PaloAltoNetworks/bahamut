@@ -22,7 +22,7 @@ func TestServer_corsHandler(t *testing.T) {
 	Convey("Given I call the corsHandler", t, func() {
 
 		h := http.Header{}
-		h.Add("Referer", "toto")
+		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
 		corsHandler(w, &http.Request{Header: h})
@@ -37,8 +37,11 @@ func TestServer_notFoundHandler(t *testing.T) {
 
 	Convey("Given I call the notFoundHandler", t, func() {
 
+		h := http.Header{}
+		h.Add("Origin", "toto")
+
 		w := httptest.NewRecorder()
-		notFoundHandler(w, nil)
+		notFoundHandler(w, &http.Request{Header: h})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusNotFound)

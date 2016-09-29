@@ -27,12 +27,12 @@ func CheckAuthentication(ctx *Context, w http.ResponseWriter) bool {
 	ok, err := authenticator.IsAuthenticated(ctx)
 
 	if err != nil {
-		WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+		WriteHTTPError(w, "origin", http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
 		return false
 	}
 
 	if !ok {
-		WriteHTTPError(w, http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
+		WriteHTTPError(w, "origin", http.StatusUnauthorized, elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
 		return false
 	}
 
@@ -56,12 +56,12 @@ func CheckAuthorization(ctx *Context, w http.ResponseWriter) bool {
 	ok, err := authorizer.IsAuthorized(ctx)
 
 	if err != nil {
-		WriteHTTPError(w, http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+		WriteHTTPError(w, "origin", http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
 		return false
 	}
 
 	if !ok {
-		WriteHTTPError(w, http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
+		WriteHTTPError(w, "origin", http.StatusForbidden, elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
 		return false
 	}
 

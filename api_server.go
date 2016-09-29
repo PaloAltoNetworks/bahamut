@@ -18,12 +18,12 @@ import (
 )
 
 func corsHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w, r.Referer())
+	setCommonHeader(w, r.Header.Get("Origin"))
 	w.WriteHeader(http.StatusOK)
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	WriteHTTPError(w, http.StatusNotFound, elemental.NewError("Not Found", "Unable to find the requested resource", "http", http.StatusNotFound))
+	WriteHTTPError(w, r.Header.Get("Origin"), http.StatusNotFound, elemental.NewError("Not Found", "Unable to find the requested resource", "http", http.StatusNotFound))
 }
 
 // an apiServer is the structure serving the api routes.

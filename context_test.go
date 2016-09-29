@@ -254,7 +254,7 @@ func TestError_WriteHTTPError(t *testing.T) {
 
 		Convey("When I use WriteHTTPError", func() {
 
-			WriteHTTPError(w, 43, elemental.NewError("title", "description", "subject", 42))
+			WriteHTTPError(w, "origin", 43, elemental.NewError("title", "description", "subject", 42))
 
 			Convey("Then the status should be 42", func() {
 				So(w.Code, ShouldEqual, 43)
@@ -275,7 +275,7 @@ func TestError_commonHeaders(t *testing.T) {
 
 		Convey("When I use setCommonHeader with a referer", func() {
 
-			setCommonHeader(w, "http://toto.com:8443/something")
+			setCommonHeader(w, "http://toto.com:8443")
 
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
