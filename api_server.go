@@ -177,6 +177,7 @@ func (a *apiServer) startHealthServer() {
 	}
 
 	mux := bone.New()
+	mux.Options("*", http.HandlerFunc(corsHandler))
 	mux.Get(a.config.HealthEndpoint, a.config.HealthHandler)
 
 	srv.Handler = mux
