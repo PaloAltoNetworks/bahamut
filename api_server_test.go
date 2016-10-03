@@ -225,15 +225,11 @@ func TestServer_Start(t *testing.T) {
 
 		Convey("When I start the server", func() {
 
-			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
-
 			cfg := APIServerConfig{
 				ListenAddress:          "127.0.0.1:3123",
-				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
+				Routes:                 []*Route{},
 				EnableProfiling:        true,
 				ProfilingListenAddress: "127.0.0.1:55353",
-				HealthHandler:          h,
-				HealthEndpoint:         "/h",
 			}
 
 			c := newAPIServer(cfg, bone.New())
@@ -264,9 +260,6 @@ func TestServer_Start(t *testing.T) {
 				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
 				EnableProfiling:        true,
 				ProfilingListenAddress: "127.0.0.1:5343",
-				HealthHandler:          h,
-				HealthEndpoint:         "/h",
-				HealthListenAddress:    "127.0.0.1:5348",
 			}
 
 			c := newAPIServer(cfg, bone.New())

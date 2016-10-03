@@ -160,35 +160,6 @@ func (a *apiServer) startProfilingServer() {
 	}
 }
 
-func (a *apiServer) startHealthServer() {
-
-	log.WithFields(log.Fields{
-		"address":  a.config.HealthListenAddress,
-		"endpoint": a.config.HealthEndpoint,
-		"package":  "bahamut",
-	}).Info("Starting health server.")
-
-	srv, err := a.createUnsecureHTTPServer(a.config.HealthListenAddress)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to create health server.")
-	}
-
-	mux := bone.New()
-	mux.Options("*", http.HandlerFunc(corsHandler))
-	mux.Get(a.config.HealthEndpoint, a.config.HealthHandler)
-
-	srv.Handler = mux
-	if err := srv.ListenAndServe(); err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to start health server.")
-	}
-}
-
 // start starts the apiServer.
 func (a *apiServer) start() {
 
@@ -199,11 +170,6 @@ func (a *apiServer) start() {
 	a.installRoutes()
 
 	if a.isTLSEnabled() {
-
-		// if TLS is enabled, we start the dedicated health server.
-		if a.config.HealthHandler != nil {
-			go a.startHealthServer()
-		}
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,
@@ -230,11 +196,6 @@ func (a *apiServer) start() {
 		}
 
 	} else {
-
-		// if TLS is not enabled, we simply add the health handler to the existing server.
-		if a.config.HealthHandler != nil {
-			a.multiplexer.Get(a.config.HealthEndpoint, a.config.HealthHandler)
-		}
 
 		log.WithFields(log.Fields{
 			"address": a.config.ListenAddress,

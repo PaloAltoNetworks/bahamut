@@ -4,10 +4,7 @@
 
 package bahamut
 
-import (
-	"crypto/tls"
-	"net/http"
-)
+import "crypto/tls"
 
 // An APIServerConfig represents the configuration for the APIServer.
 type APIServerConfig struct {
@@ -19,19 +16,6 @@ type APIServerConfig struct {
 	// ProfilingListenAddress is the custom listening address to use.
 	// It will be only used if EnableProfiling is set to true.
 	ProfilingListenAddress string
-
-	// HealthEndpoint represents the api endpoint to use for the
-	// health check handler.
-	HealthEndpoint string
-
-	// HealthHandler is the http handler to call when a user accesses
-	// the HealthEndpoint.
-	HealthHandler http.HandlerFunc
-
-	// HealthListenAddress is the custom listening address to use to
-	// access the HealthHandler. This is only used if Bahamut is started
-	// without TLS.
-	HealthListenAddress string
 
 	// ListenAddress is the general listening address for the API server as
 	// well as the PushServer.
