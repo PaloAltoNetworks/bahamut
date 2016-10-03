@@ -212,6 +212,8 @@ func (a *apiServer) start() {
 		}
 
 		server.Handler = a.multiplexer
+		server.SetKeepAlivesEnabled(true)
+
 		if err := server.ListenAndServe(); err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
