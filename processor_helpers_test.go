@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -18,9 +19,17 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
+		h := http.Header{}
+		h.Add("Origin", "http://origin.com")
+		ctx := &Context{
+			Info: &Info{
+				Headers: h,
+			},
+		}
+
 		Convey("When I check authentication with no registered authenticator", func() {
 
-			ok := CheckAuthentication(nil, nil)
+			ok := CheckAuthentication(ctx, nil)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeTrue)
@@ -33,7 +42,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.errored = false
 			b.SetAuthenticator(auth)
 
-			ok := CheckAuthentication(nil, nil)
+			ok := CheckAuthentication(ctx, nil)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeTrue)
@@ -47,7 +56,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			b.SetAuthenticator(auth)
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthentication(nil, w)
+			ok := CheckAuthentication(ctx, w)
 
 			Convey("Then it should not be authenticated", func() {
 				So(ok, ShouldBeFalse)
@@ -65,7 +74,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			b.SetAuthenticator(auth)
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthentication(nil, w)
+			ok := CheckAuthentication(ctx, w)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeFalse)
@@ -85,9 +94,17 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
+		h := http.Header{}
+		h.Add("Origin", "http://origin.com")
+		ctx := &Context{
+			Info: &Info{
+				Headers: h,
+			},
+		}
+
 		Convey("When I check authorization with no registered authorizer", func() {
 
-			ok := CheckAuthorization(nil, nil)
+			ok := CheckAuthorization(ctx, nil)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeTrue)
@@ -100,7 +117,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.errored = false
 			b.SetAuthorizer(auth)
 
-			ok := CheckAuthorization(nil, nil)
+			ok := CheckAuthorization(ctx, nil)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeTrue)
@@ -114,7 +131,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			b.SetAuthorizer(auth)
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthorization(nil, w)
+			ok := CheckAuthorization(ctx, w)
 
 			Convey("Then it should not be authorized", func() {
 				So(ok, ShouldBeFalse)
@@ -132,7 +149,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			b.SetAuthorizer(auth)
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthorization(nil, w)
+			ok := CheckAuthorization(ctx, w)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeFalse)
