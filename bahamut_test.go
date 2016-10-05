@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"testing"
 
-	"golang.org/x/net/websocket"
-
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -46,9 +44,9 @@ type testSessionHandler struct {
 	block        bool
 }
 
-func (h *testSessionHandler) OnPushSessionStart(session *PushSession)          { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *PushSession)           { h.sessionCount-- }
-func (h *testSessionHandler) IsAuthenticated(ws *websocket.Conn) (bool, error) { return true, nil }
+func (h *testSessionHandler) OnPushSessionStart(session *PushSession)            { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *PushSession)             { h.sessionCount-- }
+func (h *testSessionHandler) IsAuthenticated(session *PushSession) (bool, error) { return true, nil }
 func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
 	return !h.block, nil

@@ -56,8 +56,10 @@ func (n *pushServer) unregisterSession(session *PushSession) {
 // unpublish all local sessions from the global registry system
 func (n *pushServer) handleConnection(ws *websocket.Conn) {
 
+	session := newPushSession(ws, n)
+
 	if handler := n.config.SessionsHandler; handler != nil {
-		ok, err := handler.IsAuthenticated(ws)
+		ok, err := handler.IsAuthenticated(session)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":   err,
@@ -71,7 +73,6 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 		}
 	}
 
-	session := newPushSession(ws, n)
 	n.registerSession(session)
 	session.listen()
 }
