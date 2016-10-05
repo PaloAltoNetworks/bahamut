@@ -17,15 +17,31 @@ import (
 
 // PushSession represents a client session.
 type PushSession struct {
-	id       string
-	server   *pushServer
-	socket   *websocket.Conn
-	out      chan string
+
+	// UserInfo contains user opaque information.
 	UserInfo interface{}
-	stop     chan bool
+
+	// Info contains various request related information.
+	Info *Info
+
+	id     string
+	server *pushServer
+	socket *websocket.Conn
+	out    chan string
+	stop   chan bool
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
+
+	info := &Info{}
+
+	if request := ws.Request(); request != nil {
+		info.Parameters = request.URL.Query()
+	}
+
+	if config := ws.Config(); config != nil {
+		info.Headers = config.Header
+	}
 
 	return &PushSession{
 		id:     uuid.NewV4().String(),
@@ -33,6 +49,7 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 		socket: ws,
 		out:    make(chan string, 1024),
 		stop:   make(chan bool, 2),
+		Info:   info,
 	}
 }
 
