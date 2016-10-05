@@ -85,7 +85,16 @@ func (s *PushSession) send(message string) error {
 			return err
 		}
 
-		if !s.server.config.SessionsHandler.ShouldPush(s, event) {
+		ok, err := s.server.config.SessionsHandler.ShouldPush(s, event)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":   err,
+				"package": "bahamut",
+			}).Error("Error during checking authorization.")
+			return err
+		}
+
+		if !ok {
 			return nil
 		}
 	}

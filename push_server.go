@@ -7,9 +7,10 @@ package bahamut
 import (
 	"golang.org/x/net/websocket"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type pushServer struct {
@@ -54,6 +55,21 @@ func (n *pushServer) unregisterSession(session *PushSession) {
 
 // unpublish all local sessions from the global registry system
 func (n *pushServer) handleConnection(ws *websocket.Conn) {
+
+	if handler := n.config.SessionsHandler; handler != nil {
+		ok, err := handler.IsAuthenticated(ws)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":   err,
+				"package": "bahamut",
+			}).Error("Error during checking authentication.")
+		}
+
+		if !ok {
+			ws.Close()
+			return
+		}
+	}
 
 	session := newPushSession(ws, n)
 	n.registerSession(session)

@@ -4,7 +4,10 @@
 
 package bahamut
 
-import "github.com/aporeto-inc/elemental"
+import (
+	"github.com/aporeto-inc/elemental"
+	"golang.org/x/net/websocket"
+)
 
 // Processor is the interface for a Processor Unit
 type Processor interface{}
@@ -68,5 +71,6 @@ type Authorizer interface {
 type PushSessionsHandler interface {
 	OnPushSessionStart(*PushSession)
 	OnPushSessionStop(*PushSession)
-	ShouldPush(*PushSession, *elemental.Event) bool
+	IsAuthenticated(*websocket.Conn) (bool, error)
+	ShouldPush(*PushSession, *elemental.Event) (bool, error)
 }

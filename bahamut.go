@@ -125,31 +125,16 @@ func (b *Bahamut) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-// SetAuthenticator sets the main Authenticator to use for the Bahamut server.
-//
-// An authenticator must implement the Authenticator interface.
-func (b *Bahamut) SetAuthenticator(authenticator Authenticator) {
-	b.authenticator = authenticator
-}
-
 // Authenticator returns the current authenticator.
 //
 // It will return an error if none is set.
 func (b *Bahamut) Authenticator() (Authenticator, error) {
 
-	if b.authenticator == nil {
-		return nil, fmt.Errorf("no authenticator set")
+	if b.apiServer.config.Authenticator == nil {
+		return nil, fmt.Errorf("No authenticator configured.")
 	}
 
-	return b.authenticator, nil
-}
-
-// SetAuthorizer sets the main Authorizer to use for the Bahamut server.
-//
-// An authorizer must implement the Authorizer interface.
-func (b *Bahamut) SetAuthorizer(authorizer Authorizer) {
-
-	b.authorizer = authorizer
+	return b.apiServer.config.Authenticator, nil
 }
 
 // Authorizer returns the current authenticator.
@@ -157,11 +142,11 @@ func (b *Bahamut) SetAuthorizer(authorizer Authorizer) {
 // It will return an error if none is set.
 func (b *Bahamut) Authorizer() (Authorizer, error) {
 
-	if b.authorizer == nil {
-		return nil, fmt.Errorf("no authorizer set")
+	if b.apiServer.config.Authorizer == nil {
+		return nil, fmt.Errorf("No authorizer configured.")
 	}
 
-	return b.authorizer, nil
+	return b.apiServer.config.Authorizer, nil
 }
 
 // handleExit handle the interupt signal an will try

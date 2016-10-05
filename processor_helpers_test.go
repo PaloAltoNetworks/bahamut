@@ -16,7 +16,6 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
 		h := http.Header{}
@@ -38,9 +37,9 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
+			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = true
 			auth.errored = false
-			b.SetAuthenticator(auth)
 
 			ok := CheckAuthentication(ctx, nil)
 
@@ -51,9 +50,9 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
+			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = false
-			b.SetAuthenticator(auth)
 
 			w := httptest.NewRecorder()
 			ok := CheckAuthentication(ctx, w)
@@ -69,9 +68,9 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
+			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = true
-			b.SetAuthenticator(auth)
 
 			w := httptest.NewRecorder()
 			ok := CheckAuthentication(ctx, w)
@@ -91,7 +90,6 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
 		h := http.Header{}
@@ -113,9 +111,9 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
+			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = true
 			auth.errored = false
-			b.SetAuthorizer(auth)
 
 			ok := CheckAuthorization(ctx, nil)
 
@@ -126,9 +124,9 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
+			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = false
-			b.SetAuthorizer(auth)
 
 			w := httptest.NewRecorder()
 			ok := CheckAuthorization(ctx, w)
@@ -144,9 +142,9 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
+			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = true
-			b.SetAuthorizer(auth)
 
 			w := httptest.NewRecorder()
 			ok := CheckAuthorization(ctx, w)

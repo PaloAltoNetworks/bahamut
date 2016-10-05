@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"testing"
 
+	"golang.org/x/net/websocket"
+
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -44,11 +46,12 @@ type testSessionHandler struct {
 	block        bool
 }
 
-func (h *testSessionHandler) OnPushSessionStart(session *PushSession) { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *PushSession)  { h.sessionCount-- }
-func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) bool {
+func (h *testSessionHandler) OnPushSessionStart(session *PushSession)          { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *PushSession)           { h.sessionCount-- }
+func (h *testSessionHandler) IsAuthenticated(ws *websocket.Conn) (bool, error) { return true, nil }
+func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
-	return !h.block
+	return !h.block, nil
 }
 
 func TestBahamut_NewBahamut(t *testing.T) {
@@ -188,11 +191,11 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
 		Convey("When I access an Authenticator while there is none", func() {
 
+			b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 			a, err := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
@@ -203,7 +206,7 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 		Convey("When I set an Authenticator", func() {
 
-			b.SetAuthenticator(auth)
+			b := NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			a, err := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
@@ -218,14 +221,14 @@ func TestBahamut_Authorizer(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 		auth := &Auth{}
 
 		Convey("When I access an Authorizer while there is none", func() {
 
+			b := NewBahamut(APIServerConfig{}, PushServerConfig{})
 			a, err := b.Authorizer()
 
-			Convey("Then the authorizer should be set", func() {
+			Convey("Then the authorizer should be nil", func() {
 				So(a, ShouldBeNil)
 				So(err, ShouldNotBeNil)
 			})
@@ -233,7 +236,7 @@ func TestBahamut_Authorizer(t *testing.T) {
 
 		Convey("When I set an Authorizer", func() {
 
-			b.SetAuthorizer(auth)
+			b := NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			a, err := b.Authorizer()
 
 			Convey("Then the Authorizer should be set", func() {
