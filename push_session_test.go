@@ -355,7 +355,7 @@ func TestSession_listen2(t *testing.T) {
 				case returned = <-c:
 					break LOOP
 				case <-session.server.unregister:
-				case <-time.After(500 * time.Millisecond):
+				case <-time.After(800 * time.Millisecond):
 					break LOOP
 				}
 			}
