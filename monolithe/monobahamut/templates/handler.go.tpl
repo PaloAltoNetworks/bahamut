@@ -14,17 +14,18 @@ import (
 // RetrieveMany{{ specification.entity_name }} handles GET requests for a set of {{ specification.entity_name }}.
 func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationRetrieveMany)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationRetrieveMany,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling retrieve many {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationRetrieveMany)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -52,17 +53,18 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
 // Retrieve{{ specification.entity_name }} handles GET requests for a single {{ specification.entity_name }}.
 func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationRetrieve)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationRetrieve,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling retrieve {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationRetrieve)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -90,6 +92,10 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
 // Create{{ specification.entity_name }} handles POST requests for a single {{ specification.entity_name }}.
 func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationCreate)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
       "package":    "bahamut",
       "context":    "handler",
@@ -97,11 +103,8 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
       "method":     req.Method,
       "operation":  elemental.OperationCreate,
       "path":       req.URL.Path,
+      "context":    *ctx,
     }).Debug("Handling create {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationCreate)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -154,17 +157,18 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Update{{ specification.entity_name }} handles PUT requests for a single {{ specification.entity_name }}.
 func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationUpdate)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationUpdate,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling update {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationUpdate)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -217,17 +221,18 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Delete{{ specification.entity_name }} handles DELETE requests for a single {{ specification.entity_name }}.
 func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationDelete)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationDelete,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling delete {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationDelete)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -266,17 +271,18 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Patch{{ specification.entity_name }} handles PATCH requests for a single {{ specification.entity_name }}.
 func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := bahamut.DefaultBahamut()
+    ctx := bahamut.NewContext(elemental.OperationPatch)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationPatch,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling patch {{ specification.entity_name|lower }} request.")
-
-    server := bahamut.DefaultBahamut()
-    ctx := bahamut.NewContext(elemental.OperationPatch)
-    ctx.ReadRequest(req)
 
     if !bahamut.CheckAuthentication(ctx, w) {
         return
@@ -324,16 +330,17 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
 // Info{{ specification.entity_name }} handles HEAD requests for a single {{ specification.entity_name }}.
 func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    ctx := bahamut.NewContext(elemental.OperationInfo)
+    ctx.ReadRequest(req)
+
     log.WithFields(log.Fields{
         "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationInfo,
         "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling info {{ specification.entity_name|lower }} request.")
-
-    ctx := bahamut.NewContext(elemental.OperationInfo)
-    ctx.ReadRequest(req)
 
     bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented in Cid yet", "http", http.StatusNotImplemented))
 }
