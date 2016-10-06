@@ -4,6 +4,8 @@
 
 package bahamut
 
+import "fmt"
+
 // Count holds various counter for a Context.
 type Count struct {
 	Total   int
@@ -14,4 +16,12 @@ type Count struct {
 func newCount() *Count {
 
 	return &Count{}
+}
+
+func (c *Count) String() string {
+
+	return fmt.Sprintf("<count total:%d current:%d>",
+		c.Total,
+		c.Current,
+	)
 }

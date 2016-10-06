@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -23,6 +24,14 @@ type Page struct {
 	Prev    string
 	First   string
 	Last    string
+}
+
+func (p *Page) String() string {
+
+	return fmt.Sprintf("<page current:%d size:%d>",
+		p.Current,
+		p.Size,
+	)
 }
 
 // newPage returns a new *Page.

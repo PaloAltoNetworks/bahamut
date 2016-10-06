@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -66,4 +67,15 @@ func (i *Info) fromRequest(req *http.Request) {
 		i.ParentIdentity = elemental.IdentityFromCategory(components[1])
 		i.ChildrenIdentity = elemental.IdentityFromCategory(components[3])
 	}
+}
+
+func (i *Info) String() string {
+
+	return fmt.Sprintf("<info parameters:%v headers:%v parent-identity: %v parent-id: %s children-identity: %v>",
+		i.Parameters,
+		i.Headers,
+		i.ParentIdentity,
+		i.ParentIdentifier,
+		i.ChildrenIdentity,
+	)
 }

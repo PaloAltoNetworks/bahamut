@@ -7,6 +7,7 @@ package bahamut
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -237,4 +238,15 @@ func (c *Context) WriteResponse(w http.ResponseWriter) error {
 	}
 
 	return err
+}
+
+func (c *Context) String() string {
+
+	return fmt.Sprintf("<context id:%s operation: %s info: %s page: %s count: %s>",
+		c.Identifier(),
+		c.Operation,
+		c.Info,
+		c.Page,
+		c.Count,
+	)
 }
