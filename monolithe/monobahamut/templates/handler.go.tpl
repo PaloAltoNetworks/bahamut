@@ -97,13 +97,12 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     ctx.ReadRequest(req)
 
     log.WithFields(log.Fields{
-      "package":    "bahamut",
-      "context":    "handler",
-      "origin":     req.RemoteAddr,
-      "method":     req.Method,
-      "operation":  elemental.OperationCreate,
-      "path":       req.URL.Path,
-      "context":    *ctx,
+        "package":    "bahamut",
+        "origin":     req.RemoteAddr,
+        "method":     req.Method,
+        "operation":  elemental.OperationCreate,
+        "path":       req.URL.Path,
+        "context":    *ctx,
     }).Debug("Handling create {{ specification.entity_name|lower }} request.")
 
     if !bahamut.CheckAuthentication(ctx, w) {
