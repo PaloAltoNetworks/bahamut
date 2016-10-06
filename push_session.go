@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/aporeto-inc/elemental"
@@ -154,4 +155,12 @@ func (s *PushSession) listen() {
 			return
 		}
 	}
+}
+
+func (s *PushSession) String() string {
+
+	return fmt.Sprintf("<session id:%s info: %s>",
+		s.id,
+		s.Info,
+	)
 }
