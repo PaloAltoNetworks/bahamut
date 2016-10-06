@@ -15,7 +15,7 @@ import (
 func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationRetrieveMany,
@@ -53,7 +53,7 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
 func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationRetrieve,
@@ -91,6 +91,7 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
 func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
+      "package":    "bahamut",
       "context":    "handler",
       "origin":     req.RemoteAddr,
       "method":     req.Method,
@@ -154,7 +155,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationUpdate,
@@ -217,7 +218,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationDelete,
@@ -266,7 +267,7 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationPatch,
@@ -324,7 +325,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
 func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     log.WithFields(log.Fields{
-        "context":    "handler",
+        "package":    "bahamut",
         "origin":     req.RemoteAddr,
         "method":     req.Method,
         "operation":  elemental.OperationInfo,
