@@ -48,7 +48,7 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 // It basically checks that the TLSCAPath, TLSCertificatePath and TLSKeyPath all correctly defined.
 func (a *apiServer) isTLSEnabled() bool {
 
-	return a.config.TLSCAPath != "" && a.config.TLSCertificatePath != "" && a.config.TLSKeyPath != ""
+	return a.config.TLSCertificatePath != "" && a.config.TLSKeyPath != ""
 }
 
 // createSecureHTTPServer returns a secure HTTP Server.
@@ -56,14 +56,20 @@ func (a *apiServer) isTLSEnabled() bool {
 // It will return an error if any.
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
-	caCert, err := ioutil.ReadFile(a.config.TLSCAPath)
+	CAPool, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, err
 	}
 
-	CAPool := x509.NewCertPool()
-	if !CAPool.AppendCertsFromPEM(caCert) {
-		return nil, errors.New("Unable to import CA certificate")
+	if a.config.TLSCAPath != "" {
+		caCert, err1 := ioutil.ReadFile(a.config.TLSCAPath)
+		if err1 != nil {
+			return nil, err1
+		}
+
+		if !CAPool.AppendCertsFromPEM(caCert) {
+			return nil, errors.New("Unable to import CA certificate")
+		}
 	}
 
 	cert, err := tls.LoadX509KeyPair(a.config.TLSCertificatePath, a.config.TLSKeyPath)
