@@ -15,25 +15,25 @@ type ListsList []*List
 // List represents the model of a list
 type List struct {
 	// The identifier
-	ID string `json:"ID" cql:"id,omitempty"`
+	ID string `json:"ID" cql:"id,omitempty" bson:"id"`
 
 	// A creation only only attribute
-	CreationOnly string `json:"creationOnly" cql:"creationonly,omitempty"`
+	CreationOnly string `json:"creationOnly" cql:"creationonly,omitempty" bson:"creationonly"`
 
 	// The description
-	Description string `json:"description" cql:"description,omitempty"`
+	Description string `json:"description" cql:"description,omitempty" bson:"description"`
 
 	// The name
-	Name string `json:"name" cql:"name,omitempty"`
+	Name string `json:"name" cql:"name,omitempty" bson:"name"`
 
 	// The identifier of the parent of the object
-	ParentID string `json:"parentID" cql:"parentid,omitempty"`
+	ParentID string `json:"parentID" cql:"parentid,omitempty" bson:"parentid"`
 
 	// The type of the parent of the object
-	ParentType string `json:"parentType" cql:"parenttype,omitempty"`
+	ParentType string `json:"parentType" cql:"parenttype,omitempty" bson:"parenttype"`
 
 	// A read only attribute
-	ReadOnly string `json:"readOnly" cql:"readonly,omitempty"`
+	ReadOnly string `json:"readOnly" cql:"readonly,omitempty" bson:"readonly"`
 }
 
 // NewList returns a new *List
@@ -86,7 +86,7 @@ func (o *List) GetReadOnly() string {
 }
 
 // Validate valides the current information stored into the structure.
-func (o *List) Validate() elemental.Errors {
+func (o *List) Validate() error {
 
 	errors := elemental.Errors{}
 
@@ -235,22 +235,22 @@ type TasksList []*Task
 // Task represents the model of a task
 type Task struct {
 	// The identifier
-	ID string `json:"ID" cql:"id,omitempty"`
+	ID string `json:"ID" cql:"id,omitempty" bson:"id"`
 
 	// The description
-	Description string `json:"description" cql:"description,omitempty"`
+	Description string `json:"description" cql:"description,omitempty" bson:"description"`
 
 	// The name
-	Name string `json:"name" cql:"name,omitempty"`
+	Name string `json:"name" cql:"name,omitempty" bson:"name"`
 
 	// The identifier of the parent of the object
-	ParentID string `json:"parentID" cql:"parentid,omitempty"`
+	ParentID string `json:"parentID" cql:"parentid,omitempty" bson:"parentid"`
 
 	// The type of the parent of the object
-	ParentType string `json:"parentType" cql:"parenttype,omitempty"`
+	ParentType string `json:"parentType" cql:"parenttype,omitempty" bson:"parenttype"`
 
 	// The status of the task
-	Status TaskStatusValue `json:"status" cql:"status,omitempty"`
+	Status TaskStatusValue `json:"status" cql:"status,omitempty" bson:"status"`
 }
 
 // NewTask returns a new *Task
@@ -285,7 +285,7 @@ func (o *Task) SetIdentifier(ID string) {
 }
 
 // Validate valides the current information stored into the structure.
-func (o *Task) Validate() elemental.Errors {
+func (o *Task) Validate() error {
 
 	errors := elemental.Errors{}
 
