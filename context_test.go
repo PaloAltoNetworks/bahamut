@@ -191,19 +191,6 @@ func TestContext_Errors(t *testing.T) {
 				So(len(c.Errors()), ShouldEqual, 1)
 			})
 		})
-
-		Convey("When I set the Errors", func() {
-
-			c.SetErrors(elemental.NewErrors(
-				elemental.NewError("title", "description", "subject", 42),
-				elemental.NewError("title", "description", "subject", 42),
-			))
-
-			Convey("Then the context should have some Errors", func() {
-				So(c.HasErrors(), ShouldBeTrue)
-				So(len(c.Errors()), ShouldEqual, 2)
-			})
-		})
 	})
 }
 
@@ -254,10 +241,10 @@ func TestError_WriteHTTPError(t *testing.T) {
 
 		Convey("When I use WriteHTTPError", func() {
 
-			WriteHTTPError(w, "origin", 43, elemental.NewError("title", "description", "subject", 42))
+			WriteHTTPError(w, "origin", elemental.NewError("title", "description", "subject", 42))
 
 			Convey("Then the status should be 42", func() {
-				So(w.Code, ShouldEqual, 43)
+				So(w.Code, ShouldEqual, 42)
 			})
 
 			Convey("Then the body should be correct", func() {

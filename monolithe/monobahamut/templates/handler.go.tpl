@@ -35,12 +35,12 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveManyProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for retrieving many {{ specification.resource_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for retrieving many {{ specification.resource_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     if err := proc.(bahamut.RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -71,12 +71,12 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for retrieving a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for retrieving a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     if err := proc.(bahamut.RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -107,26 +107,26 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.CreateProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for creating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     defer req.Body.Close()
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
-    if errs := obj.Validate(); errs != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusUnprocessableEntity, errs...)
+    if err := obj.Validate(); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
     ctx.InputData = obj
 
     if err := proc.(bahamut.CreateProcessor).ProcessCreate(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -168,26 +168,26 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.UpdateProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for updating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for updating a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     defer req.Body.Close()
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "http", http.StatusBadRequest))
         return
     }
 
-    if errs := obj.Validate(); errs != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusUnprocessableEntity, errs...)
+    if err := obj.Validate(); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
     ctx.InputData = obj
 
     if err := proc.(bahamut.UpdateProcessor).ProcessUpdate(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -229,12 +229,12 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.RetrieveProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for retrieving a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for retrieving a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     if err := proc.(bahamut.DeleteProcessor).ProcessDelete(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -276,21 +276,21 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
     proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
 
     if _, ok := proc.(bahamut.PatchProcessor); !ok {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "No handler for patching a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for patching a {{ specification.rest_name }}", "http", http.StatusNotImplemented))
         return
     }
 
     defer req.Body.Close()
     var assignation *elemental.Assignation
     if err := json.NewDecoder(req.Body).Decode(&assignation); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusBadRequest, elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "http", http.StatusBadRequest))
         return
     }
 
     ctx.InputData = assignation
 
     if err := proc.(bahamut.PatchProcessor).ProcessPatch(ctx); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusInternalServerError, elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -320,5 +320,5 @@ func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reques
         "context":    ctx.String(),
     }).Debug("Handling info {{ specification.entity_name|lower }} request.")
 
-    bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), http.StatusNotImplemented, elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented in Cid yet", "http", http.StatusNotImplemented))
+    bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented in Cid yet", "http", http.StatusNotImplemented))
 }
