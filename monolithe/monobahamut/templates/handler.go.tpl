@@ -114,7 +114,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     defer req.Body.Close()
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
     }
 
@@ -130,15 +130,12 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    if !ctx.HasErrors() {
+    if ctx.HasEvents() {
+        server.Push(ctx.Events()...)
+    }
 
-        if ctx.HasEvents() {
-            server.Push(ctx.Events()...)
-        }
-
-        if ctx.OutputData != nil {
-            server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
-        }
+    if ctx.OutputData != nil {
+        server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
     ctx.WriteResponse(w)
@@ -175,7 +172,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     defer req.Body.Close()
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "http", http.StatusBadRequest))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
     }
 
@@ -191,15 +188,12 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    if !ctx.HasErrors() {
+    if ctx.HasEvents() {
+        server.Push(ctx.Events()...)
+    }
 
-        if ctx.HasEvents() {
-            server.Push(ctx.Events()...)
-        }
-
-        if ctx.OutputData != nil {
-            server.Push(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
-        }
+    if ctx.OutputData != nil {
+        server.Push(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
     ctx.WriteResponse(w)
@@ -238,15 +232,12 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    if !ctx.HasErrors() {
+    if ctx.HasEvents() {
+      server.Push(ctx.Events()...)
+    }
 
-        if ctx.HasEvents() {
-          server.Push(ctx.Events()...)
-        }
-
-        if ctx.OutputData != nil {
-          server.Push(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
-        }
+    if ctx.OutputData != nil {
+      server.Push(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
     ctx.WriteResponse(w)
@@ -283,7 +274,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
     defer req.Body.Close()
     var assignation *elemental.Assignation
     if err := json.NewDecoder(req.Body).Decode(&assignation); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "http", http.StatusBadRequest))
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "http", http.StatusBadRequest))
         return
     }
 
@@ -294,15 +285,12 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         return
     }
 
-    if !ctx.HasErrors() {
+    if ctx.HasEvents() {
+        server.Push(ctx.Events()...)
+    }
 
-        if ctx.HasEvents() {
-            server.Push(ctx.Events()...)
-        }
-
-        if ctx.OutputData != nil {
-            server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation)))
-        }
+    if ctx.OutputData != nil {
+        server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation)))
     }
 
     ctx.WriteResponse(w)

@@ -131,34 +131,6 @@ func TestContext_WriteResponse(t *testing.T) {
 			})
 		})
 
-		Convey("When I write the response from a context with errors", func() {
-
-			w := httptest.NewRecorder()
-			c.AddErrors(elemental.NewError("error", "description", "subject", 4042))
-			c.WriteResponse(w)
-
-			Convey("Then the status code should be correct", func() {
-				So(w.Code, ShouldEqual, 4042)
-			})
-
-			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":4042,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"error\",\"data\":null}]\n")
-			})
-		})
-
-		Convey("When I write the response from a context with unmarshallable errors", func() {
-
-			w := httptest.NewRecorder()
-			e := elemental.NewError("error", "description", "subject", 42)
-			e.Data = NewUnmarshalableList()
-			c.AddErrors(e)
-			err := c.WriteResponse(w)
-
-			Convey("Then err should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-		})
-
 		Convey("When I try write the response with an unmarshallable object", func() {
 
 			w := httptest.NewRecorder()
@@ -167,28 +139,6 @@ func TestContext_WriteResponse(t *testing.T) {
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
-func TestContext_Errors(t *testing.T) {
-
-	Convey("Given I create a Context", t, func() {
-
-		c := NewContext(elemental.OperationRetrieveMany)
-
-		Convey("Then the context should not have any Error", func() {
-			So(c.HasErrors(), ShouldBeFalse)
-		})
-
-		Convey("When I add an Error", func() {
-
-			c.AddErrors(elemental.NewError("title", "description", "subject", 42))
-
-			Convey("Then the context should have some Errors", func() {
-				So(c.HasErrors(), ShouldBeTrue)
-				So(len(c.Errors()), ShouldEqual, 1)
 			})
 		})
 	})
