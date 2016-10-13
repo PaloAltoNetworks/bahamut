@@ -32,7 +32,7 @@ func CheckAuthentication(ctx *Context, w http.ResponseWriter) bool {
 	}
 
 	if !ok {
-		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "http", http.StatusUnauthorized))
+		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "bahamut", http.StatusUnauthorized))
 		return false
 	}
 
@@ -56,12 +56,12 @@ func CheckAuthorization(ctx *Context, w http.ResponseWriter) bool {
 	ok, err := authorizer.IsAuthorized(ctx)
 
 	if err != nil {
-		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Internal Server Error", err.Error(), "http", http.StatusInternalServerError))
+		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError))
 		return false
 	}
 
 	if !ok {
-		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Forbidden", "You are not allowed to access this resource.", "http", http.StatusForbidden))
+		WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Forbidden", "You are not allowed to access this resource.", "bahamut", http.StatusForbidden))
 		return false
 	}
 
