@@ -6,6 +6,38 @@ package bahamut
 
 import "github.com/aporeto-inc/elemental"
 
+// Server is the interface of a bahamut server.
+type Server interface {
+
+	// RegisterProcessor registers a new Processor for a particular Identity.
+	RegisterProcessor(Processor, elemental.Identity) error
+
+	// UnregisterProcessor unregisters a registered Processor for a particular identity.
+	UnregisterProcessor(elemental.Identity) error
+
+	// ProcessorForIdentity returns the registered Processor for a particular identity.
+	ProcessorForIdentity(elemental.Identity) (Processor, error)
+
+	// ProcessorsCount returns the number of registered processors.
+	ProcessorsCount() int
+
+	// Push pushes the given events to all active sessions.
+	// It will use the PubSubServer configured in the pushConfig.
+	Push(...*elemental.Event)
+
+	// Authenticator returns the current authenticator.
+	Authenticator() (Authenticator, error)
+
+	// Authorizer returns the current authenticator.
+	Authorizer() (Authorizer, error)
+
+	// Start starts the Bahamut server.
+	Start()
+
+	// Stop stops the Bahamut server.
+	Stop()
+}
+
 // Processor is the interface for a Processor Unit
 type Processor interface{}
 

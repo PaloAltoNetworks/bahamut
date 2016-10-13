@@ -56,7 +56,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewBahamut(
+		b := NewServer(
 			APIServerConfig{
 				Disabled: true,
 			},
@@ -66,15 +66,15 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		)
 
 		Convey("Then apiServer should be nil", func() {
-			So(b.apiServer, ShouldBeNil)
+			So(b.(*server).apiServer, ShouldBeNil)
 		})
 
 		Convey("Then pushServer should be nil", func() {
-			So(b.pushServer, ShouldBeNil)
+			So(b.(*server).pushServer, ShouldBeNil)
 		})
 
 		Convey("Then number of routes should be 0", func() {
-			So(len(b.multiplexer.Routes), ShouldEqual, 0)
+			So(len(b.(*server).multiplexer.Routes), ShouldEqual, 0)
 		})
 
 		Convey("Then pushing an event should not panic", func() {
@@ -84,18 +84,18 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		b := NewServer(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then apiServer should not be nil", func() {
-			So(b.apiServer, ShouldNotBeNil)
+			So(b.(*server).apiServer, ShouldNotBeNil)
 		})
 
 		Convey("Then pushServer should be nil", func() {
-			So(b.pushServer, ShouldNotBeNil)
+			So(b.(*server).pushServer, ShouldNotBeNil)
 		})
 
 		Convey("Then number of routes should be 0", func() {
-			So(len(b.multiplexer.Routes), ShouldEqual, 7)
+			So(len(b.(*server).multiplexer.Routes), ShouldEqual, 7)
 		})
 	})
 }
@@ -104,10 +104,10 @@ func TestBahamut_DefaultBahamut(t *testing.T) {
 
 	Convey("Given I create a Bahamut", t, func() {
 
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		b := NewServer(APIServerConfig{}, PushServerConfig{})
 
 		Convey("Then the defaultBahamut should be set", func() {
-			So(DefaultBahamut(), ShouldEqual, b)
+			So(DefaultServer(), ShouldEqual, b)
 		})
 	})
 }
@@ -118,7 +118,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		p := &FakeProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
-		b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+		b := NewServer(APIServerConfig{}, PushServerConfig{})
 
 		Convey("When I register it for an identity", func() {
 
@@ -193,7 +193,7 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 		Convey("When I access an Authenticator while there is none", func() {
 
-			b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+			b := NewServer(APIServerConfig{}, PushServerConfig{})
 			a, err := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
@@ -204,7 +204,7 @@ func TestBahamut_Authenticator(t *testing.T) {
 
 		Convey("When I set an Authenticator", func() {
 
-			b := NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			b := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			a, err := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
@@ -223,7 +223,7 @@ func TestBahamut_Authorizer(t *testing.T) {
 
 		Convey("When I access an Authorizer while there is none", func() {
 
-			b := NewBahamut(APIServerConfig{}, PushServerConfig{})
+			b := NewServer(APIServerConfig{}, PushServerConfig{})
 			a, err := b.Authorizer()
 
 			Convey("Then the authorizer should be nil", func() {
@@ -234,7 +234,7 @@ func TestBahamut_Authorizer(t *testing.T) {
 
 		Convey("When I set an Authorizer", func() {
 
-			b := NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			b := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			a, err := b.Authorizer()
 
 			Convey("Then the Authorizer should be set", func() {

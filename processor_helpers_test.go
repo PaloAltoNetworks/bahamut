@@ -37,7 +37,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
-			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = true
 			auth.errored = false
 
@@ -50,7 +50,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
-			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = false
 
@@ -68,7 +68,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
-			NewBahamut(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = true
 
@@ -111,7 +111,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
-			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = true
 			auth.errored = false
 
@@ -124,7 +124,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
-			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = false
 
@@ -142,7 +142,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
-			NewBahamut(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = true
 

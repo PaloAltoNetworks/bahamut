@@ -14,21 +14,15 @@ import (
 	"github.com/go-zoo/bone"
 )
 
-var defaultBahamut *Bahamut
+var defaultBahamut *server
 
-// DefaultBahamut returns the defaut Bahamut.
+// DefaultServer returns the defaut Bahamut.
 // Needless to say I don't like this. but that will be ok for now.
-func DefaultBahamut() *Bahamut {
+func DefaultServer() Server {
 	return defaultBahamut
 }
 
-// A Bahamut is an application server.
-//
-// It serves various configured api routes, routes the calls to the
-// correct processors, creates a push notification system using websocket.
-//
-// This is the main entrypoint of the library.
-type Bahamut struct {
+type server struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
 
@@ -41,10 +35,10 @@ type Bahamut struct {
 	stop chan bool
 }
 
-// NewBahamut returns a new Bahamut.
+// NewServer returns a new Bahamut Server.
 //
 // It will use the given apiConfig and pushConfig to initialize the various servers.
-func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut {
+func NewServer(apiConfig APIServerConfig, pushConfig PushServerConfig) Server {
 
 	mux := bone.New()
 
@@ -58,7 +52,7 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 		pushServer = newPushServer(pushConfig, mux)
 	}
 
-	srv := &Bahamut{
+	srv := &server{
 		apiServer:   apiServer,
 		pushServer:  pushServer,
 		multiplexer: mux,
@@ -71,8 +65,7 @@ func NewBahamut(apiConfig APIServerConfig, pushConfig PushServerConfig) *Bahamut
 	return srv
 }
 
-// RegisterProcessor registers a new Processor for a particular Identity.
-func (b *Bahamut) RegisterProcessor(processor Processor, identity elemental.Identity) error {
+func (b *server) RegisterProcessor(processor Processor, identity elemental.Identity) error {
 
 	if _, ok := b.processors[identity.Name]; ok {
 		return fmt.Errorf("identity %s already has a registered processor", identity)
@@ -83,8 +76,7 @@ func (b *Bahamut) RegisterProcessor(processor Processor, identity elemental.Iden
 	return nil
 }
 
-// UnregisterProcessor unregisters a registered Processor for a particular identity.
-func (b *Bahamut) UnregisterProcessor(identity elemental.Identity) error {
+func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 
 	if _, ok := b.processors[identity.Name]; !ok {
 		return fmt.Errorf("no registered processor for identity %s", identity)
@@ -95,8 +87,7 @@ func (b *Bahamut) UnregisterProcessor(identity elemental.Identity) error {
 	return nil
 }
 
-// ProcessorForIdentity returns the registered Processor for a particular identity.
-func (b *Bahamut) ProcessorForIdentity(identity elemental.Identity) (Processor, error) {
+func (b *server) ProcessorForIdentity(identity elemental.Identity) (Processor, error) {
 
 	if _, ok := b.processors[identity.Name]; !ok {
 		return nil, fmt.Errorf("no registered processor for identity %s", identity)
@@ -105,18 +96,12 @@ func (b *Bahamut) ProcessorForIdentity(identity elemental.Identity) (Processor, 
 	return b.processors[identity.Name], nil
 }
 
-// ProcessorsCount returns the number of registered processors.
-func (b *Bahamut) ProcessorsCount() int {
+func (b *server) ProcessorsCount() int {
 
 	return len(b.processors)
 }
 
-// Push pushes the given events to all active sessions.
-//
-// Depending on the configuration of the pushServer, it may use
-// internal local push system, or may use Kafka to publish the events
-// to a cluster of Bahamut Servers.
-func (b *Bahamut) Push(events ...*elemental.Event) {
+func (b *server) Push(events ...*elemental.Event) {
 
 	if b.pushServer == nil {
 		return
@@ -125,10 +110,7 @@ func (b *Bahamut) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-// Authenticator returns the current authenticator.
-//
-// It will return an error if none is set.
-func (b *Bahamut) Authenticator() (Authenticator, error) {
+func (b *server) Authenticator() (Authenticator, error) {
 
 	if b.apiServer.config.Authenticator == nil {
 		return nil, fmt.Errorf("No authenticator configured.")
@@ -137,10 +119,7 @@ func (b *Bahamut) Authenticator() (Authenticator, error) {
 	return b.apiServer.config.Authenticator, nil
 }
 
-// Authorizer returns the current authenticator.
-//
-// It will return an error if none is set.
-func (b *Bahamut) Authorizer() (Authorizer, error) {
+func (b *server) Authorizer() (Authorizer, error) {
 
 	if b.apiServer.config.Authorizer == nil {
 		return nil, fmt.Errorf("No authorizer configured.")
@@ -151,7 +130,7 @@ func (b *Bahamut) Authorizer() (Authorizer, error) {
 
 // handleExit handle the interupt signal an will try
 // to cleanly stop all current routines.
-func (b *Bahamut) handleExit() {
+func (b *server) handleExit() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -164,8 +143,7 @@ func (b *Bahamut) handleExit() {
 	}).Info("Bye!")
 }
 
-// Start starts the Bahamut server.
-func (b *Bahamut) Start() {
+func (b *server) Start() {
 
 	if b.apiServer != nil {
 		go b.apiServer.start()
@@ -180,8 +158,7 @@ func (b *Bahamut) Start() {
 	<-b.stop
 }
 
-// Stop stops the Bahamut server.
-func (b *Bahamut) Stop() {
+func (b *server) Stop() {
 
 	if b.apiServer != nil {
 		b.apiServer.stop()
