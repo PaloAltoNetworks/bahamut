@@ -68,7 +68,12 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 		}
 
 		if !ok {
-			ws.Close()
+			if err := ws.Close(); err != nil {
+				log.WithFields(log.Fields{
+					"error":   err,
+					"package": "bahamut",
+				}).Error("Error during closing the websocket.")
+			}
 			return
 		}
 	}
