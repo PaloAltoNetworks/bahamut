@@ -22,6 +22,27 @@ func DefaultServer() Server {
 	return defaultBahamut
 }
 
+// RegisterProcessorOrDie will register the given Processor for the given
+// Identity and will exit in case of errors. This is just a helper for
+// Server.RegisterProcessor function.
+func RegisterProcessorOrDie(processor Processor, identity elemental.Identity) {
+
+	server := DefaultServer()
+
+	if server == nil {
+		log.WithFields(log.Fields{
+			"package": "bahamut",
+		}).Fatal("Not bahamut set. You must create a bahamut server first.")
+	}
+
+	if err := server.RegisterProcessor(processor, identity); err != nil {
+		log.WithFields(log.Fields{
+			"package": "bahamut",
+			"error":   err.Error(),
+		}).Fatal("Duplicate identity registration.")
+	}
+}
+
 type server struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
