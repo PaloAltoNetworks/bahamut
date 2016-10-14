@@ -14,7 +14,7 @@ import (
 // RetrieveMany{{ specification.entity_name }} handles GET requests for a set of {{ specification.entity_name }}.
 func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationRetrieveMany)
     ctx.ReadRequest(req)
 
@@ -24,11 +24,11 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
         "context":    ctx.String(),
     }).Debug("Handling retrieve many {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 
@@ -50,7 +50,7 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
 // Retrieve{{ specification.entity_name }} handles GET requests for a single {{ specification.entity_name }}.
 func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationRetrieve)
     ctx.ReadRequest(req)
 
@@ -60,11 +60,11 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
         "context":    ctx.String(),
     }).Debug("Handling retrieve {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 
@@ -86,7 +86,7 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
 // Create{{ specification.entity_name }} handles POST requests for a single {{ specification.entity_name }}.
 func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationCreate)
     ctx.ReadRequest(req)
 
@@ -96,11 +96,11 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "context":    ctx.String(),
     }).Debug("Handling create {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 
@@ -144,7 +144,7 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Update{{ specification.entity_name }} handles PUT requests for a single {{ specification.entity_name }}.
 func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationUpdate)
     ctx.ReadRequest(req)
 
@@ -154,11 +154,11 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "context":    ctx.String(),
     }).Debug("Handling update {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 
@@ -202,7 +202,7 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Delete{{ specification.entity_name }} handles DELETE requests for a single {{ specification.entity_name }}.
 func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationDelete)
     ctx.ReadRequest(req)
 
@@ -212,11 +212,11 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         "context":    ctx.String(),
     }).Debug("Handling delete {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 
@@ -246,7 +246,7 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 // Patch{{ specification.entity_name }} handles PATCH requests for a single {{ specification.entity_name }}.
 func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
-    server := bahamut.DefaultServer()
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationPatch)
     ctx.ReadRequest(req)
 
@@ -256,11 +256,11 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         "context":    ctx.String(),
     }).Debug("Handling patch {{ specification.entity_name|lower }} request.")
 
-    if !bahamut.CheckAuthentication(ctx, w) {
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
         return
     }
 
-    if !bahamut.CheckAuthorization(ctx, w) {
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
         return
     }
 

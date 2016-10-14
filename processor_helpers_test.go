@@ -28,7 +28,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check authentication with no registered authenticator", func() {
 
-			ok := CheckAuthentication(ctx, nil)
+			ok := CheckAuthentication(nil, ctx, nil)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeTrue)
@@ -37,11 +37,11 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
-			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = true
 			auth.errored = false
 
-			ok := CheckAuthentication(ctx, nil)
+			ok := CheckAuthentication(s.Authenticator(), ctx, nil)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeTrue)
@@ -50,12 +50,12 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
-			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = false
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthentication(ctx, w)
+			ok := CheckAuthentication(s.Authenticator(), ctx, w)
 
 			Convey("Then it should not be authenticated", func() {
 				So(ok, ShouldBeFalse)
@@ -68,12 +68,12 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
-			NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = true
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthentication(ctx, w)
+			ok := CheckAuthentication(s.Authenticator(), ctx, w)
 
 			Convey("Then it should be authenticated", func() {
 				So(ok, ShouldBeFalse)
@@ -102,7 +102,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check authorization with no registered authorizer", func() {
 
-			ok := CheckAuthorization(ctx, nil)
+			ok := CheckAuthorization(nil, ctx, nil)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeTrue)
@@ -111,11 +111,11 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
-			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = true
 			auth.errored = false
 
-			ok := CheckAuthorization(ctx, nil)
+			ok := CheckAuthorization(s.Authorizer(), ctx, nil)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeTrue)
@@ -124,12 +124,12 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
-			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = false
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthorization(ctx, w)
+			ok := CheckAuthorization(s.Authorizer(), ctx, w)
 
 			Convey("Then it should not be authorized", func() {
 				So(ok, ShouldBeFalse)
@@ -142,12 +142,12 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
-			NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
+			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = true
 
 			w := httptest.NewRecorder()
-			ok := CheckAuthorization(ctx, w)
+			ok := CheckAuthorization(s.Authorizer(), ctx, w)
 
 			Convey("Then it should be authorized", func() {
 				So(ok, ShouldBeFalse)

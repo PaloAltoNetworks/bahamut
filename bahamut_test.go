@@ -100,18 +100,6 @@ func TestBahamut_NewBahamut(t *testing.T) {
 	})
 }
 
-func TestBahamut_DefaultBahamut(t *testing.T) {
-
-	Convey("Given I create a Bahamut", t, func() {
-
-		b := NewServer(APIServerConfig{}, PushServerConfig{})
-
-		Convey("Then the defaultBahamut should be set", func() {
-			So(DefaultServer(), ShouldEqual, b)
-		})
-	})
-}
-
 func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 	Convey("Given I create a Bahamut, aProcessor and an Identity", t, func() {
@@ -194,22 +182,20 @@ func TestBahamut_Authenticator(t *testing.T) {
 		Convey("When I access an Authenticator while there is none", func() {
 
 			b := NewServer(APIServerConfig{}, PushServerConfig{})
-			a, err := b.Authenticator()
+			a := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
 				So(a, ShouldBeNil)
-				So(err, ShouldNotBeNil)
 			})
 		})
 
 		Convey("When I set an Authenticator", func() {
 
 			b := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
-			a, err := b.Authenticator()
+			a := b.Authenticator()
 
 			Convey("Then the authenticator should be set", func() {
 				So(a, ShouldNotBeNil)
-				So(err, ShouldBeNil)
 			})
 		})
 	})
@@ -224,22 +210,20 @@ func TestBahamut_Authorizer(t *testing.T) {
 		Convey("When I access an Authorizer while there is none", func() {
 
 			b := NewServer(APIServerConfig{}, PushServerConfig{})
-			a, err := b.Authorizer()
+			a := b.Authorizer()
 
 			Convey("Then the authorizer should be nil", func() {
 				So(a, ShouldBeNil)
-				So(err, ShouldNotBeNil)
 			})
 		})
 
 		Convey("When I set an Authorizer", func() {
 
 			b := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
-			a, err := b.Authorizer()
+			a := b.Authorizer()
 
 			Convey("Then the Authorizer should be set", func() {
 				So(a, ShouldNotBeNil)
-				So(err, ShouldBeNil)
 			})
 		})
 	})

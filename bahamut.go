@@ -9,25 +9,16 @@ import (
 	"os"
 	"os/signal"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+
+	log "github.com/Sirupsen/logrus"
 )
-
-var defaultBahamut *server
-
-// DefaultServer returns the defaut Bahamut.
-// Needless to say I don't like this. but that will be ok for now.
-func DefaultServer() Server {
-	return defaultBahamut
-}
 
 // RegisterProcessorOrDie will register the given Processor for the given
 // Identity and will exit in case of errors. This is just a helper for
 // Server.RegisterProcessor function.
-func RegisterProcessorOrDie(processor Processor, identity elemental.Identity) {
-
-	server := DefaultServer()
+func RegisterProcessorOrDie(server Server, processor Processor, identity elemental.Identity) {
 
 	if server == nil {
 		log.WithFields(log.Fields{
@@ -81,8 +72,6 @@ func NewServer(apiConfig APIServerConfig, pushConfig PushServerConfig) Server {
 		processors:  make(map[string]Processor),
 	}
 
-	defaultBahamut = srv
-
 	return srv
 }
 
@@ -131,22 +120,14 @@ func (b *server) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-func (b *server) Authenticator() (Authenticator, error) {
+func (b *server) Authenticator() Authenticator {
 
-	if b.apiServer.config.Authenticator == nil {
-		return nil, fmt.Errorf("No authenticator configured.")
-	}
-
-	return b.apiServer.config.Authenticator, nil
+	return b.apiServer.config.Authenticator
 }
 
-func (b *server) Authorizer() (Authorizer, error) {
+func (b *server) Authorizer() Authorizer {
 
-	if b.apiServer.config.Authorizer == nil {
-		return nil, fmt.Errorf("No authorizer configured.")
-	}
-
-	return b.apiServer.config.Authorizer, nil
+	return b.apiServer.config.Authorizer
 }
 
 // handleExit handle the interupt signal an will try

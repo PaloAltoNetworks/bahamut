@@ -43,11 +43,19 @@ class APIVersionWriter(TemplateFileWriter):
     def perform(self, specifications):
         """
         """
+        self._write_handler_config()
         for rest_name, specification in specifications.iteritems():
             self._write_handler(specification=specification)
 
         self._write_routes(specifications=specifications)
         self._format()
+
+    def _write_handler_config(self):
+        """
+        """
+        filename = 'handlers/handler_config.go'
+        self.write(destination=self.output_directory, filename=filename, template_name="handler_config.go.tpl",
+                   handlers_package_name=self.handlers_package_name)
 
     def _write_handler(self, specification):
         """

@@ -26,10 +26,10 @@ type Server interface {
 	Push(...*elemental.Event)
 
 	// Authenticator returns the current authenticator.
-	Authenticator() (Authenticator, error)
+	Authenticator() Authenticator
 
 	// Authorizer returns the current authenticator.
-	Authorizer() (Authorizer, error)
+	Authorizer() Authorizer
 
 	// Start starts the Bahamut server.
 	Start()
