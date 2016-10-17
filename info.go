@@ -60,7 +60,7 @@ func (i *Info) fromRequest(req *http.Request) {
 	components := strings.Split(req.URL.Path, "/")
 
 	if l := len(components); l == 2 || l == 3 {
-		i.ParentIdentity = elemental.IdentityFromCategory(components[1])
+		i.ChildrenIdentity = elemental.IdentityFromCategory(components[1])
 	}
 
 	if l := len(components); l == 4 {

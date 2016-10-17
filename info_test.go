@@ -149,11 +149,11 @@ func TestInfo_Components(t *testing.T) {
 			i.fromRequest(req)
 
 			Convey("The the Parent Identity should be correct", func() {
-				So(i.ParentIdentity.Name, ShouldEqual, parentIdentity.Name)
+				So(i.ChildrenIdentity.Name, ShouldEqual, parentIdentity.Name)
 			})
 
 			Convey("The the Children Identity should be empty", func() {
-				So(i.ChildrenIdentity.IsEmpty(), ShouldBeTrue)
+				So(i.ParentIdentity.IsEmpty(), ShouldBeTrue)
 			})
 		})
 
@@ -168,11 +168,11 @@ func TestInfo_Components(t *testing.T) {
 			i.fromRequest(req)
 
 			Convey("The the Parent Identity should be correct", func() {
-				So(i.ParentIdentity.Name, ShouldEqual, parentIdentity.Name)
+				So(i.ChildrenIdentity.Name, ShouldEqual, parentIdentity.Name)
 			})
 
 			Convey("The the Children Identity should be empty", func() {
-				So(i.ChildrenIdentity.IsEmpty(), ShouldBeTrue)
+				So(i.ParentIdentity.IsEmpty(), ShouldBeTrue)
 			})
 		})
 
