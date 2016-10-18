@@ -109,17 +109,17 @@ func (a *apiServer) installRoutes() {
 	for _, route := range a.config.Routes {
 
 		if route.Method == http.MethodHead {
-			a.multiplexer.Head(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Head(route.Pattern, route.Handler)
 		} else if route.Method == http.MethodGet {
-			a.multiplexer.Get(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Get(route.Pattern, route.Handler)
 		} else if route.Method == http.MethodPost {
-			a.multiplexer.Post(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Post(route.Pattern, route.Handler)
 		} else if route.Method == http.MethodPut {
-			a.multiplexer.Put(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Put(route.Pattern, route.Handler)
 		} else if route.Method == http.MethodDelete {
-			a.multiplexer.Delete(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Delete(route.Pattern, route.Handler)
 		} else if route.Method == http.MethodPatch {
-			a.multiplexer.Patch(route.Pattern, http.HandlerFunc(route.Handler))
+			a.multiplexer.Patch(route.Pattern, route.Handler)
 		}
 
 		log.WithFields(log.Fields{
