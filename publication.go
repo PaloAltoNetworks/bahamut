@@ -41,9 +41,5 @@ func (p *Publication) Data() []byte {
 // Decode decodes the data into the given dest.
 func (p *Publication) Decode(dest interface{}) error {
 
-	if err := json.NewDecoder(bytes.NewReader(p.data)).Decode(&dest); err != nil {
-		return err
-	}
-
-	return nil
+	return json.NewDecoder(bytes.NewReader(p.data)).Decode(&dest)
 }

@@ -47,13 +47,8 @@ func (p *localPubSub) Subscribe(c chan *Publication, topic string) func() {
 	p.registerSubscriberChannel(c, topic)
 
 	go func() {
-		for {
-			select {
-			case <-unsubscribe:
-				p.unregisterSubscriberChannel(c, topic)
-				return
-			}
-		}
+		<-unsubscribe
+		p.unregisterSubscriberChannel(c, topic)
 	}()
 
 	return func() { unsubscribe <- true }

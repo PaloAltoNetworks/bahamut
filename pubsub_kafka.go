@@ -36,11 +36,8 @@ func (p *kafkaPubSub) Publish(publication *Publication) error {
 		Value: sarama.ByteEncoder(publication.data),
 	}
 
-	if _, _, err := p.producer.SendMessage(saramaMsg); err != nil {
-		return err
-	}
-
-	return nil
+	_, _, err := p.producer.SendMessage(saramaMsg)
+	return err
 }
 
 // Subscribe will subscribe the given channel to the given topic
