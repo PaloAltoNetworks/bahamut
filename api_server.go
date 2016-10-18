@@ -29,7 +29,6 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 // an apiServer is the structure serving the api routes.
 type apiServer struct {
 	config      APIServerConfig
-	address     string
 	multiplexer *bone.Mux
 }
 

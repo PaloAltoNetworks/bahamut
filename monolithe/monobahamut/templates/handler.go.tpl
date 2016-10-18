@@ -16,7 +16,10 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationRetrieveMany)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -44,7 +47,10 @@ func RetrieveMany{{ specification.entity_name }}(w http.ResponseWriter, req *htt
         return
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Retrieve{{ specification.entity_name }} handles GET requests for a single {{ specification.entity_name }}.
@@ -52,7 +58,10 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationRetrieve)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -80,7 +89,10 @@ func Retrieve{{ specification.entity_name }}(w http.ResponseWriter, req *http.Re
         return
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Create{{ specification.entity_name }} handles POST requests for a single {{ specification.entity_name }}.
@@ -88,7 +100,11 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationCreate)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
+
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -111,7 +127,12 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    defer req.Body.Close()
+    defer func() {
+        if err := req.Body.Close(); err != nil {
+          panic(err)
+        }
+    }()
+
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
@@ -138,7 +159,10 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Update{{ specification.entity_name }} handles PUT requests for a single {{ specification.entity_name }}.
@@ -146,7 +170,10 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationUpdate)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -169,7 +196,12 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         return
     }
 
-    defer req.Body.Close()
+    defer func() {
+        if err := req.Body.Close(); err != nil {
+          panic(err)
+        }
+    }()
+
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
     if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
         bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
@@ -196,7 +228,10 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
         server.Push(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Delete{{ specification.entity_name }} handles DELETE requests for a single {{ specification.entity_name }}.
@@ -204,7 +239,10 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationDelete)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -233,14 +271,17 @@ func Delete{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }
 
     if ctx.HasEvents() {
-      server.Push(ctx.Events()...)
+        server.Push(ctx.Events()...)
     }
 
     if ctx.OutputData != nil {
       server.Push(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(*{{ models_package_name }}.{{ specification.entity_name }})))
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Patch{{ specification.entity_name }} handles PATCH requests for a single {{ specification.entity_name }}.
@@ -248,7 +289,10 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
 
     server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationPatch)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",
@@ -271,7 +315,12 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         return
     }
 
-    defer req.Body.Close()
+    defer func() {
+        if err := req.Body.Close(); err != nil {
+          panic(err)
+        }
+    }()
+
     var assignation *elemental.Assignation
     if err := json.NewDecoder(req.Body).Decode(&assignation); err != nil {
         bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
@@ -293,14 +342,20 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
         server.Push(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation)))
     }
 
-    ctx.WriteResponse(w)
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }
 
 // Info{{ specification.entity_name }} handles HEAD requests for a single {{ specification.entity_name }}.
 func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
     ctx := bahamut.NewContext(elemental.OperationInfo)
-    ctx.ReadRequest(req)
+    if err := ctx.ReadRequest(req); err != nil {
+        bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
+        return
+    }
 
     log.WithFields(log.Fields{
         "package":    "bahamut",

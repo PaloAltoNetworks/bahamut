@@ -1,7 +1,7 @@
-// Package bahamut contains everything needed to build a fast and secure server
+// Package bahamut contains everything needed to build a fast and secure API server
 // based on a set of Monolithe Specifications.
 //
-// Bahamut uses a Monolithe plugins to generate a set of Monolithe Specifications
+// Bahamut uses a Monolithe plugins to transform a set of Monolithe Specifications
 // into the necessary routes and handlers. You will just need to write various processors
 // to handle the business logic and storage.
 //

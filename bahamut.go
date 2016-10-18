@@ -41,9 +41,6 @@ type server struct {
 	apiServer  *apiServer
 	pushServer *pushServer
 
-	authenticator Authenticator
-	authorizer    Authorizer
-
 	stop chan bool
 }
 
