@@ -25,10 +25,10 @@ type Server interface {
 	// It will use the PubSubServer configured in the pushConfig.
 	Push(...*elemental.Event)
 
-	// Authenticator returns the current authenticator.
+	// Authenticator returns the current configured Authenticator.
 	Authenticator() Authenticator
 
-	// Authorizer returns the current authenticator.
+	// Authorizer returns the current configured Authorizer.
 	Authorizer() Authorizer
 
 	// Start starts the Bahamut server.
