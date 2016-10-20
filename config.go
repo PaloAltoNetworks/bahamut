@@ -51,7 +51,6 @@ type APIServerConfig struct {
 
 	// TLSAuthType defines the tls authentication mode to use for a secure
 	// api server.
-	//
 	TLSAuthType tls.ClientAuthType
 
 	// Disabled defines if the API system should be enabled.
