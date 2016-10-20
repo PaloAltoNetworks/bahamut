@@ -30,17 +30,18 @@ DOMINGO_BASE_IMAGE?=$(DOCKER_REGISTRY)/domingo
 export ROOT_DIR?=$(PWD)
 
 MAKEFLAGS += --warn-undefined-variables
-SHELL := /bin/bash
+SHELL := /bin/bash -o pipefail
 
-APOMOCK_FILE 			:= .apomock
-APOMOCK_PACKAGES 	:= $(shell if [ -f $(APOMOCK_FILE) ]; then cat $(APOMOCK_FILE); fi)
-NOVENDOR 					:= $(shell glide novendor)
-MANAGED_DIRS 			:= $(sort $(dir $(wildcard */Makefile)))
-MOCK_DIRS 				:= $(sort $(dir $(wildcard */.apo.mock)))
-NOTEST_DIRS 			:= $(MANAGED_DIRS)
-NOTEST_DIRS 			:= $(addsuffix ...,$(NOTEST_DIRS))
-NOTEST_DIRS 			:= $(addprefix ./,$(NOTEST_DIRS))
-TEST_DIRS 				:= $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
+APOMOCK_FILE            := .apomock
+APOMOCK_PACKAGES        := $(shell if [ -f $(APOMOCK_FILE) ]; then cat $(APOMOCK_FILE); fi)
+NOVENDOR                := $(shell glide novendor)
+MANAGED_DIRS            := $(sort $(dir $(wildcard */Makefile)))
+MOCK_DIRS               := $(sort $(dir $(wildcard */.apo.mock)))
+NOTEST_DIRS             := $(MANAGED_DIRS)
+NOTEST_DIRS             := $(addsuffix ...,$(NOTEST_DIRS))
+NOTEST_DIRS             := $(addprefix ./,$(NOTEST_DIRS))
+TEST_DIRS               := $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
+GO_SRCS                 := $(wildcard *.go)
 
 ## Update
 
@@ -83,9 +84,9 @@ domingo_lint:
 
 domingo_apomock:
 	@$(foreach dir,$(MANAGED_DIRS),pushd $(dir) && make domingo_apomock && popd;)
-	@echo "# Running ApoMock in" $(dir)
+	@echo "# Running ApoMock in" $(PWD)
 	if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
-	go test -v -race -cover $(TEST_DIRS) | tee >(go2xunit -fail | tail -n +2 >> $(ROOT_DIR)/testresults.xml)
+	if [ "$(GO_SRCS)" != "" ]; then go test -v -race -cover $(TEST_DIRS) | tee >(go2xunit -fail | tail -n +2 >> $(ROOT_DIR)/testresults.xml); else echo "# Skipped as no go sources found"; fi
 	if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi;
 
 domingo_init_apomock:

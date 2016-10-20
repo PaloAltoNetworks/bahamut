@@ -1,9 +1,12 @@
+testresults.xml
 .DS_Store
 .tags
 
-*/debug
-codegen
-*.pyc
-*.egg-info
-vendor/
-testresults.xml
+monolithe/**/*.pyc
+monolithe/**/*.egg-info
+
+example/codegen
+example/example
+example/handlers/*.go
+example/models/*.go
+example/routes/*.go
