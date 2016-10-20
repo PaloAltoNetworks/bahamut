@@ -196,3 +196,26 @@ func TestInfo_Components(t *testing.T) {
 		})
 	})
 }
+
+func TestInfo_String(t *testing.T) {
+
+	Convey("Given I have an Info", t, func() {
+
+		i := &Info{
+			Parameters:       url.Values{"hello": []string{"world"}},
+			Headers:          http.Header{"header": []string{"h1"}},
+			ParentIdentity:   elemental.EmptyIdentity,
+			ParentIdentifier: "xxxx",
+			ChildrenIdentity: elemental.EmptyIdentity,
+		}
+
+		Convey("When I use the String method", func() {
+
+			s := i.String()
+
+			Convey("Then the should string should be correct", func() {
+				So(s, ShouldEqual, "<info parameters:map[hello:[world]] headers:map[header:[h1]] parent-identity: <Identity |> parent-id: xxxx children-identity: <Identity |>>")
+			})
+		})
+	})
+}

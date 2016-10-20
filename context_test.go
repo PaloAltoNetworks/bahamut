@@ -189,7 +189,7 @@ func TestError_WriteHTTPError(t *testing.T) {
 
 		w := httptest.NewRecorder()
 
-		Convey("When I use WriteHTTPError", func() {
+		Convey("When I use WriteHTTPError with a simple elemental.Error", func() {
 
 			WriteHTTPError(w, "origin", elemental.NewError("title", "description", "subject", 42))
 
@@ -199,6 +199,20 @@ func TestError_WriteHTTPError(t *testing.T) {
 
 			Convey("Then the body should be correct", func() {
 				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
+			})
+		})
+
+		Convey("When I use WriteHTTPError with an elemental.Errors", func() {
+
+			errs := elemental.NewErrors(elemental.NewError("title", "description", "subject", 43))
+			WriteHTTPError(w, "origin", errs)
+
+			Convey("Then the status should be 43", func() {
+				So(w.Code, ShouldEqual, 43)
+			})
+
+			Convey("Then the body should be correct", func() {
+				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
 			})
 		})
 	})
