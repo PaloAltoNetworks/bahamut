@@ -1,14 +1,12 @@
 # Bahamut
 
-Bahamut is is Go library that provides everything you need to set up a full blown API server based on a [Elemental](https://github.com/aporeto-inc/elemental) model generated from some [Monolithe](https://github.com/aporeto-inc/monolithe) specifications.
+Bahamut is a Go library that provides everything you need to set up a full blown API server based on an [Elemental](https://github.com/aporeto-inc/elemental) model generated from a [Monolithe Specification](https://github.com/aporeto-inc/monolithe).
 
-The main concept of Bahamut is to only write core business logic, and letting it handle all the  boring bookkeeping. You can implement various Processors interfaces, and register them when you start a Bahamut Server.
+The main concept of Bahamut is to only write core business logic, and letting it handle all the boring bookkeeping. You can implement various Processors interfaces, and register them when you start a Bahamut Server.
 
-The included Monolithe plugin generates all the needed routes and handlers to reroute the client requests to the correct method of the correct processor. Those handlers will perform basic operations, like validating the request's data are conform to the specifications, etc. When your processor is finally called, you can be sure that all basic errors has been previously checked and that you can safely assume everything is ready to be stored, retrieved, or whatever.
+The included Monolithe plugin generates all the needed routes and handlers to reroute the client requests to the correct method of the correct processor. Those handlers will perform basic operations, like validating the request's data are valid and conform to the specifications. When your processor is finally called, you can be sure that all basic possible errors have been checked and that you can safely assume everything is ready to be stored, retrieved, or computed.
 
-A Bahamut Server is not directly responsible for storing an retrieving data. To do so, you can use any backend library you like in your processors, but we recommend using [Manipulate](https://github.com/aporeto-inc/manipulate), which provides a common interface for manipulating data and multiple implementations for MongoDB, Cassandra or MemDB (with more to come). Later on, switching from Cassandra to MongoDB will be a no brainer.
-
-An full example of a simple Todo List application can be found [in the example folder](https://github.com/aporeto-inc/bahamut/tree/master/example)
+A Bahamut Server is not directly responsible for storing an retrieving data from a database. To do so, you can use any backend library you like in your processors, but we recommend using [Manipulate](https://github.com/aporeto-inc/manipulate), which provides a common interface for manipulating an Elemental model and multiple implementations for MongoDB, Cassandra or MemDB (with more to come). Later on, switching from Cassandra to MongoDB will be a no brainer.
 
 
 
@@ -17,7 +15,7 @@ An full example of a simple Todo List application can be found [in the example f
 Install Monolithe and the Bahamut plugin:
 
     $ pip install 'git+https://github.com/aporeto-inc/monolithe.git'
-    $ pip install 'git+ssh://git@github.com/aporeto-inc/bahamut.git#subdirectory=monolithe'
+    $ pip install 'git+https://github.com/aporeto-inc/bahamut.git#subdirectory=monolithe'
 
 
 
@@ -31,16 +29,18 @@ To get the Bahamut Go Library, Run:
 
 ## Getting Started
 
-This section explains how to build a very simple Bahamut application from scratch. It will serve one single API `GET /greetings` api that will return the quote of the day from a third party service.
+This section explains how to build a very simple Bahamut application from scratch. It will serve one single API `GET /greetings` api that returns the quote of the day from a third party service.
 
 > NOTE: Using Bahamut for such a simple example is of course completely overkill :)
 
-> NOTE: You should be confortable with the concepts of Monolithe, before going further.
+> NOTE: You should be confortable with the concepts of Monolithe, before going any further.
 
 
-### Project Structure
+### Package Structure
 
-A commonly used file structure for a Bahamut project is usually the following:
+> NOTE: the following example assumes your source code path  is `$GOPATH/src/github.com/aporeto-inc/greetings`. You want to use something different, you'll need to adapt the example.
+
+A commonly used package structure for a Bahamut project is usually the following:
 
     handlers/
     models/
@@ -60,18 +60,14 @@ Let's create this structure:
 ```bash
 mkdir -p {models,handlers,processors,routes,specs}
 touch specs/api.info specs/monolithe.ini specs/root.spec specs/greeting.spec
-touch processors/greetings.go
-touch main.go
+touch processors/greetings.go main.go
 ```
-
-> NOTE: the following example assumes your source code path  is `$GOPATH/src/github.com/aporeto-inc/greetings`. You want to use something different, you'll need to adapt the example.
-
 
 #### Monolithe Specification
 
-First we need to describe our service by creating the Monolithe Specification.
+First we need to describe our service by creating a simple Monolithe Specification.
 
-> NOTE: The GUI called Specification Director is available to deal with more complex Specification, but for this example, plain text is sufficient.
+> NOTE: The GUI called Specification Director is available to deal with more complex specification, but for this example, plain text editing is sufficient.
 
 Edit `specs/monolithe.ini`:
 
@@ -149,35 +145,33 @@ Finally, edit `specs/greeting.spec`:
 }
 ```
 
-This specification describes a single read-only object API `/greetings` that returns a list of `greeting` that contains a `message`.
+This specification describes a single read-only object API `/greetings` that returns a list of `greeting` objects, each containing a `message` attribute.
 
 To generate and install the Elemental model from the specification, run:
 
-```bash
-monogen -f specs -L elemental
-cp codegen/elemental/1.0/*.go models
-```
+    $ monogen -f specs -L elemental
+    $ cp codegen/elemental/1.0/*.go models
 
 To generate and install the Bahamut routes and handlers from the specification, run:
 
-```bash
-monogen -f specs -L bahamut
-cp -a codegen/bahamut/1.0/handlers/*.go handlers
-cp -a codegen/bahamut/1.0/routes/*.go routes
-```
+    $ monogen -f specs -L bahamut
+    $ cp -a codegen/bahamut/1.0/handlers/*.go handlers
+    $ cp -a codegen/bahamut/1.0/routes/*.go routes
 
-> NOTE: You can take a look at the autogenerated code in the `models`, `handlers` and `routes` packages.
+You can take now a look at the autogenerated code in the `models`, `handlers` and `routes` packages.
+
+> NOTE: We usually use a Makefile in order to simply run `make codegen` everytime we need it.
 
 > NOTE: You can safely delete the `codegen` directory after having generated what you need.
 
 
 #### The Greetings Processor
 
-A processor is responsible for anything that is not obvious from the specs. It can be creating more objects, storing them into a DB, or whatever you like.
+A processor is responsible for anything that cannot be deduced from the specification. It can be used to create more objects, storing them into a DB, forwarding the request to some other services, or whatever you like.
 
 We are going to use a simple online quote service to return a random quote as the greeting message.
 
-As you can see this processor only implements the `RetrieveManyProcessor` interface.
+We will only implement the `RetrieveManyProcessor` interface.
 
 Edit `processors/greetings.go`:
 
@@ -196,7 +190,7 @@ import (
 // GreetingsProcessor processes greetings requests.
 type GreetingsProcessor struct{}
 
-// NewGreetingsProcessor returns a new greetings processor.
+// NewGreetingsProcessor returns a new GreetingsProcessor.
 func NewGreetingsProcessor() *GreetingsProcessor {
 	return &GreetingsProcessor{}
 }
@@ -206,8 +200,7 @@ func (p *GreetingsProcessor) ProcessRetrieveMany(ctx *bahamut.Context) error {
 
 	n := 1
 
-	// Check if we have a the parameter "n" asking for more than
-	// one quote.
+	// Check if we have a the parameter "n" asking for more than one quote.
 	if ns := ctx.Info.Parameters.Get("n"); ns != "" {
 		var err error
 		n, err = strconv.Atoi(ns)
@@ -216,10 +209,10 @@ func (p *GreetingsProcessor) ProcessRetrieveMany(ctx *bahamut.Context) error {
 		}
 	}
 
-	// Initialize the models.GreetingsList
+	// Initialize the models.GreetingsList that will contains the models.Greeting.
 	greetings := models.GreetingsList{}
 
-	// Create a type structure for unmarshaling the quote.
+	// Create a quick and dirty structure for unmarshaling the quote.
 	var data []struct{ Content string }
 
 	for i := 0; i < n; i++ {
@@ -230,16 +223,16 @@ func (p *GreetingsProcessor) ProcessRetrieveMany(ctx *bahamut.Context) error {
 			return err
 		}
 
-		// Unmarshal the quote.
+		// Unmarshal it.
 		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 			return err
 		}
 
-		// Create a new Greeting object and set its message
+		// Create a new Greeting object and set its message.
 		g := models.NewGreeting()
 		g.Message = data[0].Content
 
-		// Append the new Greeting to the GreetingLists.
+		// Append it to the GreetingLists.
 		greetings = append(greetings, g)
 	}
 
@@ -254,7 +247,9 @@ func (p *GreetingsProcessor) ProcessRetrieveMany(ctx *bahamut.Context) error {
 
 #### The Main file
 
-The `main.go` is responsible to configure and start your Bahamut server. A very simple `main.go` could look like this:
+The `main.go` is responsible for configuring and starting your Bahamut server.
+
+Edit `main.go`:
 
 ```go
 package main
@@ -270,7 +265,7 @@ import (
 
 func main() {
 
-  // Create a Bahamut server with a minimal Bahamut API configuration and an empty push config.
+  // Create a Bahamut server with a minimal API configuration and an empty push config.
 	server := bahamut.NewServer(
 		bahamut.APIServerConfig{
 			ListenAddress: ":9999",
@@ -282,7 +277,7 @@ func main() {
 	// Tells your autogenerated handlers what Bahamut server they are using.
 	handlers.SetBahamutServer(server)
 
-	// Register your hello processor for the HelloIdentity.
+	// Register your GreetingsProcessor for the GreetingIdentity.
 	server.RegisterProcessor(processors.NewGreetingsProcessor(), models.GreetingIdentity)
 
 	// And start the server.
@@ -294,24 +289,33 @@ func main() {
 
 Now run
 
-```bash
-go build && ./greetings
-```
+    go build && ./greetings
+
 
 The try it:
 
-```bash
-curl http://127.0.0.1:9999/greetings?n=2 | jq
+    curl http://127.0.0.1:9999/greetings?n=2 | jq
 
+This will output:
+
+```json
 [
   {"message": "Design is the body language of your marketing. Don't slouch."},
   {"message": "There is an unmistakeable difference between a bag of rabbit parts and a rabbit."}
 ]
-
 ```
 
 ## What's next?
 
-You can check a more advanced example in the example folder of this repository.
+We've only scratched the surface of what Bahamut can do. In addition to making it very easy to build an API service, Bahamut provides the following:
+
+- A Push system based on websocket to notify the clients for changes (via local channels, Kafka or your own implementation)
+- Support for Authentication via the Authenticator interface.
+- Support for Authorization via the Authorizer interface.
+- Easy encryption (with or without mutual tls authentication).
+- Helpers to make the use of pagination and parameters easy.
+- Much more...
+
+You can check out a more advanced example that uses a Manipulator to store the data [in the example folder](https://github.com/aporeto-inc/bahamut/tree/master/example) of this repositoty.
 
 Have fun!
