@@ -8,8 +8,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -221,15 +223,21 @@ func TestServer_RouteInstallation(t *testing.T) {
 
 func TestServer_Start(t *testing.T) {
 
+	// yeah, well, until Go provides a way to stop an http server...
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	Convey("Given I create an api without tls server", t, func() {
 
 		Convey("When I start the server", func() {
 
+			port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+			port2 := strconv.Itoa(rand.Intn(10000) + 30000)
+
 			cfg := APIServerConfig{
-				ListenAddress:          "127.0.0.1:3123",
+				ListenAddress:          "127.0.0.1:" + port1,
 				Routes:                 []*Route{},
 				EnableProfiling:        true,
-				ProfilingListenAddress: "127.0.0.1:55353",
+				ProfilingListenAddress: "127.0.0.1:" + port2,
 			}
 
 			c := newAPIServer(cfg, bone.New())
@@ -237,9 +245,9 @@ func TestServer_Start(t *testing.T) {
 			go c.start()
 			time.Sleep(1 * time.Second)
 
-			resp, err := http.Get("http://127.0.0.1:3123")
+			resp, err := http.Get("http://127.0.0.1:" + port1)
 
-			Convey("Then the status code should be 200", func() {
+			Convey("Then the status code should be OK", func() {
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
 			})
@@ -250,16 +258,19 @@ func TestServer_Start(t *testing.T) {
 
 		Convey("When I start the server", func() {
 
+			port1 := strconv.Itoa(rand.Intn(10000) + 40000)
+			port2 := strconv.Itoa(rand.Intn(10000) + 50000)
+
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
 			cfg := APIServerConfig{
-				ListenAddress:          "127.0.0.1:3143",
+				ListenAddress:          "127.0.0.1:" + port1,
 				TLSCAPath:              "fixtures/ca.pem",
 				TLSCertificatePath:     "fixtures/server-cert.pem",
 				TLSKeyPath:             "fixtures/server-key.pem",
 				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
 				EnableProfiling:        true,
-				ProfilingListenAddress: "127.0.0.1:5343",
+				ProfilingListenAddress: "127.0.0.1:" + port2,
 			}
 
 			c := newAPIServer(cfg, bone.New())
@@ -279,7 +290,7 @@ func TestServer_Start(t *testing.T) {
 			transport := &http.Transport{TLSClientConfig: tlsConfig}
 			client := &http.Client{Transport: transport}
 
-			resp, err := client.Get("https://localhost:3143")
+			resp, err := client.Get("https://localhost:" + port1)
 
 			Convey("Then the status code should be 200", func() {
 				So(err, ShouldBeNil)

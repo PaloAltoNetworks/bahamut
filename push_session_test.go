@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -20,6 +21,7 @@ func TestSession_newPushSession(t *testing.T) {
 	Convey("When I create have a new pushSession", t, func() {
 
 		ws := &websocket.Conn{}
+
 		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
 
 		Convey("Then the session id should not be empty", func() {
@@ -32,6 +34,10 @@ func TestSession_newPushSession(t *testing.T) {
 
 		Convey("Then the Identifier() should return the id", func() {
 			So(session.Identifier(), ShouldEqual, session.id)
+		})
+
+		Convey("Then the String representation should be correct", func() {
+			So(session.String(), ShouldEqual, fmt.Sprintf("<session id:%s info: <info parameters:map[] headers:map[] parent-identity: <Identity |> parent-id:  children-identity: <Identity |>>>", session.Identifier()))
 		})
 	})
 }

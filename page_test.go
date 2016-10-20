@@ -275,3 +275,26 @@ func TestPage_Compute(t *testing.T) {
 		})
 	})
 }
+
+func TestPage_String(t *testing.T) {
+
+	Convey("Given I have Page", t, func() {
+
+		p := &Page{
+			Current: 1,
+			First:   "http://server.com?page=1",
+			Last:    "http://server.com?page=1",
+			Next:    "http://server.com?page=2",
+			Prev:    "http://server.com?page=0",
+			Size:    5,
+		}
+
+		Convey("When I use the String method", func() {
+			s := p.String()
+
+			Convey("Then the string should be correct", func() {
+				So(s, ShouldEqual, "<page current:1 size:5>")
+			})
+		})
+	})
+}

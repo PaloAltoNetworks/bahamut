@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -183,7 +184,7 @@ func TestContext_Events(t *testing.T) {
 	})
 }
 
-func TestError_WriteHTTPError(t *testing.T) {
+func TestContext_WriteHTTPError(t *testing.T) {
 
 	Convey("Given I create a http.ResponseWriter", t, func() {
 
@@ -218,7 +219,7 @@ func TestError_WriteHTTPError(t *testing.T) {
 	})
 }
 
-func TestError_commonHeaders(t *testing.T) {
+func TestContext_commonHeaders(t *testing.T) {
 
 	Convey("Given I create a http.ResponseWriter", t, func() {
 
@@ -249,6 +250,48 @@ func TestError_commonHeaders(t *testing.T) {
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
 				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Local, X-Count-Total, X-PageCurrent, X-Page-Size, X-Page-Prev, X-Page-Next, X-Page-First, X-Page-Last, X-Namespace")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
+			})
+		})
+	})
+}
+
+func TestContext_String(t *testing.T) {
+
+	Convey("Given I have a Context, Info, Count, and Page", t, func() {
+
+		count := &Count{
+			Total:   10,
+			Current: 1,
+		}
+
+		info := &Info{
+			Parameters:       url.Values{"hello": []string{"world"}},
+			Headers:          http.Header{"header": []string{"h1"}},
+			ParentIdentity:   elemental.EmptyIdentity,
+			ParentIdentifier: "xxxx",
+			ChildrenIdentity: elemental.EmptyIdentity,
+		}
+
+		page := &Page{
+			Current: 1,
+			First:   "http://server.com?page=1",
+			Last:    "http://server.com?page=1",
+			Next:    "http://server.com?page=2",
+			Prev:    "http://server.com?page=0",
+			Size:    5,
+		}
+
+		ctx := NewContext(elemental.OperationCreate)
+		ctx.Info = info
+		ctx.Count = count
+		ctx.Page = page
+
+		Convey("When I call the String method", func() {
+
+			s := ctx.String()
+
+			Convey("Then the string should be correct", func() {
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create info: <info parameters:map[hello:[world]] headers:map[header:[h1]] parent-identity: <Identity |> parent-id: xxxx children-identity: <Identity |>> page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
 			})
 		})
 	})
