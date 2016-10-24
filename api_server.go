@@ -108,17 +108,18 @@ func (a *apiServer) installRoutes() {
 
 	for _, route := range a.config.Routes {
 
-		if route.Method == http.MethodHead {
+		switch route.Method {
+		case http.MethodHead:
 			a.multiplexer.Head(route.Pattern, route.Handler)
-		} else if route.Method == http.MethodGet {
+		case http.MethodGet:
 			a.multiplexer.Get(route.Pattern, route.Handler)
-		} else if route.Method == http.MethodPost {
+		case http.MethodPost:
 			a.multiplexer.Post(route.Pattern, route.Handler)
-		} else if route.Method == http.MethodPut {
+		case http.MethodPut:
 			a.multiplexer.Put(route.Pattern, route.Handler)
-		} else if route.Method == http.MethodDelete {
+		case http.MethodDelete:
 			a.multiplexer.Delete(route.Pattern, route.Handler)
-		} else if route.Method == http.MethodPatch {
+		case http.MethodPatch:
 			a.multiplexer.Patch(route.Pattern, route.Handler)
 		}
 

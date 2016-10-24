@@ -97,11 +97,13 @@ func TestContext_WriteResponse(t *testing.T) {
 		c.ReadRequest(req)
 
 		c.Count.Total = 40
-		c.OutputData = []*Entity{e1, e2}
 
 		Convey("When I write the response from a context with no error for a retrieve", func() {
 
 			w := httptest.NewRecorder()
+			c.Operation = elemental.OperationRetrieveMany
+			c.OutputData = []*Entity{e1, e2}
+			req.Method = http.MethodGet
 			c.WriteResponse(w)
 
 			Convey("Then the status code should be default to 200", func() {
@@ -118,13 +120,36 @@ func TestContext_WriteResponse(t *testing.T) {
 			Convey("Then the status should be 200", func() {
 				So(string(w.Body.Bytes()), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
 			})
+		})
 
+		Convey("When I write the response from a context with no error for a info", func() {
+
+			w := httptest.NewRecorder()
+			c.Operation = elemental.OperationInfo
+			req.Method = http.MethodHead
+			c.WriteResponse(w)
+
+			Convey("Then the status code should be default to 204", func() {
+				So(w.Code, ShouldEqual, 204)
+			})
+
+			Convey("Then the pagination headers should be correct", func() {
+				So(w.Header().Get("X-Page-First"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
+				So(w.Header().Get("X-Page-Prev"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
+				So(w.Header().Get("X-Page-Next"), ShouldEqual, "http://link.com/path?page=3&per_page=10")
+				So(w.Header().Get("X-Page-Last"), ShouldEqual, "http://link.com/path?page=4&per_page=10")
+			})
+
+			Convey("Then the body should be empty", func() {
+				So(len(w.Body.Bytes()), ShouldEqual, 0)
+			})
 		})
 
 		Convey("When I write the response from a context with no error for a create", func() {
 
 			w := httptest.NewRecorder()
 			c.Operation = elemental.OperationCreate
+			req.Method = http.MethodPost
 			c.WriteResponse(w)
 
 			Convey("Then the status code should be default to 201", func() {

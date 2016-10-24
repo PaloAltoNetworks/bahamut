@@ -351,6 +351,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
 // Info{{ specification.entity_name }} handles HEAD requests for a single {{ specification.entity_name }}.
 func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Request) {
 
+    server := currentBahamutServer()
     ctx := bahamut.NewContext(elemental.OperationInfo)
     if err := ctx.ReadRequest(req); err != nil {
         bahamut.WriteHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Cannot Read Request", err.Error(), "bahamut", http.StatusBadRequest))
@@ -363,5 +364,28 @@ func Info{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reques
         "context":    ctx.String(),
     }).Debug("Handling info {{ specification.entity_name|lower }} request.")
 
-    bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "Info{{ specification.entity_name }} not implemented yet", "bahamut", http.StatusNotImplemented))
+    if !bahamut.CheckAuthentication(server.Authenticator(), ctx, w) {
+        return
+    }
+
+    if !bahamut.CheckAuthorization(server.Authorizer(), ctx, w) {
+        return
+    }
+
+    proc, _ := server.ProcessorForIdentity({{ models_package_name }}.{{ specification.entity_name }}Identity)
+
+    if _, ok := proc.(bahamut.InfoProcessor); !ok {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Not implemented", "No handler for info a {{ specification.rest_name }}", "bahamut", http.StatusNotImplemented))
+        return
+    }
+
+    if err := proc.(bahamut.InfoProcessor).ProcessInfo(ctx); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
+        return
+    }
+
+    if err := ctx.WriteResponse(w); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+        return
+    }
 }

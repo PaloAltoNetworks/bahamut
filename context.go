@@ -166,14 +166,17 @@ func (c *Context) WriteResponse(w http.ResponseWriter) error {
 	buffer := &bytes.Buffer{}
 
 	if c.StatusCode == 0 {
-		if c.Operation == elemental.OperationCreate {
+		switch c.Operation {
+		case elemental.OperationCreate:
 			c.StatusCode = http.StatusCreated
-		} else {
+		case elemental.OperationInfo:
+			c.StatusCode = http.StatusNoContent
+		default:
 			c.StatusCode = http.StatusOK
 		}
 	}
 
-	if c.Operation == elemental.OperationRetrieveMany {
+	if c.Operation == elemental.OperationRetrieveMany || c.Operation == elemental.OperationInfo {
 
 		c.Page.compute(c.Info.BaseRawURL, c.Info.Parameters, c.Count.Total)
 

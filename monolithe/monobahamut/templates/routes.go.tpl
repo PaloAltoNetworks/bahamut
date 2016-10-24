@@ -22,8 +22,10 @@ func Routes() []*bahamut.Route {
     {% if spec.allows_get -%}
     {% if spec.is_root -%}
     routes = append(routes, bahamut.NewRoute("/{{spec.resource_name}}", http.MethodGet, handlers.Retrieve{{spec.entity_name}}))
+    routes = append(routes, bahamut.NewRoute("/{{spec.resource_name}}", http.MethodHead, handlers.Info{{spec.entity_name}}))
     {% else -%}
     routes = append(routes, bahamut.NewRoute("/{{spec.resource_name}}/:id", http.MethodGet, handlers.Retrieve{{spec.entity_name}}))
+    routes = append(routes, bahamut.NewRoute("/{{spec.resource_name}}/:id", http.MethodHead, handlers.Info{{spec.entity_name}}))
     {% endif -%}
     {% endif -%}
 
@@ -57,6 +59,7 @@ func Routes() []*bahamut.Route {
 
     {% if spec.allows_get -%}
     routes = append(routes, bahamut.NewRoute("/{{child_path}}", http.MethodGet, handlers.RetrieveMany{{child_entity_name}}))
+    routes = append(routes, bahamut.NewRoute("/{{child_path}}", http.MethodHead, handlers.Info{{child_entity_name}}))
     {% endif -%}
 
     {% endfor %}
