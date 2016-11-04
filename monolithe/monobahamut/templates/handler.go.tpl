@@ -1,7 +1,6 @@
 package {{ handlers_package_name }}
 
 import (
-  "encoding/json"
   "net/http"
 
     log "github.com/Sirupsen/logrus"
