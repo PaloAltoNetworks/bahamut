@@ -12,9 +12,10 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 func corsHandler(w http.ResponseWriter, r *http.Request) {

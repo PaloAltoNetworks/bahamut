@@ -13,6 +13,8 @@ import (
 	"strconv"
 
 	"github.com/aporeto-inc/elemental"
+
+	log "github.com/Sirupsen/logrus"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -50,8 +52,12 @@ func WriteHTTPError(w http.ResponseWriter, origin string, err error) {
 	setCommonHeader(w, origin)
 	w.WriteHeader(outError.Code())
 
-	if err := json.NewEncoder(w).Encode(&outError); err != nil {
-		panic("Unable to encode errors. What could I do now?")
+	if e := json.NewEncoder(w).Encode(&outError); e != nil {
+		log.WithFields(log.Fields{
+			"package":       "bahamut",
+			"error":         e.Error(),
+			"originalError": err.Error(),
+		}).Error("Unable to encode error.")
 	}
 }
 
