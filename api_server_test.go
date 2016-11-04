@@ -19,6 +19,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificate) {
+
+	systemCAPool, _ := x509.SystemCertPool()
+
+	clientCACertData, _ := ioutil.ReadFile("fixtures/ca.pem")
+	clientCAPool := x509.NewCertPool()
+	clientCAPool.AppendCertsFromPEM(clientCACertData)
+
+	serverCert, _ := tls.LoadX509KeyPair("fixtures/server-cert.pem", "fixtures/server-key.pem")
+	return systemCAPool, clientCAPool, []tls.Certificate{serverCert}
+}
+
 func TestServer_corsHandler(t *testing.T) {
 
 	Convey("Given I call the corsHandler", t, func() {
@@ -66,18 +78,6 @@ func TestServer_Initialization(t *testing.T) {
 			So(c.config, ShouldResemble, cfg)
 		})
 	})
-}
-
-func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificate) {
-
-	systemCAPool, _ := x509.SystemCertPool()
-
-	clientCACertData, _ := ioutil.ReadFile("fixtures/ca.pem")
-	clientCAPool := x509.NewCertPool()
-	clientCAPool.AppendCertsFromPEM(clientCACertData)
-
-	serverCert, _ := tls.LoadX509KeyPair("fixtures/server-cert.pem", "fixtures/server-key.pem")
-	return systemCAPool, clientCAPool, []tls.Certificate{serverCert}
 }
 
 func TestServer_createSecureHTTPServer(t *testing.T) {
