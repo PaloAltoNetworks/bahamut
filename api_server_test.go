@@ -68,51 +68,31 @@ func TestServer_Initialization(t *testing.T) {
 	})
 }
 
-func TestServer_isTLSEnabled(t *testing.T) {
+func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificate) {
 
-	Convey("Given I create a new api server without any tls info", t, func() {
+	systemCAPool, _ := x509.SystemCertPool()
 
-		cfg := APIServerConfig{
-			ListenAddress: "address:80",
-			Routes:        []*Route{},
-		}
+	clientCACertData, _ := ioutil.ReadFile("fixtures/ca.pem")
+	clientCAPool := x509.NewCertPool()
+	clientCAPool.AppendCertsFromPEM(clientCACertData)
 
-		c := newAPIServer(cfg, bone.New())
-
-		Convey("Then TLS should not be active", func() {
-			So(c.isTLSEnabled(), ShouldBeFalse)
-		})
-	})
-
-	Convey("Given I create a new api server without all tls info", t, func() {
-
-		cfg := APIServerConfig{
-			ListenAddress:      "address:80",
-			Routes:             []*Route{},
-			TLSCAPath:          "a",
-			TLSCertificatePath: "b",
-			TLSKeyPath:         "c",
-		}
-
-		c := newAPIServer(cfg, bone.New())
-
-		Convey("Then TLS should be active", func() {
-			So(c.isTLSEnabled(), ShouldBeTrue)
-		})
-	})
+	serverCert, _ := tls.LoadX509KeyPair("fixtures/server-cert.pem", "fixtures/server-key.pem")
+	return systemCAPool, clientCAPool, []tls.Certificate{serverCert}
 }
 
 func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without all valid tls info", t, func() {
 
+		syscapool, clientcapool, servercerts := loadFixtureCertificates()
+
 		cfg := APIServerConfig{
-			ListenAddress:      "address:80",
-			Routes:             []*Route{},
-			TLSCAPath:          "fixtures/ca.pem",
-			TLSCertificatePath: "fixtures/server-cert.pem",
-			TLSKeyPath:         "fixtures/server-key.pem",
-			TLSAuthType:        tls.RequireAndVerifyClientCert,
+			ListenAddress:         "address:80",
+			Routes:                []*Route{},
+			TLSServerCAPool:       syscapool,
+			TLSClientCAPool:       clientcapool,
+			TLSServerCertificates: servercerts,
+			TLSAuthType:           tls.RequireAndVerifyClientCert,
 		}
 
 		c := newAPIServer(cfg, bone.New())
@@ -126,32 +106,6 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 			Convey("Then the server should be correctly initialized", func() {
 				So(srv, ShouldNotBeNil)
-			})
-		})
-	})
-
-	Convey("Given I create a new api server without invalid ca info", t, func() {
-
-		cfg := APIServerConfig{
-			ListenAddress:      "address:80",
-			Routes:             []*Route{},
-			TLSCAPath:          "fixtures/nope.pem",
-			TLSCertificatePath: "fixtures/server-cert.pem",
-			TLSKeyPath:         "fixtures/server-key.pem",
-			TLSAuthType:        tls.RequireAndVerifyClientCert,
-		}
-
-		c := newAPIServer(cfg, bone.New())
-
-		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer(cfg.ListenAddress)
-
-			Convey("Then error should not be nil", func() {
-				So(err, ShouldNotBeNil)
-			})
-
-			Convey("Then the server should be nil", func() {
-				So(srv, ShouldBeNil)
 			})
 		})
 	})
@@ -263,14 +217,17 @@ func TestServer_Start(t *testing.T) {
 
 			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
+			syscapool, clientcapool, servercerts := loadFixtureCertificates()
+
 			cfg := APIServerConfig{
 				ListenAddress:          "127.0.0.1:" + port1,
-				TLSCAPath:              "fixtures/ca.pem",
-				TLSCertificatePath:     "fixtures/server-cert.pem",
-				TLSKeyPath:             "fixtures/server-key.pem",
 				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
 				EnableProfiling:        true,
 				ProfilingListenAddress: "127.0.0.1:" + port2,
+				TLSServerCAPool:        syscapool,
+				TLSClientCAPool:        clientcapool,
+				TLSServerCertificates:  servercerts,
+				TLSAuthType:            tls.RequireAndVerifyClientCert,
 			}
 
 			c := newAPIServer(cfg, bone.New())

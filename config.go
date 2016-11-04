@@ -4,7 +4,10 @@
 
 package bahamut
 
-import "crypto/tls"
+import (
+	"crypto/tls"
+	"crypto/x509"
+)
 
 // An APIServerConfig represents the configuration for the APIServer.
 type APIServerConfig struct {
@@ -31,23 +34,23 @@ type APIServerConfig struct {
 	// Authorizer is the Authorizer to use to authorize the requests.
 	Authorizer Authorizer
 
-	// TLSCAPath is the path the CA certificates used in various place
-	// of Bahamut.
-	TLSCAPath string
+	// TLSServerCAPool is the *x509.CertPool to use for the secure bahamut api server.
+	//
+	// This is optional. Bahamut will use the system ca certs pool if possible,
+	// or an empty one.
+	TLSServerCAPool *x509.CertPool
 
-	// TLSCertificatePath is the path of the certificate used to establish
-	// a TLS connection.
+	// TLSClientCAPool is the *x509.CertPool to use for the authentifying client.
+	//
+	// If given, mutual tls authentication will be possible, and the behavior will
+	// depends on the value of TLSAuthType.
+	TLSClientCAPool *x509.CertPool
+
+	// TLSServerCertificates are the TLS certficates to use for the secure api server.
 	//
 	// This is optional. If you don't provide it, then Bahamut will start
 	// without TLS support.
-	TLSCertificatePath string
-
-	// TLSKeyPath is the path of the private key used to establish
-	// a TLS connection.
-	//
-	// This is optional. If you don't provide it, then Bahamut will start
-	// without TLS support.
-	TLSKeyPath string
+	TLSServerCertificates []tls.Certificate
 
 	// TLSAuthType defines the tls authentication mode to use for a secure
 	// api server.

@@ -7,8 +7,6 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
 
@@ -42,45 +40,25 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 	}
 }
 
-// isTLSEnabled checks if the current configuration contains sufficient information
-// to estabish of TLS connection.
-//
-// It basically checks that the TLSCAPath, TLSCertificatePath and TLSKeyPath all correctly defined.
-func (a *apiServer) isTLSEnabled() bool {
-
-	return a.config.TLSCertificatePath != "" && a.config.TLSKeyPath != ""
-}
-
-// createSecureHTTPServer returns a secure HTTP Server.
+// createSecureHTTPServer returns the main HTTP Server.
 //
 // It will return an error if any.
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
-	CAPool, err := x509.SystemCertPool()
-	if err != nil {
-		return nil, err
-	}
+	CAPool := a.config.TLSServerCAPool
 
-	if a.config.TLSCAPath != "" {
-		caCert, err1 := ioutil.ReadFile(a.config.TLSCAPath)
-		if err1 != nil {
-			return nil, err1
+	if CAPool == nil {
+		var err error
+		CAPool, err = x509.SystemCertPool()
+		if err != nil {
+			CAPool = x509.NewCertPool()
 		}
-
-		if !CAPool.AppendCertsFromPEM(caCert) {
-			return nil, errors.New("Unable to import CA certificate")
-		}
-	}
-
-	cert, err := tls.LoadX509KeyPair(a.config.TLSCertificatePath, a.config.TLSKeyPath)
-	if err != nil {
-		return nil, err
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates:           []tls.Certificate{cert},
+		Certificates:           a.config.TLSServerCertificates,
 		ClientAuth:             a.config.TLSAuthType,
-		ClientCAs:              CAPool,
+		ClientCAs:              a.config.TLSClientCAPool,
 		RootCAs:                CAPool,
 		SessionTicketsDisabled: true,
 		MinVersion:             tls.VersionSSL30,
@@ -176,57 +154,40 @@ func (a *apiServer) start() {
 
 	a.installRoutes()
 
-	if a.isTLSEnabled() {
+	log.WithFields(log.Fields{
+		"address": a.config.ListenAddress,
+		"package": "bahamut",
+		"routes":  len(a.config.Routes),
+	}).Info("Starting api server.")
 
-		log.WithFields(log.Fields{
-			"address": a.config.ListenAddress,
-			"package": "bahamut",
-			"routes":  len(a.config.Routes),
-		}).Info("Starting secure api server.")
-
-		server, err := a.createSecureHTTPServer(a.config.ListenAddress)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Fatal("Unable to create secure api server.")
-		}
-
-		server.Handler = a.multiplexer
-		server.SetKeepAlivesEnabled(true)
-
-		if err = server.ListenAndServeTLS("", ""); err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Fatal("Unable to start secure api server.")
-		}
-
+	var err error
+	var server *http.Server
+	if a.config.TLSServerCertificates != nil {
+		server, err = a.createSecureHTTPServer(a.config.ListenAddress)
 	} else {
-
+		server, err = a.createUnsecureHTTPServer(a.config.ListenAddress)
+	}
+	if err != nil {
 		log.WithFields(log.Fields{
-			"address": a.config.ListenAddress,
+			"error":   err,
 			"package": "bahamut",
-			"routes":  len(a.config.Routes),
-		}).Info("Starting unsecure api server.")
+		}).Fatal("Unable to create api server.")
+	}
 
-		server, err := a.createUnsecureHTTPServer(a.config.ListenAddress)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Fatal("Unable to create unsecure api server.")
-		}
+	server.Handler = a.multiplexer
+	server.SetKeepAlivesEnabled(true)
 
-		server.Handler = a.multiplexer
-		server.SetKeepAlivesEnabled(true)
+	if a.config.TLSServerCertificates != nil {
+		err = server.ListenAndServeTLS("", "")
+	} else {
+		err = server.ListenAndServe()
+	}
 
-		if err := server.ListenAndServe(); err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Fatal("Unable to start unsecure api server.")
-		}
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"package": "bahamut",
+		}).Fatal("Unable to start api server.")
 	}
 }
 
