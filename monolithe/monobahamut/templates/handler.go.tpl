@@ -134,8 +134,8 @@ func Create{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }()
 
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
-    if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
+    if err := elemental.UnmarshalJSON(req.Body, &obj); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -203,8 +203,8 @@ func Update{{ specification.entity_name }}(w http.ResponseWriter, req *http.Requ
     }()
 
     obj := {{ models_package_name }}.New{{ specification.entity_name }}()
-    if err := json.NewDecoder(req.Body).Decode(&obj); err != nil {
-        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
+    if err := elemental.UnmarshalJSON(req.Body, &obj); err != nil {
+        bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), err)
         return
     }
 
@@ -322,7 +322,7 @@ func Patch{{ specification.entity_name }}(w http.ResponseWriter, req *http.Reque
     }()
 
     var assignation *elemental.Assignation
-    if err := json.NewDecoder(req.Body).Decode(&assignation); err != nil {
+    if err := elemental.UnmarshalJSON(req.Body, &assignation); err != nil {
         bahamut.WriteHTTPError(w, ctx.Info.Headers.Get("Origin"), elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest))
         return
     }
