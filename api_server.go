@@ -6,7 +6,6 @@ package bahamut
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"net/http"
 	"net/http/pprof"
 
@@ -45,21 +44,11 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 // It will return an error if any.
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
-	CAPool := a.config.TLSServerCAPool
-
-	if CAPool == nil {
-		var err error
-		CAPool, err = x509.SystemCertPool()
-		if err != nil {
-			CAPool = x509.NewCertPool()
-		}
-	}
-
 	tlsConfig := &tls.Config{
 		Certificates:           a.config.TLSServerCertificates,
 		ClientAuth:             a.config.TLSAuthType,
 		ClientCAs:              a.config.TLSClientCAPool,
-		RootCAs:                CAPool,
+		RootCAs:                a.config.TLSRootCAPool,
 		SessionTicketsDisabled: true,
 		MinVersion:             tls.VersionSSL30,
 	}

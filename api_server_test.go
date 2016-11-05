@@ -89,7 +89,7 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 		cfg := APIServerConfig{
 			ListenAddress:         "address:80",
 			Routes:                []*Route{},
-			TLSServerCAPool:       syscapool,
+			TLSRootCAPool:         syscapool,
 			TLSClientCAPool:       clientcapool,
 			TLSServerCertificates: servercerts,
 			TLSAuthType:           tls.RequireAndVerifyClientCert,
@@ -224,7 +224,7 @@ func TestServer_Start(t *testing.T) {
 				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
 				EnableProfiling:        true,
 				ProfilingListenAddress: "127.0.0.1:" + port2,
-				TLSServerCAPool:        syscapool,
+				TLSRootCAPool:          syscapool,
 				TLSClientCAPool:        clientcapool,
 				TLSServerCertificates:  servercerts,
 				TLSAuthType:            tls.RequireAndVerifyClientCert,

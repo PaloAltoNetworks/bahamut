@@ -34,11 +34,11 @@ type APIServerConfig struct {
 	// Authorizer is the Authorizer to use to authorize the requests.
 	Authorizer Authorizer
 
-	// TLSServerCAPool is the *x509.CertPool to use for the secure bahamut api server.
+	// TLSRootCAPool is the *x509.CertPool to use for the secure bahamut api server.
 	//
 	// This is optional. Bahamut will use the system ca certs pool if possible,
 	// or an empty one.
-	TLSServerCAPool *x509.CertPool
+	TLSRootCAPool *x509.CertPool
 
 	// TLSClientCAPool is the *x509.CertPool to use for the authentifying client.
 	//
