@@ -42,7 +42,11 @@ func (p *kafkaPubSub) Publish(publication *Publication) error {
 
 // Subscribe will subscribe the given channel to the given topic
 func (p *kafkaPubSub) Subscribe(c chan *Publication, topic string) func() {
+	return p.SubscribeWithOptions(c, topic, 0, sarama.OffsetNewest)
+}
 
+// Subscribe will subscribe the given channel to the given topic, partition and offset
+func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, topic string, partition int32, offset int64) func() {
 	unsubscribe := make(chan bool)
 
 	go func() {
@@ -52,15 +56,15 @@ func (p *kafkaPubSub) Subscribe(c chan *Publication, topic string) func() {
 		}()
 
 		var consumer sarama.Consumer
-		var partition sarama.PartitionConsumer
+		var partitionConsumer sarama.PartitionConsumer
 
-		for consumer == nil || partition == nil {
+		for consumer == nil || partitionConsumer == nil {
 
 			var err1, err2 error
 			consumer, err1 = sarama.NewConsumer(p.services, nil)
 
 			if err1 == nil {
-				partition, err2 = consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
+				partitionConsumer, err2 = consumer.ConsumePartition(topic, partition, offset)
 			}
 
 			if err1 == nil && err2 == nil {
@@ -84,7 +88,7 @@ func (p *kafkaPubSub) Subscribe(c chan *Publication, topic string) func() {
 
 		for {
 			select {
-			case data := <-partition.Messages():
+			case data := <-partitionConsumer.Messages():
 				publication := NewPublication(topic)
 				publication.data = data.Value
 				c <- publication
