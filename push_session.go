@@ -135,7 +135,9 @@ func (s *PushSession) close() {
 func (s *PushSession) listen() {
 
 	publications := make(chan *Publication)
-	unsubscribe := s.server.config.Service.Subscribe(publications, s.server.config.Topic)
+	errors := make(chan error)
+
+	unsubscribe := s.server.config.Service.Subscribe(publications, errors, s.server.config.Topic)
 
 	defer func() {
 		s.server.unregisterSession(s)
@@ -150,6 +152,12 @@ func (s *PushSession) listen() {
 		select {
 		case message := <-publications:
 			_ = s.send(string(message.Data()))
+		case err := <-errors:
+			log.WithFields(log.Fields{
+				"package": "bahamut",
+				"error":   err.Error(),
+			}).Error("Error during consuming pubsub topic.")
+			s.stop <- true
 		case <-s.stop:
 			s.stop <- true
 			return

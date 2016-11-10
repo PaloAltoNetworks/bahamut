@@ -186,7 +186,8 @@ func TestKafka_Subscribe(t *testing.T) {
 		Convey("When I subscribe to something", func() {
 
 			c := make(chan *Publication)
-			u := ps.Subscribe(c, "topic")
+			e := make(chan error)
+			u := ps.Subscribe(c, e, "topic")
 			<-time.After(2 * time.Millisecond)
 
 			Convey("Then error it should retry until I unsubscribe", func() {
@@ -215,7 +216,8 @@ func TestKafka_Subscribe(t *testing.T) {
 		Convey("When I subscribe", func() {
 
 			c := make(chan *Publication)
-			u := ps.Subscribe(c, "topic")
+			e := make(chan error)
+			u := ps.Subscribe(c, e, "topic")
 
 			Convey("Then unsubscribe channel should not be nil", func() {
 				So(u, ShouldNotBeNil)

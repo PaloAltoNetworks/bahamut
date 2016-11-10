@@ -5,7 +5,7 @@ import "time"
 // A PubSubServer is a structure that provides a publish/subscribe mechanism.
 type PubSubServer interface {
 	Publish(publication *Publication) error
-	Subscribe(c chan *Publication, topic string) func()
+	Subscribe(pubs chan *Publication, errors chan error, topic string) func()
 	Connect() Waiter
 	Disconnect()
 }

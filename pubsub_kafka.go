@@ -41,18 +41,19 @@ func (p *kafkaPubSub) Publish(publication *Publication) error {
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *kafkaPubSub) Subscribe(c chan *Publication, topic string) func() {
-	return p.SubscribeWithOptions(c, topic, 0, sarama.OffsetNewest)
+func (p *kafkaPubSub) Subscribe(pubs chan *Publication, errs chan error, topic string) func() {
+	return p.SubscribeWithOptions(pubs, errs, topic, 0, sarama.OffsetNewest)
 }
 
 // Subscribe will subscribe the given channel to the given topic, partition and offset
-func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, topic string, partition int32, offset int64) func() {
+func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, errs chan error, topic string, partition int32, offset int64) func() {
 	unsubscribe := make(chan bool)
 
 	go func() {
 
 		defer func() {
 			close(c)
+			close(errs)
 		}()
 
 		var consumer sarama.Consumer
@@ -68,11 +69,15 @@ func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, topic string, pa
 			}
 
 			if err1 == nil && err2 == nil {
+				defer func() {
+					consumer.Close()
+					partitionConsumer.Close()
+				}()
 				break
 			}
 
 			log.WithFields(log.Fields{
-				"materia":        "bahamut",
+				"package":        "bahamut",
 				"topic":          topic,
 				"consumerError":  err1,
 				"partitionError": err2,
@@ -88,10 +93,17 @@ func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, topic string, pa
 
 		for {
 			select {
-			case data := <-partitionConsumer.Messages():
+			case data, ok := <-partitionConsumer.Messages():
+				if !ok {
+					errs <- fmt.Errorf("kafka partition consumer channel returned empty data")
+					continue
+				}
 				publication := NewPublication(topic)
 				publication.data = data.Value
 				c <- publication
+			case err := <-partitionConsumer.Errors():
+				errs <- err
+				return
 			case <-unsubscribe:
 				return
 			}
