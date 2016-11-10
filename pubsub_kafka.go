@@ -96,7 +96,7 @@ func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, errs chan error,
 			case data, ok := <-partitionConsumer.Messages():
 				if !ok {
 					errs <- fmt.Errorf("kafka partition consumer channel returned empty data")
-					continue
+					return
 				}
 				publication := NewPublication(topic)
 				publication.data = data.Value
