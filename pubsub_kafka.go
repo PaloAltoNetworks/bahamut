@@ -32,8 +32,9 @@ func (p *kafkaPubSub) Publish(publication *Publication) error {
 	}
 
 	saramaMsg := &sarama.ProducerMessage{
-		Topic: publication.Topic,
-		Value: sarama.ByteEncoder(publication.data),
+		Partition: publication.Partition,
+		Topic:     publication.Topic,
+		Value:     sarama.ByteEncoder(publication.data),
 	}
 
 	_, _, err := p.producer.SendMessage(saramaMsg)

@@ -7,8 +7,9 @@ import (
 
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
-	data  []byte
-	Topic string
+	data      []byte
+	Topic     string
+	Partition int32
 }
 
 // NewPublication returns a new Publication.
