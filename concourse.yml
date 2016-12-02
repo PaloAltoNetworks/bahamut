@@ -19,5 +19,4 @@ run:
       export GOPATH=$PWD/go:$GOPATH
 
       cd go/src/github.com/aporeto-inc/bahamut
-      make init
-      make test
+      make init && make test && make release
