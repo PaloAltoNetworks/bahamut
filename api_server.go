@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/pprof"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -28,6 +29,7 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 type apiServer struct {
 	config      APIServerConfig
 	multiplexer *bone.Mux
+	server      *http.Server
 }
 
 // newAPIServer returns a new apiServer.
@@ -45,19 +47,31 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	tlsConfig := &tls.Config{
-		Certificates:           a.config.TLSServerCertificates,
-		ClientAuth:             a.config.TLSAuthType,
-		ClientCAs:              a.config.TLSClientCAPool,
-		RootCAs:                a.config.TLSRootCAPool,
-		SessionTicketsDisabled: true,
-		MinVersion:             tls.VersionSSL30,
+		Certificates:             a.config.TLSServerCertificates,
+		ClientAuth:               a.config.TLSAuthType,
+		ClientCAs:                a.config.TLSClientCAPool,
+		RootCAs:                  a.config.TLSRootCAPool,
+		MinVersion:               tls.VersionTLS12,
+		SessionTicketsDisabled:   true,
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			// tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, // Uncomment with Go 1.8
+			// tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,   // Uncomment with Go 1.8
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
 	}
 
 	tlsConfig.BuildNameToCertificate()
 
 	return &http.Server{
-		Addr:      address,
-		TLSConfig: tlsConfig,
+		Addr:         address,
+		TLSConfig:    tlsConfig,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		// IdleTimeout:  120 * time.Second, // Uncomment with Go 1.8
 	}, nil
 }
 
@@ -150,11 +164,10 @@ func (a *apiServer) start() {
 	}).Info("Starting api server.")
 
 	var err error
-	var server *http.Server
 	if a.config.TLSServerCertificates != nil {
-		server, err = a.createSecureHTTPServer(a.config.ListenAddress)
+		a.server, err = a.createSecureHTTPServer(a.config.ListenAddress)
 	} else {
-		server, err = a.createUnsecureHTTPServer(a.config.ListenAddress)
+		a.server, err = a.createUnsecureHTTPServer(a.config.ListenAddress)
 	}
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -163,13 +176,13 @@ func (a *apiServer) start() {
 		}).Fatal("Unable to create api server.")
 	}
 
-	server.Handler = a.multiplexer
-	server.SetKeepAlivesEnabled(true)
+	a.server.Handler = a.multiplexer
+	a.server.SetKeepAlivesEnabled(true)
 
 	if a.config.TLSServerCertificates != nil {
-		err = server.ListenAndServeTLS("", "")
+		err = a.server.ListenAndServeTLS("", "")
 	} else {
-		err = server.ListenAndServe()
+		err = a.server.ListenAndServe()
 	}
 
 	if err != nil {
@@ -181,8 +194,8 @@ func (a *apiServer) start() {
 }
 
 // stop stops the apiServer.
-//
-// In reality right now, it does nothing :).
 func (a *apiServer) stop() {
 
+	// a.server.Shutdown() // Uncomment with Go 1.8
+	// a.server = nil
 }
