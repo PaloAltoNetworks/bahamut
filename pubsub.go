@@ -1,11 +1,15 @@
 package bahamut
 
-import "time"
+import (
+	"time"
+
+	"github.com/Shopify/sarama"
+)
 
 // A PubSubServer is a structure that provides a publish/subscribe mechanism.
 type PubSubServer interface {
 	Publish(publication *Publication) error
-	Subscribe(pubs chan *Publication, errors chan error, topic string) func()
+	Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func()
 	Connect() Waiter
 	Disconnect()
 }
@@ -13,7 +17,13 @@ type PubSubServer interface {
 // NewKafkaPubSubServer returns a PubSubServer backed by Kafka.
 func NewKafkaPubSubServer(services []string) PubSubServer {
 
-	return newKafkaPubSub(services)
+	return newKafkaPubSub(services, nil)
+}
+
+// NewKafkaPubSubServerWithConfig returns a PubSubServer backed by Kafka using given Config.
+func NewKafkaPubSubServerWithConfig(services []string, config *sarama.Config) PubSubServer {
+
+	return newKafkaPubSub(services, config)
 }
 
 // NewLocalPubSubServer returns a PubSubServer backed by local channels.

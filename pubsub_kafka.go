@@ -13,13 +13,15 @@ type kafkaPubSub struct {
 	services      []string
 	producer      sarama.SyncProducer
 	retryInterval time.Duration
+	config        *sarama.Config
 }
 
 // newKafkaPubSub Initializes the publishing.
-func newKafkaPubSub(services []string) *kafkaPubSub {
+func newKafkaPubSub(services []string, config *sarama.Config) *kafkaPubSub {
 
 	return &kafkaPubSub{
 		services:      services,
+		config:        config,
 		retryInterval: 5 * time.Second,
 	}
 }
@@ -41,19 +43,28 @@ func (p *kafkaPubSub) Publish(publication *Publication) error {
 	return err
 }
 
-// Subscribe will subscribe the given channel to the given topic
-func (p *kafkaPubSub) Subscribe(pubs chan *Publication, errs chan error, topic string) func() {
-	return p.SubscribeWithOptions(pubs, errs, topic, 0, sarama.OffsetNewest)
-}
+// Subscribe will subscribe the given channel to the given topic.
+//
+// You can pass an int32 as additional argument that represents the parition to use. by default it will be 0.
+func (p *kafkaPubSub) Subscribe(pubs chan *Publication, errs chan error, topic string, args ...interface{}) func() {
 
-// Subscribe will subscribe the given channel to the given topic, partition and offset
-func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, errs chan error, topic string, partition int32, offset int64) func() {
+	var partition int32
 	unsubscribe := make(chan bool)
+	offset := sarama.OffsetNewest
+
+	if len(args) == 1 {
+
+		if p, ok := args[0].(int32); ok {
+			partition = p
+		} else {
+			panic("You must provide a int32 as partition")
+		}
+	}
 
 	go func() {
 
 		defer func() {
-			close(c)
+			close(pubs)
 			close(errs)
 		}()
 
@@ -63,7 +74,7 @@ func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, errs chan error,
 		for consumer == nil || partitionConsumer == nil {
 
 			var err1, err2 error
-			consumer, err1 = sarama.NewConsumer(p.services, nil)
+			consumer, err1 = sarama.NewConsumer(p.services, p.config)
 
 			if err1 == nil {
 				partitionConsumer, err2 = consumer.ConsumePartition(topic, partition, offset)
@@ -101,7 +112,7 @@ func (p *kafkaPubSub) SubscribeWithOptions(c chan *Publication, errs chan error,
 				}
 				publication := NewPublication(topic)
 				publication.data = data.Value
-				c <- publication
+				pubs <- publication
 			case err := <-partitionConsumer.Errors():
 				errs <- err
 				return
@@ -124,7 +135,7 @@ func (p *kafkaPubSub) Connect() Waiter {
 		for p.producer == nil {
 
 			var err error
-			p.producer, err = sarama.NewSyncProducer(p.services, nil)
+			p.producer, err = sarama.NewSyncProducer(p.services, p.config)
 
 			if err == nil {
 				break
