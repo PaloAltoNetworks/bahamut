@@ -40,7 +40,7 @@ func (p *localPubSub) Publish(publication *Publication) error {
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string) func() {
+func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string, args ...interface{}) func() {
 
 	unsubscribe := make(chan bool)
 
