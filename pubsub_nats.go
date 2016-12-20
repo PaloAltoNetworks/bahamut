@@ -107,4 +107,6 @@ func (p *natsPubSub) Connect() Waiter {
 }
 
 func (p *natsPubSub) Disconnect() {
+
+	p.client.Close()
 }
