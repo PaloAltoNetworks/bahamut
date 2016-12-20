@@ -14,6 +14,12 @@ type PubSubServer interface {
 	Disconnect()
 }
 
+// NewNATSPubSubServer returns a PubSubServer backed by NATS.
+func NewNATSPubSubServer(natsURL string) PubSubServer {
+
+	return newNatsPubSub(natsURL)
+}
+
 // NewKafkaPubSubServer returns a PubSubServer backed by Kafka.
 func NewKafkaPubSubServer(services []string) PubSubServer {
 

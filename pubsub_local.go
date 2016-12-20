@@ -102,10 +102,9 @@ func (p *localPubSub) listen() {
 
 		case reg := <-p.unregister:
 			p.lock.Lock()
-			subs := p.subscribers[reg.topic]
-			for i, sub := range subs {
+			for i, sub := range p.subscribers[reg.topic] {
 				if sub == reg.ch {
-					subs = append(subs[:i], subs[i+1:]...)
+					p.subscribers[reg.topic] = append(p.subscribers[reg.topic][:i], p.subscribers[reg.topic][i+1:]...)
 					close(sub)
 					break
 				}
