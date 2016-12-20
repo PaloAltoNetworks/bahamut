@@ -35,11 +35,30 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
 
-	sub, err := p.client.Subscribe(topic, func(m *nats.Msg) {
+	var queueGroup string
+	if len(args) == 1 {
+
+		if q, ok := args[0].(string); ok {
+			queueGroup = q
+		} else {
+			panic("You must provide a string as queue group name")
+		}
+	}
+
+	var sub *nats.Subscription
+	var err error
+
+	handler := func(m *nats.Msg) {
 		publication := NewPublication(topic)
 		publication.data = m.Data
 		pubs <- publication
-	})
+	}
+
+	if queueGroup == "" {
+		sub, err = p.client.Subscribe(topic, handler)
+	} else {
+		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler)
+	}
 
 	if err != nil {
 		errors <- err
