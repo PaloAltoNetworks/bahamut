@@ -7,6 +7,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"time"
 )
 
 // An APIServerConfig represents the configuration for the APIServer.
@@ -58,6 +59,15 @@ type APIServerConfig struct {
 
 	// Disabled defines if the API system should be enabled.
 	Disabled bool
+
+	// ReadTimeout defines the read http timeout.
+	ReadTimeout time.Duration
+
+	// WriteTimeout defines the write http timeout.
+	WriteTimeout time.Duration
+
+	// WriteTimeout defines the idle http timeout.
+	IdleTimeout time.Duration
 }
 
 // A PushServerConfig contains the configuration for the Bahamut Push Server.

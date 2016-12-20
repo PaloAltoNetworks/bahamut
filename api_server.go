@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/pprof"
-	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -69,9 +68,9 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 	return &http.Server{
 		Addr:         address,
 		TLSConfig:    tlsConfig,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		// IdleTimeout:  120 * time.Second, // Uncomment with Go 1.8
+		ReadTimeout:  a.config.ReadTimeout,
+		WriteTimeout: a.config.WriteTimeout,
+		// IdleTimeout:  a.config.IdleTimeout, // Uncomment with Go 1.8
 	}, nil
 }
 
