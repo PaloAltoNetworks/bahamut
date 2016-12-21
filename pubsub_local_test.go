@@ -65,7 +65,7 @@ func TestLocalPubSub_RegisterUnregister(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 
 				Convey("Then the channel should be correctly unregistered", func() {
-					So(len(ps.chansForTopic("topic")[0]), ShouldEqual, 0)
+					So(len(ps.chansForTopic("topic")), ShouldEqual, 0)
 				})
 
 				Convey("Then the channel should be closed", func() {

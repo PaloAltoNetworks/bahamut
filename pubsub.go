@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	uuid "github.com/satori/go.uuid"
 )
 
 // A PubSubServer is a structure that provides a publish/subscribe mechanism.
@@ -15,9 +16,17 @@ type PubSubServer interface {
 }
 
 // NewNATSPubSubServer returns a PubSubServer backed by NATS.
-func NewNATSPubSubServer(natsURL string) PubSubServer {
+func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubSubServer {
 
-	return newNatsPubSub(natsURL)
+	if clientID == "" {
+		clientID = uuid.NewV4().String()
+	}
+
+	if clusterID == "" {
+		clusterID = "test-cluster"
+	}
+
+	return newNatsPubSub(natsURL, clusterID, clientID)
 }
 
 // NewKafkaPubSubServer returns a PubSubServer backed by Kafka.

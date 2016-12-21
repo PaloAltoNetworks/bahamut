@@ -4,23 +4,27 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/go-nats-streaming"
 
 	log "github.com/Sirupsen/logrus"
 )
 
 type natsPubSub struct {
 	natsURL       string
-	client        *nats.Conn
+	client        stan.Conn
 	retryInterval time.Duration
+	clientID      string
+	clusterID     string
 }
 
 // newNatsPubSub Initializes the pubsub server.
-func newNatsPubSub(natsURL string) *natsPubSub {
+func newNatsPubSub(natsURL string, clusterID string, clientID string) *natsPubSub {
 
 	return &natsPubSub{
 		natsURL:       natsURL,
 		retryInterval: 5 * time.Second,
+		clientID:      clientID,
+		clusterID:     clusterID,
 	}
 }
 
@@ -36,28 +40,39 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
 
 	var queueGroup string
-	if len(args) == 1 {
+	options := []stan.SubscriptionOption{}
 
-		if q, ok := args[0].(string); ok {
-			queueGroup = q
-		} else {
-			panic("You must provide a string as queue group name")
+	for i, arg := range args {
+		if i == 0 {
+			if q, ok := arg.(string); ok {
+				queueGroup = q
+			} else {
+				panic("You must provide a string as queue group name")
+			}
+			continue
 		}
+
+		if opt, ok := arg.(stan.SubscriptionOption); ok {
+			options = append(options, opt)
+		} else {
+			panic("Subsequent arguments must be of type stan.SubscriptionOption")
+		}
+
 	}
 
-	var sub *nats.Subscription
+	var sub stan.Subscription
 	var err error
 
-	handler := func(m *nats.Msg) {
+	handler := func(m *stan.Msg) {
 		publication := NewPublication(topic)
 		publication.data = m.Data
 		pubs <- publication
 	}
 
 	if queueGroup == "" {
-		sub, err = p.client.Subscribe(topic, handler)
+		sub, err = p.client.Subscribe(topic, handler, options...)
 	} else {
-		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler)
+		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler, options...)
 	}
 
 	if err != nil {
@@ -78,7 +93,7 @@ func (p *natsPubSub) Connect() Waiter {
 		for p.client == nil {
 
 			var err error
-			p.client, err = nats.Connect(p.natsURL)
+			p.client, err = stan.Connect(p.clusterID, p.clientID, stan.NatsURL(p.natsURL))
 			if err == nil {
 				break
 			}
