@@ -33,6 +33,12 @@ func (p *Publication) Encode(o interface{}) error {
 	return nil
 }
 
+// SetData sets the raw data of the message.
+func (p *Publication) SetData(data []byte) {
+
+	p.data = data
+}
+
 // Data returns the raw data contained in the publication.
 func (p *Publication) Data() []byte {
 
