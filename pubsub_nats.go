@@ -99,11 +99,13 @@ func (p *natsPubSub) Connect() Waiter {
 			}
 
 			log.WithFields(log.Fields{
-				"url":     p.natsURL,
-				"package": "bahamut",
-				"retryIn": p.retryInterval,
-				"error":   err.Error(),
-			}).Warn("Unable to connect to nats server. retrying in 5 seconds.")
+				"package":   "bahamut",
+				"url":       p.natsURL,
+				"clusterID": p.clusterID,
+				"clientID":  p.clientID,
+				"retry":     p.retryInterval,
+				"error":     err.Error(),
+			}).Warn("Unable to connect to nats server. Retrying.")
 
 			select {
 			case <-time.After(p.retryInterval):
