@@ -102,6 +102,7 @@ func (p *natsPubSub) Connect() Waiter {
 				"url":     p.natsURL,
 				"package": "bahamut",
 				"retryIn": p.retryInterval,
+				"error":   err.Error(),
 			}).Warn("Unable to connect to nats server. retrying in 5 seconds.")
 
 			select {
