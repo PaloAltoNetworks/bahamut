@@ -67,7 +67,7 @@ domingo_goconvey:
 	make domingo_deinit_apomock
 
 domingo_test:
-	$(foreach dir,$(MANAGED_DIRS),pushd ${dir} && make domingo_apomock && popd;)
+	$(foreach dir,$(MANAGED_DIRS),pushd ${dir} && make domingo_test && popd;)
 	@echo "# Running unit tests in" $(PWD)
 	@if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
 	@if [ "$(GO_SRCS)" != "" ]; then go test -race -cover $(TEST_DIRS) || exit 1; else echo "# Skipped as no go sources found"; fi
