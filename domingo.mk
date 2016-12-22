@@ -36,7 +36,7 @@ APOMOCK_FILE            := .apomock
 APOMOCK_PACKAGES        := $(shell if [ -f $(APOMOCK_FILE) ]; then cat $(APOMOCK_FILE); fi)
 NOVENDOR                := $(shell glide novendor)
 MANAGED_DIRS            := $(sort $(dir $(wildcard */Makefile)))
-MOCK_DIRS               := $(sort $(dir $(wildcard */.apo.mock)))
+MOCK_DIRS               := $(sort $(dir $(wildcard */.apomock)))
 NOTEST_DIRS             := $(MANAGED_DIRS)
 NOTEST_DIRS             := $(addsuffix ...,$(NOTEST_DIRS))
 NOTEST_DIRS             := $(addprefix ./,$(NOTEST_DIRS))
@@ -56,8 +56,8 @@ domingo_update:
 
 domingo_init:
 	@echo "# Running domingo_init in" $(PWD)
-	@if [ -f glide.lock ]; then glide install; else go get ./...; fi
-	go get -u github.com/aporeto-inc/kennebec
+	@if [ -f glide.yml ]; then glide up; else go get ./...; fi
+	@go get -u github.com/aporeto-inc/kennebec
 
 ## Testing
 
@@ -67,31 +67,15 @@ domingo_goconvey:
 	make domingo_deinit_apomock
 
 domingo_test:
-	echo > $(ROOT_DIR)/testresults.xml
-	make domingo_lint domingo_apomock
-	sed -i.bak -E 's/(<testsuites>|<\/testsuites>)//g' $(ROOT_DIR)/testresults.xml
-	rm -rf $(ROOT_DIR)/testresults.xml.bak
-	echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><testsuites>" | cat - $(ROOT_DIR)/testresults.xml > $(ROOT_DIR)/.testresults.xml
-	echo '</testsuites>' >> $(ROOT_DIR)/.testresults.xml
-	rm -f $(ROOT_DIR)/testresults.xml
-	mv $(ROOT_DIR)/.testresults.xml $(ROOT_DIR)/testresults.xml
-	if [ -d $(DOMINGO_EXPORT_FOLDER) ]; then cp $(ROOT_DIR)/testresults.xml $(DOMINGO_EXPORT_FOLDER); fi
-
-domingo_lint:
-	@echo "# Running lint & vet"
-	golint $(NOVENDOR)
-	go vet $(NOVENDOR)
-
-domingo_apomock:
-	@$(foreach dir,$(MANAGED_DIRS),pushd $(dir) && make domingo_apomock && popd;)
-	@echo "# Running ApoMock in" $(PWD)
-	if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
-	if [ "$(GO_SRCS)" != "" ]; then go test -v -race -cover $(TEST_DIRS) | tee >(go2xunit -fail | tail -n +2 >> $(ROOT_DIR)/testresults.xml); else echo "# Skipped as no go sources found"; fi
-	if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi;
+	$(foreach dir,$(MANAGED_DIRS),pushd ${dir} && make domingo_apomock && popd;)
+	@echo "# Running unit tests in" $(PWD)
+	@if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
+	@if [ "$(GO_SRCS)" != "" ]; then go test -race -cover $(TEST_DIRS) || exit 1; else echo "# Skipped as no go sources found"; fi
+	@if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi;
 
 domingo_init_apomock:
 	@make domingo_save_vendor
-	kennebec --package="$(APOMOCK_PACKAGES)" --output-dir=vendor -v=4 -logtostderr=true >> /dev/null 2>&1
+	@kennebec --package="$(APOMOCK_PACKAGES)" --output-dir=vendor -v=4 -logtostderr=true >> /dev/null 2>&1
 
 domingo_deinit_apomock:
 	@make domingo_restore_vendor
