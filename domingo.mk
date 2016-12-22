@@ -67,11 +67,11 @@ domingo_goconvey:
 	make domingo_deinit_apomock
 
 domingo_test:
-	$(foreach dir,$(MANAGED_DIRS),pushd ${dir} && make domingo_test && popd;)
-	@echo "# Running unit tests in" $(PWD)
-	@if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi;
+	@$(foreach dir,$(MANAGED_DIRS),pushd ${dir} > /dev/null && make domingo_test && popd > /dev/null;)
+	@if [ -f $(APOMOCK_FILE) ]; then make domingo_init_apomock; fi
 	@if [ "$(GO_SRCS)" != "" ]; then go test -race -cover $(TEST_DIRS) || exit 1; else echo "# Skipped as no go sources found"; fi
-	@if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi;
+	@if [ -f $(APOMOCK_FILE) ]; then make domingo_deinit_apomock; fi
+
 
 domingo_init_apomock:
 	@make domingo_save_vendor
@@ -81,11 +81,9 @@ domingo_deinit_apomock:
 	@make domingo_restore_vendor
 
 domingo_save_vendor:
-	@echo "# Saving vendor directory in" $(PWD)
 	@if [ -d vendor ]; then cp -a vendor vendor.lock; fi
 
 domingo_restore_vendor:
-	@echo "# Restoring vendor directory in" $(PWD)
 	@if [ -d vendor.lock ]; then rm -rf vendor && mv vendor.lock vendor; else rm -rf vendor; fi
 
 
