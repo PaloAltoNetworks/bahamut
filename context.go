@@ -96,6 +96,9 @@ type Context struct {
 	// UserInfo allows you to store any additional opaque data.
 	UserInfo interface{}
 
+	// Metadata is contains random user defined metadata.
+	Metadata map[string]interface{}
+
 	id     string
 	events elemental.Events
 }
@@ -110,6 +113,7 @@ func NewContext(operation elemental.Operation) *Context {
 		Page:      newPage(),
 		Count:     newCount(),
 		Operation: operation,
+		Metadata:  map[string]interface{}{},
 
 		id:     uuid.NewV4().String(),
 		events: elemental.Events{},
