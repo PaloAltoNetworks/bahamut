@@ -69,6 +69,25 @@ func (i *Info) fromRequest(req *http.Request) {
 	}
 }
 
+// FromRequest populates the Info from an elemental.Request.
+func (i *Info) fromElementalRequest(req *elemental.Request) {
+
+	i.Parameters = req.Parameters
+	i.Headers = http.Header{
+		"X-Namespace":   []string{req.Namespace},
+		"Authorization": []string{req.Username + " " + req.Password},
+	}
+
+	if !req.ParentIdentity.IsEmpty() {
+		i.ParentIdentity = req.ParentIdentity
+		i.ParentIdentifier = req.ParentID
+		i.ChildrenIdentity = req.Identity
+	} else {
+		i.ParentIdentity = req.Identity
+		i.ParentIdentifier = req.ObjectID
+	}
+}
+
 func (i *Info) String() string {
 
 	return fmt.Sprintf("<info parameters:%v headers:%v parent-identity: %v parent-id: %s children-identity: %v>",

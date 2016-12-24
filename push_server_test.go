@@ -185,7 +185,7 @@ func TestSession_HandleConnection(t *testing.T) {
 
 		Convey("When call handleConnection", func() {
 
-			go srv.handleConnection(ws)
+			go srv.handlePushConnection(ws)
 
 			var registered bool
 			select {

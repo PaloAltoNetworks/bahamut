@@ -219,3 +219,68 @@ func TestInfo_String(t *testing.T) {
 		})
 	})
 }
+
+func TestInfo_fromElementalRequest(t *testing.T) {
+
+	Convey("Given I have an Info and a elemental Request", t, func() {
+
+		r := elemental.NewRequest("ns", elemental.OperationCreate, ListIdentity)
+		r.ObjectID = "1"
+		r.Username = "toto"
+		r.Password = "password"
+
+		i := &Info{}
+
+		Convey("When I run fromElementalRequest", func() {
+
+			i.fromElementalRequest(r)
+
+			Convey("Then the parentIdentifier be set", func() {
+				So(i.ParentIdentifier, ShouldEqual, "1")
+			})
+
+			Convey("Then the parentIdentity be set", func() {
+				So(i.ParentIdentity, ShouldResemble, ListIdentity)
+			})
+
+			Convey("Then the Headers be correct", func() {
+				So(i.Headers.Get("X-Namespace"), ShouldEqual, "ns")
+				So(i.Headers.Get("Authorization"), ShouldEqual, "toto password")
+			})
+		})
+	})
+
+	Convey("Given I have an Info and a elemental Request with a parent", t, func() {
+
+		r := elemental.NewRequest("ns", elemental.OperationCreate, ListIdentity)
+		r.ObjectID = "1"
+		r.Username = "toto"
+		r.Password = "password"
+		r.ParentIdentity = TaskIdentity
+		r.ParentID = "2"
+
+		i := &Info{}
+
+		Convey("When I run fromElementalRequest", func() {
+
+			i.fromElementalRequest(r)
+
+			Convey("Then the parentIdentifier be set", func() {
+				So(i.ParentIdentifier, ShouldEqual, "2")
+			})
+
+			Convey("Then the parentIdentity be set", func() {
+				So(i.ParentIdentity, ShouldResemble, TaskIdentity)
+			})
+
+			Convey("Then the childrenIdentity be set", func() {
+				So(i.ChildrenIdentity, ShouldResemble, ListIdentity)
+			})
+
+			Convey("Then the Headers be correct", func() {
+				So(i.Headers.Get("X-Namespace"), ShouldEqual, "ns")
+				So(i.Headers.Get("Authorization"), ShouldEqual, "toto password")
+			})
+		})
+	})
+}

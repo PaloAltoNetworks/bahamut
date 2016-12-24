@@ -5,15 +5,21 @@
 package bahamut
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
+	"net/http"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
 
 	log "github.com/Sirupsen/logrus"
+)
+
+type pushSessionType int
+
+const (
+	pushSessionTypeEvent pushSessionType = iota + 1
+	pushSessionTypeAPI
 )
 
 // PushSession represents a client session.
@@ -25,14 +31,28 @@ type PushSession struct {
 	// Info contains various request related information.
 	Info *Info
 
-	id     string
-	server *pushServer
-	socket *websocket.Conn
-	out    chan string
-	stop   chan bool
+	id        string
+	server    *pushServer
+	socket    *websocket.Conn
+	events    chan *elemental.Event
+	requests  chan *elemental.Request
+	stopAll   chan bool
+	stopRead  chan bool
+	stopWrite chan bool
+	sType     pushSessionType
 }
 
 func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
+
+	return newSession(ws, server, pushSessionTypeEvent)
+}
+
+func newAPISession(ws *websocket.Conn, server *pushServer) *PushSession {
+
+	return newSession(ws, server, pushSessionTypeAPI)
+}
+
+func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *PushSession {
 
 	info := &Info{}
 
@@ -45,12 +65,16 @@ func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
 	}
 
 	return &PushSession{
-		id:     uuid.NewV4().String(),
-		server: server,
-		socket: ws,
-		out:    make(chan string, 1024),
-		stop:   make(chan bool, 2),
-		Info:   info,
+		id:        uuid.NewV4().String(),
+		server:    server,
+		socket:    ws,
+		events:    make(chan *elemental.Event, 1024),
+		requests:  make(chan *elemental.Request, 1024),
+		stopRead:  make(chan bool, 2),
+		stopWrite: make(chan bool, 2),
+		stopAll:   make(chan bool, 2),
+		Info:      info,
+		sType:     sType,
 	}
 }
 
@@ -64,9 +88,16 @@ func (s *PushSession) Identifier() string {
 func (s *PushSession) read() {
 
 	for {
-		var data []byte
-		if err := websocket.Message.Receive(s.socket, &data); err != nil {
-			s.close()
+		var request *elemental.Request
+
+		if err := websocket.JSON.Receive(s.socket, &request); err != nil {
+			s.stopAll <- true
+			return
+		}
+
+		select {
+		case s.requests <- request:
+		case <-s.stopRead:
 			return
 		}
 	}
@@ -76,63 +107,37 @@ func (s *PushSession) write() {
 
 	for {
 		select {
-		case data := <-s.out:
-			if err := websocket.Message.Send(s.socket, data); err != nil {
-				go s.close()
+		case data := <-s.events:
+			if err := websocket.JSON.Send(s.socket, data); err != nil {
+				s.stopAll <- true
+				return
 			}
-		case <-s.stop:
-			s.stop <- true
-			close(s.out)
+		case <-s.stopWrite:
 			return
 		}
 	}
 }
 
-// send given bytes to the websocket
-func (s *PushSession) send(message string) error {
-
-	if s.server.config.SessionsHandler != nil {
-
-		var event *elemental.Event
-		if err := json.NewDecoder(strings.NewReader(message)).Decode(&event); err != nil {
-			log.WithFields(log.Fields{
-				"session": s,
-				"message": message,
-				"package": "bahamut",
-			}).Error("Unable to decode event.")
-			return err
-		}
-
-		ok, err := s.server.config.SessionsHandler.ShouldPush(s, event)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Error("Error during checking authorization.")
-			return err
-		}
-
-		if !ok {
-			return nil
-		}
-	}
-
-	select {
-	case s.out <- message:
-	default:
-	}
-
-	return nil
-}
-
 // force close the current socket
 func (s *PushSession) close() {
 
-	s.stop <- true
+	s.stopAll <- true
 }
 
 // listens to events, either from kafka or from local events.
 func (s *PushSession) listen() {
+
+	switch s.sType {
+	case pushSessionTypeAPI:
+		s.listenToAPIRequest()
+	case pushSessionTypeEvent:
+		s.listenToPushEvents()
+	default:
+		panic("Unknown push session type")
+	}
+}
+
+func (s *PushSession) listenToPushEvents() {
 
 	publications := make(chan *Publication)
 	errors := make(chan error)
@@ -151,15 +156,78 @@ func (s *PushSession) listen() {
 	for {
 		select {
 		case message := <-publications:
-			_ = s.send(string(message.Data()))
+
+			event := &elemental.Event{}
+			if err := message.Decode(event); err != nil {
+				log.WithFields(log.Fields{"session": s, "message": message, "package": "bahamut"}).Error("Unable to decode event.")
+				break
+			}
+
+			if s.server.config.SessionsHandler != nil {
+
+				ok, err := s.server.config.SessionsHandler.ShouldPush(s, event)
+				if err != nil {
+					log.WithFields(log.Fields{"error": err, "package": "bahamut"}).Error("Error during checking authorization.")
+					break
+				}
+
+				if !ok {
+					break
+				}
+			}
+
+			select {
+			case s.events <- event:
+			default:
+			}
+
 		case err := <-errors:
 			log.WithFields(log.Fields{
 				"package": "bahamut",
 				"error":   err.Error(),
 			}).Error("Error during consuming pubsub topic.")
-			s.stop <- true
-		case <-s.stop:
-			s.stop <- true
+
+		case <-s.stopAll:
+			s.stopRead <- true
+			s.stopWrite <- true
+			return
+		}
+	}
+}
+
+func (s *PushSession) listenToAPIRequest() {
+
+	defer func() {
+		s.server.unregisterSession(s)
+		s.socket.Close()
+	}()
+
+	go s.write()
+	go s.read()
+
+	for {
+		select {
+		case request := <-s.requests:
+			switch request.Operation {
+			case elemental.OperationRetrieveMany:
+				go s.handleRetrieveManyOperation(request)
+
+			case elemental.OperationRetrieve:
+				go s.handleRetrieveOperation(request)
+
+			case elemental.OperationCreate:
+				go s.handleCreateOperation(request)
+
+			case elemental.OperationUpdate:
+				go s.handleUpdateOperation(request)
+
+			case elemental.OperationDelete:
+				go s.handleDeleteOperation(request)
+			}
+
+		case <-s.stopAll:
+			s.stopRead <- true
+			s.stopWrite <- true
 			return
 		}
 	}
@@ -171,4 +239,230 @@ func (s *PushSession) String() string {
 		s.id,
 		s.Info,
 	)
+}
+
+func (s *PushSession) handleRetrieveManyOperation(request *elemental.Request) {
+
+	proc, _ := s.server.processorFinder(request.Identity)
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx := NewContext(elemental.OperationRetrieveMany)
+	ctx.ReadElementalRequest(request)
+
+	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
+		return
+	}
+
+	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
+		return
+	}
+
+	if _, ok := proc.(RetrieveManyProcessor); !ok {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
+		return
+	}
+
+	if err := proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
+		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
+}
+
+func (s *PushSession) handleRetrieveOperation(request *elemental.Request) {
+
+	proc, _ := s.server.processorFinder(request.Identity)
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx := NewContext(elemental.OperationRetrieve)
+	ctx.ReadElementalRequest(request)
+
+	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
+		return
+	}
+
+	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
+		return
+	}
+
+	if _, ok := proc.(RetrieveProcessor); !ok {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
+		return
+	}
+
+	if err := proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
+		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
+}
+
+func (s *PushSession) handleCreateOperation(request *elemental.Request) {
+
+	proc, _ := s.server.processorFinder(request.Identity)
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx := NewContext(elemental.OperationCreate)
+	ctx.ReadElementalRequest(request)
+
+	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
+		return
+	}
+
+	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
+		return
+	}
+
+	if _, ok := proc.(CreateProcessor); !ok {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
+		return
+	}
+
+	obj := s.server.config.IdentifiablesFactory(request.Identity.Name)
+
+	if err := request.Decode(&obj); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if v, ok := obj.(elemental.Validatable); ok {
+		if err := v.Validate(); err != nil {
+			writeWebSocketError(s.socket, response, err)
+			return
+		}
+	}
+
+	ctx.InputData = obj
+
+	if err := proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if ctx.HasEvents() {
+		s.server.pushEvents(ctx.Events()...)
+	}
+
+	if ctx.OutputData != nil {
+		s.server.pushEvents(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable)))
+	}
+
+	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
+		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
+}
+
+func (s *PushSession) handleUpdateOperation(request *elemental.Request) {
+
+	proc, _ := s.server.processorFinder(request.Identity)
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx := NewContext(elemental.OperationUpdate)
+	ctx.ReadElementalRequest(request)
+
+	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
+		return
+	}
+
+	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
+		return
+	}
+
+	if _, ok := proc.(UpdateProcessor); !ok {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
+		return
+	}
+
+	obj := s.server.config.IdentifiablesFactory(request.Identity.Name).(elemental.Validatable)
+
+	if err := request.Decode(&obj); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if v, ok := obj.(elemental.Validatable); ok {
+		if err := v.Validate(); err != nil {
+			writeWebSocketError(s.socket, response, err)
+			return
+		}
+	}
+
+	ctx.InputData = obj
+
+	if err := proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if ctx.HasEvents() {
+		s.server.pushEvents(ctx.Events()...)
+	}
+
+	if ctx.OutputData != nil {
+		s.server.pushEvents(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable)))
+	}
+
+	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
+		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
+}
+
+func (s *PushSession) handleDeleteOperation(request *elemental.Request) {
+
+	proc, _ := s.server.processorFinder(request.Identity)
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx := NewContext(elemental.OperationUpdate)
+	ctx.ReadElementalRequest(request)
+
+	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
+		return
+	}
+
+	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
+		return
+	}
+
+	if _, ok := proc.(DeleteProcessor); !ok {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
+		return
+	}
+
+	if err := proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	if ctx.HasEvents() {
+		s.server.pushEvents(ctx.Events()...)
+	}
+
+	if ctx.OutputData != nil {
+		s.server.pushEvents(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable)))
+	}
+
+	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
+		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
 }

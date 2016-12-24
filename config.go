@@ -8,6 +8,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"time"
+
+	"github.com/aporeto-inc/elemental"
 )
 
 // An APIServerConfig represents the configuration for the APIServer.
@@ -82,6 +84,16 @@ type PushServerConfig struct {
 	// SessionsHandler defines the handler that will be used to
 	// manage push session lifecycle.
 	SessionsHandler PushSessionsHandler
+
+	// Authenticator is the Authenticator to use to authenticate the requests.
+	Authenticator Authenticator
+
+	// Authorizer is the Authorizer to use to authorize the requests.
+	Authorizer Authorizer
+
+	// IdentifiablesFactory is a function that returns a instance of a model
+	// according to its identity.
+	IdentifiablesFactory func(identity string) elemental.Identifiable
 
 	// Disabled defines if the Push system should be enabled.
 	Disabled bool

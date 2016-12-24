@@ -5,6 +5,8 @@
 package bahamut
 
 import (
+	"net/http"
+
 	"golang.org/x/net/websocket"
 
 	"github.com/aporeto-inc/elemental"
@@ -13,15 +15,18 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+type processorFinder func(identity elemental.Identity) (Processor, error)
+
 type pushServer struct {
-	address     string
-	sessions    map[string]*PushSession
-	register    chan *PushSession
-	unregister  chan *PushSession
-	events      chan *elemental.Event
-	close       chan bool
-	multiplexer *bone.Mux
-	config      PushServerConfig
+	address         string
+	sessions        map[string]*PushSession
+	register        chan *PushSession
+	unregister      chan *PushSession
+	events          chan *elemental.Event
+	close           chan bool
+	multiplexer     *bone.Mux
+	config          PushServerConfig
+	processorFinder processorFinder
 }
 
 func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
@@ -36,7 +41,8 @@ func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
 		config:      config,
 	}
 
-	srv.multiplexer.Handle("/events", websocket.Handler(srv.handleConnection))
+	srv.multiplexer.Handle("/events", websocket.Handler(srv.handlePushConnection))
+	srv.multiplexer.Handle("/wsapi", websocket.Handler(srv.handleAPIConnection))
 
 	return srv
 }
@@ -53,10 +59,19 @@ func (n *pushServer) unregisterSession(session *PushSession) {
 	n.unregister <- session
 }
 
-// unpublish all local sessions from the global registry system
-func (n *pushServer) handleConnection(ws *websocket.Conn) {
+// handlePushConnection handle connection for push events
+func (n *pushServer) handlePushConnection(ws *websocket.Conn) {
 
-	session := newPushSession(ws, n)
+	n.runSession(ws, newPushSession(ws, n))
+}
+
+// handlePushConnection handle connection for push events
+func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
+
+	n.runSession(ws, newAPISession(ws, n))
+}
+
+func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 
 	if handler := n.config.SessionsHandler; handler != nil {
 		ok, err := handler.IsAuthenticated(session)
@@ -68,14 +83,19 @@ func (n *pushServer) handleConnection(ws *websocket.Conn) {
 		}
 
 		if !ok {
-			if err := ws.Close(); err != nil {
-				log.WithFields(log.Fields{
-					"error":   err,
-					"package": "bahamut",
-				}).Error("Error during closing the websocket.")
+			if session.sType == pushSessionTypeAPI {
+				response := elemental.NewResponse()
+				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
+			ws.Close()
 			return
 		}
+	}
+
+	if session.sType == pushSessionTypeAPI {
+		response := elemental.NewResponse()
+		response.StatusCode = http.StatusOK
+		websocket.JSON.Send(ws, response)
 	}
 
 	n.registerSession(session)
