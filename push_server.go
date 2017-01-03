@@ -143,7 +143,7 @@ func (n *pushServer) start() {
 				"total":   len(n.sessions),
 				"client":  session.socket.RemoteAddr(),
 				"package": "bahamut",
-			}).Info("Push session started.")
+			}).Debug("Push session started.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStart(session)
@@ -161,7 +161,7 @@ func (n *pushServer) start() {
 				"total":   len(n.sessions),
 				"client":  session.socket.RemoteAddr(),
 				"package": "bahamut",
-			}).Info("Push session closed.")
+			}).Debug("Push session closed.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStop(session)
