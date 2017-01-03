@@ -47,18 +47,18 @@ type server struct {
 // NewServer returns a new Bahamut Server.
 //
 // It will use the given apiConfig and pushConfig to initialize the various servers.
-func NewServer(apiConfig APIServerConfig, pushConfig PushServerConfig) Server {
+func NewServer(config Config) Server {
 
 	mux := bone.New()
 
 	var apiServer *apiServer
-	if !apiConfig.Disabled {
-		apiServer = newAPIServer(apiConfig, mux)
+	if !config.ReSTServer.Disabled {
+		apiServer = newAPIServer(config, mux)
 	}
 
 	var pushServer *pushServer
-	if !pushConfig.Disabled {
-		pushServer = newPushServer(pushConfig, mux)
+	if !config.WebSocketServer.Disabled {
+		pushServer = newPushServer(config, mux)
 	}
 
 	srv := &server{
@@ -69,11 +69,11 @@ func NewServer(apiConfig APIServerConfig, pushConfig PushServerConfig) Server {
 		processors:  make(map[string]Processor),
 	}
 
-	if !pushConfig.Disabled {
+	if !config.WebSocketServer.Disabled {
 		pushServer.processorFinder = srv.ProcessorForIdentity
 	}
 
-	if !apiConfig.Disabled {
+	if !config.ReSTServer.Disabled {
 		apiServer.processorFinder = srv.ProcessorForIdentity
 		apiServer.pusher = srv.Push
 	}
@@ -124,16 +124,6 @@ func (b *server) Push(events ...*elemental.Event) {
 	}
 
 	b.pushServer.pushEvents(events...)
-}
-
-func (b *server) Authenticator() Authenticator {
-
-	return b.apiServer.config.Authenticator
-}
-
-func (b *server) Authorizer() Authorizer {
-
-	return b.apiServer.config.Authorizer
 }
 
 // handleExit handle the interupt signal an will try

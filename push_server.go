@@ -23,11 +23,11 @@ type pushServer struct {
 	events          chan *elemental.Event
 	close           chan bool
 	multiplexer     *bone.Mux
-	config          PushServerConfig
+	config          Config
 	processorFinder processorFinder
 }
 
-func newPushServer(config PushServerConfig, multiplexer *bone.Mux) *pushServer {
+func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
 		sessions:    map[string]*PushSession{},
@@ -71,7 +71,7 @@ func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
 
 func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 
-	if handler := n.config.SessionsHandler; handler != nil {
+	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 		ok, err := handler.IsAuthenticated(session)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -145,7 +145,7 @@ func (n *pushServer) start() {
 				"package": "bahamut",
 			}).Info("Push session started.")
 
-			if handler := n.config.SessionsHandler; handler != nil {
+			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStart(session)
 			}
 
@@ -163,14 +163,14 @@ func (n *pushServer) start() {
 				"package": "bahamut",
 			}).Info("Push session closed.")
 
-			if handler := n.config.SessionsHandler; handler != nil {
+			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStop(session)
 			}
 
 		case event := <-n.events:
 
-			if n.config.Service != nil {
-				publication := NewPublication(n.config.Topic)
+			if n.config.WebSocketServer.Service != nil {
+				publication := NewPublication(n.config.WebSocketServer.Topic)
 				if err := publication.Encode(event); err != nil {
 					log.WithFields(log.Fields{
 						"topic":   publication.Topic,
@@ -179,7 +179,7 @@ func (n *pushServer) start() {
 						"package": "bahamut",
 					}).Error("Unable to encode ervent. Message dropped.")
 				}
-				err := n.config.Service.Publish(publication)
+				err := n.config.WebSocketServer.Service.Publish(publication)
 				if err != nil {
 					log.WithFields(log.Fields{
 						"topic":   publication.Topic,

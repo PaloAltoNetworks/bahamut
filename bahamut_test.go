@@ -56,14 +56,11 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		b := NewServer(
-			APIServerConfig{
-				Disabled: true,
-			},
-			PushServerConfig{
-				Disabled: true,
-			},
-		)
+		cfg := Config{}
+		cfg.ReSTServer.Disabled = true
+		cfg.WebSocketServer.Disabled = true
+
+		b := NewServer(cfg)
 
 		Convey("Then apiServer should be nil", func() {
 			So(b.(*server).apiServer, ShouldBeNil)
@@ -84,7 +81,9 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		b := NewServer(APIServerConfig{}, PushServerConfig{})
+		cfg := Config{}
+
+		b := NewServer(cfg)
 
 		Convey("Then apiServer should not be nil", func() {
 			So(b.(*server).apiServer, ShouldNotBeNil)
@@ -106,7 +105,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		p := &FakeProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
-		b := NewServer(APIServerConfig{}, PushServerConfig{})
+		b := NewServer(Config{})
 
 		Convey("When I register it for an identity", func() {
 
@@ -168,62 +167,6 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
-func TestBahamut_Authenticator(t *testing.T) {
-
-	Convey("Given I create a new Bahamut", t, func() {
-
-		auth := &Auth{}
-
-		Convey("When I access an Authenticator while there is none", func() {
-
-			b := NewServer(APIServerConfig{}, PushServerConfig{})
-			a := b.Authenticator()
-
-			Convey("Then the authenticator should be set", func() {
-				So(a, ShouldBeNil)
-			})
-		})
-
-		Convey("When I set an Authenticator", func() {
-
-			b := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
-			a := b.Authenticator()
-
-			Convey("Then the authenticator should be set", func() {
-				So(a, ShouldNotBeNil)
-			})
-		})
-	})
-}
-
-func TestBahamut_Authorizer(t *testing.T) {
-
-	Convey("Given I create a new Bahamut", t, func() {
-
-		auth := &Auth{}
-
-		Convey("When I access an Authorizer while there is none", func() {
-
-			b := NewServer(APIServerConfig{}, PushServerConfig{})
-			a := b.Authorizer()
-
-			Convey("Then the authorizer should be nil", func() {
-				So(a, ShouldBeNil)
-			})
-		})
-
-		Convey("When I set an Authorizer", func() {
-
-			b := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
-			a := b.Authorizer()
-
-			Convey("Then the Authorizer should be set", func() {
-				So(a, ShouldNotBeNil)
 			})
 		})
 	})

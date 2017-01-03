@@ -23,7 +23,7 @@ func TestPushServer_newPushServer(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, bone.New())
+		srv := newPushServer(Config{}, bone.New())
 
 		Convey("Then sessions should be initialized", func() {
 			So(len(srv.sessions), ShouldEqual, 0)
@@ -66,9 +66,10 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		cfg := PushServerConfig{
-			SessionsHandler: handler,
-		}
+
+		cfg := Config{}
+		cfg.WebSocketServer.SessionsHandler = handler
+
 		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
@@ -96,9 +97,9 @@ func TestSession_registerSession(t *testing.T) {
 		defer ws.Close()
 
 		handler := &testSessionHandler{}
-		cfg := PushServerConfig{
-			SessionsHandler: &testSessionHandler{},
-		}
+		cfg := Config{}
+		cfg.WebSocketServer.SessionsHandler = handler
+
 		srv := newPushServer(cfg, bone.New())
 		session := newPushSession(ws, srv)
 
@@ -133,7 +134,7 @@ func TestSession_startStop(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		srv := newPushServer(PushServerConfig{}, bone.New())
+		srv := newPushServer(Config{}, bone.New())
 		session := newPushSession(ws, srv)
 
 		var wg sync.WaitGroup
@@ -176,10 +177,11 @@ func TestSession_HandleConnection(t *testing.T) {
 		})
 		defer broker.Close()
 
-		srv := newPushServer(PushServerConfig{
-			Service: NewKafkaPubSubServer([]string{broker.Addr()}),
-			Topic:   "topic",
-		}, bone.New())
+		cfg := Config{}
+		cfg.WebSocketServer.Service = NewKafkaPubSubServer([]string{broker.Addr()})
+		cfg.WebSocketServer.Topic = "topic"
+
+		srv := newPushServer(cfg, bone.New())
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
@@ -207,7 +209,7 @@ func TestSession_PushEvents(t *testing.T) {
 
 	Convey("Given I create a new PushServer", t, func() {
 
-		srv := newPushServer(PushServerConfig{}, bone.New())
+		srv := newPushServer(Config{}, bone.New())
 
 		Convey("When I push an event", func() {
 
@@ -245,18 +247,18 @@ func TestSession_GlobalEvents(t *testing.T) {
 		})
 		defer broker.Close()
 
-		config := PushServerConfig{
-			Service:         NewKafkaPubSubServer([]string{broker.Addr()}),
-			SessionsHandler: &testSessionHandler{},
-			Topic:           "topic",
-		}
-		config.Service.Connect().Wait(300 * time.Millisecond)
+		config := Config{}
+		config.WebSocketServer.SessionsHandler = &testSessionHandler{}
+		config.WebSocketServer.Service = NewKafkaPubSubServer([]string{broker.Addr()})
+		config.WebSocketServer.Topic = "topic"
+
+		config.WebSocketServer.Service.Connect().Wait(300 * time.Millisecond)
 
 		srv := newPushServer(config, bone.New())
 		go srv.start()
 
 		defer srv.stop()
-		defer config.Service.Disconnect()
+		defer config.WebSocketServer.Service.Disconnect()
 
 		Convey("When push an event", func() {
 

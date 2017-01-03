@@ -23,7 +23,7 @@ func TestSession_newPushSession(t *testing.T) {
 
 		ws := &websocket.Conn{}
 
-		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
+		session := newPushSession(ws, newPushServer(Config{}, bone.New()))
 
 		Convey("Then the session id should not be empty", func() {
 			So(session.id, ShouldNotBeEmpty)
@@ -121,7 +121,7 @@ func TestSession_write(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
+		session := newPushSession(ws, newPushServer(Config{}, bone.New()))
 
 		Convey("When I send some data to the session", func() {
 
@@ -201,7 +201,7 @@ func TestSession_read(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		session := newPushSession(ws, newPushServer(PushServerConfig{}, bone.New()))
+		session := newPushSession(ws, newPushServer(Config{}, bone.New()))
 
 		Convey("When I receive some data to the session", func() {
 
@@ -248,10 +248,9 @@ func TestSession_listen(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		config := PushServerConfig{
-			Service: NewKafkaPubSubServer([]string{broker.Addr()}),
-			Topic:   "topic",
-		}
+		config := Config{}
+		config.WebSocketServer.Service = NewKafkaPubSubServer([]string{broker.Addr()})
+		config.WebSocketServer.Topic = "topic"
 
 		session := newPushSession(ws, newPushServer(config, bone.New()))
 
@@ -321,10 +320,9 @@ func TestSession_listen2(t *testing.T) {
 		ws, _ := websocket.Dial("ws"+ts.URL[4:], "", ts.URL)
 		defer ws.Close()
 
-		config := PushServerConfig{
-			Service: NewKafkaPubSubServer([]string{broker.Addr()}),
-			Topic:   "topic",
-		}
+		config := Config{}
+		config.WebSocketServer.Service = NewKafkaPubSubServer([]string{broker.Addr()})
+		config.WebSocketServer.Topic = "topic"
 
 		session := newPushSession(ws, newPushServer(config, bone.New()))
 

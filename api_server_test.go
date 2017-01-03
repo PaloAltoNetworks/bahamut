@@ -34,10 +34,9 @@ func TestServer_Initialization(t *testing.T) {
 
 	Convey("Given I create a new api server", t, func() {
 
-		cfg := APIServerConfig{
-			ListenAddress: "address:80",
-			Routes:        []*Route{},
-		}
+		cfg := Config{}
+		cfg.ReSTServer.ListenAddress = "address:80"
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("Then it should be correctly initialized", func() {
@@ -53,19 +52,17 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 		syscapool, clientcapool, servercerts := loadFixtureCertificates()
 
-		cfg := APIServerConfig{
-			ListenAddress:         "address:80",
-			Routes:                []*Route{},
-			TLSRootCAPool:         syscapool,
-			TLSClientCAPool:       clientcapool,
-			TLSServerCertificates: servercerts,
-			TLSAuthType:           tls.RequireAndVerifyClientCert,
-		}
+		cfg := Config{}
+		cfg.ReSTServer.ListenAddress = "address:80"
+		cfg.TLS.RootCAPool = syscapool
+		cfg.TLS.ClientCAPool = clientcapool
+		cfg.TLS.ServerCertificates = servercerts
+		cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
 
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer(cfg.ListenAddress)
+			srv, err := c.createSecureHTTPServer(cfg.ReSTServer.ListenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -82,14 +79,13 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := APIServerConfig{
-			ListenAddress: "address:80",
-			Routes:        []*Route{},
-		}
+		cfg := Config{}
+		cfg.ReSTServer.ListenAddress = "address:80"
+
 		c := newAPIServer(cfg, bone.New())
 
 		Convey("When I make an unsecure server", func() {
-			srv, err := c.createUnsecureHTTPServer(cfg.ListenAddress)
+			srv, err := c.createUnsecureHTTPServer(cfg.ReSTServer.ListenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -154,12 +150,10 @@ func TestServer_Start(t *testing.T) {
 			port1 := strconv.Itoa(rand.Intn(10000) + 20000)
 			port2 := strconv.Itoa(rand.Intn(10000) + 30000)
 
-			cfg := APIServerConfig{
-				ListenAddress:          "127.0.0.1:" + port1,
-				Routes:                 []*Route{},
-				EnableProfiling:        true,
-				ProfilingListenAddress: "127.0.0.1:" + port2,
-			}
+			cfg := Config{}
+			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
+			cfg.Profiling.Enabled = true
+			cfg.Profiling.ListenAddress = "127.0.0.1:" + port2
 
 			c := newAPIServer(cfg, bone.New())
 
@@ -182,20 +176,18 @@ func TestServer_Start(t *testing.T) {
 			port1 := strconv.Itoa(rand.Intn(10000) + 40000)
 			port2 := strconv.Itoa(rand.Intn(10000) + 50000)
 
-			h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
+			// h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
 			syscapool, clientcapool, servercerts := loadFixtureCertificates()
 
-			cfg := APIServerConfig{
-				ListenAddress:          "127.0.0.1:" + port1,
-				Routes:                 []*Route{NewRoute("/hello", http.MethodGet, h)},
-				EnableProfiling:        true,
-				ProfilingListenAddress: "127.0.0.1:" + port2,
-				TLSRootCAPool:          syscapool,
-				TLSClientCAPool:        clientcapool,
-				TLSServerCertificates:  servercerts,
-				TLSAuthType:            tls.RequireAndVerifyClientCert,
-			}
+			cfg := Config{}
+			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
+			cfg.Profiling.Enabled = true
+			cfg.Profiling.ListenAddress = "127.0.0.1:" + port2
+			cfg.TLS.RootCAPool = syscapool
+			cfg.TLS.ClientCAPool = clientcapool
+			cfg.TLS.ServerCertificates = servercerts
+			cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
 
 			c := newAPIServer(cfg, bone.New())
 

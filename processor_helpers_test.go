@@ -37,11 +37,9 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
-			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = true
-			auth.errored = false
 
-			err := CheckAuthentication(s.Authenticator(), ctx)
+			err := CheckAuthentication(auth, ctx)
 
 			Convey("Then it should be authenticated", func() {
 				So(err, ShouldBeNil)
@@ -50,11 +48,10 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
-			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = false
 
-			err := CheckAuthentication(s.Authenticator(), ctx)
+			err := CheckAuthentication(auth, ctx)
 
 			Convey("Then it should not be authenticated", func() {
 				So(err, ShouldNotBeNil)
@@ -67,11 +64,10 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
-			s := NewServer(APIServerConfig{Authenticator: auth}, PushServerConfig{})
 			auth.authenticated = false
 			auth.errored = true
 
-			err := CheckAuthentication(s.Authenticator(), ctx)
+			err := CheckAuthentication(auth, ctx)
 
 			Convey("Then it should be authenticated", func() {
 				So(err, ShouldNotBeNil)
@@ -105,11 +101,10 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
-			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = true
 			auth.errored = false
 
-			err := CheckAuthorization(s.Authorizer(), ctx)
+			err := CheckAuthorization(auth, ctx)
 
 			Convey("Then it should be authorized", func() {
 				So(err, ShouldBeNil)
@@ -118,11 +113,10 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
-			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = false
 
-			err := CheckAuthorization(s.Authorizer(), ctx)
+			err := CheckAuthorization(auth, ctx)
 
 			Convey("Then it should not be authorized", func() {
 				So(err, ShouldNotBeNil)
@@ -135,11 +129,10 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
-			s := NewServer(APIServerConfig{Authorizer: auth}, PushServerConfig{})
 			auth.authorized = false
 			auth.errored = true
 
-			err := CheckAuthorization(s.Authorizer(), ctx)
+			err := CheckAuthorization(auth, ctx)
 
 			Convey("Then it should not be authorized", func() {
 				So(err, ShouldNotBeNil)

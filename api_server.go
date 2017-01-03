@@ -17,7 +17,7 @@ import (
 
 // an apiServer is the structure serving the api routes.
 type apiServer struct {
-	config          APIServerConfig
+	config          Config
 	multiplexer     *bone.Mux
 	server          *http.Server
 	processorFinder processorFinder
@@ -25,7 +25,7 @@ type apiServer struct {
 }
 
 // newAPIServer returns a new apiServer.
-func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
+func newAPIServer(config Config, multiplexer *bone.Mux) *apiServer {
 
 	return &apiServer{
 		config:      config,
@@ -39,10 +39,10 @@ func newAPIServer(config APIServerConfig, multiplexer *bone.Mux) *apiServer {
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	tlsConfig := &tls.Config{
-		Certificates:             a.config.TLSServerCertificates,
-		ClientAuth:               a.config.TLSAuthType,
-		ClientCAs:                a.config.TLSClientCAPool,
-		RootCAs:                  a.config.TLSRootCAPool,
+		Certificates:             a.config.TLS.ServerCertificates,
+		ClientAuth:               a.config.TLS.AuthType,
+		ClientCAs:                a.config.TLS.ClientCAPool,
+		RootCAs:                  a.config.TLS.RootCAPool,
 		MinVersion:               tls.VersionTLS12,
 		SessionTicketsDisabled:   true,
 		PreferServerCipherSuites: true,
@@ -61,9 +61,9 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 	return &http.Server{
 		Addr:         address,
 		TLSConfig:    tlsConfig,
-		ReadTimeout:  a.config.ReadTimeout,
-		WriteTimeout: a.config.WriteTimeout,
-		// IdleTimeout:  a.config.IdleTimeout, // Uncomment with Go 1.8
+		ReadTimeout:  a.config.ReSTServer.ReadTimeout,
+		WriteTimeout: a.config.ReSTServer.WriteTimeout,
+		// IdleTimeout:  a.config.ReSTServer.IdleTimeout, // Uncomment with Go 1.8
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
-	if !elemental.IsRetrieveAllowed(a.config.RelationshipsRegistry, identity) {
+	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry, identity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -95,9 +95,9 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchRetrieveOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -112,7 +112,7 @@ func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
-	if !elemental.IsUpdateAllowed(a.config.RelationshipsRegistry, identity) {
+	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry, identity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -126,9 +126,9 @@ func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchUpdateOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 		a.pusher,
 	)
 
@@ -144,7 +144,7 @@ func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
-	if !elemental.IsDeleteAllowed(a.config.RelationshipsRegistry, identity) {
+	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry, identity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -158,9 +158,9 @@ func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchDeleteOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 		a.pusher,
 	)
 
@@ -181,7 +181,7 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -195,9 +195,9 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 	ctx, err := dispatchRetrieveManyOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -217,7 +217,7 @@ func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -231,9 +231,9 @@ func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchCreateOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 		a.pusher,
 	)
 
@@ -254,7 +254,7 @@ func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -268,9 +268,9 @@ func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchInfoOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -290,7 +290,7 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -304,9 +304,9 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 	ctx, err := dispatchPatchOperation(
 		request,
 		a.processorFinder,
-		a.config.IdentifiablesFactory,
-		a.config.Authenticator,
-		a.config.Authorizer,
+		a.config.Model.IdentifiablesFactory,
+		a.config.Security.Authenticator,
+		a.config.Security.Authorizer,
 		a.pusher,
 	)
 
@@ -342,11 +342,11 @@ func (a *apiServer) installRoutes() {
 func (a *apiServer) startProfilingServer() {
 
 	log.WithFields(log.Fields{
-		"address": a.config.ProfilingListenAddress,
+		"address": a.config.Profiling.ListenAddress,
 		"package": "bahamut",
 	}).Info("Starting profiling server.")
 
-	srv, err := a.createUnsecureHTTPServer(a.config.ProfilingListenAddress)
+	srv, err := a.createUnsecureHTTPServer(a.config.Profiling.ListenAddress)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":   err,
@@ -373,23 +373,22 @@ func (a *apiServer) startProfilingServer() {
 // start starts the apiServer.
 func (a *apiServer) start() {
 
-	if a.config.EnableProfiling {
+	if a.config.Profiling.Enabled {
 		go a.startProfilingServer()
 	}
 
 	a.installRoutes()
 
 	log.WithFields(log.Fields{
-		"address": a.config.ListenAddress,
+		"address": a.config.ReSTServer.ListenAddress,
 		"package": "bahamut",
-		"routes":  len(a.config.Routes),
 	}).Info("Starting api server.")
 
 	var err error
-	if a.config.TLSServerCertificates != nil {
-		a.server, err = a.createSecureHTTPServer(a.config.ListenAddress)
+	if a.config.TLS.ServerCertificates != nil {
+		a.server, err = a.createSecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	} else {
-		a.server, err = a.createUnsecureHTTPServer(a.config.ListenAddress)
+		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	}
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -401,7 +400,7 @@ func (a *apiServer) start() {
 	a.server.Handler = a.multiplexer
 	a.server.SetKeepAlivesEnabled(true)
 
-	if a.config.TLSServerCertificates != nil {
+	if a.config.TLS.ServerCertificates != nil {
 		err = a.server.ListenAndServeTLS("", "")
 	} else {
 		err = a.server.ListenAndServe()

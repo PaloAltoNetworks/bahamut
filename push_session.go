@@ -141,7 +141,7 @@ func (s *PushSession) listenToPushEvents() {
 	publications := make(chan *Publication)
 	errors := make(chan error)
 
-	unsubscribe := s.server.config.Service.Subscribe(publications, errors, s.server.config.Topic)
+	unsubscribe := s.server.config.WebSocketServer.Service.Subscribe(publications, errors, s.server.config.WebSocketServer.Topic)
 
 	defer func() {
 		s.server.unregisterSession(s)
@@ -162,9 +162,9 @@ func (s *PushSession) listenToPushEvents() {
 				break
 			}
 
-			if s.server.config.SessionsHandler != nil {
+			if s.server.config.WebSocketServer.SessionsHandler != nil {
 
-				ok, err := s.server.config.SessionsHandler.ShouldPush(s, event)
+				ok, err := s.server.config.WebSocketServer.SessionsHandler.ShouldPush(s, event)
 				if err != nil {
 					log.WithFields(log.Fields{"error": err, "package": "bahamut"}).Error("Error during checking authorization.")
 					break
@@ -248,9 +248,9 @@ func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
 	ctx, err := dispatchRetrieveManyOperation(
 		request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -269,9 +269,9 @@ func (s *PushSession) handleRetrieve(request *elemental.Request) {
 	ctx, err := dispatchRetrieveOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -290,9 +290,9 @@ func (s *PushSession) handleCreate(request *elemental.Request) {
 	ctx, err := dispatchCreateOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
 	)
 
@@ -312,9 +312,9 @@ func (s *PushSession) handleUpdate(request *elemental.Request) {
 	ctx, err := dispatchUpdateOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
 	)
 
@@ -334,9 +334,9 @@ func (s *PushSession) handleDelete(request *elemental.Request) {
 	ctx, err := dispatchDeleteOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
 	)
 
@@ -356,9 +356,9 @@ func (s *PushSession) handleInfo(request *elemental.Request) {
 	ctx, err := dispatchInfoOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 	)
 
 	if err != nil {
@@ -377,9 +377,9 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 	ctx, err := dispatchPatchOperation(
 		response.Request,
 		s.server.processorFinder,
-		s.server.config.IdentifiablesFactory,
-		s.server.config.Authenticator,
-		s.server.config.Authorizer,
+		s.server.config.Model.IdentifiablesFactory,
+		s.server.config.Security.Authenticator,
+		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
 	)
 
