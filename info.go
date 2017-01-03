@@ -9,16 +9,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/aporeto-inc/elemental"
-	"github.com/go-zoo/bone"
 )
 
 // Info contains general information about the initial request.
 type Info struct {
 	Parameters         url.Values
-	BaseRawURL         string
 	ParentIdentifier   string
 	ParentIdentity     elemental.Identity
 	ChildrenIdentity   elemental.Identity
@@ -35,44 +32,12 @@ func newInfo() *Info {
 	}
 }
 
-// FromRequest populates the Info from an http.Request.
-func (i *Info) fromRequest(req *http.Request) {
-
-	if req.URL == nil {
-		panic("request must have an url")
-	}
-
-	i.Parameters = req.URL.Query()
-	i.Headers = req.Header
-	i.TLSConnectionState = req.TLS
-
-	var scheme string
-	if i.TLSConnectionState != nil {
-		scheme = "https"
-	} else {
-		scheme = "http"
-	}
-
-	i.BaseRawURL = scheme + "://" + req.Host + req.URL.Path
-
-	i.ParentIdentifier = bone.GetValue(req, "id")
-
-	components := strings.Split(req.URL.Path, "/")
-
-	if l := len(components); l == 2 || l == 3 {
-		i.ChildrenIdentity = elemental.IdentityFromCategory(components[1])
-	}
-
-	if l := len(components); l == 4 {
-		i.ParentIdentity = elemental.IdentityFromCategory(components[1])
-		i.ChildrenIdentity = elemental.IdentityFromCategory(components[3])
-	}
-}
-
 // FromRequest populates the Info from an elemental.Request.
 func (i *Info) fromElementalRequest(req *elemental.Request) {
 
 	i.Parameters = req.Parameters
+	i.TLSConnectionState = req.TLSConnectionState
+
 	i.Headers = http.Header{
 		"X-Namespace":   []string{req.Namespace},
 		"Authorization": []string{req.Username + " " + req.Password},
@@ -83,7 +48,7 @@ func (i *Info) fromElementalRequest(req *elemental.Request) {
 		i.ParentIdentifier = req.ParentID
 		i.ChildrenIdentity = req.Identity
 	} else {
-		i.ParentIdentity = req.Identity
+		i.ChildrenIdentity = req.Identity
 		i.ParentIdentifier = req.ObjectID
 	}
 }

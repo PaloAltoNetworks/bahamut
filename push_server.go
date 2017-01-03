@@ -15,8 +15,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type processorFinder func(identity elemental.Identity) (Processor, error)
-
 type pushServer struct {
 	address         string
 	sessions        map[string]*PushSession

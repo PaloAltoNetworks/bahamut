@@ -7,7 +7,6 @@ package bahamut
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -25,9 +24,10 @@ func TestContext_MakeContext(t *testing.T) {
 			URL:    url,
 			Method: http.MethodGet,
 		}
+		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
 		c := NewContext(elemental.OperationRetrieveMany)
-		c.ReadRequest(req)
+		c.ReadElementalRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
 
@@ -46,14 +46,15 @@ func TestContext_MakeContext(t *testing.T) {
 			URL:    url,
 			Method: http.MethodGet,
 		}
+		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
 		c := NewContext(elemental.OperationRetrieveMany)
-		c.ReadRequest(req)
+		c.ReadElementalRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
 
-			So(c.Page.Current, ShouldEqual, 1)
-			So(c.Page.Size, ShouldEqual, 100)
+			So(c.Page.Current, ShouldEqual, 0)
+			So(c.Page.Size, ShouldEqual, 0)
 		})
 	})
 }
@@ -70,101 +71,6 @@ func TestContext_Identifier(t *testing.T) {
 
 			Convey("Then the identifier should not be empty", func() {
 				So(id, ShouldNotBeEmpty)
-			})
-		})
-	})
-}
-
-func TestContext_WriteResponse(t *testing.T) {
-
-	type Entity struct {
-		Name string `json:"name"`
-	}
-
-	e1 := &Entity{Name: "e1"}
-	e2 := &Entity{Name: "e2"}
-
-	Convey("Given I create Context from a request with pagination info", t, func() {
-
-		u, _ := url.Parse("http://link.com/path?page=2&per_page=10")
-		req := &http.Request{
-			Host:   "link.com",
-			URL:    u,
-			Method: http.MethodGet,
-		}
-
-		c := NewContext(elemental.OperationRetrieveMany)
-		c.ReadRequest(req)
-
-		c.Count.Total = 40
-
-		Convey("When I write the response from a context with no error for a retrieve", func() {
-
-			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationRetrieveMany
-			c.OutputData = []*Entity{e1, e2}
-			req.Method = http.MethodGet
-			c.WriteResponse(w)
-
-			Convey("Then the status code should be default to 200", func() {
-				So(w.Code, ShouldEqual, 200)
-			})
-
-			Convey("Then the pagination headers should be correct", func() {
-				So(w.Header().Get("X-Page-First"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
-				So(w.Header().Get("X-Page-Prev"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
-				So(w.Header().Get("X-Page-Next"), ShouldEqual, "http://link.com/path?page=3&per_page=10")
-				So(w.Header().Get("X-Page-Last"), ShouldEqual, "http://link.com/path?page=4&per_page=10")
-			})
-
-			Convey("Then the status should be 200", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
-			})
-		})
-
-		Convey("When I write the response from a context with no error for a info", func() {
-
-			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationInfo
-			req.Method = http.MethodHead
-			c.WriteResponse(w)
-
-			Convey("Then the status code should be default to 204", func() {
-				So(w.Code, ShouldEqual, 204)
-			})
-
-			Convey("Then the pagination headers should be correct", func() {
-				So(w.Header().Get("X-Page-First"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
-				So(w.Header().Get("X-Page-Prev"), ShouldEqual, "http://link.com/path?page=1&per_page=10")
-				So(w.Header().Get("X-Page-Next"), ShouldEqual, "http://link.com/path?page=3&per_page=10")
-				So(w.Header().Get("X-Page-Last"), ShouldEqual, "http://link.com/path?page=4&per_page=10")
-			})
-
-			Convey("Then the body should be empty", func() {
-				So(len(w.Body.Bytes()), ShouldEqual, 0)
-			})
-		})
-
-		Convey("When I write the response from a context with no error for a create", func() {
-
-			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationCreate
-			req.Method = http.MethodPost
-			c.WriteResponse(w)
-
-			Convey("Then the status code should be default to 201", func() {
-				So(w.Code, ShouldEqual, 201)
-			})
-		})
-
-		Convey("When I try write the response with an unmarshallable object", func() {
-
-			w := httptest.NewRecorder()
-			c.OutputData = NewUnmarshalableList()
-			err := c.WriteResponse(w)
-
-			Convey("Then err should not be nil", func() {
-				So(err, ShouldNotBeNil)
 			})
 		})
 	})
@@ -209,77 +115,6 @@ func TestContext_Events(t *testing.T) {
 	})
 }
 
-func TestContext_WriteHTTPError(t *testing.T) {
-
-	Convey("Given I create a http.ResponseWriter", t, func() {
-
-		w := httptest.NewRecorder()
-
-		Convey("When I use WriteHTTPError with a simple elemental.Error", func() {
-
-			WriteHTTPError(w, "origin", elemental.NewError("title", "description", "subject", 42))
-
-			Convey("Then the status should be 42", func() {
-				So(w.Code, ShouldEqual, 42)
-			})
-
-			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
-			})
-		})
-
-		Convey("When I use WriteHTTPError with an elemental.Errors", func() {
-
-			errs := elemental.NewErrors(elemental.NewError("title", "description", "subject", 43))
-			WriteHTTPError(w, "origin", errs)
-
-			Convey("Then the status should be 43", func() {
-				So(w.Code, ShouldEqual, 43)
-			})
-
-			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
-			})
-		})
-	})
-}
-
-func TestContext_commonHeaders(t *testing.T) {
-
-	Convey("Given I create a http.ResponseWriter", t, func() {
-
-		w := httptest.NewRecorder()
-
-		Convey("When I use setCommonHeader with a referer", func() {
-
-			setCommonHeader(w, "http://toto.com:8443")
-
-			Convey("Then the common headers should be set", func() {
-				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
-				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Local, X-Count-Total, X-PageCurrent, X-Page-Size, X-Page-Prev, X-Page-Next, X-Page-First, X-Page-Last, X-Namespace")
-				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Local, X-Count-Total, X-PageCurrent, X-Page-Size, X-Page-Prev, X-Page-Next, X-Page-First, X-Page-Last, X-Namespace")
-				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
-			})
-		})
-
-		Convey("When I use setCommonHeader without a referer", func() {
-
-			setCommonHeader(w, "")
-
-			Convey("Then the common headers should be set", func() {
-				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
-				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "*")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Local, X-Count-Total, X-PageCurrent, X-Page-Size, X-Page-Prev, X-Page-Next, X-Page-First, X-Page-Last, X-Namespace")
-				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Local, X-Count-Total, X-PageCurrent, X-Page-Size, X-Page-Prev, X-Page-Next, X-Page-First, X-Page-Last, X-Namespace")
-				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
-			})
-		})
-	})
-}
-
 func TestContext_String(t *testing.T) {
 
 	Convey("Given I have a Context, Info, Count, and Page", t, func() {
@@ -299,10 +134,10 @@ func TestContext_String(t *testing.T) {
 
 		page := &Page{
 			Current: 1,
-			First:   "http://server.com?page=1",
-			Last:    "http://server.com?page=1",
-			Next:    "http://server.com?page=2",
-			Prev:    "http://server.com?page=0",
+			First:   1,
+			Last:    1,
+			Next:    2,
+			Prev:    0,
 			Size:    5,
 		}
 

@@ -6,6 +6,10 @@ package bahamut
 
 import "github.com/aporeto-inc/elemental"
 
+type processorFinder func(identity elemental.Identity) (Processor, error)
+
+type eventPusher func(...*elemental.Event)
+
 // Server is the interface of a bahamut server.
 type Server interface {
 

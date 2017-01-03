@@ -70,6 +70,12 @@ type APIServerConfig struct {
 
 	// WriteTimeout defines the idle http timeout.
 	IdleTimeout time.Duration
+
+	// IdentifiablesFactory is a function that returns a instance of a model
+	// according to its identity.
+	IdentifiablesFactory func(identity string) elemental.Identifiable
+
+	RelationshipsRegistry elemental.RelationshipsRegistry
 }
 
 // A PushServerConfig contains the configuration for the Bahamut Push Server.

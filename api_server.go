@@ -15,20 +15,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-func corsHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w, r.Header.Get("Origin"))
-	w.WriteHeader(http.StatusOK)
-}
-
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	WriteHTTPError(w, r.Header.Get("Origin"), elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound))
-}
-
 // an apiServer is the structure serving the api routes.
 type apiServer struct {
-	config      APIServerConfig
-	multiplexer *bone.Mux
-	server      *http.Server
+	config          APIServerConfig
+	multiplexer     *bone.Mux
+	server          *http.Server
+	processorFinder processorFinder
+	pusher          eventPusher
 }
 
 // newAPIServer returns a new apiServer.
@@ -84,36 +77,266 @@ func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, erro
 	}, nil
 }
 
+func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+
+	if !elemental.IsRetrieveAllowed(a.config.RelationshipsRegistry, identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchRetrieveOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+
+	if !elemental.IsUpdateAllowed(a.config.RelationshipsRegistry, identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchUpdateOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+		a.pusher,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+
+	if !elemental.IsDeleteAllowed(a.config.RelationshipsRegistry, identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchDeleteOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+		a.pusher,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
+
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsRetrieveManyAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchRetrieveManyOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
+
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsCreateAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchCreateOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+		a.pusher,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
+
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsInfoAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchInfoOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
+func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
+
+	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
+	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
+
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsPatchAllowed(a.config.RelationshipsRegistry, identity, parentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
+	request, err := elemental.NewRequestFromHTTPRequest(req)
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		return
+	}
+
+	ctx, err := dispatchPatchOperation(
+		request,
+		a.processorFinder,
+		a.config.IdentifiablesFactory,
+		a.config.Authenticator,
+		a.config.Authorizer,
+		a.pusher,
+	)
+
+	if err != nil {
+		writeHTTPError(w, w.Header().Get("Origin"), err)
+		return
+	}
+
+	writeHTTPResponse(w, ctx)
+}
+
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *apiServer) installRoutes() {
-
-	for _, route := range a.config.Routes {
-
-		switch route.Method {
-		case http.MethodHead:
-			a.multiplexer.Head(route.Pattern, route.Handler)
-		case http.MethodGet:
-			a.multiplexer.Get(route.Pattern, route.Handler)
-		case http.MethodPost:
-			a.multiplexer.Post(route.Pattern, route.Handler)
-		case http.MethodPut:
-			a.multiplexer.Put(route.Pattern, route.Handler)
-		case http.MethodDelete:
-			a.multiplexer.Delete(route.Pattern, route.Handler)
-		case http.MethodPatch:
-			a.multiplexer.Patch(route.Pattern, route.Handler)
-		}
-
-		log.WithFields(log.Fields{
-			"pattern": route.Pattern,
-			"method":  route.Method,
-			"package": "bahamut",
-		}).Debug("API route installed.")
-	}
 
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 	a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
+
+	a.multiplexer.Get("/:category/:id", http.HandlerFunc(a.handleRetrieve))
+	a.multiplexer.Put("/:category/:id", http.HandlerFunc(a.handleUpdate))
+	a.multiplexer.Delete("/:category/:id", http.HandlerFunc(a.handleDelete))
+
+	a.multiplexer.Get("/:category", http.HandlerFunc(a.handleRetrieveMany))
+	a.multiplexer.Get("/:parentcategory/:id/:category", http.HandlerFunc(a.handleRetrieveMany))
+	a.multiplexer.Post("/:category", http.HandlerFunc(a.handleCreate))
+	a.multiplexer.Post("/:parentcategory/:id/:category", http.HandlerFunc(a.handleCreate))
+	a.multiplexer.Head("/:category", http.HandlerFunc(a.handleInfo))
+	a.multiplexer.Head("/:parentcategory/:id/:category", http.HandlerFunc(a.handleInfo))
+	a.multiplexer.Patch("/:category", http.HandlerFunc(a.handlePatch))
+	a.multiplexer.Patch("/:parentcategory/:id/:category", http.HandlerFunc(a.handlePatch))
 }
 
 func (a *apiServer) startProfilingServer() {

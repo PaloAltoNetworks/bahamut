@@ -16,10 +16,14 @@ openssl genrsa -out client-key.pem 4096 \
 
 monogen -f ./specs -L elemental
 
-echo -n > ./model_test.go
-cat ./codegen/elemental/1.0/list.go >> ./model_test.go
-cat ./codegen/elemental/1.0/task.go | (read; read; read; read; cat) >> ./model_test.go
-cat >> ./model_test.go << EOF
+echo -n > ./data_test.go
+cat ./codegen/elemental/1.0/list.go >> ./data_test.go
+cat ./codegen/elemental/1.0/task.go | (read; read; read; read; cat) >> ./data_test.go
+cat ./codegen/elemental/1.0/root.go | (read; read; read; read; read; read; cat) >> ./data_test.go
+cat ./codegen/elemental/1.0/user.go | (read; read;read; read; cat) >> ./data_test.go
+cat ./codegen/elemental/1.0/relationships_registry.go | (read; read; read; cat) >> ./data_test.go
+cat ./codegen/elemental/1.0/identities_registry.go | (read; read; read; cat) >> ./data_test.go
+cat >> ./data_test.go << EOF
 
 var UnmarshalableListIdentity = elemental.Identity{Name: "list", Category: "lists"}
 
@@ -44,10 +48,10 @@ func (o *UnmarshalableList) MarshalJSON() ([]byte, error) {
 func (o *UnmarshalableList) Validate() elemental.Errors { return nil }
 EOF
 
-gofmt -w ./model_test.go
-goimports -w ./model_test.go
-mv ./model_test.go ../
+gofmt -w ./data_test.go
+goimports -w ./data_test.go
+mv ./data_test.go ../
 
 rm -rf codegen
-rm -f ./model_test.go-e
+rm -f ./data_test.go-e
 cd -

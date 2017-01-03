@@ -6,7 +6,6 @@ package bahamut
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
@@ -208,21 +207,29 @@ func (s *PushSession) listenToAPIRequest() {
 	for {
 		select {
 		case request := <-s.requests:
+
 			switch request.Operation {
+
 			case elemental.OperationRetrieveMany:
-				go s.handleRetrieveManyOperation(request)
+				go s.handleRetrieveMany(request)
 
 			case elemental.OperationRetrieve:
-				go s.handleRetrieveOperation(request)
+				go s.handleRetrieve(request)
 
 			case elemental.OperationCreate:
-				go s.handleCreateOperation(request)
+				go s.handleCreate(request)
 
 			case elemental.OperationUpdate:
-				go s.handleUpdateOperation(request)
+				go s.handleUpdate(request)
 
 			case elemental.OperationDelete:
-				go s.handleDeleteOperation(request)
+				go s.handleDelete(request)
+
+			case elemental.OperationInfo:
+				go s.handleInfo(request)
+
+			case elemental.OperationPatch:
+				go s.handlePatch(request)
 			}
 
 		case <-s.stopAll:
@@ -233,236 +240,161 @@ func (s *PushSession) listenToAPIRequest() {
 	}
 }
 
+func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchRetrieveManyOperation(
+		request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handleRetrieve(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchRetrieveOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handleCreate(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchCreateOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+		s.server.pushEvents,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handleUpdate(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchUpdateOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+		s.server.pushEvents,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handleDelete(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchDeleteOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+		s.server.pushEvents,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handleInfo(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchInfoOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
+func (s *PushSession) handlePatch(request *elemental.Request) {
+
+	response := elemental.NewResponse()
+	response.Request = request
+
+	ctx, err := dispatchPatchOperation(
+		response.Request,
+		s.server.processorFinder,
+		s.server.config.IdentifiablesFactory,
+		s.server.config.Authenticator,
+		s.server.config.Authorizer,
+		s.server.pushEvents,
+	)
+
+	if err != nil {
+		writeWebSocketError(s.socket, response, err)
+		return
+	}
+
+	writeWebsocketResponse(s.socket, response, ctx)
+}
+
 func (s *PushSession) String() string {
 
 	return fmt.Sprintf("<session id:%s info: %s>",
 		s.id,
 		s.Info,
 	)
-}
-
-func (s *PushSession) handleRetrieveManyOperation(request *elemental.Request) {
-
-	proc, _ := s.server.processorFinder(request.Identity)
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	ctx := NewContext(elemental.OperationRetrieveMany)
-	ctx.ReadElementalRequest(request)
-
-	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
-		return
-	}
-
-	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
-		return
-	}
-
-	if _, ok := proc.(RetrieveManyProcessor); !ok {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
-		return
-	}
-
-	if err := proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
-		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
-	}
-}
-
-func (s *PushSession) handleRetrieveOperation(request *elemental.Request) {
-
-	proc, _ := s.server.processorFinder(request.Identity)
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	ctx := NewContext(elemental.OperationRetrieve)
-	ctx.ReadElementalRequest(request)
-
-	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
-		return
-	}
-
-	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
-		return
-	}
-
-	if _, ok := proc.(RetrieveProcessor); !ok {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
-		return
-	}
-
-	if err := proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
-		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
-	}
-}
-
-func (s *PushSession) handleCreateOperation(request *elemental.Request) {
-
-	proc, _ := s.server.processorFinder(request.Identity)
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	ctx := NewContext(elemental.OperationCreate)
-	ctx.ReadElementalRequest(request)
-
-	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
-		return
-	}
-
-	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
-		return
-	}
-
-	if _, ok := proc.(CreateProcessor); !ok {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
-		return
-	}
-
-	obj := s.server.config.IdentifiablesFactory(request.Identity.Name)
-
-	if err := request.Decode(&obj); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if v, ok := obj.(elemental.Validatable); ok {
-		if err := v.Validate(); err != nil {
-			writeWebSocketError(s.socket, response, err)
-			return
-		}
-	}
-
-	ctx.InputData = obj
-
-	if err := proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if ctx.HasEvents() {
-		s.server.pushEvents(ctx.Events()...)
-	}
-
-	if ctx.OutputData != nil {
-		s.server.pushEvents(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable)))
-	}
-
-	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
-		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
-	}
-}
-
-func (s *PushSession) handleUpdateOperation(request *elemental.Request) {
-
-	proc, _ := s.server.processorFinder(request.Identity)
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	ctx := NewContext(elemental.OperationUpdate)
-	ctx.ReadElementalRequest(request)
-
-	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
-		return
-	}
-
-	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
-		return
-	}
-
-	if _, ok := proc.(UpdateProcessor); !ok {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
-		return
-	}
-
-	obj := s.server.config.IdentifiablesFactory(request.Identity.Name).(elemental.Validatable)
-
-	if err := request.Decode(&obj); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if v, ok := obj.(elemental.Validatable); ok {
-		if err := v.Validate(); err != nil {
-			writeWebSocketError(s.socket, response, err)
-			return
-		}
-	}
-
-	ctx.InputData = obj
-
-	if err := proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if ctx.HasEvents() {
-		s.server.pushEvents(ctx.Events()...)
-	}
-
-	if ctx.OutputData != nil {
-		s.server.pushEvents(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable)))
-	}
-
-	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
-		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
-	}
-}
-
-func (s *PushSession) handleDeleteOperation(request *elemental.Request) {
-
-	proc, _ := s.server.processorFinder(request.Identity)
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	ctx := NewContext(elemental.OperationUpdate)
-	ctx.ReadElementalRequest(request)
-
-	if !CheckWebSocketAuthentication(s.server.config.Authenticator, ctx, response, s.socket) {
-		return
-	}
-
-	if !CheckWebSocketAuthorization(s.server.config.Authorizer, ctx, response, s.socket) {
-		return
-	}
-
-	if _, ok := proc.(DeleteProcessor); !ok {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented))
-		return
-	}
-
-	if err := proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if ctx.HasEvents() {
-		s.server.pushEvents(ctx.Events()...)
-	}
-
-	if ctx.OutputData != nil {
-		s.server.pushEvents(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable)))
-	}
-
-	if err := ctx.WriteWebsocketResponse(s.socket, response); err != nil {
-		writeWebSocketError(s.socket, response, elemental.NewError("Cannot Write Response", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
-	}
 }

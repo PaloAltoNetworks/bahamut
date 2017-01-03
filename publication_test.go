@@ -55,6 +55,15 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 		})
 
+		Convey("When I manually set the data", func() {
+
+			publication.SetData([]byte("coucou"))
+
+			Convey("Then the publication contains the correct data", func() {
+				So(string(publication.Data()), ShouldEqual, "coucou")
+			})
+		})
+
 		Convey("When I encode some unencodable object", func() {
 
 			list := NewUnmarshalableList()

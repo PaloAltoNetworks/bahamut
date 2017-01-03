@@ -6,24 +6,18 @@ package bahamut
 
 import (
 	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
-)
 
-const (
-	// DefaultPageSize is Default page size value
-	DefaultPageSize = 100
+	"github.com/aporeto-inc/elemental"
 )
 
 // Page holds pagination information.
 type Page struct {
 	Current int
 	Size    int
-	Next    string
-	Prev    string
-	First   string
-	Last    string
+	Next    int
+	Prev    int
+	First   int
+	Last    int
 }
 
 func (p *Page) String() string {
@@ -37,10 +31,7 @@ func (p *Page) String() string {
 // newPage returns a new *Page.
 func newPage() *Page {
 
-	return &Page{
-		Current: 1,
-		Size:    DefaultPageSize,
-	}
+	return &Page{}
 }
 
 // IndexRange returns the index range of data that needs to be retrieved according to current Page's values.
@@ -53,47 +44,39 @@ func (p *Page) IndexRange() (start, end int) {
 }
 
 // FromValues populates the Page from an url.Values.
-func (p *Page) fromValues(query url.Values) {
+func (p *Page) fromElementalRequest(request *elemental.Request) {
 
-	var err error
-	p.Current, err = strconv.Atoi(query.Get("page"))
-	if err != nil {
-		p.Current = 1
-	}
-
-	p.Size, err = strconv.Atoi(query.Get("per_page"))
-	if err != nil {
-		p.Size = DefaultPageSize
-	}
+	p.Current = request.Page
+	p.Size = request.PageSize
 }
 
 // compute computes the various fields of the Page, like the neighbor page links, etc.
-func (p *Page) compute(baseURL string, query url.Values, totalCount int) {
+func (p *Page) compute(totalCount int) {
 
-	query.Set("page", strconv.Itoa(1))
-	p.First = strings.Join([]string{baseURL, query.Encode()}, "?")
+	p.First = 1
 
 	if p.Current > 1 {
-		query.Set("page", strconv.Itoa(p.Current-1))
-		p.Prev = strings.Join([]string{baseURL, query.Encode()}, "?")
+		p.Prev = p.Current - 1
 	}
 
 	if p.Current*p.Size < totalCount {
-		query.Set("page", strconv.Itoa(p.Current+1))
-		p.Next = strings.Join([]string{baseURL, query.Encode()}, "?")
+		p.Next = p.Current + 1
 	}
 
-	last := totalCount / p.Size
-	modulo := totalCount % p.Size
+	if p.Size > 0 {
+		last := totalCount / p.Size
+		modulo := totalCount % p.Size
 
-	if last == 0 {
-		last = 1
+		if last == 0 {
+			last = 1
+		}
+
+		if modulo != 0 {
+			last = last + 1
+		}
+
+		p.Last = last
+	} else {
+		p.Last = p.Current
 	}
-
-	if modulo != 0 {
-		last = last + 1
-	}
-
-	query.Set("page", strconv.Itoa(last))
-	p.Last = strings.Join([]string{baseURL, query.Encode()}, "?")
 }

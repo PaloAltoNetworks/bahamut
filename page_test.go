@@ -5,9 +5,9 @@
 package bahamut
 
 import (
-	"net/url"
 	"testing"
 
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -19,24 +19,24 @@ func TestPage_FromQuery(t *testing.T) {
 
 		Convey("When I pass an empty query", func() {
 
-			q := url.Values{}
-			p.fromValues(q)
+			req := elemental.NewRequest()
+			p.fromElementalRequest(req)
 
-			Convey("Then the current page should be 1", func() {
-				So(p.Current, ShouldEqual, 1)
+			Convey("Then the current page should be 0", func() {
+				So(p.Current, ShouldEqual, 0)
 			})
 
 			Convey("Then the size should be 100", func() {
-				So(p.Size, ShouldEqual, 100)
+				So(p.Size, ShouldEqual, 0)
 			})
 		})
 
 		Convey("When I pass an query with page set to 42 and per_page set to 4242", func() {
 
-			q := url.Values{}
-			q.Set("page", "42")
-			q.Set("per_page", "4242")
-			p.fromValues(q)
+			req := elemental.NewRequest()
+			req.Page = 42
+			req.PageSize = 4242
+			p.fromElementalRequest(req)
 
 			Convey("Then the current page should be 42", func() {
 				So(p.Current, ShouldEqual, 42)
@@ -113,164 +113,153 @@ func TestPage_Compute(t *testing.T) {
 
 		Convey("When I get the first page and there is no element", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "1")
-			q.Set("per_page", "10")
+			req := elemental.NewRequest()
+			req.Page = 1
+			req.PageSize = 10
+			p.fromElementalRequest(req)
 
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 0)
+			p.compute(0)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the prev page should be empty", func() {
-				So(p.Prev, ShouldEqual, "")
+				So(p.Prev, ShouldEqual, 0)
 			})
 
 			Convey("Then the next page should be empty", func() {
-				So(p.Next, ShouldEqual, "")
+				So(p.Next, ShouldEqual, 0)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.Last, ShouldEqual, 1)
 			})
 		})
 
 		Convey("When get the first page of a list that has 2", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "1")
-			q.Set("per_page", "10")
-
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 20)
+			req := elemental.NewRequest()
+			req.Page = 1
+			req.PageSize = 10
+			p.fromElementalRequest(req)
+			p.compute(20)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the prev page should be empty", func() {
-				So(p.Prev, ShouldEqual, "")
+				So(p.Prev, ShouldEqual, 0)
 			})
 
 			Convey("Then the next page should be empty", func() {
-				So(p.Next, ShouldEqual, "http://link.com/path?foo=bar&page=2&per_page=10")
+				So(p.Next, ShouldEqual, 2)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=2&per_page=10")
+				So(p.Last, ShouldEqual, 2)
 			})
 		})
 
 		Convey("When get the last page of a list that has 2", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "2")
-			q.Set("per_page", "10")
-
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 20)
+			req := elemental.NewRequest()
+			req.Page = 2
+			req.PageSize = 10
+			p.fromElementalRequest(req)
+			p.compute(20)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the previous page should be correct", func() {
-				So(p.Prev, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.Prev, ShouldEqual, 1)
 			})
 
 			Convey("Then the next page should be empty", func() {
-				So(p.Next, ShouldEqual, "")
+				So(p.Next, ShouldEqual, 0)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=2&per_page=10")
+				So(p.Last, ShouldEqual, 2)
 			})
 
 		})
 
 		Convey("When get the middle page of a list that has 3", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "2")
-			q.Set("per_page", "10")
-
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 30)
+			req := elemental.NewRequest()
+			req.Page = 2
+			req.PageSize = 10
+			p.fromElementalRequest(req)
+			p.compute(30)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the previous page should be correct", func() {
-				So(p.Prev, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.Prev, ShouldEqual, 1)
 			})
 
 			Convey("Then the next page should be correct", func() {
-				So(p.Next, ShouldEqual, "http://link.com/path?foo=bar&page=3&per_page=10")
+				So(p.Next, ShouldEqual, 3)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=3&per_page=10")
+				So(p.Last, ShouldEqual, 3)
 			})
 		})
 
 		Convey("When get the middle page of a list that has 4", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "2")
-			q.Set("per_page", "10")
-
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 40)
+			req := elemental.NewRequest()
+			req.Page = 2
+			req.PageSize = 10
+			p.fromElementalRequest(req)
+			p.compute(40)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the previous page should be correct", func() {
-				So(p.Prev, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.Prev, ShouldEqual, 1)
 			})
 
 			Convey("Then the next page should be correct", func() {
-				So(p.Next, ShouldEqual, "http://link.com/path?foo=bar&page=3&per_page=10")
+				So(p.Next, ShouldEqual, 3)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=4&per_page=10")
+				So(p.Last, ShouldEqual, 4)
 			})
 		})
 
 		Convey("When get a random page  with an odd number", func() {
 
-			q := url.Values{}
-			q.Set("foo", "bar")
-			q.Set("page", "2")
-			q.Set("per_page", "10")
-
-			p.fromValues(q)
-			p.compute("http://link.com/path", q, 41)
+			req := elemental.NewRequest()
+			req.Page = 2
+			req.PageSize = 10
+			p.fromElementalRequest(req)
+			p.compute(41)
 
 			Convey("Then the first page should be correct", func() {
-				So(p.First, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.First, ShouldEqual, 1)
 			})
 
 			Convey("Then the previous page should be correct", func() {
-				So(p.Prev, ShouldEqual, "http://link.com/path?foo=bar&page=1&per_page=10")
+				So(p.Prev, ShouldEqual, 1)
 			})
 
 			Convey("Then the next page should be correct", func() {
-				So(p.Next, ShouldEqual, "http://link.com/path?foo=bar&page=3&per_page=10")
+				So(p.Next, ShouldEqual, 3)
 			})
 
 			Convey("Then the last page should be correct", func() {
-				So(p.Last, ShouldEqual, "http://link.com/path?foo=bar&page=5&per_page=10")
+				So(p.Last, ShouldEqual, 5)
 			})
 		})
 	})
@@ -282,10 +271,10 @@ func TestPage_String(t *testing.T) {
 
 		p := &Page{
 			Current: 1,
-			First:   "http://server.com?page=1",
-			Last:    "http://server.com?page=1",
-			Next:    "http://server.com?page=2",
-			Prev:    "http://server.com?page=0",
+			First:   0,
+			Last:    1,
+			Next:    2,
+			Prev:    0,
 			Size:    5,
 		}
 

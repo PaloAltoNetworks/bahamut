@@ -6,9 +6,9 @@ package bahamut
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -28,10 +28,10 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check authentication with no registered authenticator", func() {
 
-			ok := CheckAuthentication(nil, ctx, nil)
+			err := CheckAuthentication(nil, ctx)
 
 			Convey("Then it should be authenticated", func() {
-				So(ok, ShouldBeTrue)
+				So(err, ShouldBeNil)
 			})
 		})
 
@@ -41,10 +41,10 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.authenticated = true
 			auth.errored = false
 
-			ok := CheckAuthentication(s.Authenticator(), ctx, nil)
+			err := CheckAuthentication(s.Authenticator(), ctx)
 
 			Convey("Then it should be authenticated", func() {
-				So(ok, ShouldBeTrue)
+				So(err, ShouldBeNil)
 			})
 		})
 
@@ -54,15 +54,14 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.authenticated = false
 			auth.errored = false
 
-			w := httptest.NewRecorder()
-			ok := CheckAuthentication(s.Authenticator(), ctx, w)
+			err := CheckAuthentication(s.Authenticator(), ctx)
 
 			Convey("Then it should not be authenticated", func() {
-				So(ok, ShouldBeFalse)
+				So(err, ShouldNotBeNil)
 			})
 
 			Convey("Then the http status should be 500", func() {
-				So(w.Code, ShouldEqual, 401)
+				So(err.(elemental.Error).Code, ShouldEqual, 401)
 			})
 		})
 
@@ -72,15 +71,10 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.authenticated = false
 			auth.errored = true
 
-			w := httptest.NewRecorder()
-			ok := CheckAuthentication(s.Authenticator(), ctx, w)
+			err := CheckAuthentication(s.Authenticator(), ctx)
 
 			Convey("Then it should be authenticated", func() {
-				So(ok, ShouldBeFalse)
-			})
-
-			Convey("Then the http status should be 500", func() {
-				So(w.Code, ShouldEqual, 500)
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})
@@ -102,10 +96,10 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check authorization with no registered authorizer", func() {
 
-			ok := CheckAuthorization(nil, ctx, nil)
+			err := CheckAuthorization(nil, ctx)
 
 			Convey("Then it should be authorized", func() {
-				So(ok, ShouldBeTrue)
+				So(err, ShouldBeNil)
 			})
 		})
 
@@ -115,10 +109,10 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = true
 			auth.errored = false
 
-			ok := CheckAuthorization(s.Authorizer(), ctx, nil)
+			err := CheckAuthorization(s.Authorizer(), ctx)
 
 			Convey("Then it should be authorized", func() {
-				So(ok, ShouldBeTrue)
+				So(err, ShouldBeNil)
 			})
 		})
 
@@ -128,15 +122,14 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = false
 			auth.errored = false
 
-			w := httptest.NewRecorder()
-			ok := CheckAuthorization(s.Authorizer(), ctx, w)
+			err := CheckAuthorization(s.Authorizer(), ctx)
 
 			Convey("Then it should not be authorized", func() {
-				So(ok, ShouldBeFalse)
+				So(err, ShouldNotBeNil)
 			})
 
-			Convey("Then the http status should be 500", func() {
-				So(w.Code, ShouldEqual, 403)
+			Convey("Then the http status should be 403", func() {
+				So(err.(elemental.Error).Code, ShouldEqual, 403)
 			})
 		})
 
@@ -146,15 +139,14 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = false
 			auth.errored = true
 
-			w := httptest.NewRecorder()
-			ok := CheckAuthorization(s.Authorizer(), ctx, w)
+			err := CheckAuthorization(s.Authorizer(), ctx)
 
-			Convey("Then it should be authorized", func() {
-				So(ok, ShouldBeFalse)
+			Convey("Then it should not be authorized", func() {
+				So(err, ShouldNotBeNil)
 			})
 
 			Convey("Then the http status should be 500", func() {
-				So(w.Code, ShouldEqual, 500)
+				So(err.(elemental.Error).Code, ShouldEqual, 500)
 			})
 		})
 	})

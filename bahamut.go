@@ -73,6 +73,11 @@ func NewServer(apiConfig APIServerConfig, pushConfig PushServerConfig) Server {
 		pushServer.processorFinder = srv.ProcessorForIdentity
 	}
 
+	if !apiConfig.Disabled {
+		apiServer.processorFinder = srv.ProcessorForIdentity
+		apiServer.pusher = srv.Push
+	}
+
 	return srv
 }
 
