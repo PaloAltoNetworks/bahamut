@@ -62,7 +62,7 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
-	setCommonHeader(w, c.Info.Headers.Get("Origin"))
+	setCommonHeader(w, c.Request.Headers.Get("Origin"))
 
 	buffer := &bytes.Buffer{}
 
@@ -94,7 +94,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if c.OutputData != nil {
 		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
-			writeHTTPError(w, c.Info.Headers.Get("Origin"), err)
+			writeHTTPError(w, c.Request.Headers.Get("Origin"), err)
 		}
 	}
 
@@ -102,7 +102,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if buffer != nil {
 		if _, err := io.Copy(w, buffer); err != nil {
-			writeHTTPError(w, c.Info.Headers.Get("Origin"), err)
+			writeHTTPError(w, c.Request.Headers.Get("Origin"), err)
 		}
 	}
 }

@@ -6,6 +6,8 @@ package bahamut
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
@@ -27,8 +29,8 @@ type PushSession struct {
 	// UserInfo contains user opaque information.
 	UserInfo interface{}
 
-	// Info contains various request related information.
-	Info *Info
+	Parameters url.Values
+	Headers    http.Header
 
 	id        string
 	server    *pushServer
@@ -53,27 +55,29 @@ func newAPISession(ws *websocket.Conn, server *pushServer) *PushSession {
 
 func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *PushSession {
 
-	info := &Info{}
+	var parameters url.Values
+	var headers http.Header
 
 	if request := ws.Request(); request != nil {
-		info.Parameters = request.URL.Query()
+		parameters = request.URL.Query()
 	}
 
 	if config := ws.Config(); config != nil {
-		info.Headers = config.Header
+		headers = config.Header
 	}
 
 	return &PushSession{
-		id:        uuid.NewV4().String(),
-		server:    server,
-		socket:    ws,
-		events:    make(chan *elemental.Event, 1024),
-		requests:  make(chan *elemental.Request, 1024),
-		stopRead:  make(chan bool, 2),
-		stopWrite: make(chan bool, 2),
-		stopAll:   make(chan bool, 2),
-		Info:      info,
-		sType:     sType,
+		id:         uuid.NewV4().String(),
+		server:     server,
+		socket:     ws,
+		events:     make(chan *elemental.Event, 1024),
+		requests:   make(chan *elemental.Request, 1024),
+		stopRead:   make(chan bool, 2),
+		stopWrite:  make(chan bool, 2),
+		stopAll:    make(chan bool, 2),
+		Parameters: parameters,
+		Headers:    headers,
+		sType:      sType,
 	}
 }
 
@@ -393,8 +397,9 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 
 func (s *PushSession) String() string {
 
-	return fmt.Sprintf("<session id:%s info: %s>",
+	return fmt.Sprintf("<session id:%s headers: %v parameters: %v>",
 		s.id,
-		s.Info,
+		s.Headers,
+		s.Parameters,
 	)
 }

@@ -31,8 +31,8 @@ func TestContext_MakeContext(t *testing.T) {
 
 		Convey("Then it should be correctly initialized", func() {
 
-			So(c.Info.Parameters.Get("page"), ShouldEqual, "1")
-			So(c.Info.Parameters.Get("per_page"), ShouldEqual, "10")
+			So(c.Request.Parameters.Get("page"), ShouldEqual, "1")
+			So(c.Request.Parameters.Get("per_page"), ShouldEqual, "10")
 			So(c.Page.Current, ShouldEqual, 1)
 			So(c.Page.Size, ShouldEqual, 10)
 		})
@@ -124,12 +124,12 @@ func TestContext_String(t *testing.T) {
 			Current: 1,
 		}
 
-		info := &Info{
-			Parameters:       url.Values{"hello": []string{"world"}},
-			Headers:          http.Header{"header": []string{"h1"}},
-			ParentIdentity:   elemental.EmptyIdentity,
-			ParentIdentifier: "xxxx",
-			ChildrenIdentity: elemental.EmptyIdentity,
+		req := &elemental.Request{
+			Parameters:     url.Values{"hello": []string{"world"}},
+			Headers:        http.Header{"header": []string{"h1"}},
+			Identity:       elemental.EmptyIdentity,
+			ParentID:       "xxxx",
+			ParentIdentity: elemental.EmptyIdentity,
 		}
 
 		page := &Page{
@@ -142,7 +142,7 @@ func TestContext_String(t *testing.T) {
 		}
 
 		ctx := NewContext(elemental.OperationCreate)
-		ctx.Info = info
+		ctx.Request = req
 		ctx.Count = count
 		ctx.Page = page
 
@@ -151,7 +151,7 @@ func TestContext_String(t *testing.T) {
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create info: <info parameters:map[hello:[world]] headers:map[header:[h1]] parent-identity: <Identity |> parent-id: xxxx children-identity: <Identity |>> page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create request: &{  false  <Identity |>  <Identity |> xxxx [] map[hello:[world]] map[header:[h1]]   0 0 <nil>} page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
 			})
 		})
 	})

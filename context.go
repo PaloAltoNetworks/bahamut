@@ -21,7 +21,7 @@ import (
 type Context struct {
 
 	// Info contains various request related information.
-	Info *Info
+	Request *elemental.Request
 
 	// Page contains various information about the pagination.
 	Page *Page
@@ -60,7 +60,7 @@ type Context struct {
 func NewContext(operation elemental.Operation) *Context {
 
 	return &Context{
-		Info:      newInfo(),
+		Request:   elemental.NewRequest(),
 		Page:      newPage(),
 		Count:     newCount(),
 		Operation: operation,
@@ -74,7 +74,7 @@ func NewContext(operation elemental.Operation) *Context {
 // ReadElementalRequest reads information from the given elemental.Request and polulate the Context.
 func (c *Context) ReadElementalRequest(req *elemental.Request) error {
 
-	c.Info.fromElementalRequest(req)
+	c.Request = req
 	c.Page.fromElementalRequest(req)
 
 	return nil
@@ -119,10 +119,10 @@ func (c *Context) Events() elemental.Events {
 
 func (c *Context) String() string {
 
-	return fmt.Sprintf("<context id:%s operation: %s info: %s page: %s count: %s>",
+	return fmt.Sprintf("<context id:%s operation: %s request: %v page: %s count: %s>",
 		c.Identifier(),
 		c.Operation,
-		c.Info,
+		c.Request,
 		c.Page,
 		c.Count,
 	)

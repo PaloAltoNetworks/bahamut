@@ -21,7 +21,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
 		ctx := &Context{
-			Info: &Info{
+			Request: &elemental.Request{
 				Headers: h,
 			},
 		}
@@ -85,7 +85,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
 		ctx := &Context{
-			Info: &Info{
+			Request: &elemental.Request{
 				Headers: h,
 			},
 		}

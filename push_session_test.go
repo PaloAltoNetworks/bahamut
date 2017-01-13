@@ -38,7 +38,7 @@ func TestSession_newPushSession(t *testing.T) {
 		})
 
 		Convey("Then the String representation should be correct", func() {
-			So(session.String(), ShouldEqual, fmt.Sprintf("<session id:%s info: <info parameters:map[] headers:map[] parent-identity: <Identity |> parent-id:  children-identity: <Identity |>>>", session.Identifier()))
+			So(session.String(), ShouldEqual, fmt.Sprintf("<session id:%s headers: map[] parameters: map[]>", session.Identifier()))
 		})
 	})
 }
