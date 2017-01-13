@@ -206,6 +206,7 @@ func TestInfo_fromElementalRequest(t *testing.T) {
 		r.Password = "password"
 		r.ParentIdentity = TaskIdentity
 		r.ParentID = "2"
+		r.Recursive = true
 
 		i := &Info{}
 
@@ -228,6 +229,7 @@ func TestInfo_fromElementalRequest(t *testing.T) {
 			Convey("Then the Headers be correct", func() {
 				So(i.Headers.Get("X-Namespace"), ShouldEqual, "ns")
 				So(i.Headers.Get("Authorization"), ShouldEqual, "toto password")
+				So(i.Headers.Get("X-Request-Recursive"), ShouldEqual, "true")
 			})
 		})
 	})

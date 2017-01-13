@@ -39,8 +39,9 @@ func (i *Info) fromElementalRequest(req *elemental.Request) {
 	i.TLSConnectionState = req.TLSConnectionState
 
 	i.Headers = http.Header{
-		"X-Namespace":   []string{req.Namespace},
-		"Authorization": []string{req.Username + " " + req.Password},
+		"X-Namespace":         []string{req.Namespace},
+		"X-Request-Recursive": []string{fmt.Sprintf("%v", req.Recursive)},
+		"Authorization":       []string{req.Username + " " + req.Password},
 	}
 
 	if !req.ParentIdentity.IsEmpty() {
