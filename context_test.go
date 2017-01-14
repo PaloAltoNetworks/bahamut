@@ -151,7 +151,7 @@ func TestContext_String(t *testing.T) {
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create request: &{  false  <Identity |>  <Identity |> xxxx [] map[hello:[world]] map[header:[h1]]   0 0 <nil>} page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create request: <request id: operation: namespace: recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
 			})
 		})
 	})
