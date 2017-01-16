@@ -26,7 +26,7 @@ func TestContext_MakeContext(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
-		c := NewContext(elemental.OperationRetrieveMany)
+		c := NewContext()
 		c.ReadElementalRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
@@ -48,7 +48,7 @@ func TestContext_MakeContext(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
-		c := NewContext(elemental.OperationRetrieveMany)
+		c := NewContext()
 		c.ReadElementalRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
@@ -63,7 +63,8 @@ func TestContext_Identifier(t *testing.T) {
 
 	Convey("Given I have a context", t, func() {
 
-		ctx := NewContext(elemental.OperationCreate)
+		ctx := NewContext()
+		ctx.Request.Operation = elemental.OperationCreate
 
 		Convey("When I get its Identifier", func() {
 
@@ -80,7 +81,8 @@ func TestContext_Events(t *testing.T) {
 
 	Convey("Given I create a Context", t, func() {
 
-		c := NewContext(elemental.OperationRetrieveMany)
+		c := NewContext()
+		c.Request.Operation = elemental.OperationCreate
 
 		Convey("When I enqueue 2 events", func() {
 
@@ -125,11 +127,13 @@ func TestContext_String(t *testing.T) {
 		}
 
 		req := &elemental.Request{
+			Namespace:      "/thens",
 			Parameters:     url.Values{"hello": []string{"world"}},
 			Headers:        http.Header{"header": []string{"h1"}},
 			Identity:       elemental.EmptyIdentity,
 			ParentID:       "xxxx",
 			ParentIdentity: elemental.EmptyIdentity,
+			Operation:      elemental.OperationCreate,
 		}
 
 		page := &Page{
@@ -141,7 +145,7 @@ func TestContext_String(t *testing.T) {
 			Size:    5,
 		}
 
-		ctx := NewContext(elemental.OperationCreate)
+		ctx := NewContext()
 		ctx.Request = req
 		ctx.Count = count
 		ctx.Page = page
@@ -151,7 +155,7 @@ func TestContext_String(t *testing.T) {
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s operation: create request: <request id: operation: namespace: recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request: <request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page: <page current:1 size:5> count: <count total:10 current:1>>", ctx.Identifier()))
 			})
 		})
 	})

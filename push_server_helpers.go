@@ -45,7 +45,7 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 	}
 
 	if c.StatusCode == 0 {
-		switch c.Operation {
+		switch c.Request.Operation {
 		case elemental.OperationCreate:
 			c.StatusCode = http.StatusCreated
 		case elemental.OperationInfo:
@@ -55,7 +55,7 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 		}
 	}
 
-	if c.Operation == elemental.OperationRetrieveMany || c.Operation == elemental.OperationInfo {
+	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
 
 		response.Count = c.Count.Current
 		response.Total = c.Count.Total

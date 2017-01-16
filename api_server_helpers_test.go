@@ -61,7 +61,7 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
-		c := NewContext(elemental.OperationRetrieveMany)
+		c := NewContext()
 		c.ReadElementalRequest(request)
 
 		c.Count.Total = 40
@@ -69,7 +69,6 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 		Convey("When I write the response from a context with no error for a retrieve", func() {
 
 			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationRetrieveMany
 			c.OutputData = []*Entity{e1, e2}
 			req.Method = http.MethodGet
 			writeHTTPResponse(w, c)
@@ -93,7 +92,7 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 		Convey("When I write the response from a context with no error for a info", func() {
 
 			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationInfo
+			c.Request.Operation = elemental.OperationInfo
 			req.Method = http.MethodHead
 			writeHTTPResponse(w, c)
 
@@ -116,7 +115,7 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 		Convey("When I write the response from a context with no error for a create", func() {
 
 			w := httptest.NewRecorder()
-			c.Operation = elemental.OperationCreate
+			c.Request.Operation = elemental.OperationCreate
 			req.Method = http.MethodPost
 			writeHTTPResponse(w, c)
 

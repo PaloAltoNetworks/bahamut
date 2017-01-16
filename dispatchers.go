@@ -14,7 +14,7 @@ func dispatchRetrieveManyOperation(
 	authorizer Authorizer,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationRetrieveMany)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -46,7 +46,7 @@ func dispatchRetrieveOperation(
 	authorizer Authorizer,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationRetrieve)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -79,7 +79,7 @@ func dispatchCreateOperation(
 	pusher eventPusher,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationCreate)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -133,7 +133,7 @@ func dispatchUpdateOperation(
 	pusher eventPusher,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationUpdate)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -187,7 +187,7 @@ func dispatchDeleteOperation(
 	pusher eventPusher,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationDelete)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -228,7 +228,7 @@ func dispatchPatchOperation(
 	pusher eventPusher,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationPatch)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
@@ -275,7 +275,7 @@ func dispatchInfoOperation(
 	authorizer Authorizer,
 ) (*Context, error) {
 
-	ctx := NewContext(elemental.OperationInfo)
+	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {

@@ -67,7 +67,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 	buffer := &bytes.Buffer{}
 
 	if c.StatusCode == 0 {
-		switch c.Operation {
+		switch c.Request.Operation {
 		case elemental.OperationCreate:
 			c.StatusCode = http.StatusCreated
 		case elemental.OperationInfo:
@@ -77,7 +77,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 		}
 	}
 
-	if c.Operation == elemental.OperationRetrieveMany || c.Operation == elemental.OperationInfo {
+	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
 
 		c.Page.compute(c.Count.Total)
 
