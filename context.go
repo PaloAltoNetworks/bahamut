@@ -118,7 +118,7 @@ func (c *Context) Events() elemental.Events {
 
 func (c *Context) String() string {
 
-	return fmt.Sprintf("<context id:%s request: %s page: %s count: %s>",
+	return fmt.Sprintf("<context id:%s request:%s page:%s count:%s>",
 		c.Identifier(),
 		c.Request,
 		c.Page,
