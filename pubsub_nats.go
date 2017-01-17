@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/nats-io/go-nats-streaming"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type natsPubSub struct {
@@ -98,8 +97,7 @@ func (p *natsPubSub) Connect() Waiter {
 				break
 			}
 
-			log.WithFields(log.Fields{
-				"package":   "bahamut",
+			log.WithFields(logrus.Fields{
 				"url":       p.natsURL,
 				"clusterID": p.clusterID,
 				"clientID":  p.clientID,

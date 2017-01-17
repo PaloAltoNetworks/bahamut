@@ -3,10 +3,9 @@ package bahamut
 import (
 	"net/http"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 func writeWebSocketError(ws *websocket.Conn, response *elemental.Response, err error) {
@@ -30,8 +29,7 @@ func writeWebSocketError(ws *websocket.Conn, response *elemental.Response, err e
 	response.Encode(outError)
 
 	if e := websocket.JSON.Send(ws, response); e != nil {
-		log.WithFields(log.Fields{
-			"package":       "bahamut",
+		log.WithFields(logrus.Fields{
 			"error":         e.Error(),
 			"originalError": err.Error(),
 		}).Error("Unable to encode error.")

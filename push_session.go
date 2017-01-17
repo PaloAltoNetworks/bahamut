@@ -9,11 +9,10 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type pushSessionType int
@@ -162,7 +161,10 @@ func (s *PushSession) listenToPushEvents() {
 
 			event := &elemental.Event{}
 			if err := message.Decode(event); err != nil {
-				log.WithFields(log.Fields{"session": s, "message": message, "package": "bahamut"}).Error("Unable to decode event.")
+				log.WithFields(logrus.Fields{
+					"session": s,
+					"message": message,
+				}).Error("Unable to decode event.")
 				break
 			}
 
@@ -170,7 +172,7 @@ func (s *PushSession) listenToPushEvents() {
 
 				ok, err := s.server.config.WebSocketServer.SessionsHandler.ShouldPush(s, event)
 				if err != nil {
-					log.WithFields(log.Fields{"error": err, "package": "bahamut"}).Error("Error during checking authorization.")
+					log.WithError(err).Error("Error during checking authorization.")
 					break
 				}
 
@@ -185,10 +187,7 @@ func (s *PushSession) listenToPushEvents() {
 			}
 
 		case err := <-errors:
-			log.WithFields(log.Fields{
-				"package": "bahamut",
-				"error":   err.Error(),
-			}).Error("Error during consuming pubsub topic.")
+			log.WithError(err).Error("Error during consuming pubsub topic.")
 
 		case <-s.stopAll:
 			s.stopRead <- true

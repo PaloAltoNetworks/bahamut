@@ -11,8 +11,6 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // RegisterProcessorOrDie will register the given Processor for the given
@@ -21,16 +19,11 @@ import (
 func RegisterProcessorOrDie(server Server, processor Processor, identity elemental.Identity) {
 
 	if server == nil {
-		log.WithFields(log.Fields{
-			"package": "bahamut",
-		}).Fatal("Not bahamut set. You must create a bahamut server first.")
+		log.Fatal("Not bahamut set. You must create a bahamut server first.")
 	}
 
 	if err := server.RegisterProcessor(processor, identity); err != nil {
-		log.WithFields(log.Fields{
-			"package": "bahamut",
-			"error":   err.Error(),
-		}).Fatal("Duplicate identity registration.")
+		log.WithError(err).Fatal("Duplicate identity registration.")
 	}
 }
 
@@ -136,9 +129,7 @@ func (b *server) handleExit() {
 	<-c
 
 	b.Stop()
-	log.WithFields(log.Fields{
-		"package": "bahamut",
-	}).Info("Bye!")
+	log.Info("Bye!")
 }
 
 func (b *server) Start() {

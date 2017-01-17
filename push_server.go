@@ -9,10 +9,9 @@ import (
 
 	"golang.org/x/net/websocket"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 type pushServer struct {
@@ -74,10 +73,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 		ok, err := handler.IsAuthenticated(session)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"error":   err,
-				"package": "bahamut",
-			}).Error("Error during checking authentication.")
+			log.WithError(err).Error("Error during checking authentication.")
 		}
 
 		if !ok {
@@ -123,10 +119,7 @@ func (n *pushServer) closeAllSessions() {
 // starts the push server
 func (n *pushServer) start() {
 
-	log.WithFields(log.Fields{
-		"endpoint": n.address + "/events",
-		"package":  "bahamut",
-	}).Info("Starting event server.")
+	log.WithField("endpoint", n.address+"/events").Info("Starting event server.")
 
 	for {
 		select {
@@ -139,10 +132,9 @@ func (n *pushServer) start() {
 
 			n.sessions[session.id] = session
 
-			log.WithFields(log.Fields{
-				"total":   len(n.sessions),
-				"client":  session.socket.RemoteAddr(),
-				"package": "bahamut",
+			log.WithFields(logrus.Fields{
+				"total":  len(n.sessions),
+				"client": session.socket.RemoteAddr(),
 			}).Debug("Push session started.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
@@ -157,10 +149,9 @@ func (n *pushServer) start() {
 
 			delete(n.sessions, session.id)
 
-			log.WithFields(log.Fields{
-				"total":   len(n.sessions),
-				"client":  session.socket.RemoteAddr(),
-				"package": "bahamut",
+			log.WithFields(logrus.Fields{
+				"total":  len(n.sessions),
+				"client": session.socket.RemoteAddr(),
 			}).Debug("Push session closed.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
@@ -172,28 +163,24 @@ func (n *pushServer) start() {
 			if n.config.WebSocketServer.Service != nil {
 				publication := NewPublication(n.config.WebSocketServer.Topic)
 				if err := publication.Encode(event); err != nil {
-					log.WithFields(log.Fields{
-						"topic":   publication.Topic,
-						"event":   event,
-						"error":   err,
-						"package": "bahamut",
+					log.WithFields(logrus.Fields{
+						"topic": publication.Topic,
+						"event": event,
+						"error": err,
 					}).Error("Unable to encode ervent. Message dropped.")
 				}
 				err := n.config.WebSocketServer.Service.Publish(publication)
 				if err != nil {
-					log.WithFields(log.Fields{
-						"topic":   publication.Topic,
-						"event":   event,
-						"error":   err,
-						"package": "bahamut",
+					log.WithFields(logrus.Fields{
+						"topic": publication.Topic,
+						"event": event,
+						"error": err,
 					}).Warn("Unable to publish. Message dropped.")
 				}
 			}
 
 		case <-n.close:
-			log.WithFields(log.Fields{
-				"package": "bahamut",
-			}).Info("Stopping push server.")
+			log.Info("Stopping push server.")
 
 			n.closeAllSessions()
 			return

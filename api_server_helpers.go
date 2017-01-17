@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 func setCommonHeader(w http.ResponseWriter, origin string) {
@@ -43,8 +42,7 @@ func writeHTTPError(w http.ResponseWriter, origin string, err error) {
 	w.WriteHeader(outError.Code())
 
 	if e := json.NewEncoder(w).Encode(&outError); e != nil {
-		log.WithFields(log.Fields{
-			"package":       "bahamut",
+		log.WithFields(logrus.Fields{
 			"error":         e.Error(),
 			"originalError": err.Error(),
 		}).Error("Unable to encode error.")

@@ -11,8 +11,6 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 // an apiServer is the structure serving the api routes.
@@ -341,17 +339,11 @@ func (a *apiServer) installRoutes() {
 
 func (a *apiServer) startProfilingServer() {
 
-	log.WithFields(log.Fields{
-		"address": a.config.Profiling.ListenAddress,
-		"package": "bahamut",
-	}).Info("Starting profiling server.")
+	log.WithField("address", a.config.Profiling.ListenAddress).Info("Starting profiling server.")
 
 	srv, err := a.createUnsecureHTTPServer(a.config.Profiling.ListenAddress)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to create profiling server.")
+		log.WithError(err).Fatal("Unable to create profiling server.")
 	}
 
 	mux := bone.New()
@@ -363,10 +355,7 @@ func (a *apiServer) startProfilingServer() {
 
 	srv.Handler = mux
 	if err := srv.ListenAndServe(); err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to start profiling http server.")
+		log.WithError(err).Fatal("Unable to start profiling http server.")
 	}
 }
 
@@ -379,10 +368,7 @@ func (a *apiServer) start() {
 
 	a.installRoutes()
 
-	log.WithFields(log.Fields{
-		"address": a.config.ReSTServer.ListenAddress,
-		"package": "bahamut",
-	}).Info("Starting api server.")
+	log.WithField("address", a.config.ReSTServer.ListenAddress).Info("Starting api server.")
 
 	var err error
 	if a.config.TLS.ServerCertificates != nil {
@@ -391,10 +377,7 @@ func (a *apiServer) start() {
 		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	}
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to create api server.")
+		log.WithError(err).Fatal("Unable to create api server.")
 	}
 
 	a.server.Handler = a.multiplexer
@@ -407,10 +390,7 @@ func (a *apiServer) start() {
 	}
 
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err,
-			"package": "bahamut",
-		}).Fatal("Unable to start api server.")
+		log.WithError(err).Fatal("Unable to start api server.")
 	}
 }
 

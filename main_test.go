@@ -1,7 +1,7 @@
 package bahamut
 
-import log "github.com/Sirupsen/logrus"
+import "github.com/Sirupsen/logrus"
 
 func init() {
-	log.SetLevel(log.FatalLevel)
+	Logger.Level = logrus.FatalLevel
 }

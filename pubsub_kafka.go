@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // kafkaPubSub implements a PubSubServer using Kafka
@@ -88,8 +88,7 @@ func (p *kafkaPubSub) Subscribe(pubs chan *Publication, errs chan error, topic s
 				break
 			}
 
-			log.WithFields(log.Fields{
-				"package":        "bahamut",
+			log.WithFields(logrus.Fields{
 				"topic":          topic,
 				"consumerError":  err1,
 				"partitionError": err2,
@@ -141,11 +140,7 @@ func (p *kafkaPubSub) Connect() Waiter {
 				break
 			}
 
-			log.WithFields(log.Fields{
-				"services": p.services,
-				"package":  "bahamut",
-				"retryIn":  p.retryInterval,
-			}).Warn("Unable to create to kafka producer retrying in 5 seconds.")
+			log.WithField("retryIn", p.retryInterval).Warn("Unable to create to kafka producer retrying in 5 seconds.")
 
 			select {
 			case <-time.After(p.retryInterval):
@@ -168,10 +163,7 @@ func (p *kafkaPubSub) Disconnect() {
 
 	if p.producer != nil {
 		if err := p.producer.Close(); err != nil {
-			log.WithFields(log.Fields{
-				"package": "bahamut",
-				"error":   err,
-			}).Error("Unable to close to kafka producer.")
+			log.WithError(err).Error("Unable to close to kafka producer.")
 		}
 
 		p.producer = nil
