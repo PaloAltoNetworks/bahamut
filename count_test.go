@@ -37,3 +37,23 @@ func TestCount_String(t *testing.T) {
 		})
 	})
 }
+
+func TestCount_Dulicate(t *testing.T) {
+
+	Convey("Given I have a count", t, func() {
+
+		c := newCount()
+		c.Total = 10
+		c.Current = 1
+
+		Convey("When I use call Duplicate", func() {
+
+			c2 := c.Duplicate()
+
+			Convey("Then the duplicated count should be correct", func() {
+				So(c.Total, ShouldEqual, c2.Total)
+				So(c.Current, ShouldEqual, c2.Current)
+			})
+		})
+	})
+}

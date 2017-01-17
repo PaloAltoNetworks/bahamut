@@ -287,3 +287,32 @@ func TestPage_String(t *testing.T) {
 		})
 	})
 }
+
+func TestPage_Dulicate(t *testing.T) {
+
+	Convey("Given I have a Page", t, func() {
+
+		p := &Page{
+			Current: 1,
+			First:   2,
+			Last:    3,
+			Next:    4,
+			Prev:    5,
+			Size:    6,
+		}
+
+		Convey("When I use call Duplicate", func() {
+
+			p2 := p.Duplicate()
+
+			Convey("Then the duplicated page should be correct", func() {
+				So(p.Current, ShouldEqual, p2.Current)
+				So(p.First, ShouldEqual, p2.First)
+				So(p.Last, ShouldEqual, p2.Last)
+				So(p.Next, ShouldEqual, p2.Next)
+				So(p.Prev, ShouldEqual, p2.Prev)
+				So(p.Size, ShouldEqual, p2.Size)
+			})
+		})
+	})
+}

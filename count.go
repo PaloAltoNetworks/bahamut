@@ -18,6 +18,15 @@ func newCount() *Count {
 	return &Count{}
 }
 
+// Duplicate duplicates the Count.
+func (c *Count) Duplicate() *Count {
+
+	return &Count{
+		Total:   c.Total,
+		Current: c.Current,
+	}
+}
+
 func (c *Count) String() string {
 
 	return fmt.Sprintf("<count total:%d current:%d>",

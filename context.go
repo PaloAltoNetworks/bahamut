@@ -116,6 +116,27 @@ func (c *Context) Events() elemental.Events {
 	return c.events
 }
 
+// Duplicate duplicates the context.
+func (c *Context) Duplicate() *Context {
+
+	ctx := NewContext()
+
+	ctx.UserInfo = c.UserInfo
+	ctx.StatusCode = c.StatusCode
+	ctx.InputData = c.InputData
+	ctx.OutputData = c.OutputData
+
+	for k, v := range c.Metadata {
+		ctx.Metadata[k] = v
+	}
+
+	ctx.Count = c.Count.Duplicate()
+	ctx.Page = c.Page.Duplicate()
+	ctx.Request = c.Request.Duplicate()
+
+	return ctx
+}
+
 func (c *Context) String() string {
 
 	return fmt.Sprintf("<context id:%s request:%s page:%s count:%s>",

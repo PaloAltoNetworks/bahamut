@@ -34,6 +34,19 @@ func newPage() *Page {
 	return &Page{}
 }
 
+// Duplicate duplicates the Page.
+func (p *Page) Duplicate() *Page {
+
+	return &Page{
+		Current: p.Current,
+		Size:    p.Size,
+		Next:    p.Next,
+		Prev:    p.Prev,
+		First:   p.First,
+		Last:    p.Last,
+	}
+}
+
 // IndexRange returns the index range of data that needs to be retrieved according to current Page's values.
 func (p *Page) IndexRange() (start, end int) {
 
