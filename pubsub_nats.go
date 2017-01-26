@@ -33,6 +33,12 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		return fmt.Errorf("Not connected to nats. Messages dropped.")
 	}
 
+	log.WithFields(logrus.Fields{
+		"topic":   publication.Topic,
+		"natsURL": p.natsURL,
+		"data":    publication.data,
+	}).Debug("Publishing message in nats")
+
 	return p.client.Publish(publication.Topic, publication.data)
 }
 
