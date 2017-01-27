@@ -12,6 +12,9 @@ import (
 	"github.com/aporeto-inc/elemental"
 )
 
+// HealthServerFunc is the type used by the Health Server to check the health of the server
+type HealthServerFunc func() error
+
 // A Config represents the configuration of Bahamut.
 type Config struct {
 
@@ -52,15 +55,36 @@ type Config struct {
 		Disabled bool
 	}
 
-	// Profiling contains information about profiling server.
-	Profiling struct {
+	// HealthServer contains the configuration for the Health Server.
+	HealthServer struct {
 
-		// Enabled defines if the profiling server should be created.
-		Enabled bool
-
-		// ListenAddress is the custom listening address to use.
-		// It will be only used if Profiling.Enabled is set to true.
+		// ListenAddress is the general listening address for the health server.
 		ListenAddress string
+
+		// HealthHandler is the type of the function to run to determine the health of the server.
+		HealthHandler HealthServerFunc
+
+		// ReadTimeout defines the read http timeout.
+		ReadTimeout time.Duration
+
+		// WriteTimeout defines the write http timeout.
+		WriteTimeout time.Duration
+
+		// WriteTimeout defines the idle http timeout.
+		IdleTimeout time.Duration
+
+		// Disabled defines if the health server should be disabled.
+		Disabled bool
+	}
+
+	// ProfilingServer contains information about profiling server.
+	ProfilingServer struct {
+
+		// ListenAddress is the general listening address for the profiling server.
+		ListenAddress string
+
+		// Disabled defines if the profiling server should be disabled.
+		Disabled bool
 	}
 
 	// TLS contains the TLS configuration.

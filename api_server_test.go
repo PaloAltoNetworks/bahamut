@@ -148,12 +148,9 @@ func TestServer_Start(t *testing.T) {
 		Convey("When I start the server", func() {
 
 			port1 := strconv.Itoa(rand.Intn(10000) + 20000)
-			port2 := strconv.Itoa(rand.Intn(10000) + 30000)
 
 			cfg := Config{}
 			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
-			cfg.Profiling.Enabled = true
-			cfg.Profiling.ListenAddress = "127.0.0.1:" + port2
 
 			c := newAPIServer(cfg, bone.New())
 
@@ -174,7 +171,6 @@ func TestServer_Start(t *testing.T) {
 		Convey("When I start the server", func() {
 
 			port1 := strconv.Itoa(rand.Intn(10000) + 40000)
-			port2 := strconv.Itoa(rand.Intn(10000) + 50000)
 
 			// h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
@@ -182,8 +178,6 @@ func TestServer_Start(t *testing.T) {
 
 			cfg := Config{}
 			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
-			cfg.Profiling.Enabled = true
-			cfg.Profiling.ListenAddress = "127.0.0.1:" + port2
 			cfg.TLS.RootCAPool = syscapool
 			cfg.TLS.ClientCAPool = clientcapool
 			cfg.TLS.ServerCertificates = servercerts

@@ -7,7 +7,6 @@ package bahamut
 import (
 	"crypto/tls"
 	"net/http"
-	"net/http/pprof"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -337,34 +336,8 @@ func (a *apiServer) installRoutes() {
 	a.multiplexer.Patch("/:parentcategory/:id/:category", http.HandlerFunc(a.handlePatch))
 }
 
-func (a *apiServer) startProfilingServer() {
-
-	log.WithField("address", a.config.Profiling.ListenAddress).Info("Starting profiling server.")
-
-	srv, err := a.createUnsecureHTTPServer(a.config.Profiling.ListenAddress)
-	if err != nil {
-		log.WithError(err).Fatal("Unable to create profiling server.")
-	}
-
-	mux := bone.New()
-	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-	srv.Handler = mux
-	if err := srv.ListenAndServe(); err != nil {
-		log.WithError(err).Fatal("Unable to start profiling http server.")
-	}
-}
-
 // start starts the apiServer.
 func (a *apiServer) start() {
-
-	if a.config.Profiling.Enabled {
-		go a.startProfilingServer()
-	}
 
 	a.installRoutes()
 

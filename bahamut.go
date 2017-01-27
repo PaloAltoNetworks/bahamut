@@ -31,8 +31,10 @@ type server struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
 
-	apiServer  *apiServer
-	pushServer *pushServer
+	apiServer       *apiServer
+	pushServer      *pushServer
+	healthServer    *healthServer
+	profilingServer *profilingServer
 
 	stop chan bool
 }
@@ -43,32 +45,29 @@ type server struct {
 func NewServer(config Config) Server {
 
 	mux := bone.New()
-
-	var apiServer *apiServer
-	if !config.ReSTServer.Disabled {
-		apiServer = newAPIServer(config, mux)
-	}
-
-	var pushServer *pushServer
-	if !config.WebSocketServer.Disabled {
-		pushServer = newPushServer(config, mux)
-	}
-
 	srv := &server{
-		apiServer:   apiServer,
-		pushServer:  pushServer,
 		multiplexer: mux,
 		stop:        make(chan bool),
 		processors:  make(map[string]Processor),
 	}
 
-	if !config.WebSocketServer.Disabled {
-		pushServer.processorFinder = srv.ProcessorForIdentity
+	if !config.ReSTServer.Disabled {
+		srv.apiServer = newAPIServer(config, mux)
+		srv.apiServer.processorFinder = srv.ProcessorForIdentity
+		srv.apiServer.pusher = srv.Push
 	}
 
-	if !config.ReSTServer.Disabled {
-		apiServer.processorFinder = srv.ProcessorForIdentity
-		apiServer.pusher = srv.Push
+	if !config.WebSocketServer.Disabled {
+		srv.pushServer = newPushServer(config, mux)
+		srv.pushServer.processorFinder = srv.ProcessorForIdentity
+	}
+
+	if !config.HealthServer.Disabled {
+		srv.healthServer = newHealthServer(config)
+	}
+
+	if !config.ProfilingServer.Disabled {
+		srv.profilingServer = newProfilingerver(config)
 	}
 
 	return srv
@@ -142,6 +141,14 @@ func (b *server) Start() {
 		go b.pushServer.start()
 	}
 
+	if b.healthServer != nil {
+		go b.healthServer.start()
+	}
+
+	if b.profilingServer != nil {
+		go b.profilingServer.start()
+	}
+
 	go b.handleExit()
 
 	<-b.stop
@@ -155,6 +162,14 @@ func (b *server) Stop() {
 
 	if b.pushServer != nil {
 		b.pushServer.stop()
+	}
+
+	if b.healthServer != nil {
+		b.healthServer.stop()
+	}
+
+	if b.profilingServer != nil {
+		b.profilingServer.stop()
 	}
 
 	b.stop <- true
