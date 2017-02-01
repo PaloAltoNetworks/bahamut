@@ -243,10 +243,28 @@ func (s *PushSession) listenToAPIRequest() {
 	}
 }
 
+func (s *PushSession) handleEventualPanic(response *elemental.Response) {
+
+	if r := recover(); r != nil {
+		writeWebSocketError(
+			s.socket,
+			response,
+			elemental.NewError(
+				"Internal Server Error",
+				fmt.Sprintf("%v", r),
+				"bahamut",
+				http.StatusInternalServerError,
+			),
+		)
+	}
+}
+
 func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
+
+	defer s.handleEventualPanic(response)
 
 	ctx, err := dispatchRetrieveManyOperation(
 		request,
@@ -269,6 +287,8 @@ func (s *PushSession) handleRetrieve(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	defer s.handleEventualPanic(response)
+
 	ctx, err := dispatchRetrieveOperation(
 		response.Request,
 		s.server.processorFinder,
@@ -289,6 +309,8 @@ func (s *PushSession) handleCreate(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
+
+	defer s.handleEventualPanic(response)
 
 	ctx, err := dispatchCreateOperation(
 		response.Request,
@@ -312,6 +334,8 @@ func (s *PushSession) handleUpdate(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	defer s.handleEventualPanic(response)
+
 	ctx, err := dispatchUpdateOperation(
 		response.Request,
 		s.server.processorFinder,
@@ -333,6 +357,8 @@ func (s *PushSession) handleDelete(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
+
+	defer s.handleEventualPanic(response)
 
 	ctx, err := dispatchDeleteOperation(
 		response.Request,
@@ -356,6 +382,8 @@ func (s *PushSession) handleInfo(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	defer s.handleEventualPanic(response)
+
 	ctx, err := dispatchInfoOperation(
 		response.Request,
 		s.server.processorFinder,
@@ -376,6 +404,8 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
+
+	defer s.handleEventualPanic(response)
 
 	ctx, err := dispatchPatchOperation(
 		response.Request,
