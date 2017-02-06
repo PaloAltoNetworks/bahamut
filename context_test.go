@@ -121,11 +121,6 @@ func TestContext_String(t *testing.T) {
 
 	Convey("Given I have a Context, Info, Count, and Page", t, func() {
 
-		count := &Count{
-			Total:   10,
-			Current: 1,
-		}
-
 		req := &elemental.Request{
 			Namespace:      "/thens",
 			Parameters:     url.Values{"hello": []string{"world"}},
@@ -147,7 +142,7 @@ func TestContext_String(t *testing.T) {
 
 		ctx := NewContext()
 		ctx.Request = req
-		ctx.Count = count
+		ctx.TotalCount = 10
 		ctx.Page = page
 
 		Convey("When I call the String method", func() {
@@ -155,7 +150,7 @@ func TestContext_String(t *testing.T) {
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page:<page current:1 size:5> count:<count total:10 current:1>>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page:<page current:1 size:5> totalcount:10>", ctx.Identifier()))
 			})
 		})
 	})
@@ -164,11 +159,6 @@ func TestContext_String(t *testing.T) {
 func TestContext_Duplicate(t *testing.T) {
 
 	Convey("Given I have a Context, Info, Count, and Page", t, func() {
-
-		count := &Count{
-			Total:   10,
-			Current: 1,
-		}
 
 		req := &elemental.Request{
 			Namespace:      "/thens",
@@ -191,7 +181,7 @@ func TestContext_Duplicate(t *testing.T) {
 
 		ctx := NewContext()
 		ctx.Request = req
-		ctx.Count = count
+		ctx.TotalCount = 10
 		ctx.Page = page
 		ctx.Metadata = map[string]interface{}{"hello": "world"}
 		ctx.UserInfo = "ouais"
@@ -204,8 +194,7 @@ func TestContext_Duplicate(t *testing.T) {
 			ctx2 := ctx.Duplicate()
 
 			Convey("Then the duplicated context should be correct", func() {
-				So(ctx.Count.Current, ShouldEqual, ctx2.Count.Current)
-				So(ctx.Count.Total, ShouldEqual, ctx2.Count.Total)
+				So(ctx.TotalCount, ShouldEqual, ctx2.TotalCount)
 				So(ctx.Metadata["hello"].(string), ShouldEqual, "world")
 				So(ctx.InputData, ShouldEqual, ctx2.InputData)
 				So(ctx.OutputData, ShouldEqual, ctx2.OutputData)

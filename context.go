@@ -27,7 +27,7 @@ type Context struct {
 	Page *Page
 
 	// Count contains various information about the counting of objects.
-	Count *Count
+	TotalCount int
 
 	// InputData contains the data sent by the client. It can be either a single *elemental.Identifiable
 	// or a []*elemental.Identifiable.
@@ -62,7 +62,6 @@ func NewContext() *Context {
 	return &Context{
 		Request:  elemental.NewRequest(),
 		Page:     newPage(),
-		Count:    newCount(),
 		Metadata: map[string]interface{}{},
 
 		id:     uuid.NewV4().String(),
@@ -121,6 +120,7 @@ func (c *Context) Duplicate() *Context {
 
 	ctx := NewContext()
 
+	ctx.TotalCount = c.TotalCount
 	ctx.UserInfo = c.UserInfo
 	ctx.StatusCode = c.StatusCode
 	ctx.InputData = c.InputData
@@ -130,7 +130,6 @@ func (c *Context) Duplicate() *Context {
 		ctx.Metadata[k] = v
 	}
 
-	ctx.Count = c.Count.Duplicate()
 	ctx.Page = c.Page.Duplicate()
 	ctx.Request = c.Request.Duplicate()
 
@@ -139,10 +138,10 @@ func (c *Context) Duplicate() *Context {
 
 func (c *Context) String() string {
 
-	return fmt.Sprintf("<context id:%s request:%s page:%s count:%s>",
+	return fmt.Sprintf("<context id:%s request:%s page:%s totalcount:%d>",
 		c.Identifier(),
 		c.Request,
 		c.Page,
-		c.Count,
+		c.TotalCount,
 	)
 }

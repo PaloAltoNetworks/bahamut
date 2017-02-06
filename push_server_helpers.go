@@ -55,8 +55,7 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 
 	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
 
-		response.Count = c.Count.Current
-		response.Total = c.Count.Total
+		response.Total = c.TotalCount
 	}
 
 	if c.OutputData != nil {
