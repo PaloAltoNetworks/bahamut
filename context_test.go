@@ -33,28 +33,6 @@ func TestContext_MakeContext(t *testing.T) {
 
 			So(c.Request.Parameters.Get("page"), ShouldEqual, "1")
 			So(c.Request.Parameters.Get("per_page"), ShouldEqual, "10")
-			So(c.Page.Current, ShouldEqual, 1)
-			So(c.Page.Size, ShouldEqual, 10)
-		})
-	})
-
-	Convey("Given I create Context from a request with no pagination info", t, func() {
-
-		url, _ := url.Parse("http://link.com/path")
-		req := &http.Request{
-			Host:   "link.com",
-			URL:    url,
-			Method: http.MethodGet,
-		}
-		request, _ := elemental.NewRequestFromHTTPRequest(req)
-
-		c := NewContext()
-		c.ReadElementalRequest(request)
-
-		Convey("Then it should be correctly initialized", func() {
-
-			So(c.Page.Current, ShouldEqual, 0)
-			So(c.Page.Size, ShouldEqual, 0)
 		})
 	})
 }
@@ -131,26 +109,16 @@ func TestContext_String(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
-		page := &Page{
-			Current: 1,
-			First:   1,
-			Last:    1,
-			Next:    2,
-			Prev:    0,
-			Size:    5,
-		}
-
 		ctx := NewContext()
 		ctx.Request = req
 		ctx.TotalCount = 10
-		ctx.Page = page
 
 		Convey("When I call the String method", func() {
 
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> page:<page current:1 size:5> totalcount:10>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> totalcount:10>", ctx.Identifier()))
 			})
 		})
 	})
@@ -170,19 +138,9 @@ func TestContext_Duplicate(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
-		page := &Page{
-			Current: 1,
-			First:   2,
-			Last:    3,
-			Next:    4,
-			Prev:    5,
-			Size:    6,
-		}
-
 		ctx := NewContext()
 		ctx.Request = req
 		ctx.TotalCount = 10
-		ctx.Page = page
 		ctx.Metadata = map[string]interface{}{"hello": "world"}
 		ctx.UserInfo = "ouais"
 		ctx.InputData = "input"
@@ -198,12 +156,6 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.Metadata["hello"].(string), ShouldEqual, "world")
 				So(ctx.InputData, ShouldEqual, ctx2.InputData)
 				So(ctx.OutputData, ShouldEqual, ctx2.OutputData)
-				So(ctx.Page.Current, ShouldEqual, ctx2.Page.Current)
-				So(ctx.Page.First, ShouldEqual, ctx2.Page.First)
-				So(ctx.Page.Last, ShouldEqual, ctx2.Page.Last)
-				So(ctx.Page.Next, ShouldEqual, ctx2.Page.Next)
-				So(ctx.Page.Prev, ShouldEqual, ctx2.Page.Prev)
-				So(ctx.Page.Size, ShouldEqual, ctx2.Page.Size)
 				So(ctx.Request.Namespace, ShouldEqual, ctx2.Request.Namespace)
 				So(ctx.Request.ParentID, ShouldEqual, ctx2.Request.ParentID)
 				So(ctx.StatusCode, ShouldEqual, ctx2.StatusCode)

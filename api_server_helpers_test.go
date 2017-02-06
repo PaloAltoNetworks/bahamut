@@ -77,13 +77,6 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 				So(w.Code, ShouldEqual, 200)
 			})
 
-			Convey("Then the pagination headers should be correct", func() {
-				So(w.Header().Get("X-Page-First"), ShouldEqual, "1")
-				So(w.Header().Get("X-Page-Prev"), ShouldEqual, "1")
-				So(w.Header().Get("X-Page-Next"), ShouldEqual, "3")
-				So(w.Header().Get("X-Page-Last"), ShouldEqual, "4")
-			})
-
 			Convey("Then the status should be 200", func() {
 				So(string(w.Body.Bytes()), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
 			})
@@ -98,13 +91,6 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 
 			Convey("Then the status code should be default to 204", func() {
 				So(w.Code, ShouldEqual, 204)
-			})
-
-			Convey("Then the pagination headers should be correct", func() {
-				So(w.Header().Get("X-Page-First"), ShouldEqual, "1")
-				So(w.Header().Get("X-Page-Prev"), ShouldEqual, "1")
-				So(w.Header().Get("X-Page-Next"), ShouldEqual, "3")
-				So(w.Header().Get("X-Page-Last"), ShouldEqual, "4")
 			})
 
 			Convey("Then the body should be empty", func() {

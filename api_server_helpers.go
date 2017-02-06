@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
@@ -73,20 +72,6 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 		default:
 			c.StatusCode = http.StatusOK
 		}
-	}
-
-	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
-
-		c.Page.compute(c.TotalCount)
-
-		w.Header().Set("X-Page-Current", strconv.Itoa(c.Page.Current))
-		w.Header().Set("X-Page-Size", strconv.Itoa(c.Page.Size))
-
-		w.Header().Set("X-Page-First", strconv.Itoa(c.Page.First))
-		w.Header().Set("X-Page-Last", strconv.Itoa(c.Page.Last))
-		w.Header().Set("X-Page-Prev", strconv.Itoa(c.Page.Prev))
-		w.Header().Set("X-Page-Next", strconv.Itoa(c.Page.Next))
-		w.Header().Set("X-Count-Total", strconv.Itoa(c.TotalCount))
 	}
 
 	if c.OutputData != nil {

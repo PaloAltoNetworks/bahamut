@@ -23,9 +23,6 @@ type Context struct {
 	// Info contains various request related information.
 	Request *elemental.Request
 
-	// Page contains various information about the pagination.
-	Page *Page
-
 	// Count contains various information about the counting of objects.
 	TotalCount int
 
@@ -61,7 +58,6 @@ func NewContext() *Context {
 
 	return &Context{
 		Request:  elemental.NewRequest(),
-		Page:     newPage(),
 		Metadata: map[string]interface{}{},
 
 		id:     uuid.NewV4().String(),
@@ -73,7 +69,6 @@ func NewContext() *Context {
 func (c *Context) ReadElementalRequest(req *elemental.Request) error {
 
 	c.Request = req
-	c.Page.fromElementalRequest(req)
 
 	return nil
 }
@@ -125,23 +120,20 @@ func (c *Context) Duplicate() *Context {
 	ctx.StatusCode = c.StatusCode
 	ctx.InputData = c.InputData
 	ctx.OutputData = c.OutputData
+	ctx.Request = c.Request.Duplicate()
 
 	for k, v := range c.Metadata {
 		ctx.Metadata[k] = v
 	}
-
-	ctx.Page = c.Page.Duplicate()
-	ctx.Request = c.Request.Duplicate()
 
 	return ctx
 }
 
 func (c *Context) String() string {
 
-	return fmt.Sprintf("<context id:%s request:%s page:%s totalcount:%d>",
+	return fmt.Sprintf("<context id:%s request:%s totalcount:%d>",
 		c.Identifier(),
 		c.Request,
-		c.Page,
 		c.TotalCount,
 	)
 }
