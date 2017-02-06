@@ -95,6 +95,7 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 		a.config.Model.IdentifiablesFactory,
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -127,6 +128,7 @@ func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
 		a.pusher,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -159,6 +161,7 @@ func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
 		a.pusher,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -195,6 +198,7 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 		a.config.Model.IdentifiablesFactory,
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -232,6 +236,7 @@ func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
 		a.pusher,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -268,6 +273,7 @@ func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 		a.config.Model.IdentifiablesFactory,
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -305,6 +311,7 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authenticator,
 		a.config.Security.Authorizer,
 		a.pusher,
+		a.config.Security.Auditer,
 	)
 
 	if err != nil {

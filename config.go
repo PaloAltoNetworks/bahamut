@@ -111,6 +111,9 @@ type Config struct {
 
 		// Authorizer is the Authorizer to use to authorize the requests.
 		Authorizer Authorizer
+
+		// Auditer is the Auditer to use to audit the requests.
+		Auditer Auditer
 	}
 
 	// Model contains the model configuration.

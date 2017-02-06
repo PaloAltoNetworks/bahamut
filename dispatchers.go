@@ -1,10 +1,27 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
 )
+
+func audit(auditer Auditer, ctx *Context, err error) {
+	if auditer == nil {
+		return
+	}
+	auditer.Audit(ctx, err)
+}
+
+func notImplementedErr(request *elemental.Request) error {
+	return elemental.NewError(
+		"Not implemented",
+		fmt.Sprintf("No handler for operation %s on %s", request.Operation, request.Identity.Name),
+		"bahamut",
+		http.StatusNotImplemented,
+	)
+}
 
 func dispatchRetrieveManyOperation(
 	request *elemental.Request,
@@ -12,28 +29,36 @@ func dispatchRetrieveManyOperation(
 	factory elemental.IdentifiableFactory,
 	authenticator Authenticator,
 	authorizer Authorizer,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(RetrieveManyProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for retrieving many "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	if err := proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
+
+	audit(auditer, ctx, nil)
 
 	return ctx, nil
 }
@@ -44,28 +69,36 @@ func dispatchRetrieveOperation(
 	factory elemental.IdentifiableFactory,
 	authenticator Authenticator,
 	authorizer Authorizer,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(RetrieveProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for retrieving "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	if err := proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
+
+	audit(auditer, ctx, nil)
 
 	return ctx, nil
 }
@@ -77,32 +110,39 @@ func dispatchCreateOperation(
 	authenticator Authenticator,
 	authorizer Authorizer,
 	pusher eventPusher,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(CreateProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for creating "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	obj := factory(request.Identity.Name)
 	if err := request.Decode(&obj); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err := v.Validate(); err != nil {
+			audit(auditer, ctx, err)
 			return nil, err
 		}
 	}
@@ -110,6 +150,7 @@ func dispatchCreateOperation(
 	ctx.InputData = obj
 
 	if err := proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
@@ -121,6 +162,8 @@ func dispatchCreateOperation(
 		pusher(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable)))
 	}
 
+	audit(auditer, ctx, nil)
+
 	return ctx, nil
 }
 
@@ -131,32 +174,39 @@ func dispatchUpdateOperation(
 	authenticator Authenticator,
 	authorizer Authorizer,
 	pusher eventPusher,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(UpdateProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for updating "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	obj := factory(request.Identity.Name)
 	if err := request.Decode(&obj); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err := v.Validate(); err != nil {
+			audit(auditer, ctx, err)
 			return nil, err
 		}
 	}
@@ -164,6 +214,7 @@ func dispatchUpdateOperation(
 	ctx.InputData = obj
 
 	if err := proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
@@ -175,6 +226,8 @@ func dispatchUpdateOperation(
 		pusher(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable)))
 	}
 
+	audit(auditer, ctx, nil)
+
 	return ctx, nil
 }
 
@@ -185,26 +238,32 @@ func dispatchDeleteOperation(
 	authenticator Authenticator,
 	authorizer Authorizer,
 	pusher eventPusher,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(RetrieveProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for deleting "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	if err := proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
@@ -216,6 +275,8 @@ func dispatchDeleteOperation(
 		pusher(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable)))
 	}
 
+	audit(auditer, ctx, nil)
+
 	return ctx, nil
 }
 
@@ -226,33 +287,40 @@ func dispatchPatchOperation(
 	authenticator Authenticator,
 	authorizer Authorizer,
 	pusher eventPusher,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(PatchProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for patching "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	var assignation *elemental.Assignation
 	if err := request.Decode(&assignation); err != nil {
-		return nil, elemental.NewError("Bad Request", "The request cannot be processed", "bahamut", http.StatusBadRequest)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	ctx.InputData = assignation
 
 	if err := proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
@@ -264,6 +332,8 @@ func dispatchPatchOperation(
 		pusher(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation)))
 	}
 
+	audit(auditer, ctx, nil)
+
 	return ctx, nil
 }
 
@@ -273,28 +343,36 @@ func dispatchInfoOperation(
 	factory elemental.IdentifiableFactory,
 	authenticator Authenticator,
 	authorizer Authorizer,
+	auditer Auditer,
 ) (*Context, error) {
 
 	ctx := NewContext()
 	ctx.ReadElementalRequest(request)
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if err := CheckAuthorization(authorizer, ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(InfoProcessor); !ok {
-		return nil, elemental.NewError("Not implemented", "No handler for info "+request.Identity.Name, "bahamut", http.StatusNotImplemented)
+		err := notImplementedErr(request)
+		audit(auditer, ctx, err)
+		return nil, err
 	}
 
 	if err := proc.(InfoProcessor).ProcessInfo(ctx); err != nil {
+		audit(auditer, ctx, err)
 		return nil, err
 	}
+
+	audit(auditer, ctx, nil)
 
 	return ctx, nil
 }

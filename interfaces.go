@@ -101,3 +101,9 @@ type PushSessionsHandler interface {
 	IsAuthenticated(*PushSession) (bool, error)
 	ShouldPush(*PushSession, *elemental.Event) (bool, error)
 }
+
+// Auditer is the interface an object must implement in order to handle
+// audit traces.
+type Auditer interface {
+	Audit(*Context, error)
+}

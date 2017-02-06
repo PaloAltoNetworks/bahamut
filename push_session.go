@@ -272,6 +272,7 @@ func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
 		s.server.config.Model.IdentifiablesFactory,
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -295,6 +296,7 @@ func (s *PushSession) handleRetrieve(request *elemental.Request) {
 		s.server.config.Model.IdentifiablesFactory,
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -319,6 +321,7 @@ func (s *PushSession) handleCreate(request *elemental.Request) {
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -343,6 +346,7 @@ func (s *PushSession) handleUpdate(request *elemental.Request) {
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -367,6 +371,7 @@ func (s *PushSession) handleDelete(request *elemental.Request) {
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -390,6 +395,7 @@ func (s *PushSession) handleInfo(request *elemental.Request) {
 		s.server.config.Model.IdentifiablesFactory,
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -414,6 +420,7 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 		s.server.config.Security.Authenticator,
 		s.server.config.Security.Authorizer,
 		s.server.pushEvents,
+		s.server.config.Security.Auditer,
 	)
 
 	if err != nil {
