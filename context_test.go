@@ -111,7 +111,7 @@ func TestContext_String(t *testing.T) {
 
 		ctx := NewContext()
 		ctx.Request = req
-		ctx.TotalCount = 10
+		ctx.CountTotal = 10
 
 		Convey("When I call the String method", func() {
 
@@ -140,7 +140,7 @@ func TestContext_Duplicate(t *testing.T) {
 
 		ctx := NewContext()
 		ctx.Request = req
-		ctx.TotalCount = 10
+		ctx.CountTotal = 10
 		ctx.Metadata = map[string]interface{}{"hello": "world"}
 		ctx.UserInfo = "ouais"
 		ctx.InputData = "input"
@@ -152,7 +152,7 @@ func TestContext_Duplicate(t *testing.T) {
 			ctx2 := ctx.Duplicate()
 
 			Convey("Then the duplicated context should be correct", func() {
-				So(ctx.TotalCount, ShouldEqual, ctx2.TotalCount)
+				So(ctx.CountTotal, ShouldEqual, ctx2.CountTotal)
 				So(ctx.Metadata["hello"].(string), ShouldEqual, "world")
 				So(ctx.InputData, ShouldEqual, ctx2.InputData)
 				So(ctx.OutputData, ShouldEqual, ctx2.OutputData)

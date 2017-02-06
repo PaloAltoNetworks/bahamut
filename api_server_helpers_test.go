@@ -64,7 +64,7 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 		c := NewContext()
 		c.ReadElementalRequest(request)
 
-		c.TotalCount = 40
+		c.CountTotal = 40
 
 		Convey("When I write the response from a context with no error for a retrieve", func() {
 

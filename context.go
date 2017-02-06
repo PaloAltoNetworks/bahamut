@@ -23,8 +23,8 @@ type Context struct {
 	// Info contains various request related information.
 	Request *elemental.Request
 
-	// Count contains various information about the counting of objects.
-	TotalCount int
+	// CountTotal contains various information about the counting of objects.
+	CountTotal int
 
 	// InputData contains the data sent by the client. It can be either a single *elemental.Identifiable
 	// or a []*elemental.Identifiable.
@@ -115,7 +115,7 @@ func (c *Context) Duplicate() *Context {
 
 	ctx := NewContext()
 
-	ctx.TotalCount = c.TotalCount
+	ctx.CountTotal = c.CountTotal
 	ctx.UserInfo = c.UserInfo
 	ctx.StatusCode = c.StatusCode
 	ctx.InputData = c.InputData
@@ -134,6 +134,6 @@ func (c *Context) String() string {
 	return fmt.Sprintf("<context id:%s request:%s totalcount:%d>",
 		c.Identifier(),
 		c.Request,
-		c.TotalCount,
+		c.CountTotal,
 	)
 }
