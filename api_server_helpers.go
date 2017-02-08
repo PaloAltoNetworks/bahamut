@@ -60,9 +60,16 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
-	setCommonHeader(w, c.Request.Headers.Get("Origin"))
-
 	buffer := &bytes.Buffer{}
+
+	if c.Redirect != "" {
+		w.Header().Set("Location", c.Redirect)
+		w.WriteHeader(http.StatusMovedPermanently)
+		io.Copy(w, buffer)
+		return
+	}
+
+	setCommonHeader(w, c.Request.Headers.Get("Origin"))
 
 	if c.StatusCode == 0 {
 		switch c.Request.Operation {

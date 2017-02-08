@@ -38,8 +38,8 @@ type Context struct {
 	// Bahamut will try to guess it, but you can set it yourself.
 	StatusCode int
 
-	// // Operation contains the current request Operation.
-	// Operation elemental.Operation
+	// Redirect will be used to redirect a request if set.
+	Redirect string
 
 	// UserInfo allows you to store any additional opaque data.
 	UserInfo interface{}
