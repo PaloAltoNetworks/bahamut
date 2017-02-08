@@ -256,7 +256,7 @@ func dispatchDeleteOperation(
 
 	proc, _ := processorFinder(request.Identity)
 
-	if _, ok := proc.(RetrieveProcessor); !ok {
+	if _, ok := proc.(DeleteProcessor); !ok {
 		err := notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
