@@ -361,7 +361,7 @@ func (a *apiServer) start() {
 	}
 
 	a.server.Handler = a.multiplexer
-	a.server.SetKeepAlivesEnabled(true)
+	a.server.SetKeepAlivesEnabled(!a.config.ReSTServer.DisableKeepalive)
 
 	if a.config.TLS.ServerCertificates != nil {
 		err = a.server.ListenAndServeTLS("", "")

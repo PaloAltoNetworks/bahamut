@@ -34,6 +34,11 @@ type Config struct {
 		// WriteTimeout defines the idle http timeout.
 		IdleTimeout time.Duration
 
+		// DisableKeepalive controls if the ReSTServer should have keepalive activated or not.
+		// There is a bug in Go <= 1.7 which makes the server eats all available fd, so DisableKeepalive should
+		// be set to true if you are using those versions.
+		DisableKeepalive bool
+
 		// Disabled controls if the ReSTServer should be disabled.
 		Disabled bool
 	}
