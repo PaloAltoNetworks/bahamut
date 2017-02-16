@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
@@ -35,6 +36,7 @@ type PushSession struct {
 	server    *pushServer
 	socket    *websocket.Conn
 	events    chan *elemental.Event
+	startTime time.Time
 	requests  chan *elemental.Request
 	stopAll   chan bool
 	stopRead  chan bool
@@ -77,6 +79,7 @@ func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *
 		Parameters: parameters,
 		Headers:    headers,
 		sType:      sType,
+		startTime:  time.Now(),
 	}
 }
 
@@ -165,6 +168,10 @@ func (s *PushSession) listenToPushEvents() {
 					"session": s,
 					"message": message,
 				}).Error("Unable to decode event.")
+				break
+			}
+
+			if event.Timestamp.Before(s.startTime) {
 				break
 			}
 

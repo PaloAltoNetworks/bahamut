@@ -30,7 +30,7 @@ func newKafkaPubSub(services []string, config *sarama.Config) *kafkaPubSub {
 func (p *kafkaPubSub) Publish(publication *Publication) error {
 
 	if p.producer == nil {
-		return fmt.Errorf("Not connected to kafka. Messages dropped.")
+		return fmt.Errorf("Not connected to kafka. Messages dropped")
 	}
 
 	saramaMsg := &sarama.ProducerMessage{

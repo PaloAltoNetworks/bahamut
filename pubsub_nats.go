@@ -30,7 +30,7 @@ func newNatsPubSub(natsURL string, clusterID string, clientID string) *natsPubSu
 func (p *natsPubSub) Publish(publication *Publication) error {
 
 	if p.client == nil {
-		return fmt.Errorf("Not connected to nats. Messages dropped.")
+		return fmt.Errorf("Not connected to nats. Messages dropped")
 	}
 
 	log.WithFields(logrus.Fields{
