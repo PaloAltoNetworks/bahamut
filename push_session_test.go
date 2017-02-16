@@ -310,7 +310,7 @@ func TestSession_listen2(t *testing.T) {
 				SetOffset("topic", 0, sarama.OffsetOldest, 0).
 				SetOffset("topic", 0, sarama.OffsetNewest, 0),
 			"FetchRequest": sarama.NewMockFetchResponse(t, 1).
-				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"identity":"the-identity"}`)),
+				SetMessage("topic", 0, 0, sarama.StringEncoder(`{"identity":"the-identity", "timestamp": "2096-01-02T15:04:05Z"}`)),
 		})
 		defer broker.Close()
 
@@ -338,6 +338,7 @@ func TestSession_listen2(t *testing.T) {
 			}
 
 			Convey("Then the messge should be correct", func() {
+				So(event, ShouldNotBeNil)
 				So(event.Identity, ShouldHaveSameTypeAs, `the-identity`)
 			})
 		})
