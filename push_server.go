@@ -142,11 +142,11 @@ func (n *pushServer) start() {
 			}
 
 		case session := <-n.unregister:
-
 			if _, ok := n.sessions[session.id]; !ok {
 				break
 			}
 
+			session.server = nil
 			delete(n.sessions, session.id)
 
 			log.WithFields(logrus.Fields{
