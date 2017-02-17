@@ -102,17 +102,16 @@ func (s *PushSession) isReady() bool {
 
 	s.readyLock.Lock()
 	defer s.readyLock.Unlock()
-
 	return s.ready
 }
 
 func (s *PushSession) setReady(ok bool) {
+
 	s.readyLock.Lock()
 	s.ready = ok
 	s.readyLock.Unlock()
 }
 
-// continuously read data from the websocket
 func (s *PushSession) read() {
 
 	for {
@@ -166,13 +165,11 @@ func (s *PushSession) write() {
 	}
 }
 
-// force close the current socket
 func (s *PushSession) close() {
 
 	s.stopAll <- true
 }
 
-// listens to events, either from kafka or from local events.
 func (s *PushSession) listen() {
 
 	switch s.sType {
@@ -204,7 +201,6 @@ func (s *PushSession) listenToPushEvents() {
 	s.processorFinder = nil
 	s.pushEventsFunc = nil
 	s.unregisterFunc = nil
-
 }
 
 func (s *PushSession) listenToAPIRequest() {
