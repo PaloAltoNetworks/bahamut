@@ -3,7 +3,6 @@ package bahamut
 import (
 	"time"
 
-	"github.com/Shopify/sarama"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,18 +26,6 @@ func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubS
 	}
 
 	return newNatsPubSub(natsURL, clusterID, clientID)
-}
-
-// NewKafkaPubSubServer returns a PubSubServer backed by Kafka.
-func NewKafkaPubSubServer(services []string) PubSubServer {
-
-	return newKafkaPubSub(services, nil)
-}
-
-// NewKafkaPubSubServerWithConfig returns a PubSubServer backed by Kafka using given Config.
-func NewKafkaPubSubServerWithConfig(services []string, config *sarama.Config) PubSubServer {
-
-	return newKafkaPubSub(services, config)
 }
 
 // NewLocalPubSubServer returns a PubSubServer backed by local channels.

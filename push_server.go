@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"net/http"
+	"sync"
 
 	"golang.org/x/net/websocket"
 
@@ -24,18 +25,20 @@ type pushServer struct {
 	multiplexer     *bone.Mux
 	config          Config
 	processorFinder processorFinder
+	sessionsLock    *sync.Mutex
 }
 
 func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
-		sessions:    map[string]*PushSession{},
-		register:    make(chan *PushSession),
-		unregister:  make(chan *PushSession),
-		close:       make(chan bool, 2),
-		events:      make(chan *elemental.Event, 1024),
-		multiplexer: multiplexer,
-		config:      config,
+		sessions:     map[string]*PushSession{},
+		register:     make(chan *PushSession),
+		unregister:   make(chan *PushSession),
+		close:        make(chan bool, 2),
+		events:       make(chan *elemental.Event, 1024),
+		multiplexer:  multiplexer,
+		config:       config,
+		sessionsLock: &sync.Mutex{},
 	}
 
 	srv.multiplexer.Handle("/events", websocket.Handler(srv.handlePushConnection))
@@ -59,13 +62,13 @@ func (n *pushServer) unregisterSession(session *PushSession) {
 // handlePushConnection handle connection for push events
 func (n *pushServer) handlePushConnection(ws *websocket.Conn) {
 
-	n.runSession(ws, newPushSession(ws, n))
+	n.runSession(ws, newPushSession(ws, n.config, n.unregisterSession))
 }
 
-// handlePushConnection handle connection for push events
+// handleAPIConnection handle connection for push events
 func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
 
-	n.runSession(ws, newAPISession(ws, n))
+	n.runSession(ws, newAPISession(ws, n.config, n.unregisterSession, n.processorFinder, n.pushEvents))
 }
 
 func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
@@ -86,6 +89,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 		}
 	}
 
+	// Send the first hello message.
 	if session.sType == pushSessionTypeAPI {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
@@ -121,38 +125,38 @@ func (n *pushServer) start() {
 
 	log.WithField("endpoint", n.address+"/events").Info("Starting event server.")
 
+	publications := make(chan *Publication)
+	if n.config.WebSocketServer.Service != nil {
+		errors := make(chan error)
+		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
+		log.Info("Subscribed to events")
+		defer unsubscribe()
+	}
+
 	for {
 		select {
 
 		case session := <-n.register:
-
-			if _, ok := n.sessions[session.id]; ok {
-				break
-			}
 
 			n.sessions[session.id] = session
 
 			log.WithFields(logrus.Fields{
 				"total":  len(n.sessions),
 				"client": session.socket.RemoteAddr(),
-			}).Debug("Push session started.")
+			}).Info("Push session started.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStart(session)
 			}
 
 		case session := <-n.unregister:
-			if _, ok := n.sessions[session.id]; !ok {
-				break
-			}
 
-			session.server = nil
 			delete(n.sessions, session.id)
 
 			log.WithFields(logrus.Fields{
 				"total":  len(n.sessions),
 				"client": session.socket.RemoteAddr(),
-			}).Debug("Push session closed.")
+			}).Info("Push session closed.")
 
 			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 				handler.OnPushSessionStop(session)
@@ -160,28 +164,49 @@ func (n *pushServer) start() {
 
 		case event := <-n.events:
 
-			if n.config.WebSocketServer.Service != nil {
-				publication := NewPublication(n.config.WebSocketServer.Topic)
-				if err := publication.Encode(event); err != nil {
-					log.WithFields(logrus.Fields{
-						"topic": publication.Topic,
-						"event": event,
-						"error": err,
-					}).Error("Unable to encode ervent. Message dropped.")
-				}
-				err := n.config.WebSocketServer.Service.Publish(publication)
-				if err != nil {
-					log.WithFields(logrus.Fields{
-						"topic": publication.Topic,
-						"event": event,
-						"error": err,
-					}).Warn("Unable to publish. Message dropped.")
+			if n.config.WebSocketServer.Service == nil {
+				break
+			}
+
+			publication := NewPublication(n.config.WebSocketServer.Topic)
+			if err := publication.Encode(event); err != nil {
+				log.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
+				break
+			}
+
+			if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
+				log.WithFields(logrus.Fields{
+					"topic": publication.Topic,
+					"event": event.String(),
+					"error": err.Error(),
+				}).Warn("Unable to publish. Message dropped.")
+				break
+			}
+
+		case publication := <-publications:
+
+			event := &elemental.Event{}
+			if err := publication.Decode(event); err != nil {
+				log.WithField("error", err.Error()).Error("Unable to decode event.")
+				break
+			}
+
+			// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
+			var sessions []*PushSession
+			for _, session := range n.sessions {
+				if session.sType == pushSessionTypeEvent && session.isReady() {
+					sessions = append(sessions, session)
 				}
 			}
 
-		case <-n.close:
-			log.Info("Stopping push server.")
+			// Dispatch the event to all sessions
+			for _, session := range sessions {
+				go func(s *PushSession, evt *elemental.Event) { s.events <- evt }(session, event)
+			}
 
+		case <-n.close:
+
+			log.Info("Stopping push server.")
 			n.closeAllSessions()
 			return
 		}

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
@@ -32,29 +32,34 @@ type PushSession struct {
 	Parameters url.Values
 	Headers    http.Header
 
-	id        string
-	server    *pushServer
-	socket    *websocket.Conn
-	events    chan *elemental.Event
-	startTime time.Time
-	requests  chan *elemental.Request
-	stopAll   chan bool
-	stopRead  chan bool
-	stopWrite chan bool
-	sType     pushSessionType
+	config          Config
+	events          chan *elemental.Event
+	id              string
+	processorFinder processorFinder
+	pushEventsFunc  func(...*elemental.Event)
+	ready           bool
+	readyLock       *sync.Mutex
+	requests        chan *elemental.Request
+	socket          *websocket.Conn
+	startTime       time.Time
+	stopAll         chan bool
+	stopRead        chan bool
+	stopWrite       chan bool
+	sType           pushSessionType
+	unregisterFunc  func(*PushSession)
 }
 
-func newPushSession(ws *websocket.Conn, server *pushServer) *PushSession {
+func newPushSession(ws *websocket.Conn, config Config, unregisterFunc func(*PushSession)) *PushSession {
 
-	return newSession(ws, server, pushSessionTypeEvent)
+	return newSession(ws, pushSessionTypeEvent, config, unregisterFunc, nil, nil)
 }
 
-func newAPISession(ws *websocket.Conn, server *pushServer) *PushSession {
+func newAPISession(ws *websocket.Conn, config Config, unregisterFunc func(*PushSession), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *PushSession {
 
-	return newSession(ws, server, pushSessionTypeAPI)
+	return newSession(ws, pushSessionTypeAPI, config, unregisterFunc, processorFinder, pushEventsFunc)
 }
 
-func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *PushSession {
+func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregisterFunc func(*PushSession), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *PushSession {
 
 	var parameters url.Values
 	var headers http.Header
@@ -68,18 +73,22 @@ func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *
 	}
 
 	return &PushSession{
-		id:         uuid.NewV4().String(),
-		server:     server,
-		socket:     ws,
-		events:     make(chan *elemental.Event, 1024),
-		requests:   make(chan *elemental.Request, 1024),
-		stopRead:   make(chan bool, 2),
-		stopWrite:  make(chan bool, 2),
-		stopAll:    make(chan bool, 2),
-		Parameters: parameters,
-		Headers:    headers,
-		sType:      sType,
-		startTime:  time.Now(),
+		config:          config,
+		events:          make(chan *elemental.Event),
+		Headers:         headers,
+		id:              uuid.NewV4().String(),
+		Parameters:      parameters,
+		processorFinder: processorFinder,
+		pushEventsFunc:  pushEventsFunc,
+		readyLock:       &sync.Mutex{},
+		requests:        make(chan *elemental.Request),
+		socket:          ws,
+		startTime:       time.Now(),
+		stopAll:         make(chan bool, 2),
+		stopRead:        make(chan bool, 2),
+		stopWrite:       make(chan bool, 2),
+		sType:           sType,
+		unregisterFunc:  unregisterFunc,
 	}
 }
 
@@ -87,6 +96,20 @@ func newSession(ws *websocket.Conn, server *pushServer, sType pushSessionType) *
 func (s *PushSession) Identifier() string {
 
 	return s.id
+}
+
+func (s *PushSession) isReady() bool {
+
+	s.readyLock.Lock()
+	defer s.readyLock.Unlock()
+
+	return s.ready
+}
+
+func (s *PushSession) setReady(ok bool) {
+	s.readyLock.Lock()
+	s.ready = ok
+	s.readyLock.Unlock()
 }
 
 // continuously read data from the websocket
@@ -112,11 +135,31 @@ func (s *PushSession) write() {
 
 	for {
 		select {
-		case data := <-s.events:
-			if err := websocket.JSON.Send(s.socket, data); err != nil {
+		case event := <-s.events:
+
+			// is the event happened before the initial push session start time, we ignore.
+			if event.Timestamp.Before(s.startTime) {
+				break
+			}
+
+			if s.config.WebSocketServer.SessionsHandler != nil {
+
+				ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, event)
+				if err != nil {
+					log.WithError(err).Error("Error while checking authorization.")
+					break
+				}
+
+				if !ok {
+					break
+				}
+			}
+
+			if err := websocket.JSON.Send(s.socket, event); err != nil {
 				s.stopAll <- true
 				return
 			}
+
 		case <-s.stopWrite:
 			return
 		}
@@ -144,76 +187,34 @@ func (s *PushSession) listen() {
 
 func (s *PushSession) listenToPushEvents() {
 
-	publications := make(chan *Publication)
-	errors := make(chan error)
-
-	unsubscribe := s.server.config.WebSocketServer.Service.Subscribe(publications, errors, s.server.config.WebSocketServer.Topic)
-
-	defer func() {
-		s.server.unregisterSession(s)
-		_ = s.socket.Close()
-		unsubscribe()
-	}()
+	s.setReady(true)
 
 	go s.read()
 	go s.write()
 
-	for {
-		select {
-		case message := <-publications:
+	<-s.stopAll
 
-			event := &elemental.Event{}
-			if err := message.Decode(event); err != nil {
-				log.WithFields(logrus.Fields{
-					"session": s,
-					"message": message,
-				}).Error("Unable to decode event.")
-				break
-			}
+	s.setReady(false)
 
-			if event.Timestamp.Before(s.startTime) {
-				break
-			}
+	s.stopRead <- true
+	s.stopWrite <- true
 
-			if s.server.config.WebSocketServer.SessionsHandler != nil {
+	s.unregisterFunc(s)
+	s.socket.Close()
+	s.processorFinder = nil
+	s.pushEventsFunc = nil
+	s.unregisterFunc = nil
 
-				ok, err := s.server.config.WebSocketServer.SessionsHandler.ShouldPush(s, event)
-				if err != nil {
-					log.WithError(err).Error("Error during checking authorization.")
-					break
-				}
-
-				if !ok {
-					break
-				}
-			}
-
-			select {
-			case s.events <- event:
-			default:
-			}
-
-		case err := <-errors:
-			log.WithError(err).Error("Error during consuming pubsub topic.")
-
-		case <-s.stopAll:
-			s.stopRead <- true
-			s.stopWrite <- true
-			return
-		}
-	}
 }
 
 func (s *PushSession) listenToAPIRequest() {
 
-	defer func() {
-		s.server.unregisterSession(s)
-		s.socket.Close()
-	}()
+	s.setReady(true)
 
 	go s.write()
 	go s.read()
 
+L:
 	for {
 		select {
 		case request := <-s.requests:
@@ -243,11 +244,20 @@ func (s *PushSession) listenToAPIRequest() {
 			}
 
 		case <-s.stopAll:
-			s.stopRead <- true
-			s.stopWrite <- true
-			return
+			break L
 		}
 	}
+
+	s.setReady(false)
+
+	s.stopRead <- true
+	s.stopWrite <- true
+
+	s.unregisterFunc(s)
+	s.socket.Close()
+	s.processorFinder = nil
+	s.pushEventsFunc = nil
+	s.unregisterFunc = nil
 }
 
 func (s *PushSession) handleEventualPanic(response *elemental.Response) {
@@ -275,11 +285,11 @@ func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
 
 	ctx, err := dispatchRetrieveManyOperation(
 		request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -299,11 +309,11 @@ func (s *PushSession) handleRetrieve(request *elemental.Request) {
 
 	ctx, err := dispatchRetrieveOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -323,12 +333,12 @@ func (s *PushSession) handleCreate(request *elemental.Request) {
 
 	ctx, err := dispatchCreateOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.pushEvents,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.pushEventsFunc,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -348,12 +358,12 @@ func (s *PushSession) handleUpdate(request *elemental.Request) {
 
 	ctx, err := dispatchUpdateOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.pushEvents,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.pushEventsFunc,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -373,12 +383,12 @@ func (s *PushSession) handleDelete(request *elemental.Request) {
 
 	ctx, err := dispatchDeleteOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.pushEvents,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.pushEventsFunc,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -398,11 +408,11 @@ func (s *PushSession) handleInfo(request *elemental.Request) {
 
 	ctx, err := dispatchInfoOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
@@ -422,12 +432,12 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 
 	ctx, err := dispatchPatchOperation(
 		response.Request,
-		s.server.processorFinder,
-		s.server.config.Model.IdentifiablesFactory,
-		s.server.config.Security.Authenticator,
-		s.server.config.Security.Authorizer,
-		s.server.pushEvents,
-		s.server.config.Security.Auditer,
+		s.processorFinder,
+		s.config.Model.IdentifiablesFactory,
+		s.config.Security.Authenticator,
+		s.config.Security.Authorizer,
+		s.pushEventsFunc,
+		s.config.Security.Auditer,
 	)
 
 	if err != nil {
