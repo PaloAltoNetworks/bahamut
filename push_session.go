@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
@@ -27,8 +26,7 @@ const (
 type PushSession struct {
 
 	// UserInfo contains user opaque information.
-	UserInfo interface{}
-
+	UserInfo   interface{}
 	Parameters url.Values
 	Headers    http.Header
 
@@ -37,8 +35,6 @@ type PushSession struct {
 	id              string
 	processorFinder processorFinder
 	pushEventsFunc  func(...*elemental.Event)
-	ready           bool
-	readyLock       *sync.Mutex
 	requests        chan *elemental.Request
 	socket          *websocket.Conn
 	startTime       time.Time
@@ -80,8 +76,7 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 		Parameters:      parameters,
 		processorFinder: processorFinder,
 		pushEventsFunc:  pushEventsFunc,
-		readyLock:       &sync.Mutex{},
-		requests:        make(chan *elemental.Request),
+		requests:        make(chan *elemental.Request, 8),
 		socket:          ws,
 		startTime:       time.Now(),
 		stopAll:         make(chan bool, 2),
@@ -96,20 +91,6 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 func (s *PushSession) Identifier() string {
 
 	return s.id
-}
-
-func (s *PushSession) isReady() bool {
-
-	s.readyLock.Lock()
-	defer s.readyLock.Unlock()
-	return s.ready
-}
-
-func (s *PushSession) setReady(ok bool) {
-
-	s.readyLock.Lock()
-	s.ready = ok
-	s.readyLock.Unlock()
 }
 
 func (s *PushSession) read() {
@@ -135,24 +116,6 @@ func (s *PushSession) write() {
 	for {
 		select {
 		case event := <-s.events:
-
-			// is the event happened before the initial push session start time, we ignore.
-			if event.Timestamp.Before(s.startTime) {
-				break
-			}
-
-			if s.config.WebSocketServer.SessionsHandler != nil {
-
-				ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, event)
-				if err != nil {
-					log.WithError(err).Error("Error while checking authorization.")
-					break
-				}
-
-				if !ok {
-					break
-				}
-			}
 
 			if err := websocket.JSON.Send(s.socket, event); err != nil {
 				s.stopAll <- true
@@ -184,14 +147,10 @@ func (s *PushSession) listen() {
 
 func (s *PushSession) listenToPushEvents() {
 
-	s.setReady(true)
-
 	go s.read()
 	go s.write()
 
 	<-s.stopAll
-
-	s.setReady(false)
 
 	s.stopRead <- true
 	s.stopWrite <- true
@@ -204,8 +163,6 @@ func (s *PushSession) listenToPushEvents() {
 }
 
 func (s *PushSession) listenToAPIRequest() {
-
-	s.setReady(true)
 
 	go s.write()
 	go s.read()
@@ -243,8 +200,6 @@ L:
 			break L
 		}
 	}
-
-	s.setReady(false)
 
 	s.stopRead <- true
 	s.stopWrite <- true

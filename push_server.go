@@ -18,9 +18,6 @@ import (
 type pushServer struct {
 	address         string
 	sessions        map[string]*PushSession
-	register        chan *PushSession
-	unregister      chan *PushSession
-	events          chan *elemental.Event
 	close           chan bool
 	multiplexer     *bone.Mux
 	config          Config
@@ -32,10 +29,7 @@ func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
 		sessions:     map[string]*PushSession{},
-		register:     make(chan *PushSession),
-		unregister:   make(chan *PushSession),
 		close:        make(chan bool, 2),
-		events:       make(chan *elemental.Event, 1024),
 		multiplexer:  multiplexer,
 		config:       config,
 		sessionsLock: &sync.Mutex{},
@@ -50,13 +44,27 @@ func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 // adds a new push session to register in the push server
 func (n *pushServer) registerSession(session *PushSession) {
 
-	n.register <- session
+	n.sessionsLock.Lock()
+	defer n.sessionsLock.Unlock()
+
+	n.sessions[session.id] = session
+
+	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+		handler.OnPushSessionStart(session)
+	}
 }
 
 // adds a new push session to unregister from the push server
 func (n *pushServer) unregisterSession(session *PushSession) {
 
-	n.unregister <- session
+	n.sessionsLock.Lock()
+	defer n.sessionsLock.Unlock()
+
+	delete(n.sessions, session.id)
+
+	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+		handler.OnPushSessionStop(session)
+	}
 }
 
 // handlePushConnection handle connection for push events
@@ -104,20 +112,36 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 // otherwise, only local sessions will receive the push
 func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
-	for _, e := range events {
-		select {
-		case n.events <- e:
-		default:
+	if n.config.WebSocketServer.Service == nil {
+		return
+	}
+
+	for _, event := range events {
+
+		publication := NewPublication(n.config.WebSocketServer.Topic)
+		if err := publication.Encode(event); err != nil {
+			log.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
+			break
+		}
+
+		if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
+			log.WithFields(logrus.Fields{
+				"topic": publication.Topic,
+				"event": event.String(),
+				"error": err.Error(),
+			}).Warn("Unable to publish. Message dropped.")
 		}
 	}
 }
 
 func (n *pushServer) closeAllSessions() {
 
+	n.sessionsLock.Lock()
 	for _, session := range n.sessions {
 		session.close()
 	}
 	n.sessions = map[string]*PushSession{}
+	n.sessionsLock.Unlock()
 }
 
 // starts the push server
@@ -136,53 +160,6 @@ func (n *pushServer) start() {
 	for {
 		select {
 
-		case session := <-n.register:
-
-			n.sessions[session.id] = session
-
-			log.WithFields(logrus.Fields{
-				"total":  len(n.sessions),
-				"client": session.socket.RemoteAddr(),
-			}).Info("Push session started.")
-
-			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-				handler.OnPushSessionStart(session)
-			}
-
-		case session := <-n.unregister:
-
-			delete(n.sessions, session.id)
-
-			log.WithFields(logrus.Fields{
-				"total":  len(n.sessions),
-				"client": session.socket.RemoteAddr(),
-			}).Info("Push session closed.")
-
-			if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-				handler.OnPushSessionStop(session)
-			}
-
-		case event := <-n.events:
-
-			if n.config.WebSocketServer.Service == nil {
-				break
-			}
-
-			publication := NewPublication(n.config.WebSocketServer.Topic)
-			if err := publication.Encode(event); err != nil {
-				log.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
-				break
-			}
-
-			if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
-				log.WithFields(logrus.Fields{
-					"topic": publication.Topic,
-					"event": event.String(),
-					"error": err.Error(),
-				}).Warn("Unable to publish. Message dropped.")
-				break
-			}
-
 		case publication := <-publications:
 
 			event := &elemental.Event{}
@@ -192,16 +169,40 @@ func (n *pushServer) start() {
 			}
 
 			// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
+			n.sessionsLock.Lock()
 			var sessions []*PushSession
 			for _, session := range n.sessions {
-				if session.sType == pushSessionTypeEvent && session.isReady() {
+				if session.sType == pushSessionTypeEvent {
 					sessions = append(sessions, session)
 				}
 			}
+			n.sessionsLock.Unlock()
 
 			// Dispatch the event to all sessions
 			for _, session := range sessions {
-				go func(s *PushSession, evt *elemental.Event) { s.events <- evt }(session, event)
+
+				if event.Timestamp.Before(session.startTime) {
+					continue
+				}
+
+				go func(s *PushSession, evt *elemental.Event) {
+
+					if n.config.WebSocketServer.SessionsHandler != nil {
+
+						ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
+						if err != nil {
+							log.WithError(err).Error("Error while checking authorization.")
+							return
+						}
+
+						if !ok {
+							return
+						}
+					}
+
+					s.events <- evt
+
+				}(session, event)
 			}
 
 		case <-n.close:

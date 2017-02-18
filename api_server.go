@@ -46,8 +46,8 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			// tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, // Uncomment with Go 1.8
-			// tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,   // Uncomment with Go 1.8
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
@@ -55,13 +55,17 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 
 	tlsConfig.BuildNameToCertificate()
 
-	return &http.Server{
+	server := &http.Server{
 		Addr:         address,
 		TLSConfig:    tlsConfig,
 		ReadTimeout:  a.config.ReSTServer.ReadTimeout,
 		WriteTimeout: a.config.ReSTServer.WriteTimeout,
 		// IdleTimeout:  a.config.ReSTServer.IdleTimeout, // Uncomment with Go 1.8
-	}, nil
+	}
+
+	server.SetKeepAlivesEnabled(!a.config.ReSTServer.DisableKeepalive)
+
+	return server, nil
 }
 
 // createSecureHTTPServer returns a insecure HTTP Server.
@@ -361,7 +365,6 @@ func (a *apiServer) start() {
 	}
 
 	a.server.Handler = a.multiplexer
-	a.server.SetKeepAlivesEnabled(!a.config.ReSTServer.DisableKeepalive)
 
 	if a.config.TLS.ServerCertificates != nil {
 		err = a.server.ListenAndServeTLS("", "")
