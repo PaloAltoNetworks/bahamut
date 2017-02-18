@@ -140,7 +140,6 @@ func (n *pushServer) closeAllSessions() {
 	for _, session := range n.sessions {
 		session.close()
 	}
-	n.sessions = map[string]*PushSession{}
 	n.sessionsLock.Unlock()
 }
 
