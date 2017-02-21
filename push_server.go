@@ -201,7 +201,7 @@ func (n *pushServer) start() {
 
 					s.events <- evt
 
-				}(session, event)
+				}(session, event.Duplicate())
 			}
 
 		case <-n.close:

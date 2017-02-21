@@ -159,7 +159,9 @@ func dispatchCreateOperation(
 	}
 
 	if ctx.OutputData != nil {
-		pusher(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable)))
+		evt := elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable))
+		evt.UserInfo = ctx.Metadata
+		pusher(evt)
 	}
 
 	audit(auditer, ctx, nil)
@@ -223,7 +225,9 @@ func dispatchUpdateOperation(
 	}
 
 	if ctx.OutputData != nil {
-		pusher(elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable)))
+		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable))
+		evt.UserInfo = ctx.Metadata
+		pusher(evt)
 	}
 
 	audit(auditer, ctx, nil)
@@ -272,7 +276,9 @@ func dispatchDeleteOperation(
 	}
 
 	if ctx.OutputData != nil {
-		pusher(elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable)))
+		evt := elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable))
+		evt.UserInfo = ctx.Metadata
+		pusher(evt)
 	}
 
 	audit(auditer, ctx, nil)
@@ -329,7 +335,9 @@ func dispatchPatchOperation(
 	}
 
 	if ctx.OutputData != nil {
-		pusher(elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation)))
+		evt := elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation))
+		evt.UserInfo = ctx.Metadata
+		pusher(evt)
 	}
 
 	audit(auditer, ctx, nil)
