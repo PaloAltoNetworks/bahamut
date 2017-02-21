@@ -93,6 +93,29 @@ func (s *PushSession) Identifier() string {
 	return s.id
 }
 
+// DirectPush will send given events to the session without any further control
+// but ensuring the events did not happen before the session has been initialized.
+// the ShouldPush method of the eventual bahamut.PushHandler will *not* be called.
+//
+// For performance reason, this method will *not* check that it is an session of type
+// Event. If you direct push to an API session, you will fill up the internal channels until
+// it blocks.
+//
+// This method should be used only if you know what you are doing, and you should not need it
+// in the vast majority of all cases.
+func (s *PushSession) DirectPush(events ...*elemental.Event) {
+
+	for _, event := range events {
+
+		if event.Timestamp.Before(s.startTime) {
+			continue
+		}
+
+		s.events <- event
+	}
+
+}
+
 func (s *PushSession) read() {
 
 	for {

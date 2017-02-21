@@ -180,10 +180,6 @@ func (n *pushServer) start() {
 			// Dispatch the event to all sessions
 			for _, session := range sessions {
 
-				if event.Timestamp.Before(session.startTime) {
-					continue
-				}
-
 				go func(s *PushSession, evt *elemental.Event) {
 
 					if n.config.WebSocketServer.SessionsHandler != nil {
@@ -199,7 +195,7 @@ func (n *pushServer) start() {
 						}
 					}
 
-					s.events <- evt
+					s.DirectPush(evt)
 
 				}(session, event.Duplicate())
 			}
