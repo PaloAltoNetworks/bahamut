@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
@@ -30,19 +31,22 @@ type PushSession struct {
 	Parameters url.Values
 	Headers    http.Header
 
-	config          Config
-	events          chan *elemental.Event
-	id              string
-	processorFinder processorFinder
-	pushEventsFunc  func(...*elemental.Event)
-	requests        chan *elemental.Request
-	socket          *websocket.Conn
-	startTime       time.Time
-	stopAll         chan bool
-	stopRead        chan bool
-	stopWrite       chan bool
-	sType           pushSessionType
-	unregisterFunc  func(*PushSession)
+	config            Config
+	events            chan *elemental.Event
+	id                string
+	processorFinder   processorFinder
+	pushEventsFunc    func(...*elemental.Event)
+	requests          chan *elemental.Request
+	filters           chan *elemental.PushFilter
+	socket            *websocket.Conn
+	startTime         time.Time
+	stopAll           chan bool
+	stopRead          chan bool
+	stopWrite         chan bool
+	sType             pushSessionType
+	unregisterFunc    func(*PushSession)
+	filter            *elemental.PushFilter
+	currentFilterLock *sync.Mutex
 }
 
 func newPushSession(ws *websocket.Conn, config Config, unregisterFunc func(*PushSession)) *PushSession {
@@ -69,21 +73,23 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 	}
 
 	return &PushSession{
-		config:          config,
-		events:          make(chan *elemental.Event),
-		Headers:         headers,
-		id:              uuid.NewV4().String(),
-		Parameters:      parameters,
-		processorFinder: processorFinder,
-		pushEventsFunc:  pushEventsFunc,
-		requests:        make(chan *elemental.Request, 8),
-		socket:          ws,
-		startTime:       time.Now(),
-		stopAll:         make(chan bool, 2),
-		stopRead:        make(chan bool, 2),
-		stopWrite:       make(chan bool, 2),
-		sType:           sType,
-		unregisterFunc:  unregisterFunc,
+		config:            config,
+		events:            make(chan *elemental.Event),
+		Headers:           headers,
+		id:                uuid.NewV4().String(),
+		Parameters:        parameters,
+		processorFinder:   processorFinder,
+		pushEventsFunc:    pushEventsFunc,
+		requests:          make(chan *elemental.Request, 8),
+		filters:           make(chan *elemental.PushFilter, 8),
+		currentFilterLock: &sync.Mutex{},
+		socket:            ws,
+		startTime:         time.Now(),
+		stopAll:           make(chan bool, 2),
+		stopRead:          make(chan bool, 2),
+		stopWrite:         make(chan bool, 2),
+		sType:             sType,
+		unregisterFunc:    unregisterFunc,
 	}
 }
 
@@ -116,7 +122,7 @@ func (s *PushSession) DirectPush(events ...*elemental.Event) {
 
 }
 
-func (s *PushSession) read() {
+func (s *PushSession) readRequests() {
 
 	for {
 		var request *elemental.Request
@@ -134,11 +140,34 @@ func (s *PushSession) read() {
 	}
 }
 
+func (s *PushSession) readFilters() {
+
+	for {
+		var filter *elemental.PushFilter
+
+		if err := websocket.JSON.Receive(s.socket, &filter); err != nil {
+			s.stopAll <- true
+			return
+		}
+
+		select {
+		case s.filters <- filter:
+		case <-s.stopRead:
+			return
+		}
+	}
+}
+
 func (s *PushSession) write() {
 
 	for {
 		select {
 		case event := <-s.events:
+
+			f := s.currentFilter()
+			if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+				break
+			}
 
 			if err := websocket.JSON.Send(s.socket, event); err != nil {
 				s.stopAll <- true
@@ -168,29 +197,68 @@ func (s *PushSession) listen() {
 	}
 }
 
+func (s *PushSession) currentFilter() *elemental.PushFilter {
+
+	s.currentFilterLock.Lock()
+	defer s.currentFilterLock.Unlock()
+
+	if s.filter == nil {
+		return nil
+	}
+
+	return s.filter.Duplicate()
+}
+
+func (s *PushSession) setCurrentFilter(f *elemental.PushFilter) {
+
+	s.currentFilterLock.Lock()
+	s.filter = f
+	s.currentFilterLock.Unlock()
+}
+
 func (s *PushSession) listenToPushEvents() {
 
-	go s.read()
+	go s.readFilters()
 	go s.write()
 
-	<-s.stopAll
+	defer func() {
+		s.stopRead <- true
+		s.stopWrite <- true
 
-	s.stopRead <- true
-	s.stopWrite <- true
+		s.unregisterFunc(s)
+		s.socket.Close()
+		s.processorFinder = nil
+		s.pushEventsFunc = nil
+		s.unregisterFunc = nil
+	}()
 
-	s.unregisterFunc(s)
-	s.socket.Close()
-	s.processorFinder = nil
-	s.pushEventsFunc = nil
-	s.unregisterFunc = nil
+	for {
+		select {
+		case filter := <-s.filters:
+			s.setCurrentFilter(filter)
+
+		case <-s.stopAll:
+			return
+		}
+	}
 }
 
 func (s *PushSession) listenToAPIRequest() {
 
 	go s.write()
-	go s.read()
+	go s.readRequests()
 
-L:
+	defer func() {
+		s.stopRead <- true
+		s.stopWrite <- true
+
+		s.unregisterFunc(s)
+		s.socket.Close()
+		s.processorFinder = nil
+		s.pushEventsFunc = nil
+		s.unregisterFunc = nil
+	}()
+
 	for {
 		select {
 		case request := <-s.requests:
@@ -220,18 +288,9 @@ L:
 			}
 
 		case <-s.stopAll:
-			break L
+			return
 		}
 	}
-
-	s.stopRead <- true
-	s.stopWrite <- true
-
-	s.unregisterFunc(s)
-	s.socket.Close()
-	s.processorFinder = nil
-	s.pushEventsFunc = nil
-	s.unregisterFunc = nil
 }
 
 func (s *PushSession) handleEventualPanic(response *elemental.Response) {
