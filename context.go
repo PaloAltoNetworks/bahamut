@@ -41,8 +41,8 @@ type Context struct {
 	// Redirect will be used to redirect a request if set.
 	Redirect string
 
-	// UserInfo allows you to store any additional opaque data.
-	UserInfo interface{}
+	// Identity stores the various identity information. This is usually populated by the Authenticators.
+	Identity []string
 
 	// Metadata is contains random user defined metadata.
 	Metadata map[string]interface{}
@@ -59,9 +59,9 @@ func NewContext() *Context {
 	return &Context{
 		Request:  elemental.NewRequest(),
 		Metadata: map[string]interface{}{},
-
-		id:     uuid.NewV4().String(),
-		events: elemental.Events{},
+		Identity: []string{},
+		id:       uuid.NewV4().String(),
+		events:   elemental.Events{},
 	}
 }
 
@@ -116,11 +116,14 @@ func (c *Context) Duplicate() *Context {
 	ctx := NewContext()
 
 	ctx.CountTotal = c.CountTotal
-	ctx.UserInfo = c.UserInfo
 	ctx.StatusCode = c.StatusCode
 	ctx.InputData = c.InputData
 	ctx.OutputData = c.OutputData
 	ctx.Request = c.Request.Duplicate()
+
+	for _, i := range c.Identity {
+		ctx.Identity = append(ctx.Identity, i)
+	}
 
 	for k, v := range c.Metadata {
 		ctx.Metadata[k] = v

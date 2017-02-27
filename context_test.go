@@ -142,7 +142,7 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.Request = req
 		ctx.CountTotal = 10
 		ctx.Metadata = map[string]interface{}{"hello": "world"}
-		ctx.UserInfo = "ouais"
+		ctx.Identity = []string{"ouais"}
 		ctx.InputData = "input"
 		ctx.OutputData = "output"
 		ctx.StatusCode = 42
@@ -159,7 +159,7 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.Request.Namespace, ShouldEqual, ctx2.Request.Namespace)
 				So(ctx.Request.ParentID, ShouldEqual, ctx2.Request.ParentID)
 				So(ctx.StatusCode, ShouldEqual, ctx2.StatusCode)
-				So(ctx.UserInfo, ShouldEqual, ctx2.UserInfo)
+				So(ctx.Identity, ShouldResemble, ctx2.Identity)
 			})
 		})
 	})

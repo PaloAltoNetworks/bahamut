@@ -25,9 +25,7 @@ const (
 
 // PushSession represents a client session.
 type PushSession struct {
-
-	// UserInfo contains user opaque information.
-	UserInfo   interface{}
+	Identity   []string
 	Parameters url.Values
 	Headers    http.Header
 
@@ -74,6 +72,7 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 
 	return &PushSession{
 		config:            config,
+		Identity:          []string{},
 		events:            make(chan *elemental.Event),
 		Headers:           headers,
 		id:                uuid.NewV4().String(),
@@ -262,6 +261,12 @@ func (s *PushSession) listenToAPIRequest() {
 	for {
 		select {
 		case request := <-s.requests:
+
+			// We backport the token of the session into the request.
+			if t := s.Parameters.Get("token"); t != "" {
+				request.Username = "Bearer"
+				request.Password = t
+			}
 
 			switch request.Operation {
 
