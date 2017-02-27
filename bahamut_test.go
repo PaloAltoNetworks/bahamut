@@ -21,7 +21,7 @@ type Auth struct {
 	errored       bool
 }
 
-func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) {
+func (a *Auth) AuthenticateRequest(ctx *Context) (bool, error) {
 
 	if a.errored {
 		return false, fmt.Errorf("this is an %s", "error")
@@ -29,6 +29,7 @@ func (a *Auth) IsAuthenticated(ctx *Context) (bool, error) {
 
 	return a.authenticated, nil
 }
+
 func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
 
 	if a.errored {

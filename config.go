@@ -111,8 +111,12 @@ type Config struct {
 	// Security contains the Authenticator and Authorizer.
 	Security struct {
 
-		// Authenticator is the Authenticator to use to authenticate the requests.
-		Authenticator Authenticator
+		// RequestAuthenticator is the RequestAuthenticator to use to authenticate the requests.
+		RequestAuthenticator RequestAuthenticator
+
+		// SessionAuthenticator defines the SessionAuthenticator that will be used to
+		// initialy authentify a websocket connection.
+		SessionAuthenticator SessionAuthenticator
 
 		// Authorizer is the Authorizer to use to authorize the requests.
 		Authorizer Authorizer

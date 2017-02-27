@@ -81,12 +81,13 @@ func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
 
 func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 
-	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-		ok, err := handler.IsAuthenticated(session)
+	if n.config.Security.SessionAuthenticator != nil {
+
+		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session)
+
 		if err != nil {
 			log.WithError(err).Error("Error during checking authentication.")
 		}
-
 		if !ok {
 			if session.sType == pushSessionTypeAPI {
 				response := elemental.NewResponse()
