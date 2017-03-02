@@ -16,19 +16,19 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type pushSessionType int
+type sessionType int
 
 const (
-	pushSessionTypeEvent pushSessionType = iota + 1
-	pushSessionTypeAPI
+	sessionTypeEvent sessionType = iota + 1
+	sessionTypeAPI
 )
 
-// PushSession represents a client session.
-type PushSession struct {
-	Identity   []string
+// Session represents a client session.
+type Session struct {
 	Parameters url.Values
 	Headers    http.Header
 
+	claims            []string
 	config            Config
 	events            chan *elemental.Event
 	id                string
@@ -41,23 +41,23 @@ type PushSession struct {
 	stopAll           chan bool
 	stopRead          chan bool
 	stopWrite         chan bool
-	sType             pushSessionType
-	unregisterFunc    func(*PushSession)
+	sType             sessionType
+	unregisterFunc    func(*Session)
 	filter            *elemental.PushFilter
 	currentFilterLock *sync.Mutex
 }
 
-func newPushSession(ws *websocket.Conn, config Config, unregisterFunc func(*PushSession)) *PushSession {
+func newPushSession(ws *websocket.Conn, config Config, unregisterFunc func(*Session)) *Session {
 
-	return newSession(ws, pushSessionTypeEvent, config, unregisterFunc, nil, nil)
+	return newSession(ws, sessionTypeEvent, config, unregisterFunc, nil, nil)
 }
 
-func newAPISession(ws *websocket.Conn, config Config, unregisterFunc func(*PushSession), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *PushSession {
+func newAPISession(ws *websocket.Conn, config Config, unregisterFunc func(*Session), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *Session {
 
-	return newSession(ws, pushSessionTypeAPI, config, unregisterFunc, processorFinder, pushEventsFunc)
+	return newSession(ws, sessionTypeAPI, config, unregisterFunc, processorFinder, pushEventsFunc)
 }
 
-func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregisterFunc func(*PushSession), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *PushSession {
+func newSession(ws *websocket.Conn, sType sessionType, config Config, unregisterFunc func(*Session), processorFinder processorFinder, pushEventsFunc func(...*elemental.Event)) *Session {
 
 	var parameters url.Values
 	var headers http.Header
@@ -70,9 +70,9 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 		headers = config.Header
 	}
 
-	return &PushSession{
+	return &Session{
 		config:            config,
-		Identity:          []string{},
+		claims:            []string{},
 		events:            make(chan *elemental.Event),
 		Headers:           headers,
 		id:                uuid.NewV4().String(),
@@ -93,10 +93,19 @@ func newSession(ws *websocket.Conn, sType pushSessionType, config Config, unregi
 }
 
 // Identifier returns the identifier of the push session.
-func (s *PushSession) Identifier() string {
+func (s *Session) Identifier() string {
 
 	return s.id
 }
+
+// SetClaims implements elemental.ClaimsHolder.
+func (s *Session) SetClaims(claims []string) { s.claims = claims }
+
+// GetClaims implements elemental.ClaimsHolder.
+func (s *Session) GetClaims() []string { return s.claims }
+
+// GetToken implements elemental.TokenHolder.
+func (s *Session) GetToken() string { return s.Parameters.Get("token") }
 
 // DirectPush will send given events to the session without any further control
 // but ensuring the events did not happen before the session has been initialized.
@@ -108,7 +117,7 @@ func (s *PushSession) Identifier() string {
 //
 // This method should be used only if you know what you are doing, and you should not need it
 // in the vast majority of all cases.
-func (s *PushSession) DirectPush(events ...*elemental.Event) {
+func (s *Session) DirectPush(events ...*elemental.Event) {
 
 	for _, event := range events {
 
@@ -121,7 +130,7 @@ func (s *PushSession) DirectPush(events ...*elemental.Event) {
 
 }
 
-func (s *PushSession) readRequests() {
+func (s *Session) readRequests() {
 
 	for {
 		var request *elemental.Request
@@ -139,7 +148,7 @@ func (s *PushSession) readRequests() {
 	}
 }
 
-func (s *PushSession) readFilters() {
+func (s *Session) readFilters() {
 
 	for {
 		var filter *elemental.PushFilter
@@ -157,7 +166,7 @@ func (s *PushSession) readFilters() {
 	}
 }
 
-func (s *PushSession) write() {
+func (s *Session) write() {
 
 	for {
 		select {
@@ -179,24 +188,24 @@ func (s *PushSession) write() {
 	}
 }
 
-func (s *PushSession) close() {
+func (s *Session) close() {
 
 	s.stopAll <- true
 }
 
-func (s *PushSession) listen() {
+func (s *Session) listen() {
 
 	switch s.sType {
-	case pushSessionTypeAPI:
+	case sessionTypeAPI:
 		s.listenToAPIRequest()
-	case pushSessionTypeEvent:
+	case sessionTypeEvent:
 		s.listenToPushEvents()
 	default:
 		panic("Unknown push session type")
 	}
 }
 
-func (s *PushSession) currentFilter() *elemental.PushFilter {
+func (s *Session) currentFilter() *elemental.PushFilter {
 
 	s.currentFilterLock.Lock()
 	defer s.currentFilterLock.Unlock()
@@ -208,14 +217,14 @@ func (s *PushSession) currentFilter() *elemental.PushFilter {
 	return s.filter.Duplicate()
 }
 
-func (s *PushSession) setCurrentFilter(f *elemental.PushFilter) {
+func (s *Session) setCurrentFilter(f *elemental.PushFilter) {
 
 	s.currentFilterLock.Lock()
 	s.filter = f
 	s.currentFilterLock.Unlock()
 }
 
-func (s *PushSession) listenToPushEvents() {
+func (s *Session) listenToPushEvents() {
 
 	go s.readFilters()
 	go s.write()
@@ -242,7 +251,7 @@ func (s *PushSession) listenToPushEvents() {
 	}
 }
 
-func (s *PushSession) listenToAPIRequest() {
+func (s *Session) listenToAPIRequest() {
 
 	go s.write()
 	go s.readRequests()
@@ -298,7 +307,7 @@ func (s *PushSession) listenToAPIRequest() {
 	}
 }
 
-func (s *PushSession) handleEventualPanic(response *elemental.Response) {
+func (s *Session) handleEventualPanic(response *elemental.Response) {
 
 	if r := recover(); r != nil {
 		writeWebSocketError(
@@ -314,7 +323,7 @@ func (s *PushSession) handleEventualPanic(response *elemental.Response) {
 	}
 }
 
-func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
+func (s *Session) handleRetrieveMany(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -338,7 +347,7 @@ func (s *PushSession) handleRetrieveMany(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handleRetrieve(request *elemental.Request) {
+func (s *Session) handleRetrieve(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -362,7 +371,7 @@ func (s *PushSession) handleRetrieve(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handleCreate(request *elemental.Request) {
+func (s *Session) handleCreate(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -387,7 +396,7 @@ func (s *PushSession) handleCreate(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handleUpdate(request *elemental.Request) {
+func (s *Session) handleUpdate(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -412,7 +421,7 @@ func (s *PushSession) handleUpdate(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handleDelete(request *elemental.Request) {
+func (s *Session) handleDelete(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -437,7 +446,7 @@ func (s *PushSession) handleDelete(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handleInfo(request *elemental.Request) {
+func (s *Session) handleInfo(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -461,7 +470,7 @@ func (s *PushSession) handleInfo(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) handlePatch(request *elemental.Request) {
+func (s *Session) handlePatch(request *elemental.Request) {
 
 	response := elemental.NewResponse()
 	response.Request = request
@@ -486,7 +495,7 @@ func (s *PushSession) handlePatch(request *elemental.Request) {
 	writeWebsocketResponse(s.socket, response, ctx)
 }
 
-func (s *PushSession) String() string {
+func (s *Session) String() string {
 
 	return fmt.Sprintf("<session id:%s headers: %v parameters: %v>",
 		s.id,

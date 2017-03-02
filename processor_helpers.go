@@ -22,7 +22,7 @@ func CheckAuthentication(authenticator RequestAuthenticator, ctx *Context) error
 		return nil
 	}
 
-	ok, err := authenticator.AuthenticateRequest(ctx)
+	ok, err := authenticator.AuthenticateRequest(ctx.Request, ctx)
 
 	if err != nil {
 		return err

@@ -17,7 +17,7 @@ import (
 
 type pushServer struct {
 	address         string
-	sessions        map[string]*PushSession
+	sessions        map[string]*Session
 	close           chan bool
 	multiplexer     *bone.Mux
 	config          Config
@@ -28,7 +28,7 @@ type pushServer struct {
 func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 
 	srv := &pushServer{
-		sessions:     map[string]*PushSession{},
+		sessions:     map[string]*Session{},
 		close:        make(chan bool, 2),
 		multiplexer:  multiplexer,
 		config:       config,
@@ -42,7 +42,7 @@ func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
 }
 
 // adds a new push session to register in the push server
-func (n *pushServer) registerSession(session *PushSession) {
+func (n *pushServer) registerSession(session *Session) {
 
 	n.sessionsLock.Lock()
 	defer n.sessionsLock.Unlock()
@@ -55,7 +55,7 @@ func (n *pushServer) registerSession(session *PushSession) {
 }
 
 // adds a new push session to unregister from the push server
-func (n *pushServer) unregisterSession(session *PushSession) {
+func (n *pushServer) unregisterSession(session *Session) {
 
 	n.sessionsLock.Lock()
 	defer n.sessionsLock.Unlock()
@@ -79,7 +79,7 @@ func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
 	n.runSession(ws, newAPISession(ws, n.config, n.unregisterSession, n.processorFinder, n.pushEvents))
 }
 
-func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
+func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 
 	if n.config.Security.SessionAuthenticator != nil {
 
@@ -89,7 +89,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 			log.WithError(err).Error("Error during checking authentication.")
 		}
 		if !ok {
-			if session.sType == pushSessionTypeAPI {
+			if session.sType == sessionTypeAPI {
 				response := elemental.NewResponse()
 				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
@@ -99,7 +99,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *PushSession) {
 	}
 
 	// Send the first hello message.
-	if session.sType == pushSessionTypeAPI {
+	if session.sType == sessionTypeAPI {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		websocket.JSON.Send(ws, response)
@@ -170,9 +170,9 @@ func (n *pushServer) start() {
 
 			// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
 			n.sessionsLock.Lock()
-			var sessions []*PushSession
+			var sessions []*Session
 			for _, session := range n.sessions {
-				if session.sType == pushSessionTypeEvent {
+				if session.sType == sessionTypeEvent {
 					sessions = append(sessions, session)
 				}
 			}
@@ -181,7 +181,7 @@ func (n *pushServer) start() {
 			// Dispatch the event to all sessions
 			for _, session := range sessions {
 
-				go func(s *PushSession, evt *elemental.Event) {
+				go func(s *Session, evt *elemental.Event) {
 
 					if n.config.WebSocketServer.SessionsHandler != nil {
 

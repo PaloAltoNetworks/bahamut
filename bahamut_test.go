@@ -21,7 +21,7 @@ type Auth struct {
 	errored       bool
 }
 
-func (a *Auth) AuthenticateRequest(ctx *Context) (bool, error) {
+func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
 
 	if a.errored {
 		return false, fmt.Errorf("this is an %s", "error")
@@ -45,10 +45,10 @@ type testSessionHandler struct {
 	block        bool
 }
 
-func (h *testSessionHandler) OnPushSessionStart(session *PushSession)            { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *PushSession)             { h.sessionCount-- }
-func (h *testSessionHandler) IsAuthenticated(session *PushSession) (bool, error) { return true, nil }
-func (h *testSessionHandler) ShouldPush(session *PushSession, event *elemental.Event) (bool, error) {
+func (h *testSessionHandler) OnPushSessionStart(session *Session)            { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *Session)             { h.sessionCount-- }
+func (h *testSessionHandler) IsAuthenticated(session *Session) (bool, error) { return true, nil }
+func (h *testSessionHandler) ShouldPush(session *Session, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
 	return !h.block, nil
 }

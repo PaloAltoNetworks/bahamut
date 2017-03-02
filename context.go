@@ -41,14 +41,12 @@ type Context struct {
 	// Redirect will be used to redirect a request if set.
 	Redirect string
 
-	// Identity stores the various identity information. This is usually populated by the Authenticators.
-	Identity []string
-
 	// Metadata is contains random user defined metadata.
 	Metadata map[string]interface{}
 
-	id     string
 	events elemental.Events
+	id     string
+	claims []string
 }
 
 // NewContext creates a new *Context for the given Operation.
@@ -59,11 +57,17 @@ func NewContext() *Context {
 	return &Context{
 		Request:  elemental.NewRequest(),
 		Metadata: map[string]interface{}{},
-		Identity: []string{},
+		claims:   []string{},
 		id:       uuid.NewV4().String(),
 		events:   elemental.Events{},
 	}
 }
+
+// SetClaims implements elemental.ClaimsHolder
+func (c *Context) SetClaims(claims []string) { c.claims = claims }
+
+// GetClaims implements elemental.ClaimsHolder
+func (c *Context) GetClaims() []string { return c.claims }
 
 // ReadElementalRequest reads information from the given elemental.Request and polulate the Context.
 func (c *Context) ReadElementalRequest(req *elemental.Request) error {
@@ -121,8 +125,8 @@ func (c *Context) Duplicate() *Context {
 	ctx.OutputData = c.OutputData
 	ctx.Request = c.Request.Duplicate()
 
-	for _, i := range c.Identity {
-		ctx.Identity = append(ctx.Identity, i)
+	for _, i := range c.claims {
+		ctx.claims = append(ctx.claims, i)
 	}
 
 	for k, v := range c.Metadata {

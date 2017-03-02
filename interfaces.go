@@ -84,13 +84,13 @@ type InfoProcessor interface {
 // RequestAuthenticator is the interface that must be implemented in order to
 // to be used as the Bahamut main Authenticator.
 type RequestAuthenticator interface {
-	AuthenticateRequest(*Context) (bool, error)
+	AuthenticateRequest(*elemental.Request, elemental.ClaimsHolder) (bool, error)
 }
 
 // SessionAuthenticator is the interface that must be implemented in order to
 // be used as the initial Web socket session Authenticator.
 type SessionAuthenticator interface {
-	AuthenticateSession(*PushSession) (bool, error)
+	AuthenticateSession(elemental.SessionHolder) (bool, error)
 }
 
 // Authorizer is the interface that must be implemented in order to
@@ -102,9 +102,9 @@ type Authorizer interface {
 // PushSessionsHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Server handler.
 type PushSessionsHandler interface {
-	OnPushSessionStart(*PushSession)
-	OnPushSessionStop(*PushSession)
-	ShouldPush(*PushSession, *elemental.Event) (bool, error)
+	OnPushSessionStart(*Session)
+	OnPushSessionStop(*Session)
+	ShouldPush(*Session, *elemental.Event) (bool, error)
 }
 
 // Auditer is the interface an object must implement in order to handle
