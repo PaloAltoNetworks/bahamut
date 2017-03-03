@@ -94,7 +94,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 				response := elemental.NewResponse()
 				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
-			_ = ws.Close()
+			ws.Close() // nolint: errcheck
 			return
 		}
 	}

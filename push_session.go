@@ -234,7 +234,7 @@ func (s *Session) listenToPushEvents() {
 		s.stopWrite <- true
 
 		s.unregisterFunc(s)
-		_ = s.socket.Close()
+		s.socket.Close() // nolint: errcheck
 		s.processorFinder = nil
 		s.pushEventsFunc = nil
 		s.unregisterFunc = nil
@@ -261,7 +261,7 @@ func (s *Session) listenToAPIRequest() {
 		s.stopWrite <- true
 
 		s.unregisterFunc(s)
-		_ = s.socket.Close()
+		s.socket.Close() // nolint: errcheck
 		s.processorFinder = nil
 		s.pushEventsFunc = nil
 		s.unregisterFunc = nil
