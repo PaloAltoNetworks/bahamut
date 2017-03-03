@@ -11,7 +11,7 @@ type PubSubServer interface {
 	Publish(publication *Publication) error
 	Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func()
 	Connect() Waiter
-	Disconnect()
+	Disconnect() error
 }
 
 // NewNATSPubSubServer returns a PubSubServer backed by NATS.

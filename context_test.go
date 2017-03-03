@@ -27,7 +27,7 @@ func TestContext_MakeContext(t *testing.T) {
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
 		c := NewContext()
-		c.ReadElementalRequest(request)
+		_ = c.ReadElementalRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
 

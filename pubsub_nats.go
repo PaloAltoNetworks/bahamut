@@ -85,7 +85,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 		return func() {}
 	}
 
-	return func() { sub.Unsubscribe() }
+	return func() { _ = sub.Unsubscribe() }
 }
 
 func (p *natsPubSub) Connect() Waiter {
@@ -128,7 +128,7 @@ func (p *natsPubSub) Connect() Waiter {
 	}
 }
 
-func (p *natsPubSub) Disconnect() {
+func (p *natsPubSub) Disconnect() error {
 
-	p.client.Close()
+	return p.client.Close()
 }

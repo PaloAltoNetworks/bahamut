@@ -68,7 +68,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 	if c.Redirect != "" {
 		w.Header().Set("Location", c.Redirect)
 		w.WriteHeader(http.StatusFound)
-		io.Copy(w, buffer)
+		_, _ = io.Copy(w, buffer)
 		return
 	}
 

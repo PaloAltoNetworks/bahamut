@@ -115,7 +115,7 @@ type Config struct {
 		RequestAuthenticator RequestAuthenticator
 
 		// SessionAuthenticator defines the SessionAuthenticator that will be used to
-		// initialy authentify a websocket connection.
+		// initially authentify a websocket connection.
 		SessionAuthenticator SessionAuthenticator
 
 		// Authorizer is the Authorizer to use to authorize the requests.

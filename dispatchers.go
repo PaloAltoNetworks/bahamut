@@ -33,7 +33,9 @@ func dispatchRetrieveManyOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -73,7 +75,9 @@ func dispatchRetrieveOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -114,7 +118,9 @@ func dispatchCreateOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -180,7 +186,9 @@ func dispatchUpdateOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -246,7 +254,9 @@ func dispatchDeleteOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -297,7 +307,9 @@ func dispatchPatchOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -355,7 +367,9 @@ func dispatchInfoOperation(
 ) (*Context, error) {
 
 	ctx := NewContext()
-	ctx.ReadElementalRequest(request)
+	if err := ctx.ReadElementalRequest(request); err != nil {
+		return nil, err
+	}
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)

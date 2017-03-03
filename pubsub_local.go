@@ -72,9 +72,11 @@ func (p *localPubSub) Connect() Waiter {
 }
 
 // Disconnect disconnects the PubSubServer from the remote service..
-func (p *localPubSub) Disconnect() {
+func (p *localPubSub) Disconnect() error {
 
 	p.stop <- true
+
+	return nil
 }
 
 func (p *localPubSub) registerSubscriberChannel(c chan *Publication, topic string) {

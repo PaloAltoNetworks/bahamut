@@ -129,7 +129,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		Convey("When I register it twie", func() {
 
-			b.RegisterProcessor(p, ident)
+			_ = b.RegisterProcessor(p, ident)
 			err := b.RegisterProcessor(p, ident)
 
 			Convey("Then err should not be nil", func() {
@@ -143,7 +143,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		Convey("When I unregister it", func() {
 
-			b.RegisterProcessor(p, ident)
+			_ = b.RegisterProcessor(p, ident)
 			err := b.UnregisterProcessor(ident)
 
 			Convey("Then err should be nil", func() {
@@ -163,7 +163,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		Convey("When I unregister it twice", func() {
 
-			b.UnregisterProcessor(ident)
+			_ = b.UnregisterProcessor(ident)
 			err := b.UnregisterProcessor(ident)
 
 			Convey("Then err should not be nil", func() {

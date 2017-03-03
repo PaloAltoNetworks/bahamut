@@ -125,9 +125,7 @@ func (c *Context) Duplicate() *Context {
 	ctx.OutputData = c.OutputData
 	ctx.Request = c.Request.Duplicate()
 
-	for _, i := range c.claims {
-		ctx.claims = append(ctx.claims, i)
-	}
+	ctx.claims = append(ctx.claims, c.claims...)
 
 	for k, v := range c.Metadata {
 		ctx.Metadata[k] = v

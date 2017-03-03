@@ -86,14 +86,15 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session)
 
 		if err != nil {
-			log.WithError(err).Error("Error during checking authentication.")
+			log.WithField("error", err.Error()).Error("Error during checking authentication.")
 		}
+
 		if !ok {
 			if session.sType == sessionTypeAPI {
 				response := elemental.NewResponse()
 				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
-			ws.Close()
+			_ = ws.Close()
 			return
 		}
 	}
@@ -102,7 +103,10 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 	if session.sType == sessionTypeAPI {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
-		websocket.JSON.Send(ws, response)
+		if err := websocket.JSON.Send(ws, response); err != nil {
+			log.WithField("error", err.Error()).Error("Error while sending hello message.")
+			return
+		}
 	}
 
 	n.registerSession(session)

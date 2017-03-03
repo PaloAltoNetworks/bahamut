@@ -35,7 +35,7 @@ func TestLocalPubSub_ConnectDisconnect(t *testing.T) {
 		})
 
 		Convey("Whan I call Disconnect nothing should happen", func() {
-			ps.Disconnect()
+			_ = ps.Disconnect()
 		})
 	})
 }
@@ -46,7 +46,7 @@ func TestLocalPubSub_RegisterUnregister(t *testing.T) {
 
 		ps := newlocalPubSub(nil)
 		ps.Connect()
-		defer ps.Disconnect()
+		defer func() { _ = ps.Disconnect() }()
 
 		Convey("When I register a channel to a topic", func() {
 
@@ -83,7 +83,7 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 
 		ps := newlocalPubSub(nil)
 		ps.Connect()
-		defer ps.Disconnect()
+		defer func() { _ = ps.Disconnect() }()
 
 		Convey("When I register a 2 channels to a topic 'topic' and a another one to 'nottopic'", func() {
 
@@ -99,7 +99,7 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 			Convey("When Publish somthing", func() {
 
 				publ := NewPublication("topic")
-				go ps.Publish(publ)
+				go func() { _ = ps.Publish(publ) }()
 
 				time.Sleep(30 * time.Millisecond)
 

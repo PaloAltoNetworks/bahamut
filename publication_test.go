@@ -49,7 +49,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 					So(err, ShouldBeNil)
 				})
 
-				Convey("Then l2 should ressemble to l1", func() {
+				Convey("Then l2 should resemble to l1", func() {
 					So(l2, ShouldResemble, l2)
 				})
 			})

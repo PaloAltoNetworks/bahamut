@@ -26,13 +26,19 @@ func writeWebSocketError(ws *websocket.Conn, response *elemental.Response, err e
 	}
 
 	response.StatusCode = outError.Code()
-	response.Encode(outError)
+	if e := response.Encode(outError); e != nil {
+		log.WithFields(logrus.Fields{
+			"error":         e.Error(),
+			"originalError": err.Error(),
+		}).Error("Unable to encode error.")
+		return
+	}
 
 	if e := websocket.JSON.Send(ws, response); e != nil {
 		log.WithFields(logrus.Fields{
 			"error":         e.Error(),
 			"originalError": err.Error(),
-		}).Error("Unable to encode error.")
+		}).Error("Unable to send error.")
 	}
 }
 

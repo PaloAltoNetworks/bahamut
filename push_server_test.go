@@ -220,7 +220,7 @@ package bahamut
 // 				break
 // 			}
 //
-// 			Convey("Then the event should be sent throught the event channel", func() {
+// 			Convey("Then the event should be sent thought the event channel", func() {
 // 				So(outEvent, ShouldEqual, inEvent)
 // 			})
 // 		})

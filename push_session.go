@@ -234,7 +234,7 @@ func (s *Session) listenToPushEvents() {
 		s.stopWrite <- true
 
 		s.unregisterFunc(s)
-		s.socket.Close()
+		_ = s.socket.Close()
 		s.processorFinder = nil
 		s.pushEventsFunc = nil
 		s.unregisterFunc = nil
@@ -261,7 +261,7 @@ func (s *Session) listenToAPIRequest() {
 		s.stopWrite <- true
 
 		s.unregisterFunc(s)
-		s.socket.Close()
+		_ = s.socket.Close()
 		s.processorFinder = nil
 		s.pushEventsFunc = nil
 		s.unregisterFunc = nil
@@ -344,7 +344,9 @@ func (s *Session) handleRetrieveMany(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handleRetrieve(request *elemental.Request) {
@@ -368,7 +370,9 @@ func (s *Session) handleRetrieve(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handleCreate(request *elemental.Request) {
@@ -393,7 +397,9 @@ func (s *Session) handleCreate(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handleUpdate(request *elemental.Request) {
@@ -418,7 +424,9 @@ func (s *Session) handleUpdate(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handleDelete(request *elemental.Request) {
@@ -443,7 +451,9 @@ func (s *Session) handleDelete(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handleInfo(request *elemental.Request) {
@@ -467,7 +477,9 @@ func (s *Session) handleInfo(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) handlePatch(request *elemental.Request) {
@@ -492,7 +504,9 @@ func (s *Session) handlePatch(request *elemental.Request) {
 		return
 	}
 
-	writeWebsocketResponse(s.socket, response, ctx)
+	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
+		writeWebSocketError(s.socket, response, err)
+	}
 }
 
 func (s *Session) String() string {

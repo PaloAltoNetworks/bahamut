@@ -118,7 +118,7 @@ func (b *server) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-// handleExit handle the interupt signal an will try
+// handleExit handle the interrupt signal an will try
 // to cleanly stop all current routines.
 func (b *server) handleExit() {
 
