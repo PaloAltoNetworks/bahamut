@@ -61,6 +61,8 @@ domingo_test:
 		--enable=structcheck \
 		--enable=gosimple \
 		--enable=misspell \
+		--enable=deadcode \
+		--enable=staticcheck \
 		--deadline 5m \
 		--tests $(TEST_DIRS)
 	@echo "Running unit tests..."
