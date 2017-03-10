@@ -107,6 +107,7 @@ func TestContext_String(t *testing.T) {
 			ParentID:       "xxxx",
 			ParentIdentity: elemental.EmptyIdentity,
 			Operation:      elemental.OperationCreate,
+			Version:        12,
 		}
 
 		ctx := NewContext()
@@ -118,7 +119,7 @@ func TestContext_String(t *testing.T) {
 			s := ctx.String()
 
 			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx> totalcount:10>", ctx.Identifier()))
+				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx version:12> totalcount:10>", ctx.Identifier()))
 			})
 		})
 	})
