@@ -199,7 +199,8 @@ func (n *pushServer) start() {
 							return
 						}
 					}
-
+					// we put back userInfo to nil before sending it clients.
+					evt.UserInfo = nil
 					s.DirectPush(evt)
 
 				}(session, event.Duplicate())
