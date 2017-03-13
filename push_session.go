@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -136,6 +137,13 @@ func (s *Session) readRequests() {
 		var request *elemental.Request
 
 		if err := websocket.JSON.Receive(s.socket, &request); err != nil {
+			if _, ok := err.(*json.SyntaxError); ok {
+				response := elemental.NewResponse()
+				response.Request = request
+				writeWebSocketError(s.socket, response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
+				continue
+			}
+
 			s.stopAll <- true
 			return
 		}
