@@ -338,6 +338,11 @@ func (s *Session) handleRetrieveMany(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
+	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
 	ctx, err := dispatchRetrieveManyOperation(
 		request,
 		s.processorFinder,
@@ -364,6 +369,11 @@ func (s *Session) handleRetrieve(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
+	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
 	ctx, err := dispatchRetrieveOperation(
 		response.Request,
 		s.processorFinder,
@@ -389,6 +399,11 @@ func (s *Session) handleCreate(request *elemental.Request) {
 	response.Request = request
 
 	defer s.handleEventualPanic(response)
+
+	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
 
 	ctx, err := dispatchCreateOperation(
 		response.Request,
@@ -417,6 +432,11 @@ func (s *Session) handleUpdate(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
+	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
 	ctx, err := dispatchUpdateOperation(
 		response.Request,
 		s.processorFinder,
@@ -443,6 +463,11 @@ func (s *Session) handleDelete(request *elemental.Request) {
 	response.Request = request
 
 	defer s.handleEventualPanic(response)
+
+	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
 
 	ctx, err := dispatchDeleteOperation(
 		response.Request,
@@ -471,6 +496,11 @@ func (s *Session) handleInfo(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
+	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
+
 	ctx, err := dispatchInfoOperation(
 		response.Request,
 		s.processorFinder,
@@ -496,6 +526,11 @@ func (s *Session) handlePatch(request *elemental.Request) {
 	response.Request = request
 
 	defer s.handleEventualPanic(response)
+
+	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		return
+	}
 
 	ctx, err := dispatchPatchOperation(
 		response.Request,
