@@ -338,7 +338,12 @@ func (s *Session) handleRetrieveMany(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -369,7 +374,12 @@ func (s *Session) handleRetrieve(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -400,7 +410,12 @@ func (s *Session) handleCreate(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -432,7 +447,12 @@ func (s *Session) handleUpdate(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -464,7 +484,12 @@ func (s *Session) handleDelete(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -496,7 +521,12 @@ func (s *Session) handleInfo(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -527,7 +557,12 @@ func (s *Session) handlePatch(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry, request.Identity, request.ParentIdentity) {
+	parentIdentity := request.ParentIdentity
+	if parentIdentity.IsEmpty() {
+		parentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Method not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
