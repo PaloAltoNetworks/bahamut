@@ -374,12 +374,7 @@ func (s *Session) handleRetrieve(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
+	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -447,12 +442,7 @@ func (s *Session) handleUpdate(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
+	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -484,12 +474,7 @@ func (s *Session) handleDelete(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !parentIdentity.IsEqual(elemental.RootIdentity) {
+	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
