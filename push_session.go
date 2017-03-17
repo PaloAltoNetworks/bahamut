@@ -344,7 +344,7 @@ func (s *Session) handleRetrieveMany(request *elemental.Request) {
 	}
 
 	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Retrieve many operation method not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
+		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
