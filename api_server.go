@@ -83,7 +83,7 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
 	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry, identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -115,7 +115,7 @@ func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
 	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry, identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Update opration not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -148,7 +148,7 @@ func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
 	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry, identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Delete operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -186,7 +186,7 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 	}
 
 	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -223,7 +223,7 @@ func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Create operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -261,7 +261,7 @@ func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Info operation not allowed on "+identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -298,7 +298,7 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry, identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Method not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Patch operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
