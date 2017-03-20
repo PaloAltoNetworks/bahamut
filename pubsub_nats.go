@@ -1,6 +1,8 @@
 package bahamut
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"time"
 
@@ -18,10 +20,13 @@ type natsPubSub struct {
 	clusterID     string
 	password      string
 	username      string
+	clientCerts   []tls.Certificate
+	rootCAPool    *x509.CertPool
+	clientCAPool  *x509.CertPool
 }
 
 // newNatsPubSub Initializes the pubsub server.
-func newNatsPubSub(natsURL string, clusterID string, clientID string, username string, password string) *natsPubSub {
+func newNatsPubSub(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) *natsPubSub {
 
 	return &natsPubSub{
 		natsURL:       natsURL,
@@ -30,6 +35,9 @@ func newNatsPubSub(natsURL string, clusterID string, clientID string, username s
 		clusterID:     clusterID,
 		username:      username,
 		password:      password,
+		clientCerts:   clientCerts,
+		rootCAPool:    rootCAPool,
+		clientCAPool:  clientCAPool,
 	}
 }
 
@@ -106,10 +114,16 @@ func (p *natsPubSub) Connect() Waiter {
 
 			var err error
 
+			tlsConfig := &tls.Config{
+				Certificates: p.clientCerts,
+				RootCAs:      p.rootCAPool,
+				ClientCAs:    p.clientCAPool,
+			}
+
 			if p.username != "" || p.password != "" {
-				p.nc, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password))
+				p.nc, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(tlsConfig))
 			} else {
-				p.nc, err = nats.Connect(p.natsURL)
+				p.nc, err = nats.Connect(p.natsURL, nats.Secure(tlsConfig))
 			}
 
 			if err == nil {

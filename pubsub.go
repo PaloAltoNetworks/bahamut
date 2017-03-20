@@ -1,6 +1,8 @@
 package bahamut
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -31,7 +33,21 @@ func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID stri
 		clusterID = "test-cluster"
 	}
 
-	return newNatsPubSub(natsURL, clusterID, clientID, username, password)
+	return newNatsPubSub(natsURL, clusterID, clientID, username, password, nil, nil, nil)
+}
+
+// NewNATSPubSubServerWithTLSAuth returns a PubSubServer backed by NATS using TLS authentication.
+func NewNATSPubSubServerWithTLSAuth(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) PubSubServer {
+
+	if clientID == "" {
+		clientID = uuid.NewV4().String()
+	}
+
+	if clusterID == "" {
+		clusterID = "test-cluster"
+	}
+
+	return newNatsPubSub(natsURL, clusterID, clientID, username, password, rootCAPool, clientCAPool, clientCerts)
 }
 
 // NewLocalPubSubServer returns a PubSubServer backed by local channels.
