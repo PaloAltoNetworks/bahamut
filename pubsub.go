@@ -17,6 +17,12 @@ type PubSubServer interface {
 // NewNATSPubSubServer returns a PubSubServer backed by NATS.
 func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubSubServer {
 
+	return NewNATSPubSubServerWithAuth(natsURL, clusterID, clientID, "", "")
+}
+
+// NewNATSPubSubServerWithAuth returns a PubSubServer backed by NATS using authentication.
+func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID string, username string, password string) PubSubServer {
+
 	if clientID == "" {
 		clientID = uuid.NewV4().String()
 	}
@@ -25,7 +31,7 @@ func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubS
 		clusterID = "test-cluster"
 	}
 
-	return newNatsPubSub(natsURL, clusterID, clientID)
+	return newNatsPubSub(natsURL, clusterID, clientID, username, password)
 }
 
 // NewLocalPubSubServer returns a PubSubServer backed by local channels.
