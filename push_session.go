@@ -279,10 +279,12 @@ func (s *Session) listenToAPIRequest() {
 		select {
 		case request := <-s.requests:
 
-			// We backport the token of the session into the request.
-			if t := s.Parameters.Get("token"); t != "" {
-				request.Username = "Bearer"
-				request.Password = t
+			// We backport the token of the session into the request if we don't have an explicit one given in the request.
+			if request.Password == "" {
+				if t := s.Parameters.Get("token"); t != "" {
+					request.Username = "Bearer"
+					request.Password = t
+				}
 			}
 
 			switch request.Operation {
