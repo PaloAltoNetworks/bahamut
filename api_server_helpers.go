@@ -45,7 +45,7 @@ func writeHTTPError(w http.ResponseWriter, origin string, err error) {
 	w.WriteHeader(outError.Code())
 
 	if e := json.NewEncoder(w).Encode(&outError); e != nil {
-		log.WithFields(logrus.Fields{
+		logrus.WithFields(logrus.Fields{
 			"error":         e.Error(),
 			"originalError": err.Error(),
 		}).Error("Unable to encode error.")

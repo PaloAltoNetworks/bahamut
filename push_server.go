@@ -5,15 +5,41 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
-
-	"golang.org/x/net/websocket"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	"github.com/opentracing/opentracing-go/log"
+	"golang.org/x/net/websocket"
 )
+
+type sessionTracer struct {
+	span opentracing.Span
+}
+
+func newSessionTracer(session *Session) *sessionTracer {
+
+	sp := opentracing.StartSpan(fmt.Sprintf("bahamut.session.authentication"))
+	sp.SetTag("bahamut.session.id", session.Identifier())
+
+	return &sessionTracer{
+		span: sp,
+	}
+}
+
+func (t *sessionTracer) Span() opentracing.Span {
+	return t.span
+}
+
+func (t *sessionTracer) NewChildSpan(name string) opentracing.Span {
+
+	return opentracing.StartSpan(name, opentracing.ChildOf(t.span.Context()))
+}
 
 type pushServer struct {
 	address         string
@@ -83,10 +109,13 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 
 	if n.config.Security.SessionAuthenticator != nil {
 
-		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session)
+		spanHolder := newSessionTracer(session)
 
+		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session, spanHolder)
 		if err != nil {
-			log.WithField("error", err.Error()).Error("Error during checking authentication.")
+			ext.Error.Set(spanHolder.Span(), true)
+			spanHolder.Span().LogFields(log.Error(err))
+			spanHolder.Span().Finish()
 		}
 
 		if !ok {
@@ -95,8 +124,11 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
 			ws.Close() // nolint: errcheck
+			spanHolder.Span().Finish()
 			return
 		}
+
+		spanHolder.Span().Finish()
 	}
 
 	// Send the first hello message.
@@ -104,7 +136,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
-			log.WithField("error", err.Error()).Error("Error while sending hello message.")
+			logrus.WithField("error", err.Error()).Error("Error while sending hello message.")
 			return
 		}
 	}
@@ -125,12 +157,12 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 		publication := NewPublication(n.config.WebSocketServer.Topic)
 		if err := publication.Encode(event); err != nil {
-			log.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
+			logrus.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
 			break
 		}
 
 		if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
-			log.WithFields(logrus.Fields{
+			logrus.WithFields(logrus.Fields{
 				"topic": publication.Topic,
 				"event": event.String(),
 				"error": err.Error(),
@@ -151,13 +183,13 @@ func (n *pushServer) closeAllSessions() {
 // starts the push server
 func (n *pushServer) start() {
 
-	log.WithField("endpoint", n.address+"/events").Info("Starting event server.")
+	logrus.WithField("endpoint", n.address+"/events").Info("Starting event server.")
 
 	publications := make(chan *Publication)
 	if n.config.WebSocketServer.Service != nil {
 		errors := make(chan error)
 		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
-		log.Info("Subscribed to events")
+		logrus.Info("Subscribed to events")
 		defer unsubscribe()
 	}
 
@@ -168,7 +200,7 @@ func (n *pushServer) start() {
 
 			event := &elemental.Event{}
 			if err := publication.Decode(event); err != nil {
-				log.WithField("error", err.Error()).Error("Unable to decode event.")
+				logrus.WithField("error", err.Error()).Error("Unable to decode event.")
 				break
 			}
 
@@ -191,7 +223,7 @@ func (n *pushServer) start() {
 
 						ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
 						if err != nil {
-							log.WithError(err).Error("Error while checking authorization.")
+							logrus.WithError(err).Error("Error while checking authorization.")
 							return
 						}
 
@@ -208,7 +240,7 @@ func (n *pushServer) start() {
 
 		case <-n.close:
 
-			log.Info("Stopping push server.")
+			logrus.Info("Stopping push server.")
 			n.closeAllSessions()
 			return
 		}

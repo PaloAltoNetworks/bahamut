@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -19,11 +20,11 @@ import (
 func RegisterProcessorOrDie(server Server, processor Processor, identity elemental.Identity) {
 
 	if server == nil {
-		log.Fatal("Not bahamut set. You must create a bahamut server first.")
+		logrus.Fatal("Not bahamut set. You must create a bahamut server first.")
 	}
 
 	if err := server.RegisterProcessor(processor, identity); err != nil {
-		log.WithError(err).Fatal("Duplicate identity registration.")
+		logrus.WithError(err).Fatal("Duplicate identity registration.")
 	}
 }
 
@@ -128,7 +129,7 @@ func (b *server) handleExit() {
 	<-c
 
 	b.Stop()
-	log.Info("Bye!")
+	logrus.Info("Bye!")
 }
 
 func (b *server) Start() {

@@ -47,7 +47,7 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		return fmt.Errorf("Not connected to nats. Messages dropped")
 	}
 
-	log.WithFields(logrus.Fields{
+	logrus.WithFields(logrus.Fields{
 		"topic":   publication.Topic,
 		"natsURL": p.natsURL,
 		"data":    string(publication.data),
@@ -130,7 +130,7 @@ func (p *natsPubSub) Connect() Waiter {
 				break
 			}
 
-			log.WithFields(logrus.Fields{
+			logrus.WithFields(logrus.Fields{
 				"url":   p.natsURL,
 				"error": err.Error(),
 				"retry": p.retryInterval,
@@ -160,7 +160,7 @@ func (p *natsPubSub) Connect() Waiter {
 				}
 			}
 
-			log.WithFields(logrus.Fields{
+			logrus.WithFields(logrus.Fields{
 				"url":       p.natsURL,
 				"clusterID": p.clusterID,
 				"clientID":  p.clientID,

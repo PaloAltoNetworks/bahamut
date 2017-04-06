@@ -4,7 +4,9 @@
 
 package bahamut
 
-import "github.com/aporeto-inc/elemental"
+import (
+	"github.com/aporeto-inc/elemental"
+)
 
 type processorFinder func(identity elemental.Identity) (Processor, error)
 
@@ -90,7 +92,7 @@ type RequestAuthenticator interface {
 // SessionAuthenticator is the interface that must be implemented in order to
 // be used as the initial Web socket session Authenticator.
 type SessionAuthenticator interface {
-	AuthenticateSession(elemental.SessionHolder) (bool, error)
+	AuthenticateSession(elemental.SessionHolder, elemental.SpanHolder) (bool, error)
 }
 
 // Authorizer is the interface that must be implemented in order to

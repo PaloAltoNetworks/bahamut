@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/go-zoo/bone"
 )
 
@@ -27,7 +28,7 @@ func (s *profilingServer) start() {
 	address := s.config.ProfilingServer.ListenAddress
 
 	s.server = &http.Server{Addr: address}
-	log.WithField("address", address).Info("Starting profiling server.")
+	logrus.WithField("address", address).Info("Starting profiling server.")
 
 	mux := bone.New()
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -38,7 +39,7 @@ func (s *profilingServer) start() {
 
 	s.server.Handler = mux
 	if err := s.server.ListenAndServe(); err != nil {
-		log.WithError(err).Fatal("Unable to start profiling http server.")
+		logrus.WithError(err).Fatal("Unable to start profiling http server.")
 	}
 }
 

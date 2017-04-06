@@ -1,6 +1,10 @@
 package bahamut
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Sirupsen/logrus"
+)
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
@@ -20,14 +24,14 @@ func newHealthServer(config Config) *healthServer {
 func (s *healthServer) start() {
 
 	address := s.config.HealthServer.ListenAddress
-	log.WithField("address", address).Info("Starting health server.")
+	logrus.WithField("address", address).Info("Starting health server.")
 
 	s.server = &http.Server{Addr: address}
 	s.server.Handler = s
 	s.server.SetKeepAlivesEnabled(true)
 
 	if err := s.server.ListenAndServe(); err != nil {
-		log.WithError(err).Fatal("Unable to start api server.")
+		logrus.WithError(err).Fatal("Unable to start api server.")
 	}
 }
 
