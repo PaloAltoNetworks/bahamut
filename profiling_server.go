@@ -6,6 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/go-zoo/bone"
+	"github.com/google/gops/agent"
 )
 
 // an profilingServer is the structure serving the profiling.
@@ -15,7 +16,7 @@ type profilingServer struct {
 }
 
 // newProfilingServer returns a new profilingServer.
-func newProfilingerver(config Config) *profilingServer {
+func newProfilingServer(config Config) *profilingServer {
 
 	return &profilingServer{
 		config: config,
@@ -24,6 +25,10 @@ func newProfilingerver(config Config) *profilingServer {
 
 // start starts the profilingServer.
 func (s *profilingServer) start() {
+
+	if err := agent.Listen(nil); err != nil {
+		logrus.WithError(err).Fatal("Unable to start the gops agent.")
+	}
 
 	address := s.config.ProfilingServer.ListenAddress
 
