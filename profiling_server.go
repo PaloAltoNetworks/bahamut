@@ -38,6 +38,7 @@ func (s *profilingServer) start() {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
+	s.server = &http.Server{Addr: s.config.ProfilingServer.ListenAddress}
 	s.server.Handler = mux
 	if err := s.server.ListenAndServe(); err != nil {
 		zap.L().Fatal("Unable to start profiling http server", zap.Error(err))
