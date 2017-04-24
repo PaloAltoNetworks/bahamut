@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
+
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming"
 )
@@ -47,11 +48,11 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		return fmt.Errorf("Not connected to nats. Messages dropped")
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"topic":   publication.Topic,
-		"natsURL": p.natsURL,
-		"data":    string(publication.data),
-	}).Debug("Publishing message in nats")
+	zap.L().Debug("Publishing message in nats",
+		zap.String("topic", publication.Topic),
+		zap.String("natsURL", p.natsURL),
+		zap.ByteString("data", publication.data),
+	)
 
 	return p.client.Publish(publication.Topic, publication.data)
 }
@@ -130,11 +131,11 @@ func (p *natsPubSub) Connect() Waiter {
 				break
 			}
 
-			logrus.WithFields(logrus.Fields{
-				"url":   p.natsURL,
-				"error": err.Error(),
-				"retry": p.retryInterval,
-			}).Warn("Unable to connect to nats cluster. Retrying.")
+			zap.L().Warn("Unable to connect to nats cluster. Retrying",
+				zap.String("url", p.natsURL),
+				zap.Duration("retry", p.retryInterval),
+				zap.Error(err),
+			)
 
 			select {
 			case <-time.After(p.retryInterval):
@@ -160,13 +161,13 @@ func (p *natsPubSub) Connect() Waiter {
 				}
 			}
 
-			logrus.WithFields(logrus.Fields{
-				"url":       p.natsURL,
-				"clusterID": p.clusterID,
-				"clientID":  p.clientID,
-				"retry":     p.retryInterval,
-				"error":     err.Error(),
-			}).Warn("Unable to connect to nats streaming server. Retrying.")
+			zap.L().Warn("Unable to connect to nats streaming server. Retrying",
+				zap.String("url", p.natsURL),
+				zap.String("clusterID", p.clusterID),
+				zap.String("clientID", p.clientID),
+				zap.Duration("retry", p.retryInterval),
+				zap.Error(err),
+			)
 
 			select {
 			case <-time.After(p.retryInterval):

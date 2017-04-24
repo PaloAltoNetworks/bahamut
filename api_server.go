@@ -8,7 +8,8 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
+
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 )
@@ -366,7 +367,7 @@ func (a *apiServer) start() {
 
 	a.installRoutes()
 
-	logrus.WithField("address", a.config.ReSTServer.ListenAddress).Info("Starting api server.")
+	zap.L().Info("Starting api server", zap.String("address", a.config.ReSTServer.ListenAddress))
 
 	var err error
 	if a.config.TLS.ServerCertificates != nil {
@@ -375,7 +376,7 @@ func (a *apiServer) start() {
 		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	}
 	if err != nil {
-		logrus.WithError(err).Fatal("Unable to create api server.")
+		zap.L().Fatal("Unable to create api server", zap.Error(err))
 	}
 
 	a.server.Handler = a.multiplexer
@@ -387,7 +388,7 @@ func (a *apiServer) start() {
 	}
 
 	if err != nil {
-		logrus.WithError(err).Fatal("Unable to start api server.")
+		zap.L().Fatal("Unable to start api server", zap.Error(err))
 	}
 }
 

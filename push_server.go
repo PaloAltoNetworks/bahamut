@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
+
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
@@ -136,7 +137,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
-			logrus.WithField("error", err.Error()).Error("Error while sending hello message.")
+			zap.L().Error("Error while sending hello message", zap.Error(err))
 			return
 		}
 	}
@@ -157,16 +158,16 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 		publication := NewPublication(n.config.WebSocketServer.Topic)
 		if err := publication.Encode(event); err != nil {
-			logrus.WithField("error", err.Error()).Error("Unable to encode event. Message dropped.")
+			zap.L().Error("Unable to encode event. Message dropped", zap.Error(err))
 			break
 		}
 
 		if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
-			logrus.WithFields(logrus.Fields{
-				"topic": publication.Topic,
-				"event": event.String(),
-				"error": err.Error(),
-			}).Warn("Unable to publish. Message dropped.")
+			zap.L().Warn("Unable to publish. Message dropped",
+				zap.String("topic", publication.Topic),
+				zap.Stringer("event", event),
+				zap.Error(err),
+			)
 		}
 	}
 }
@@ -183,15 +184,17 @@ func (n *pushServer) closeAllSessions() {
 // starts the push server
 func (n *pushServer) start() {
 
-	logrus.WithField("endpoint", n.address+"/events").Info("Starting event server.")
-
 	publications := make(chan *Publication)
 	if n.config.WebSocketServer.Service != nil {
 		errors := make(chan error)
 		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
-		logrus.Info("Subscribed to events")
+		zap.L().Info("Subscribed to events")
 		defer unsubscribe()
 	}
+
+	zap.L().Info("Event server started",
+		zap.String("endpoint", n.address+"/events"),
+	)
 
 	for {
 		select {
@@ -200,7 +203,7 @@ func (n *pushServer) start() {
 
 			event := &elemental.Event{}
 			if err := publication.Decode(event); err != nil {
-				logrus.WithField("error", err.Error()).Error("Unable to decode event.")
+				zap.L().Error("Unable to decode event", zap.Error(err))
 				break
 			}
 
@@ -223,7 +226,7 @@ func (n *pushServer) start() {
 
 						ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
 						if err != nil {
-							logrus.WithError(err).Error("Error while checking authorization.")
+							zap.L().Error("Error while checking authorization", zap.Error(err))
 							return
 						}
 
@@ -240,8 +243,8 @@ func (n *pushServer) start() {
 
 		case <-n.close:
 
-			logrus.Info("Stopping push server.")
 			n.closeAllSessions()
+			zap.L().Info("Push server stopped")
 			return
 		}
 	}

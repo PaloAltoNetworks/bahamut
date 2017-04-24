@@ -3,7 +3,7 @@ package bahamut
 import (
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 // an healthServer is the structure serving the health check endpoint.
@@ -23,16 +23,15 @@ func newHealthServer(config Config) *healthServer {
 // start starts the healthServer.
 func (s *healthServer) start() {
 
-	address := s.config.HealthServer.ListenAddress
-	logrus.WithField("address", address).Info("Starting health server.")
-
-	s.server = &http.Server{Addr: address}
+	s.server = &http.Server{Addr: s.config.HealthServer.ListenAddress}
 	s.server.Handler = s
 	s.server.SetKeepAlivesEnabled(true)
 
 	if err := s.server.ListenAndServe(); err != nil {
-		logrus.WithError(err).Fatal("Unable to start api server.")
+		zap.L().Fatal("Unable to start api server", zap.Error(err))
 	}
+
+	zap.L().Info("Health server started", zap.String("address", s.config.HealthServer.ListenAddress))
 }
 
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {

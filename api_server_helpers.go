@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
+
 	"github.com/aporeto-inc/elemental"
 )
 
@@ -45,10 +46,7 @@ func writeHTTPError(w http.ResponseWriter, origin string, err error) {
 	w.WriteHeader(outError.Code())
 
 	if e := json.NewEncoder(w).Encode(&outError); e != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":         e.Error(),
-			"originalError": err.Error(),
-		}).Error("Unable to encode error.")
+		zap.L().Error("Unable to encode error", zap.Error(e))
 	}
 }
 
