@@ -69,7 +69,7 @@ func NewServer(config Config) Server {
 	}
 
 	if !config.ProfilingServer.Disabled {
-		srv.profilingServer = newProfilingerver(config)
+		srv.profilingServer = newProfilingServer(config)
 	}
 
 	return srv

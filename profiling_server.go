@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/go-zoo/bone"
+	"github.com/google/gops/agent"
 )
 
 // an profilingServer is the structure serving the profiling.
@@ -16,7 +17,7 @@ type profilingServer struct {
 }
 
 // newProfilingServer returns a new profilingServer.
-func newProfilingerver(config Config) *profilingServer {
+func newProfilingServer(config Config) *profilingServer {
 
 	return &profilingServer{
 		config: config,
@@ -26,7 +27,9 @@ func newProfilingerver(config Config) *profilingServer {
 // start starts the profilingServer.
 func (s *profilingServer) start() {
 
-	s.server = &http.Server{Addr: s.config.ProfilingServer.ListenAddress}
+	if err := agent.Listen(nil); err != nil {
+		zap.L().Fatal("Unable to start the gops agent", zap.Error(err))
+	}
 
 	mux := bone.New()
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
