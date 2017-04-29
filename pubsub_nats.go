@@ -13,32 +13,36 @@ import (
 )
 
 type natsPubSub struct {
-	natsURL       string
-	nc            *nats.Conn
-	client        stan.Conn
-	retryInterval time.Duration
-	clientID      string
-	clusterID     string
-	password      string
-	username      string
-	clientCerts   []tls.Certificate
-	rootCAPool    *x509.CertPool
-	clientCAPool  *x509.CertPool
+	natsURL        string
+	nc             *nats.Conn
+	client         stan.Conn
+	retryInterval  time.Duration
+	publishTimeout time.Duration
+	retryNumber    int
+	clientID       string
+	clusterID      string
+	password       string
+	username       string
+	clientCerts    []tls.Certificate
+	rootCAPool     *x509.CertPool
+	clientCAPool   *x509.CertPool
 }
 
 // newNatsPubSub Initializes the pubsub server.
 func newNatsPubSub(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) *natsPubSub {
 
 	return &natsPubSub{
-		natsURL:       natsURL,
-		retryInterval: 5 * time.Second,
-		clientID:      clientID,
-		clusterID:     clusterID,
-		username:      username,
-		password:      password,
-		clientCerts:   clientCerts,
-		rootCAPool:    rootCAPool,
-		clientCAPool:  clientCAPool,
+		natsURL:        natsURL,
+		retryInterval:  5 * time.Second,
+		publishTimeout: 8 * time.Second,
+		retryNumber:    5,
+		clientID:       clientID,
+		clusterID:      clusterID,
+		username:       username,
+		password:       password,
+		clientCerts:    clientCerts,
+		rootCAPool:     rootCAPool,
+		clientCAPool:   clientCAPool,
 	}
 }
 
@@ -153,7 +157,14 @@ func (p *natsPubSub) Connect() Waiter {
 
 			if p.nc.IsConnected() {
 
-				client, err = stan.Connect(p.clusterID, p.clientID, stan.NatsConn(p.nc))
+				optionsHandler := func(o *stan.Options) error {
+					o.NatsConn = p.nc
+					o.ConnectTimeout = p.publishTimeout
+					o.AckTimeout = p.publishTimeout
+					return nil
+				}
+
+				client, err = stan.Connect(p.clusterID, p.clientID, optionsHandler)
 
 				if err == nil && client != nil {
 					p.client = client

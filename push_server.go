@@ -162,7 +162,15 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 			break
 		}
 
-		if err := n.config.WebSocketServer.Service.Publish(publication); err != nil {
+		var err error
+		for i := 0; i < 3; i++ {
+			err = n.config.WebSocketServer.Service.Publish(publication)
+			if err == nil {
+				break
+			}
+		}
+
+		if err != nil {
 			zap.L().Warn("Unable to publish. Message dropped",
 				zap.String("topic", publication.Topic),
 				zap.Stringer("event", event),
