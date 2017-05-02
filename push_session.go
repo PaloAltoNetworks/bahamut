@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -320,16 +321,16 @@ func (s *Session) listenToAPIRequest() {
 func (s *Session) handleEventualPanic(response *elemental.Response) {
 
 	if r := recover(); r != nil {
-		writeWebSocketError(
-			s.socket,
-			response,
-			elemental.NewError(
-				"Internal Server Error",
-				fmt.Sprintf("%v", r),
-				"bahamut",
-				http.StatusInternalServerError,
-			),
+		err := elemental.NewError(
+			"Internal Server Error",
+			fmt.Sprintf("%v", r),
+			"bahamut",
+			http.StatusInternalServerError,
 		)
+
+		err.Data = string(debug.Stack())
+
+		writeWebSocketError(s.socket, response, err)
 	}
 }
 
