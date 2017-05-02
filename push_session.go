@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/aporeto-inc/elemental"
 	"github.com/satori/go.uuid"
 	"golang.org/x/net/websocket"
@@ -328,7 +330,9 @@ func (s *Session) handleEventualPanic(response *elemental.Response) {
 			http.StatusInternalServerError,
 		)
 
-		err.Data = string(debug.Stack())
+		st := string(debug.Stack())
+		err.Data = st
+		zap.L().Error("panic", zap.String("stacktrace", st), zap.Stringer("request", response.Request))
 
 		writeWebSocketError(s.socket, response, err)
 	}
