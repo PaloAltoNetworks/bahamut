@@ -361,6 +361,7 @@ func (s *Session) handleRetrieveMany(request *elemental.Request) {
 		s.config.Model.IdentifiablesFactory,
 		s.config.Security.RequestAuthenticator,
 		s.config.Security.Authorizer,
+		s.pushEventsFunc,
 		s.config.Security.Auditer,
 	)
 
@@ -392,6 +393,7 @@ func (s *Session) handleRetrieve(request *elemental.Request) {
 		s.config.Model.IdentifiablesFactory,
 		s.config.Security.RequestAuthenticator,
 		s.config.Security.Authorizer,
+		s.pushEventsFunc,
 		s.config.Security.Auditer,
 	)
 

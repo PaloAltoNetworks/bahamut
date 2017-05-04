@@ -29,6 +29,7 @@ func dispatchRetrieveManyOperation(
 	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
+	pusher eventPusher,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -63,6 +64,10 @@ func dispatchRetrieveManyOperation(
 		return nil, err
 	}
 
+	if ctx.HasEvents() {
+		pusher(ctx.Events()...)
+	}
+
 	audit(auditer, ctx, nil)
 
 	return ctx, nil
@@ -74,6 +79,7 @@ func dispatchRetrieveOperation(
 	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
+	pusher eventPusher,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -106,6 +112,10 @@ func dispatchRetrieveOperation(
 	if err := proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if ctx.HasEvents() {
+		pusher(ctx.Events()...)
 	}
 
 	audit(auditer, ctx, nil)
