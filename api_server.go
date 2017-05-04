@@ -101,6 +101,7 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 		a.config.Model.IdentifiablesFactory,
 		a.config.Security.RequestAuthenticator,
 		a.config.Security.Authorizer,
+		a.pusher,
 		a.config.Security.Auditer,
 	)
 
@@ -204,6 +205,7 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 		a.config.Model.IdentifiablesFactory,
 		a.config.Security.RequestAuthenticator,
 		a.config.Security.Authorizer,
+		a.pusher,
 		a.config.Security.Auditer,
 	)
 
