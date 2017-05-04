@@ -131,7 +131,7 @@ func (s *Session) DirectPush(events ...*elemental.Event) {
 
 		f := s.currentFilter()
 		if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-			break
+			continue
 		}
 
 		s.events <- event
