@@ -129,6 +129,11 @@ func (s *Session) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
+		f := s.currentFilter()
+		if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+			break
+		}
+
 		s.events <- event
 	}
 
@@ -182,11 +187,6 @@ func (s *Session) write() {
 	for {
 		select {
 		case event := <-s.events:
-
-			f := s.currentFilter()
-			if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-				break
-			}
 
 			if err := websocket.JSON.Send(s.socket, event); err != nil {
 				s.stopAll <- true
