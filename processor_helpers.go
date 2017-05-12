@@ -50,7 +50,7 @@ func CheckAuthorization(authorizer Authorizer, ctx *Context) error {
 	ok, err := authorizer.IsAuthorized(ctx)
 
 	if err != nil {
-		return elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)
+		return err
 	}
 
 	if !ok {
