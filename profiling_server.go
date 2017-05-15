@@ -41,7 +41,7 @@ func (s *profilingServer) start() {
 	s.server = &http.Server{Addr: s.config.ProfilingServer.ListenAddress}
 	s.server.Handler = mux
 	if err := s.server.ListenAndServe(); err != nil {
-		zap.L().Fatal("Unable to start profiling http server", zap.Error(err))
+		zap.L().Panic("Unable to start profiling http server", zap.Error(err))
 	}
 
 	zap.L().Info("Profiling server started", zap.String("address", s.config.ProfilingServer.ListenAddress))
