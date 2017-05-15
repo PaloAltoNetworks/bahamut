@@ -5,7 +5,7 @@
 package bahamut
 
 import (
-	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aporeto-inc/elemental"
@@ -24,7 +24,7 @@ type Auth struct {
 func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
 
 	if a.errored {
-		return false, fmt.Errorf("this is an %s", "error")
+		return false, elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
 	}
 
 	return a.authenticated, nil
@@ -33,7 +33,7 @@ func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHo
 func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
 
 	if a.errored {
-		return false, fmt.Errorf("this is an %s", "error")
+		return false, elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
 	}
 
 	return a.authorized, nil
