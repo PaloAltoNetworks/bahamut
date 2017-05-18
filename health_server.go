@@ -28,7 +28,7 @@ func (s *healthServer) start() {
 	s.server.SetKeepAlivesEnabled(true)
 
 	if err := s.server.ListenAndServe(); err != nil {
-		zap.L().Fatal("Unable to start health server", zap.Error(err))
+		zap.L().Panic("Unable to start health server", zap.Error(err))
 	}
 
 	zap.L().Info("Health server started", zap.String("address", s.config.HealthServer.ListenAddress))
