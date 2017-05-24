@@ -80,6 +80,17 @@ func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, erro
 	}, nil
 }
 
+func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	if a.config.RateLimiting.RateLimiter != nil &&
+		a.config.RateLimiting.RateLimiter.RateLimit(req) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests))
+		return
+	}
+
+	a.multiplexer.ServeHTTP(w, req)
+}
+
 func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
@@ -381,7 +392,7 @@ func (a *apiServer) start() {
 		zap.L().Fatal("Unable to create api server", zap.Error(err))
 	}
 
-	a.server.Handler = a.multiplexer
+	a.server.Handler = a
 
 	if a.config.TLS.ServerCertificates != nil {
 		err = a.server.ListenAndServeTLS("", "")

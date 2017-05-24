@@ -125,6 +125,12 @@ type Config struct {
 		Auditer Auditer
 	}
 
+	RateLimiting struct {
+
+		// RateLimiter is the RateLimiter to use eventually limit the rate of some calls.
+		RateLimiter RateLimiter
+	}
+
 	// Model contains the model configuration.
 	Model struct {
 
