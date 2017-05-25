@@ -80,10 +80,18 @@ func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, erro
 	}, nil
 }
 
+// ServeHTTP is the http handler that will be used if an only if a.config.RateLimiting.RateLimiter
+// is configured. Otherwise, the main http handler will be directly the multiplexer.
 func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	if a.config.RateLimiting.RateLimiter != nil &&
-		a.config.RateLimiting.RateLimiter.RateLimit(req) {
+	limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
+
+	if err != nil {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError))
+		return
+	}
+
+	if limited {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests))
 		return
 	}
@@ -392,7 +400,12 @@ func (a *apiServer) start() {
 		zap.L().Fatal("Unable to create api server", zap.Error(err))
 	}
 
-	a.server.Handler = a
+	// If we have a RateLimiter configured, we use our own main handler.
+	if a.config.RateLimiting.RateLimiter != nil {
+		a.server.Handler = a
+	} else {
+		a.server.Handler = a.multiplexer
+	}
 
 	if a.config.TLS.ServerCertificates != nil {
 		err = a.server.ListenAndServeTLS("", "")

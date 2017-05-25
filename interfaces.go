@@ -120,5 +120,5 @@ type Auditer interface {
 // A RateLimiter is the interface an object must implement in order to
 // limit the rate of the incoming requests.
 type RateLimiter interface {
-	RateLimit(*http.Request) bool
+	RateLimit(*http.Request) (bool, error)
 }
