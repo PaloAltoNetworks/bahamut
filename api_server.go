@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -63,11 +64,16 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 
 	} else {
 
+		cachePath := a.config.TLS.LetsEncryptCertificateCacheFolder
+		if cachePath == "" {
+			cachePath = os.TempDir()
+		}
+
 		// Otherwise, we create an autocert manager
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(a.config.TLS.LetsEncryptDomainWhiteList...),
-			Cache:      autocert.DirCache("certs"),
+			Cache:      autocert.DirCache(cachePath),
 		}
 
 		// Then we build a custom GetCertificate function to first use the certificate passed
