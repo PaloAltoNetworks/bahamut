@@ -19,12 +19,16 @@ type Auth struct {
 	authenticated bool
 	authorized    bool
 	errored       bool
+	err           error
 }
 
 func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
 
 	if a.errored {
-		return false, elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
+		if a.err == nil {
+			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
+		}
+		return false, a.err
 	}
 
 	return a.authenticated, nil
@@ -33,7 +37,10 @@ func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHo
 func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
 
 	if a.errored {
-		return false, elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
+		if a.err == nil {
+			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
+		}
+		return false, a.err
 	}
 
 	return a.authorized, nil
