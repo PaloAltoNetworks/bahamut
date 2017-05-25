@@ -7,6 +7,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net/http"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
@@ -41,6 +42,9 @@ type Config struct {
 
 		// Disabled controls if the ReSTServer should be disabled.
 		Disabled bool
+
+		// CustomRootHandlerFunc defines a custom handler func for / API.
+		CustomRootHandlerFunc http.HandlerFunc
 	}
 
 	// WebSocketServer contains the configuration for the WebSocket Server.

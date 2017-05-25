@@ -395,8 +395,13 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 func (a *apiServer) installRoutes() {
 
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
-	a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
+
+	if a.config.ReSTServer.CustomRootHandlerFunc != nil {
+		a.multiplexer.Handle("/", a.config.ReSTServer.CustomRootHandlerFunc)
+	} else {
+		a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
+	}
 
 	// non versioned routes
 	a.multiplexer.Get("/:category/:id", http.HandlerFunc(a.handleRetrieve))
