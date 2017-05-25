@@ -106,7 +106,7 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 	return server, nil
 }
 
-// createSecureHTTPServer returns a insecure HTTP Server.
+// createUnsecureHTTPServer returns a insecure HTTP Server.
 //
 // It will return an error if any.
 func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
