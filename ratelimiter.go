@@ -58,7 +58,8 @@ type rateLimiterWithBan struct {
 	basicRateLimiter
 }
 
-// NewBanRateLimiter returns a new RateLimiter.
+// NewRateLimiterWithBan returns a new RateLimiter that bans for the
+// given duration any IP that exceed the rate limit.
 func NewRateLimiterWithBan(rps int, banTime time.Duration) RateLimiter {
 
 	return &rateLimiterWithBan{
