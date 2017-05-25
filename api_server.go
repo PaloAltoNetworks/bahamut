@@ -6,14 +6,13 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"net"
 	"net/http"
-
-	"rsc.io/letsencrypt"
-
-	"go.uber.org/zap"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // an apiServer is the structure serving the api routes.
@@ -40,7 +39,6 @@ func newAPIServer(config Config, multiplexer *bone.Mux) *apiServer {
 func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	tlsConfig := &tls.Config{
-		Certificates:             a.config.TLS.ServerCertificates,
 		ClientAuth:               a.config.TLS.AuthType,
 		ClientCAs:                a.config.TLS.ClientCAPool,
 		RootCAs:                  a.config.TLS.RootCAPool,
@@ -57,9 +55,40 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 		},
 	}
 
-	if a.config.TLS.EnableLetsEncrypt {
-		var m letsencrypt.Manager
-		tlsConfig.GetCertificate = m.GetCertificate
+	if !a.config.TLS.EnableLetsEncrypt {
+
+		// If letsencrypt is not enabled we simply set the given list of
+		// certificate in the TLS option.
+		tlsConfig.Certificates = a.config.TLS.ServerCertificates
+
+	} else {
+
+		// Otherwise, we create an autocert manager
+		m := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(a.config.TLS.LetsEncryptDomainWhiteList...),
+			Cache:      autocert.DirCache("certs"),
+		}
+
+		// Then we build a custom GetCertificate function to first use the certificate passed
+		// by the config, then eventually try to get a certificate from letsencrypt.
+		localCertMap := buildNameAndIPsToCertificate(a.config.TLS.ServerCertificates)
+		tlsConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if hello.ServerName != "" {
+				if c, ok := localCertMap[hello.ServerName]; ok {
+					return c, nil
+				}
+			} else {
+				host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
+				if err != nil {
+					return nil, err
+				}
+				if c, ok := localCertMap[host]; ok {
+					return c, nil
+				}
+			}
+			return m.GetCertificate(hello)
+		}
 	}
 
 	tlsConfig.BuildNameToCertificate()

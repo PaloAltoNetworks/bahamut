@@ -109,6 +109,14 @@ type Config struct {
 
 		// EnableLetsEncrypt defines if the server should get a certificate from letsencrypt automagically.
 		EnableLetsEncrypt bool
+
+		// LetsEncryptDomainWhiteList contains the list of white listed domain name to use for
+		// issueing certificates.
+		LetsEncryptDomainWhiteList []string
+
+		// LetsEncryptCertificateCacheFolder gives the path where to store certificate cache.
+		// If empty, the default temp folder of the machine will be used.
+		LetsEncryptCertificateCacheFolder string
 	}
 
 	// Security contains the Authenticator and Authorizer.
