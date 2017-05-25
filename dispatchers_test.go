@@ -49,18 +49,13 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 	Convey("Given I have a processor that handle ProcessRetrieveMany function", t, func() {
 		request := elemental.NewRequest()
-		request.Operation = elemental.OperationRetrieveMany
-		request.Identity = elemental.MakeIdentity("Fake", "Test")
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &FakeRetrieveManyProcessor{}, nil
 		}
 
 		factory := func(identity string) elemental.Identifiable {
-			return &FakeIdentifiable{
-				identity:   identity,
-				identifier: "FakeIdentifier",
-			}
+			return &FakeIdentifiable{}
 		}
 
 		auditer := &FakeAuditer{}
@@ -78,8 +73,6 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 	Convey("Given I have a processor that handle ProcessRetrieveMany function with error", t, func() {
 		request := elemental.NewRequest()
-		request.Operation = elemental.OperationRetrieveMany
-		request.Identity = elemental.MakeIdentity("Fake", "Test")
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &FakeRetrieveManyProcessor{
@@ -118,10 +111,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		}
 
 		factory := func(identity string) elemental.Identifiable {
-			return &FakeIdentifiable{
-				identity:   identity,
-				identifier: "FakeIdentifier",
-			}
+			return &FakeIdentifiable{}
 		}
 
 		auditer := &FakeAuditer{}
@@ -146,10 +136,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		}
 
 		factory := func(identity string) elemental.Identifiable {
-			return &FakeIdentifiable{
-				identity:   identity,
-				identifier: "FakeIdentifier",
-			}
+			return &FakeIdentifiable{}
 		}
 
 		authenticator := &Auth{
@@ -179,10 +166,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		}
 
 		factory := func(identity string) elemental.Identifiable {
-			return &FakeIdentifiable{
-				identity:   identity,
-				identifier: "FakeIdentifier",
-			}
+			return &FakeIdentifiable{}
 		}
 
 		authenticator := &Auth{
