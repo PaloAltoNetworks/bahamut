@@ -5,6 +5,8 @@
 package bahamut
 
 import (
+	"net/http"
+
 	"github.com/aporeto-inc/elemental"
 )
 
@@ -113,4 +115,10 @@ type PushSessionsHandler interface {
 // audit traces.
 type Auditer interface {
 	Audit(*Context, error)
+}
+
+// A RateLimiter is the interface an object must implement in order to
+// limit the rate of the incoming requests.
+type RateLimiter interface {
+	RateLimit(*http.Request) (bool, error)
 }

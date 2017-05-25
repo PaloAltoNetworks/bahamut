@@ -106,6 +106,9 @@ type Config struct {
 
 		// AuthType defines the tls authentication mode to use for a secure server.
 		AuthType tls.ClientAuthType
+
+		// EnableLetsEncrypt defines if the server should get a certificate from letsencrypt automagically.
+		EnableLetsEncrypt bool
 	}
 
 	// Security contains the Authenticator and Authorizer.
@@ -123,6 +126,12 @@ type Config struct {
 
 		// Auditer is the Auditer to use to audit the requests.
 		Auditer Auditer
+	}
+
+	RateLimiting struct {
+
+		// RateLimiter is the RateLimiter to use eventually limit the rate of some calls.
+		RateLimiter RateLimiter
 	}
 
 	// Model contains the model configuration.
