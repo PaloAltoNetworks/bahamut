@@ -106,6 +106,9 @@ type Config struct {
 
 		// AuthType defines the tls authentication mode to use for a secure server.
 		AuthType tls.ClientAuthType
+
+		// EnableLetsEncrypt defines if the server should get a certificate from letsencrypt automagically.
+		EnableLetsEncrypt bool
 	}
 
 	// Security contains the Authenticator and Authorizer.

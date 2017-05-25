@@ -8,6 +8,8 @@ import (
 	"crypto/tls"
 	"net/http"
 
+	"rsc.io/letsencrypt"
+
 	"go.uber.org/zap"
 
 	"github.com/aporeto-inc/elemental"
@@ -53,6 +55,11 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
+	}
+
+	if a.config.TLS.EnableLetsEncrypt {
+		var m letsencrypt.Manager
+		tlsConfig.GetCertificate = m.GetCertificate
 	}
 
 	tlsConfig.BuildNameToCertificate()
