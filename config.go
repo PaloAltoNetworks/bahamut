@@ -115,7 +115,7 @@ type Config struct {
 		EnableLetsEncrypt bool
 
 		// LetsEncryptDomainWhiteList contains the list of white listed domain name to use for
-		// issueing certificates.
+		// issuing certificates.
 		LetsEncryptDomainWhiteList []string
 
 		// LetsEncryptCertificateCacheFolder gives the path where to store certificate cache.

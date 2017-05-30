@@ -1036,7 +1036,7 @@ func AliasesForIdentity(identity elemental.Identity) []string {
 	return nil
 }
 
-const nodocString = "[nodoc]"
+const nodocString = "[nodoc]" // nolint: varcheck
 
 var relationshipsRegistry elemental.RelationshipsRegistry
 
