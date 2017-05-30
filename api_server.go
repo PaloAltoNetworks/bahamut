@@ -6,7 +6,6 @@ package bahamut
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 
 	"rsc.io/letsencrypt"
@@ -108,18 +107,9 @@ func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Handleretrieve")
-
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
-	fmt.Println("identity", identity)
-	fmt.Println(a.config.Model.RelationshipsRegistry)
-	// i, b := a.config.Model.RelationshipsRegistry[identity]
-	for i, r := range a.config.Model.RelationshipsRegistry {
-		fmt.Println(i.Name, i.Category, r.AllowsRetrieve)
-	}
 	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry, identity) {
-		fmt.Println("Go fuck!")
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
