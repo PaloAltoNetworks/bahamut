@@ -107,9 +107,10 @@ func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
+
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
-	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry, identity) {
+	if identity.IsEmpty() || !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry, identity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
