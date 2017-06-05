@@ -43,6 +43,11 @@ domingo_update:
 domingo_init:
 	@if [ -f glide.yaml ]; then glide install; else go get ./...; fi
 
+## To be used whenever using Kubernetes.
+## Extra argument -v remove nested vendors.
+domingo_init_kube:
+	@if [ -f glide.yaml ]; then glide up -v; else go get ./...; fi
+
 ## Testing
 
 domingo_goconvey:
