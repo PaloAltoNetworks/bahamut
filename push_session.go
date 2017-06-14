@@ -49,6 +49,7 @@ type Session struct {
 	unregisterFunc    func(*Session)
 	filter            *elemental.PushFilter
 	currentFilterLock *sync.Mutex
+	remoteAddr        string
 }
 
 func newPushSession(ws *websocket.Conn, config Config, unregisterFunc func(*Session)) *Session {
@@ -137,9 +138,10 @@ func (s *Session) DirectPush(events ...*elemental.Event) {
 func (s *Session) readRequests() {
 
 	for {
-		var request *elemental.Request
+		request := elemental.NewRequest()
+		request.ClientIP = s.remoteAddr
 
-		if err := websocket.JSON.Receive(s.socket, &request); err != nil {
+		if err := websocket.JSON.Receive(s.socket, request); err != nil {
 			if _, ok := err.(*json.SyntaxError); ok {
 				response := elemental.NewResponse()
 				response.Request = request

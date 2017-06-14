@@ -108,6 +108,8 @@ func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
 
 func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 
+	session.remoteAddr = ws.Request().RemoteAddr
+
 	if n.config.Security.SessionAuthenticator != nil {
 
 		spanHolder := newSessionTracer(session)
