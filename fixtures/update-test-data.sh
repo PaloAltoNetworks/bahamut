@@ -21,8 +21,8 @@ cat ./codegen/elemental/list.go >> ./data_test.go
 cat ./codegen/elemental/task.go | (read; read; read; read; cat) >> ./data_test.go
 cat ./codegen/elemental/root.go | (read; read; read; read; read; read; cat) >> ./data_test.go
 cat ./codegen/elemental/user.go | (read; read;read; read; cat) >> ./data_test.go
-cat ./codegen/elemental/relationships_registry.go | (read; read; read; cat) >> ./data_test.go
 cat ./codegen/elemental/identities_registry.go | (read; read; read; cat) >> ./data_test.go
+cat ./codegen/elemental/relationships_registry.go | (read; read; read; cat) >> ./data_test.go
 cat >> ./data_test.go << EOF
 
 var UnmarshalableListIdentity = elemental.Identity{Name: "list", Category: "lists"}

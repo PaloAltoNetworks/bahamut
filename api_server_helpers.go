@@ -2,8 +2,6 @@ package bahamut
 
 import (
 	"bytes"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -61,31 +59,31 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	writeHTTPError(w, r.Header.Get("Origin"), elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound))
 }
 
-func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certificate {
-
-	out := map[string]*tls.Certificate{}
-
-	for _, cert := range certs {
-
-		x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			continue
-		}
-		if len(x509Cert.Subject.CommonName) > 0 {
-			out[x509Cert.Subject.CommonName] = &cert
-		}
-
-		for _, san := range x509Cert.DNSNames {
-			out[san] = &cert
-		}
-
-		for _, ipsan := range x509Cert.IPAddresses {
-			out[ipsan.String()] = &cert
-		}
-	}
-
-	return out
-}
+// func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certificate {
+//
+// 	out := map[string]*tls.Certificate{}
+//
+// 	for _, cert := range certs {
+//
+// 		x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+// 		if err != nil {
+// 			continue
+// 		}
+// 		if len(x509Cert.Subject.CommonName) > 0 {
+// 			out[x509Cert.Subject.CommonName] = &cert
+// 		}
+//
+// 		for _, san := range x509Cert.DNSNames {
+// 			out[san] = &cert
+// 		}
+//
+// 		for _, ipsan := range x509Cert.IPAddresses {
+// 			out[ipsan.String()] = &cert
+// 		}
+// 	}
+//
+// 	return out
+// }
 
 func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 

@@ -7,13 +7,16 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -58,6 +61,8 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 		cfg.TLS.ClientCAPool = clientcapool
 		cfg.TLS.ServerCertificates = servercerts
 		cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
+		cfg.Model.RelationshipsRegistry = Relationships()
+		cfg.Model.IdentifiablesFactory = IdentifiableForIdentity
 
 		c := newAPIServer(cfg, bone.New())
 
@@ -98,46 +103,6 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 	})
 }
 
-func TestServer_RouteInstallation(t *testing.T) {
-
-	// Convey("Given I create a new api server with routes", t, func() {
-	//
-	// 	h := func(w http.ResponseWriter, req *http.Request) {}
-	//
-	// 	var routes []*Route
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPost, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodGet, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodDelete, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPatch, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodHead, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPut, h))
-	//
-	// 	cfg := APIServerConfig{
-	// 		ListenAddress:          "address:80",
-	// 		ProfilingListenAddress: "address:3434",
-	// 		Routes:                 routes,
-	// 		EnableProfiling:        true,
-	// 	}
-	//
-	// 	c := newAPIServer(cfg, bone.New())
-	//
-	// 	Convey("When I install the routes", func() {
-	//
-	// 		c.installRoutes()
-	//
-	// 		Convey("Then the bone Multiplexer should have correct number of handlers", func() {
-	// 			So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 2)
-	// 			So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 1)
-	// 		})
-	// 	})
-	// })
-}
-
 func TestServer_Start(t *testing.T) {
 
 	// yeah, well, until Go provides a way to stop an http server...
@@ -172,8 +137,6 @@ func TestServer_Start(t *testing.T) {
 
 			port1 := strconv.Itoa(rand.Intn(10000) + 40000)
 
-			// h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
-
 			syscapool, clientcapool, servercerts := loadFixtureCertificates()
 
 			cfg := Config{}
@@ -205,6 +168,82 @@ func TestServer_Start(t *testing.T) {
 			Convey("Then the status code should be 200", func() {
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
+			})
+		})
+	})
+}
+
+func TestServer_handleRetrieve(t *testing.T) {
+
+	// yeah, well, until Go provides a way to stop an http server...
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	Convey("Given I create an api server", t, func() {
+
+		Convey("When I start the server and call handleRetrieve", func() {
+
+			port := strconv.Itoa(rand.Intn(10000) + 20000)
+			listenAddress := "127.0.0.1:" + port
+
+			cfg := Config{}
+			cfg.ReSTServer.ListenAddress = listenAddress
+			cfg.Model.RelationshipsRegistry = Relationships()
+			cfg.Model.IdentifiablesFactory = IdentifiableForIdentity
+
+			w := httptest.NewRecorder()
+			// elReq := elemental.NewRequest()
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &FakeCompleteProcessor{}, nil
+			}
+
+			c := newAPIServer(cfg, bone.New())
+			c.processorFinder = processorFinder
+			go c.start()
+			time.Sleep(1 * time.Second)
+
+			// Simulate action
+			httptest.NewRequest("GET", "http://"+listenAddress+"/lists/x", nil)
+			// c.handleRetrieve(w, req)
+
+			resp := w.Result()
+
+			Convey("Then the status code should be OK", func() {
+				So(resp.StatusCode, ShouldEqual, 200)
+			})
+		})
+	})
+
+	Convey("Given I create an api server", t, func() {
+
+		Convey("When I start the server and call handleRetrieve with unknown processor", func() {
+
+			port := strconv.Itoa(rand.Intn(10000) + 20000)
+			listenAddress := "127.0.0.1:" + port
+
+			cfg := Config{}
+			cfg.ReSTServer.ListenAddress = listenAddress
+			cfg.Model.RelationshipsRegistry = Relationships()
+			cfg.Model.IdentifiablesFactory = IdentifiableForIdentity
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &FakeCompleteProcessor{}, nil
+			}
+
+			c := newAPIServer(cfg, bone.New())
+			c.processorFinder = processorFinder
+			go c.start()
+			time.Sleep(3 * time.Second)
+
+			// Simulate action
+			resp, _ := http.Get("http://" + listenAddress + "/unknown/x")
+
+			body, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println(resp.StatusCode)
+			fmt.Println(string(body))
+
+			Convey("Then the status code should be a 405, method not allowed", func() {
+				So(resp.StatusCode, ShouldEqual, 405)
 			})
 		})
 	})
