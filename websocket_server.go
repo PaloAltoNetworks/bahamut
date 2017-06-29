@@ -38,14 +38,14 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 		processorFinder: processorFinder,
 	}
 
-	if !config.WebSocketServer.APIDisabled {
+	if !config.WebSocketServer.PushDisabled {
 		srv.multiplexer.Handle("/events", websocket.Handler(func(ws *websocket.Conn) {
 			srv.handleSession(ws, newWSPushSession(ws, srv.config, srv.unregisterSession))
 		}))
 		zap.L().Debug("Websocket push handlers installed")
 	}
 
-	if !config.WebSocketServer.PushDisabled {
+	if !config.WebSocketServer.APIDisabled {
 		srv.multiplexer.Handle("/wsapi", websocket.Handler(func(ws *websocket.Conn) {
 			srv.handleSession(ws, newWSAPISession(ws, srv.config, srv.unregisterSession, srv.processorFinder, srv.pushEvents))
 		}))
