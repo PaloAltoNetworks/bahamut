@@ -10,7 +10,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestAPIServerHelper_corsHandler(t *testing.T) {
+func TestRestServerHelper_corsHandler(t *testing.T) {
 
 	Convey("Given I call the corsHandler", t, func() {
 
@@ -26,7 +26,7 @@ func TestAPIServerHelper_corsHandler(t *testing.T) {
 	})
 }
 
-func TestAPIServerHelper_notFoundHandler(t *testing.T) {
+func TestRestServerHelper_notFoundHandler(t *testing.T) {
 
 	Convey("Given I call the notFoundHandler", t, func() {
 
@@ -42,7 +42,7 @@ func TestAPIServerHelper_notFoundHandler(t *testing.T) {
 	})
 }
 
-func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
+func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 	type Entity struct {
 		Name string `json:"name"`
@@ -123,7 +123,7 @@ func TestAPIServerHelper_writeHTTPResponse(t *testing.T) {
 	})
 }
 
-func TestAPIServerHelpers_writeHTTPError(t *testing.T) {
+func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 
 	Convey("Given I create a http.ResponseWriter", t, func() {
 
@@ -158,7 +158,7 @@ func TestAPIServerHelpers_writeHTTPError(t *testing.T) {
 	})
 }
 
-func TestAPIServerHelpers_commonHeaders(t *testing.T) {
+func TestRestServerHelpers_commonHeaders(t *testing.T) {
 
 	Convey("Given I create a http.ResponseWriter", t, func() {
 

@@ -10,9 +10,9 @@ import (
 	"github.com/aporeto-inc/elemental"
 )
 
-type processorFinder func(identity elemental.Identity) (Processor, error)
+type processorFinderFunc func(identity elemental.Identity) (Processor, error)
 
-type eventPusher func(...*elemental.Event)
+type eventPusherFunc func(...*elemental.Event)
 
 // Server is the interface of a bahamut server.
 type Server interface {
@@ -106,9 +106,9 @@ type Authorizer interface {
 // PushSessionsHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Server handler.
 type PushSessionsHandler interface {
-	OnPushSessionStart(*Session)
-	OnPushSessionStop(*Session)
-	ShouldPush(*Session, *elemental.Event) (bool, error)
+	OnPushSessionStart(PushSession)
+	OnPushSessionStop(PushSession)
+	ShouldPush(PushSession, *elemental.Event) (bool, error)
 }
 
 // Auditer is the interface an object must implement in order to handle
@@ -121,4 +121,17 @@ type Auditer interface {
 // limit the rate of the incoming requests.
 type RateLimiter interface {
 	RateLimit(*http.Request) (bool, error)
+}
+
+// Session is the interface of a generic websocket session.
+type Session interface {
+	Identifier() string
+	GetParameter(string) string
+}
+
+// PushSession is a Push Session
+type PushSession interface {
+	Session
+
+	DirectPush(...*elemental.Event)
 }

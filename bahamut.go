@@ -33,8 +33,8 @@ type server struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
 
-	apiServer       *apiServer
-	pushServer      *pushServer
+	restServer      *restServer
+	websocketServer *websocketServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
 
@@ -54,14 +54,11 @@ func NewServer(config Config) Server {
 	}
 
 	if !config.ReSTServer.Disabled {
-		srv.apiServer = newAPIServer(config, mux)
-		srv.apiServer.processorFinder = srv.ProcessorForIdentity
-		srv.apiServer.pusher = srv.Push
+		srv.restServer = newRestServer(config, mux, srv.ProcessorForIdentity, srv.Push)
 	}
 
 	if !config.WebSocketServer.Disabled {
-		srv.pushServer = newPushServer(config, mux)
-		srv.pushServer.processorFinder = srv.ProcessorForIdentity
+		srv.websocketServer = newWebsocketServer(config, mux, srv.ProcessorForIdentity)
 	}
 
 	if !config.HealthServer.Disabled {
@@ -113,11 +110,11 @@ func (b *server) ProcessorsCount() int {
 
 func (b *server) Push(events ...*elemental.Event) {
 
-	if b.pushServer == nil {
+	if b.websocketServer == nil {
 		return
 	}
 
-	b.pushServer.pushEvents(events...)
+	b.websocketServer.pushEvents(events...)
 }
 
 // handleExit handle the interrupt signal an will try
@@ -134,12 +131,12 @@ func (b *server) handleExit() {
 
 func (b *server) Start() {
 
-	if b.apiServer != nil {
-		go b.apiServer.start()
+	if b.restServer != nil {
+		go b.restServer.start()
 	}
 
-	if b.pushServer != nil {
-		go b.pushServer.start()
+	if b.websocketServer != nil {
+		go b.websocketServer.start()
 	}
 
 	if b.healthServer != nil {
@@ -157,12 +154,12 @@ func (b *server) Start() {
 
 func (b *server) Stop() {
 
-	if b.apiServer != nil {
-		b.apiServer.stop()
+	if b.restServer != nil {
+		b.restServer.stop()
 	}
 
-	if b.pushServer != nil {
-		b.pushServer.stop()
+	if b.websocketServer != nil {
+		b.websocketServer.stop()
 	}
 
 	if b.healthServer != nil {

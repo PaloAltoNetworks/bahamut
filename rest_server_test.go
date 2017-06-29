@@ -37,7 +37,7 @@ func TestServer_Initialization(t *testing.T) {
 		cfg := Config{}
 		cfg.ReSTServer.ListenAddress = "address:80"
 
-		c := newAPIServer(cfg, bone.New())
+		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("Then it should be correctly initialized", func() {
 			So(len(c.multiplexer.Routes), ShouldEqual, 0)
@@ -59,7 +59,7 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 		cfg.TLS.ServerCertificates = servercerts
 		cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
 
-		c := newAPIServer(cfg, bone.New())
+		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make a secure server", func() {
 			srv, err := c.createSecureHTTPServer(cfg.ReSTServer.ListenAddress)
@@ -82,7 +82,7 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 		cfg := Config{}
 		cfg.ReSTServer.ListenAddress = "address:80"
 
-		c := newAPIServer(cfg, bone.New())
+		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make an unsecure server", func() {
 			srv, err := c.createUnsecureHTTPServer(cfg.ReSTServer.ListenAddress)
@@ -152,7 +152,7 @@ func TestServer_Start(t *testing.T) {
 			cfg := Config{}
 			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
 
-			c := newAPIServer(cfg, bone.New())
+			c := newRestServer(cfg, bone.New(), nil, nil)
 
 			go c.start()
 			time.Sleep(1 * time.Second)
@@ -183,7 +183,7 @@ func TestServer_Start(t *testing.T) {
 			cfg.TLS.ServerCertificates = servercerts
 			cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
 
-			c := newAPIServer(cfg, bone.New())
+			c := newRestServer(cfg, bone.New(), nil, nil)
 
 			go c.start()
 			time.Sleep(1 * time.Second)

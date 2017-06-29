@@ -5,7 +5,6 @@
 package bahamut
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -13,108 +12,84 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"golang.org/x/net/websocket"
 )
 
-type sessionTracer struct {
-	span opentracing.Span
-}
-
-func newSessionTracer(session *Session) *sessionTracer {
-
-	sp := opentracing.StartSpan(fmt.Sprintf("bahamut.session.authentication"))
-	sp.SetTag("bahamut.session.id", session.Identifier())
-
-	return &sessionTracer{
-		span: sp,
-	}
-}
-
-func (t *sessionTracer) Span() opentracing.Span {
-	return t.span
-}
-
-func (t *sessionTracer) NewChildSpan(name string) opentracing.Span {
-
-	return opentracing.StartSpan(name, opentracing.ChildOf(t.span.Context()))
-}
-
-type pushServer struct {
+type websocketServer struct {
 	address         string
-	sessions        map[string]*Session
+	sessions        map[string]internalWSSession
 	close           chan bool
 	multiplexer     *bone.Mux
 	config          Config
-	processorFinder processorFinder
+	processorFinder processorFinderFunc
 	sessionsLock    *sync.Mutex
 }
 
-func newPushServer(config Config, multiplexer *bone.Mux) *pushServer {
+func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *websocketServer {
 
-	srv := &pushServer{
-		sessions:     map[string]*Session{},
-		close:        make(chan bool, 2),
-		multiplexer:  multiplexer,
-		config:       config,
-		sessionsLock: &sync.Mutex{},
+	srv := &websocketServer{
+		sessions:        map[string]internalWSSession{},
+		close:           make(chan bool, 2),
+		multiplexer:     multiplexer,
+		config:          config,
+		sessionsLock:    &sync.Mutex{},
+		processorFinder: processorFinder,
 	}
 
-	srv.multiplexer.Handle("/events", websocket.Handler(srv.handlePushConnection))
-	srv.multiplexer.Handle("/wsapi", websocket.Handler(srv.handleAPIConnection))
+	if !config.WebSocketServer.APIDisabled {
+		srv.multiplexer.Handle("/events", websocket.Handler(func(ws *websocket.Conn) {
+			srv.handleSession(ws, newWSPushSession(ws, srv.config, srv.unregisterSession))
+		}))
+		zap.L().Debug("Websocket push handlers installed")
+	}
+
+	if !config.WebSocketServer.PushDisabled {
+		srv.multiplexer.Handle("/wsapi", websocket.Handler(func(ws *websocket.Conn) {
+			srv.handleSession(ws, newWSAPISession(ws, srv.config, srv.unregisterSession, srv.processorFinder, srv.pushEvents))
+		}))
+		zap.L().Debug("Websocket api handlers installed")
+	}
 
 	return srv
 }
 
-// adds a new push session to register in the push server
-func (n *pushServer) registerSession(session *Session) {
+func (n *websocketServer) registerSession(session internalWSSession) {
 
 	n.sessionsLock.Lock()
-	defer n.sessionsLock.Unlock()
-
-	n.sessions[session.id] = session
+	n.sessions[session.Identifier()] = session
+	n.sessionsLock.Unlock()
 
 	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-		handler.OnPushSessionStart(session)
+		if s, ok := session.(PushSession); ok {
+			handler.OnPushSessionStart(s)
+		}
 	}
 }
 
-// adds a new push session to unregister from the push server
-func (n *pushServer) unregisterSession(session *Session) {
+func (n *websocketServer) unregisterSession(session internalWSSession) {
 
 	n.sessionsLock.Lock()
-	defer n.sessionsLock.Unlock()
-
-	delete(n.sessions, session.id)
+	delete(n.sessions, session.Identifier())
+	n.sessionsLock.Unlock()
 
 	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-		handler.OnPushSessionStop(session)
+		if s, ok := session.(PushSession); ok {
+			handler.OnPushSessionStop(s)
+		}
 	}
 }
 
-// handlePushConnection handle connection for push events
-func (n *pushServer) handlePushConnection(ws *websocket.Conn) {
+func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSession) {
 
-	n.runSession(ws, newPushSession(ws, n.config, n.unregisterSession))
-}
-
-// handleAPIConnection handle connection for push events
-func (n *pushServer) handleAPIConnection(ws *websocket.Conn) {
-
-	n.runSession(ws, newAPISession(ws, n.config, n.unregisterSession, n.processorFinder, n.pushEvents))
-}
-
-func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
-
-	session.remoteAddr = ws.Request().RemoteAddr
+	session.setRemoteAddress(ws.Request().RemoteAddr)
 
 	if n.config.Security.SessionAuthenticator != nil {
 
 		spanHolder := newSessionTracer(session)
 
-		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session, spanHolder)
+		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
 		if err != nil {
 			ext.Error.Set(spanHolder.Span(), true)
 			spanHolder.Span().LogFields(log.Error(err))
@@ -122,7 +97,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 		}
 
 		if !ok {
-			if session.sType == sessionTypeAPI {
+			if _, ok := session.(PushSession); ok {
 				response := elemental.NewResponse()
 				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
 			}
@@ -135,7 +110,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 	}
 
 	// Send the first hello message.
-	if session.sType == sessionTypeAPI {
+	if _, ok := session.(*wsAPISession); ok {
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
@@ -148,9 +123,7 @@ func (n *pushServer) runSession(ws *websocket.Conn, session *Session) {
 	session.listen()
 }
 
-// push a new event. If the global push system is available, it will be used.
-// otherwise, only local sessions will receive the push
-func (n *pushServer) pushEvents(events ...*elemental.Event) {
+func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
 	if n.config.WebSocketServer.Service == nil {
 		return
@@ -182,17 +155,7 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 	}
 }
 
-func (n *pushServer) closeAllSessions() {
-
-	n.sessionsLock.Lock()
-	for _, session := range n.sessions {
-		session.close()
-	}
-	n.sessionsLock.Unlock()
-}
-
-// starts the push server
-func (n *pushServer) start() {
+func (n *websocketServer) start() {
 
 	publications := make(chan *Publication)
 	if n.config.WebSocketServer.Service != nil {
@@ -219,10 +182,10 @@ func (n *pushServer) start() {
 
 			// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
 			n.sessionsLock.Lock()
-			var sessions []*Session
+			var sessions []PushSession
 			for _, session := range n.sessions {
-				if session.sType == sessionTypeEvent {
-					sessions = append(sessions, session)
+				if s, ok := session.(PushSession); ok {
+					sessions = append(sessions, s)
 				}
 			}
 			n.sessionsLock.Unlock()
@@ -230,11 +193,11 @@ func (n *pushServer) start() {
 			// Dispatch the event to all sessions
 			for _, session := range sessions {
 
-				go func(s *Session, evt *elemental.Event) {
+				go func(s PushSession, evt *elemental.Event) {
 
 					if n.config.WebSocketServer.SessionsHandler != nil {
 
-						ok, err := s.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
+						ok, err := n.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
 						if err != nil {
 							zap.L().Error("Error while checking authorization", zap.Error(err))
 							return
@@ -253,15 +216,19 @@ func (n *pushServer) start() {
 
 		case <-n.close:
 
-			n.closeAllSessions()
+			n.sessionsLock.Lock()
+			for _, session := range n.sessions {
+				session.close()
+			}
+			n.sessionsLock.Unlock()
+
 			zap.L().Info("Push server stopped")
 			return
 		}
 	}
 }
 
-// stops the push server
-func (n *pushServer) stop() {
+func (n *websocketServer) stop() {
 
 	n.close <- true
 }

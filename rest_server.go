@@ -16,28 +16,30 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-// an apiServer is the structure serving the api routes.
-type apiServer struct {
+// an restServer is the structure serving the api routes.
+type restServer struct {
 	config          Config
 	multiplexer     *bone.Mux
 	server          *http.Server
-	processorFinder processorFinder
-	pusher          eventPusher
+	processorFinder processorFinderFunc
+	pusher          eventPusherFunc
 }
 
-// newAPIServer returns a new apiServer.
-func newAPIServer(config Config, multiplexer *bone.Mux) *apiServer {
+// newRestServer returns a new apiServer.
+func newRestServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
 
-	return &apiServer{
-		config:      config,
-		multiplexer: multiplexer,
+	return &restServer{
+		config:          config,
+		multiplexer:     multiplexer,
+		processorFinder: processorFinder,
+		pusher:          pusher,
 	}
 }
 
 // createSecureHTTPServer returns the main HTTP Server.
 //
 // It will return an error if any.
-func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error) {
+func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	tlsConfig := &tls.Config{
 		ClientAuth:               a.config.TLS.AuthType,
@@ -115,7 +117,7 @@ func (a *apiServer) createSecureHTTPServer(address string) (*http.Server, error)
 // createUnsecureHTTPServer returns a insecure HTTP Server.
 //
 // It will return an error if any.
-func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
+func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
 
 	return &http.Server{
 		Addr: address,
@@ -124,7 +126,7 @@ func (a *apiServer) createUnsecureHTTPServer(address string) (*http.Server, erro
 
 // ServeHTTP is the http handler that will be used if an only if a.config.RateLimiting.RateLimiter
 // is configured. Otherwise, the main http handler will be directly the multiplexer.
-func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
 
@@ -141,7 +143,7 @@ func (a *apiServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	a.multiplexer.ServeHTTP(w, req)
 }
 
-func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
@@ -174,7 +176,7 @@ func (a *apiServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
@@ -207,7 +209,7 @@ func (a *apiServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 
@@ -240,7 +242,7 @@ func (a *apiServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
@@ -278,7 +280,7 @@ func (a *apiServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request)
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
@@ -316,7 +318,7 @@ func (a *apiServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
@@ -353,7 +355,7 @@ func (a *apiServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 	writeHTTPResponse(w, ctx)
 }
 
-func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 
 	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
 	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
@@ -392,7 +394,7 @@ func (a *apiServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 }
 
 // installRoutes installs all the routes declared in the APIServerConfig.
-func (a *apiServer) installRoutes() {
+func (a *restServer) installRoutes() {
 
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
@@ -431,7 +433,7 @@ func (a *apiServer) installRoutes() {
 }
 
 // start starts the apiServer.
-func (a *apiServer) start() {
+func (a *restServer) start() {
 
 	a.installRoutes()
 
@@ -466,7 +468,7 @@ func (a *apiServer) start() {
 }
 
 // stop stops the apiServer.
-func (a *apiServer) stop() {
+func (a *restServer) stop() {
 
 	// a.server.Shutdown() // Uncomment with Go 1.8
 	// a.server = nil

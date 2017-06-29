@@ -25,11 +25,10 @@ func notImplementedErr(request *elemental.Request) error {
 
 func dispatchRetrieveManyOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -75,11 +74,10 @@ func dispatchRetrieveManyOperation(
 
 func dispatchRetrieveOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -125,11 +123,10 @@ func dispatchRetrieveOperation(
 
 func dispatchCreateOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -196,11 +193,10 @@ func dispatchCreateOperation(
 
 func dispatchUpdateOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -267,11 +263,10 @@ func dispatchUpdateOperation(
 
 func dispatchDeleteOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -323,11 +318,10 @@ func dispatchDeleteOperation(
 
 func dispatchPatchOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
-	pusher eventPusher,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (*Context, error) {
 
@@ -387,8 +381,7 @@ func dispatchPatchOperation(
 
 func dispatchInfoOperation(
 	request *elemental.Request,
-	processorFinder processorFinder,
-	factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	auditer Auditer,

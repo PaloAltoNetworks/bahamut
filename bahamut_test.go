@@ -52,10 +52,12 @@ type testSessionHandler struct {
 	block        bool
 }
 
-func (h *testSessionHandler) OnPushSessionStart(session *Session)            { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *Session)             { h.sessionCount-- }
-func (h *testSessionHandler) IsAuthenticated(session *Session) (bool, error) { return true, nil }
-func (h *testSessionHandler) ShouldPush(session *Session, event *elemental.Event) (bool, error) {
+func (h *testSessionHandler) OnPushSessionStart(session *wsPushSession) { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *wsPushSession)  { h.sessionCount-- }
+func (h *testSessionHandler) IsAuthenticated(session *wsPushSession) (bool, error) {
+	return true, nil
+}
+func (h *testSessionHandler) ShouldPush(session *wsPushSession, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
 	return !h.block, nil
 }
@@ -71,11 +73,11 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		b := NewServer(cfg)
 
 		Convey("Then apiServer should be nil", func() {
-			So(b.(*server).apiServer, ShouldBeNil)
+			So(b.(*server).restServer, ShouldBeNil)
 		})
 
 		Convey("Then pushServer should be nil", func() {
-			So(b.(*server).pushServer, ShouldBeNil)
+			So(b.(*server).websocketServer, ShouldBeNil)
 		})
 
 		Convey("Then number of routes should be 0", func() {
@@ -94,11 +96,11 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		b := NewServer(cfg)
 
 		Convey("Then apiServer should not be nil", func() {
-			So(b.(*server).apiServer, ShouldNotBeNil)
+			So(b.(*server).restServer, ShouldNotBeNil)
 		})
 
 		Convey("Then pushServer should be nil", func() {
-			So(b.(*server).pushServer, ShouldNotBeNil)
+			So(b.(*server).websocketServer, ShouldNotBeNil)
 		})
 
 		Convey("Then number of routes should be 0", func() {

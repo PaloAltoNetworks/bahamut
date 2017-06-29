@@ -60,8 +60,15 @@ type Config struct {
 		// manage push session lifecycle.
 		SessionsHandler PushSessionsHandler
 
-		// Disabled defines if the ReST API system should be disabled.
+		// Disabled defines if the the entire websocket server should be disabled.
+		// If you set this to true, other options has no effect.
 		Disabled bool
+
+		// APIDisabled defines if the ReST API system should be disabled.
+		APIDisabled bool
+
+		// PushDisabled defines if the Push system should be disabled.
+		PushDisabled bool
 	}
 
 	// HealthServer contains the configuration for the Health Server.
