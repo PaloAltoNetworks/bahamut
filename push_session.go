@@ -248,9 +248,6 @@ func (s *Session) listenToPushEvents() {
 
 		s.unregisterFunc(s)
 		s.socket.Close() // nolint: errcheck
-		s.processorFinder = nil
-		s.pushEventsFunc = nil
-		s.unregisterFunc = nil
 	}()
 
 	for {
@@ -275,9 +272,6 @@ func (s *Session) listenToAPIRequest() {
 
 		s.unregisterFunc(s)
 		s.socket.Close() // nolint: errcheck
-		s.processorFinder = nil
-		s.pushEventsFunc = nil
-		s.unregisterFunc = nil
 	}()
 
 	for {
