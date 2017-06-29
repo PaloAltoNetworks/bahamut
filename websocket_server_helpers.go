@@ -90,15 +90,15 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 	}
 
 	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
-
 		response.Total = c.CountTotal
 	}
 
 	if c.OutputData != nil {
-
 		if err := response.Encode(c.OutputData); err != nil {
 			return err
 		}
+	} else {
+		c.StatusCode = http.StatusOK
 	}
 
 	response.StatusCode = c.StatusCode

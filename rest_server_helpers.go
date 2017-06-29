@@ -119,6 +119,8 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
 			writeHTTPError(w, c.Request.Headers.Get("Origin"), err)
 		}
+	} else {
+		c.StatusCode = http.StatusNoContent
 	}
 
 	w.WriteHeader(c.StatusCode)

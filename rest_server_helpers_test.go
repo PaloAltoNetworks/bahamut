@@ -98,7 +98,20 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			})
 		})
 
-		Convey("When I write the response from a context with no error for a create", func() {
+		Convey("When I write the response from a context with no error for a create and some data", func() {
+
+			w := httptest.NewRecorder()
+			c.Request.Operation = elemental.OperationCreate
+			req.Method = http.MethodPost
+			c.OutputData = struct{}{}
+			writeHTTPResponse(w, c)
+
+			Convey("Then the status code should be default to 201", func() {
+				So(w.Code, ShouldEqual, 201)
+			})
+		})
+
+		Convey("When I write the response from a context with no error for a create and no data", func() {
 
 			w := httptest.NewRecorder()
 			c.Request.Operation = elemental.OperationCreate
@@ -106,7 +119,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			writeHTTPResponse(w, c)
 
 			Convey("Then the status code should be default to 201", func() {
-				So(w.Code, ShouldEqual, 201)
+				So(w.Code, ShouldEqual, 204)
 			})
 		})
 
