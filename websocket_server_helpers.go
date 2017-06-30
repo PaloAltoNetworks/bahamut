@@ -98,7 +98,7 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 			return err
 		}
 	} else {
-		c.StatusCode = http.StatusOK
+		c.StatusCode = http.StatusNoContent
 	}
 
 	response.StatusCode = c.StatusCode
