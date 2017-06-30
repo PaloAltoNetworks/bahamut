@@ -437,8 +437,6 @@ func (a *restServer) start() {
 
 	a.installRoutes()
 
-	zap.L().Info("Starting api server", zap.String("address", a.config.ReSTServer.ListenAddress))
-
 	var err error
 	if a.config.TLS.ServerCertificates != nil {
 		a.server, err = a.createSecureHTTPServer(a.config.ReSTServer.ListenAddress)
@@ -465,6 +463,8 @@ func (a *restServer) start() {
 	if err != nil {
 		zap.L().Fatal("Unable to start api server", zap.Error(err))
 	}
+
+	zap.L().Info("rest server started", zap.String("address", a.config.ReSTServer.ListenAddress))
 }
 
 // stop stops the apiServer.

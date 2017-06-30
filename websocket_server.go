@@ -161,12 +161,12 @@ func (n *websocketServer) start() {
 	if n.config.WebSocketServer.Service != nil {
 		errors := make(chan error)
 		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
-		zap.L().Info("Subscribed to events")
 		defer unsubscribe()
 	}
 
-	zap.L().Info("Event server started",
-		zap.String("endpoint", n.address+"/events"),
+	zap.L().Info("Websocket server started",
+		zap.Bool("api-enabled", !n.config.WebSocketServer.APIDisabled),
+		zap.Bool("push-enabled", !n.config.WebSocketServer.PushDisabled),
 	)
 
 	for {
