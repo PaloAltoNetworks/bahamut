@@ -18,7 +18,6 @@ import (
 )
 
 type websocketServer struct {
-	address         string
 	sessions        map[string]internalWSSession
 	close           chan bool
 	multiplexer     *bone.Mux
