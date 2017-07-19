@@ -145,7 +145,7 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -177,7 +177,7 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -214,7 +214,7 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -246,7 +246,7 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -278,7 +278,7 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 
 	defer s.handleEventualPanic(response)
 
-	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry, request.Identity) || !request.ParentIdentity.IsEmpty() {
+	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -315,7 +315,7 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
@@ -351,7 +351,7 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry, request.Identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}

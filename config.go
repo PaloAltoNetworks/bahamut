@@ -160,7 +160,7 @@ type Config struct {
 		// according to its identity.
 		IdentifiablesFactory elemental.IdentifiableFactory
 
-		// RelationshipsRegistry contains the elemental model RelationshipsRegistry.
-		RelationshipsRegistry elemental.RelationshipsRegistry
+		// RelationshipsRegistry contains each elemental model RelationshipsRegistry for each version.
+		RelationshipsRegistry map[int]elemental.RelationshipsRegistry
 	}
 }
