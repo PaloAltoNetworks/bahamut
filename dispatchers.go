@@ -196,7 +196,8 @@ func dispatchCreateOperation(
 
 func dispatchUpdateOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
