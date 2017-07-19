@@ -158,7 +158,7 @@ type Config struct {
 
 		// IdentifiablesFactory is a function that returns a instance of a model
 		// according to its identity.
-		IdentifiablesFactory func(identity string) elemental.Identifiable
+		IdentifiablesFactory elemental.IdentifiableFactory
 
 		// RelationshipsRegistry contains the elemental model RelationshipsRegistry.
 		RelationshipsRegistry elemental.RelationshipsRegistry

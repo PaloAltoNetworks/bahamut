@@ -25,7 +25,8 @@ func notImplementedErr(request *elemental.Request) error {
 
 func dispatchRetrieveManyOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
@@ -74,7 +75,8 @@ func dispatchRetrieveManyOperation(
 
 func dispatchRetrieveOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
@@ -123,7 +125,8 @@ func dispatchRetrieveOperation(
 
 func dispatchCreateOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
@@ -156,7 +159,7 @@ func dispatchCreateOperation(
 		return nil, err
 	}
 
-	obj := factory(request.Identity.Name)
+	obj := factory(request.Identity.Name, ctx.Request.Version)
 	if err := request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -226,7 +229,7 @@ func dispatchUpdateOperation(
 		return nil, err
 	}
 
-	obj := factory(request.Identity.Name)
+	obj := factory(request.Identity.Name, ctx.Request.Version)
 	if err := request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -263,7 +266,8 @@ func dispatchUpdateOperation(
 
 func dispatchDeleteOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
@@ -318,7 +322,8 @@ func dispatchDeleteOperation(
 
 func dispatchPatchOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	pusher eventPusherFunc,
@@ -381,7 +386,8 @@ func dispatchPatchOperation(
 
 func dispatchInfoOperation(
 	request *elemental.Request,
-	processorFinder processorFinderFunc, factory elemental.IdentifiableFactory,
+	processorFinder processorFinderFunc,
+	factory elemental.IdentifiableFactory,
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	auditer Auditer,

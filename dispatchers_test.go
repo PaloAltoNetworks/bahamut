@@ -74,7 +74,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -100,7 +100,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -127,7 +127,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -152,7 +152,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -182,7 +182,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -220,7 +220,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -246,7 +246,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -273,7 +273,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -298,7 +298,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -328,7 +328,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -367,7 +367,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -395,7 +395,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -420,7 +420,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -446,7 +446,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -472,7 +472,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{
 				validationError: elemental.NewError("Error", "Object validation has failed.", "bahamut-test", http.StatusBadRequest),
 			}
@@ -501,7 +501,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -526,7 +526,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -556,7 +556,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -595,7 +595,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -623,7 +623,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -648,7 +648,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -674,7 +674,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -700,7 +700,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{
 				validationError: elemental.NewError("Error", "Object validation has failed.", "bahamut-test", http.StatusBadRequest),
 			}
@@ -729,7 +729,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -754,7 +754,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -784,7 +784,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -823,7 +823,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -850,7 +850,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -877,7 +877,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -902,7 +902,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -932,7 +932,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -971,7 +971,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -996,7 +996,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1024,7 +1024,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1051,7 +1051,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1076,7 +1076,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1106,7 +1106,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1145,7 +1145,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeCompleteProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1172,7 +1172,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1199,7 +1199,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1224,7 +1224,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
@@ -1254,7 +1254,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeProcessor{}, nil
 		}
 
-		factory := func(identity string) elemental.Identifiable {
+		factory := func(identity string, version int) elemental.Identifiable {
 			return &FakeIdentifiable{}
 		}
 
