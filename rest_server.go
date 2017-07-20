@@ -314,6 +314,10 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if request.ParentIdentity.IsEmpty() {
+		request.ParentIdentity = elemental.RootIdentity
+	}
+
 	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
