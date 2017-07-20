@@ -145,16 +145,14 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -178,16 +176,14 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Update opration not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Update opration not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -211,16 +207,14 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Delete operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -244,21 +238,18 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
-
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+identity.Category, "bahamut", http.StatusMethodNotAllowed))
+	if request.ParentIdentity.IsEmpty() {
+		request.ParentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -282,21 +273,18 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 
 func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
-
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Create operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+	if request.ParentIdentity.IsEmpty() {
+		request.ParentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -320,21 +308,14 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
-
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Info operation not allowed on "+identity.Category, "bahamut", http.StatusMethodNotAllowed))
+	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -357,21 +338,18 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 
-	identity := elemental.IdentityFromCategory(bone.GetValue(req, "category"))
-	parentIdentity := elemental.IdentityFromCategory(bone.GetValue(req, "parentcategory"))
-
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
-	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry[request.Version], identity, parentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Patch operation not allowed on "+identity.Name, "bahamut", http.StatusMethodNotAllowed))
+	if request.ParentIdentity.IsEmpty() {
+		request.ParentIdentity = elemental.RootIdentity
+	}
+
+	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
+		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 

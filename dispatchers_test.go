@@ -33,6 +33,9 @@ func (p *FakeIdentifiable) Identifier() string {
 func (p *FakeIdentifiable) SetIdentifier(identifier string) {
 	p.identifier = identifier
 }
+func (p *FakeIdentifiable) Version() int {
+	return 1
+}
 func (p *FakeIdentifiable) Validate() error {
 	return p.validationError
 }
