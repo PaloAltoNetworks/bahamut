@@ -95,10 +95,15 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 			spanHolder.Span().Finish()
 		}
 
-		if !ok {
-			if _, ok := session.(PushSession); ok {
+		if !ok || err != nil {
+
+			if _, ok := session.(*wsAPISession); ok {
 				response := elemental.NewResponse()
-				writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
+				if err != nil {
+					writeWebSocketError(ws, response, err)
+				} else {
+					writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
+				}
 			}
 			ws.Close() // nolint: errcheck
 			spanHolder.Span().Finish()
