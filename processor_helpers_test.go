@@ -16,7 +16,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &MockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
@@ -80,7 +80,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &MockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")

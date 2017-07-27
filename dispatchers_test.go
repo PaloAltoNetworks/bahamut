@@ -100,7 +100,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -130,11 +130,11 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -246,7 +246,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -276,11 +276,11 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -474,7 +474,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -504,11 +504,11 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -702,7 +702,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -732,11 +732,11 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -850,7 +850,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -880,11 +880,11 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -1024,7 +1024,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -1054,11 +1054,11 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -1172,7 +1172,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
 		}
@@ -1202,11 +1202,11 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &elemental.MockIdentifiable{}
 		}
 
-		authenticator := &Auth{
+		authenticator := &MockAuth{
 			ExpectedAuthenticatedResult: true,
 		}
 
-		authorizer := &Auth{
+		authorizer := &MockAuth{
 			DefinedHasError: true,
 			ExpectedError:   elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
 		}

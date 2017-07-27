@@ -16,8 +16,8 @@ func (p *MockAuditer) Audit(*Context, error) {
 	p.Hits++
 }
 
-// Auth mocks an AuthenticateRequest
-type Auth struct {
+// MockAuth mocks an RequestAuthenticator and Authorizer
+type MockAuth struct {
 	DefinedHasError             bool
 	ExpectedAuthenticatedResult bool
 	ExpectedAuthorizedResult    bool
@@ -25,7 +25,7 @@ type Auth struct {
 }
 
 // AuthenticateRequest authenticate a given request
-func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
+func (a *MockAuth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
 
 	if a.DefinedHasError {
 		if a.ExpectedError == nil {
@@ -38,7 +38,7 @@ func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHo
 }
 
 // IsAuthorized verifies the authentication
-func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
+func (a *MockAuth) IsAuthorized(ctx *Context) (bool, error) {
 
 	if a.DefinedHasError {
 		if a.ExpectedError == nil {
