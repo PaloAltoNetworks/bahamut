@@ -55,7 +55,7 @@ domingo_goconvey:
 
 domingo_test:
 	@echo "Running linters army..."
-	@gometalinter --vendor --disable-all \
+	@gometalinter --vendor --exclude=vendor --disable-all \
 		--enable=vet \
 		--enable=vetshadow \
 		--enable=golint \
