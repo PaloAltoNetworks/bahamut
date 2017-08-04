@@ -21,4 +21,3 @@ run:
       cd go/src/github.com/aporeto-inc/bahamut
       make init || exit 1
       make test || exit 1
-      make release || exit 1
