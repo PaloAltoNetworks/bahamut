@@ -1,61 +1,25 @@
-# ------------------------------------------------
-# Copyright (C) 2016 Aporeto Inc.
-#
-# File  : Makefile
-#
-# Author: alex@aporeto.com, antoine@aporeto.com
-# Date  : 2016-03-8
-#
-# ------------------------------------------------
-
 ## configure this throught environment variables
-PROJECT_OWNER?=github.com/aporeto-inc
-PROJECT_NAME?=my-super-project
-DOMINGO_DOCKER_TAG?=latest
-DOMINGO_DOCKER_REPO=gcr.io/aporetodev
-GITHUB_TOKEN?=
-
-######################################################################
-######################################################################
-
-export ROOT_DIR?=$(PWD)
-
-MAKEFLAGS += --warn-undefined-variables
-SHELL := /bin/bash -o pipefail
-
-NOVENDOR                := $(shell glide novendor)
-NOTEST_DIRS             := $(addsuffix ...,$(NOVENDOR))
-NOTEST_DIRS             := $(addprefix ./,$(NOVENDOR))
-TEST_DIRS               := $(filter-out $(NOTEST_DIRS),$(NOVENDOR))
-GO_SRCS                 := $(wildcard *.go)
-
-## Update
-
-domingo_update:
-	@echo "# Updating Domingo..."
-	@echo "REMINDER: you need to export GITHUB_TOKEN for this to work"
-	curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
-	@echo "domingo.mk updated!"
-
-
-## initialization
+PROJECT_NAME				?= $(shell basename $(PWD))
+PROJECT_VERSION			?= $(shell git rev-parse --abbrev-ref HEAD)
+PROJECT_SHA					?= $(shell git rev-parse HEAD)
+DOMINGO_DOCKER_TAG	?=latest
+DOMINGO_DOCKER_REPO	?=gcr.io/aporetodev
+GITHUB_TOKEN				?=
+MAKEFLAGS						+= --warn-undefined-variables
+SHELL								:= /bin/bash -o pipefail
 
 domingo_init:
-	@if [ -f glide.yaml ]; then glide install; else go get ./...; fi
-
-## To be used whenever using Kubernetes.
-## Extra argument -v remove nested vendors.
-domingo_init_kube:
+	@echo "initializing..."
 	@if [ -f glide.yaml ]; then glide up -v; else go get ./...; fi
 
-## Testing
+domingo_write_versions:
+	@echo "writing versions file..."
+	@go get -u github.com/aporeto-inc/domingo/tools/apolibver
+	@apolibver --project-version $(PROJECT_VERSION) --project-sha $(PROJECT_SHA)
 
-domingo_goconvey:
-	goconvey -port 34562 .
-
-domingo_test:
-	@echo "Running linters army..."
-	@gometalinter --vendor --exclude=vendor --disable-all \
+domingo_lint:
+	@echo "running linters..."
+	@gometalinter --vendor --disable-all \
 		--enable=vet \
 		--enable=vetshadow \
 		--enable=golint \
@@ -69,11 +33,40 @@ domingo_test:
 		--enable=deadcode \
 		--enable=staticcheck \
 		--deadline 5m \
-		--tests $(TEST_DIRS)
-	@echo "Running unit tests..."
-	@go test -race -cover $(TEST_DIRS)
-	@echo "Success!"
+		--tests ./...
 
-container:
-	make build_linux
-	cd docker && docker build -t $(DOMINGO_DOCKER_REPO)/$(PROJECT_NAME):$(DOMINGO_DOCKER_TAG) .
+domingo_unit_tests:
+	@echo "running unit tests..."
+	@go test -race -cover $(shell glide novendor)
+
+domingo_test: domingo_lint domingo_unit_tests
+
+domingo_build:
+	@echo "building $(PROJECT_NAME) for current platform..."
+	@CGO_ENABLED=0 go build -a -installsuffix cgo
+
+domingo_build_linux:
+	@echo "building $(PROJECT_NAME) for linux..."
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo
+
+domingo_build_windows:
+	@echo "building $(PROJECT_NAME) for windows..."
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo
+
+domingo_build_darwin:
+	@echo "building $(PROJECT_NAME) for darwin..."
+	@GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo
+
+domingo_package:
+	@echo "packaging $(PROJECT_NAME) binary..."
+	@mkdir -p docker/app
+	@cp -a $(PROJECT_NAME) docker/app
+
+domingo_container:
+	@echo "building $(DOMINGO_DOCKER_REPO)/$(PROJECT_NAME):$(DOMINGO_DOCKER_TAG)"
+	@make build_linux
+	@cd docker && docker build -t $(DOMINGO_DOCKER_REPO)/$(PROJECT_NAME):$(DOMINGO_DOCKER_TAG) .
+
+domingo_update:
+	@echo "updating domingo.mk..."
+	@curl --fail -o domingo.mk -H "Cache-Control: no-cache" -H "Authorization: token $(GITHUB_TOKEN)" https://raw.githubusercontent.com/aporeto-inc/domingo/master/domingo.mk
