@@ -25,7 +25,7 @@ ___________________________________________________________________
 `)
 }
 
-// HandleRecoveredPanic returns a well formatted elemental error and logs its if a panic occured.
+// HandleRecoveredPanic returns a well formatted elemental error and logs its if a panic occurred.
 func HandleRecoveredPanic(r interface{}) error {
 
 	if r == nil {
