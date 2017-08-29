@@ -8,9 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime/debug"
-
-	"go.uber.org/zap"
 
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
@@ -117,20 +114,12 @@ func (s *wsAPISession) listen() {
 
 func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
 
-	if r := recover(); r != nil {
-		err := elemental.NewError(
-			"Internal Server Error",
-			fmt.Sprintf("%v", r),
-			"bahamut",
-			http.StatusInternalServerError,
-		)
-
-		st := string(debug.Stack())
-		err.Data = st
-		zap.L().Error("panic", zap.String("stacktrace", st), zap.Stringer("request", response.Request))
-
-		writeWebSocketError(s.socket, response, err)
+	err := HandleRecoveredPanic(recover())
+	if err == nil {
+		return
 	}
+
+	writeWebSocketError(s.socket, response, err)
 }
 
 func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {

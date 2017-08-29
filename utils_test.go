@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"sync"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -18,6 +19,51 @@ func TestUtils_printBanner(t *testing.T) {
 
 		Convey("Then I increase my test coverage", func() {
 			So(1, ShouldEqual, 1)
+		})
+	})
+}
+
+func TestUtils_RecoverFromPanic(t *testing.T) {
+
+	Convey("Given I call a function that panics", t, func() {
+
+		var err error
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go func() {
+			defer func() {
+				err = HandleRecoveredPanic(recover())
+				wg.Done()
+			}()
+			func() { panic("this is a panic!") }()
+		}()
+
+		wg.Wait()
+
+		Convey("Then err should not be nil", func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Given I call a function that doesn't panic", t, func() {
+
+		var err error
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go func() {
+			defer func() {
+				err = HandleRecoveredPanic(recover())
+				wg.Done()
+			}()
+			func() {}()
+		}()
+
+		wg.Wait()
+
+		Convey("Then err should be nil", func() {
+			So(err, ShouldBeNil)
 		})
 	})
 }

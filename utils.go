@@ -1,10 +1,13 @@
-// Author: Antoine Mercadal
-// See LICENSE file for full LICENSE
-// Copyright 2016 Aporeto.
-
 package bahamut
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+	"runtime/debug"
+
+	"github.com/aporeto-inc/elemental"
+	"go.uber.org/zap"
+)
 
 // PrintBanner prints the Bahamut Banner.
 //
@@ -20,4 +23,19 @@ func PrintBanner() {
 ___________________________________________________________________
                                                      🚀  by Aporeto
 `)
+}
+
+// HandleRecoveredPanic returns a well formatted elemental error and logs its if a panic occured.
+func HandleRecoveredPanic(r interface{}) error {
+
+	if r == nil {
+		return nil
+	}
+
+	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
+	st := string(debug.Stack())
+	err.Data = st
+	zap.L().Error("panic", zap.String("stacktrace", st))
+
+	return err
 }

@@ -143,7 +143,19 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	a.multiplexer.ServeHTTP(w, req)
 }
 
+func (a *restServer) handleEventualPanic(w http.ResponseWriter, req *http.Request) {
+
+	err := HandleRecoveredPanic(recover())
+	if err == nil {
+		return
+	}
+
+	writeHTTPError(w, req.Header.Get("Origin"), err)
+}
+
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
+
+	defer a.handleEventualPanic(w, req)
 
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
@@ -176,6 +188,8 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
+	defer a.handleEventualPanic(w, req)
+
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
@@ -207,6 +221,8 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
+	defer a.handleEventualPanic(w, req)
+
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
@@ -237,6 +253,8 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
+
+	defer a.handleEventualPanic(w, req)
 
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
@@ -273,6 +291,8 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 
 func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
+	defer a.handleEventualPanic(w, req)
+
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
@@ -308,6 +328,8 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
+	defer a.handleEventualPanic(w, req)
+
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
 		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
@@ -341,6 +363,8 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 }
 
 func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
+
+	defer a.handleEventualPanic(w, req)
 
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
