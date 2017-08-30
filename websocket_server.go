@@ -12,7 +12,6 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"golang.org/x/net/websocket"
 )
@@ -90,7 +89,7 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
 		if err != nil {
-			ext.Error.Set(spanHolder.Span(), true)
+			spanHolder.Span().SetTag("error", true)
 			spanHolder.Span().LogFields(log.Error(err))
 			spanHolder.Span().Finish()
 		}
@@ -99,6 +98,7 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 			if _, ok := session.(*wsAPISession); ok {
 				response := elemental.NewResponse()
+				response.Request = elemental.NewRequest()
 				if err != nil {
 					writeWebSocketError(ws, response, err)
 				} else {
