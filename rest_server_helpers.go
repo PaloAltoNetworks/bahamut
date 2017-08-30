@@ -31,20 +31,11 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func writeHTTPError(w http.ResponseWriter, origin string, err error) {
+func writeHTTPError(w http.ResponseWriter, request *elemental.Request, err error) {
 
-	var outError elemental.Errors
+	outError := processError(err, request)
 
-	switch e := err.(type) {
-	case elemental.Error:
-		outError = elemental.NewErrors(e)
-	case elemental.Errors:
-		outError = e
-	default:
-		outError = elemental.NewErrors(elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError))
-	}
-
-	setCommonHeader(w, origin)
+	setCommonHeader(w, request.Headers.Get("Origin"))
 	w.WriteHeader(outError.Code())
 
 	if e := json.NewEncoder(w).Encode(&outError); e != nil {
@@ -58,7 +49,7 @@ func corsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	writeHTTPError(w, r.Header.Get("Origin"), elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound))
+	writeHTTPError(w, fakeElementalRequest(r), elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound))
 }
 
 func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certificate {
@@ -117,7 +108,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if c.OutputData != nil {
 		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
-			writeHTTPError(w, c.Request.Headers.Get("Origin"), err)
+			writeHTTPError(w, c.Request, err)
 		}
 	} else {
 		c.StatusCode = http.StatusNoContent
@@ -127,7 +118,14 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if buffer != nil {
 		if _, err := io.Copy(w, buffer); err != nil {
-			writeHTTPError(w, c.Request.Headers.Get("Origin"), err)
+			writeHTTPError(w, c.Request, err)
 		}
 	}
+}
+
+func fakeElementalRequest(req *http.Request) *elemental.Request {
+	r := elemental.NewRequest()
+	r.Headers.Set("Origin", req.Header.Get("Origin"))
+
+	return r
 }

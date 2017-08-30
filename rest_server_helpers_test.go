@@ -141,31 +141,33 @@ func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 	Convey("Given I create a http.ResponseWriter", t, func() {
 
 		w := httptest.NewRecorder()
+		req := elemental.NewRequest()
+		req.Headers.Set("Origin", "origin")
 
 		Convey("When I use writeHTTPError with a simple elemental.Error", func() {
 
-			writeHTTPError(w, "origin", elemental.NewError("title", "description", "subject", 42))
+			writeHTTPError(w, req, elemental.NewError("title", "description", "subject", 42))
 
 			Convey("Then the status should be 42", func() {
 				So(w.Code, ShouldEqual, 42)
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
+				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
 			})
 		})
 
 		Convey("When I use writeHTTPError with an elemental.Errors", func() {
 
 			errs := elemental.NewErrors(elemental.NewError("title", "description", "subject", 43))
-			writeHTTPError(w, "origin", errs)
+			writeHTTPError(w, req, errs)
 
 			Convey("Then the status should be 43", func() {
 				So(w.Code, ShouldEqual, 43)
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null}]\n")
+				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
 			})
 		})
 	})

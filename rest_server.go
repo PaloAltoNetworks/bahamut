@@ -131,40 +131,42 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
 
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError))
 		return
 	}
 
 	if limited {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests))
 		return
 	}
 
 	a.multiplexer.ServeHTTP(w, req)
 }
 
-func (a *restServer) handleEventualPanic(w http.ResponseWriter, req *http.Request) {
+func (a *restServer) handleEventualPanic(w http.ResponseWriter, request *elemental.Request) {
 
-	err := HandleRecoveredPanic(recover())
+	err := HandleRecoveredPanic(recover(), request)
 	if err == nil {
 		return
 	}
 
-	writeHTTPError(w, req.Header.Get("Origin"), err)
+	writeHTTPError(w, request, err)
 }
 
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
+
 	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -179,7 +181,7 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -188,16 +190,18 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
+
 	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Update opration not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Update opration not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -212,7 +216,7 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -221,16 +225,18 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
 
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
+
 	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -245,7 +251,7 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -254,20 +260,22 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
+
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
 	}
 
 	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -282,7 +290,7 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -291,20 +299,22 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 
 func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
+
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
 	}
 
 	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -319,7 +329,7 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -328,20 +338,22 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
+
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
 	}
 
 	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -355,7 +367,7 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 
@@ -364,20 +376,22 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 
-	defer a.handleEventualPanic(w, req)
-
 	request, err := elemental.NewRequestFromHTTPRequest(req)
 	if err != nil {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
+		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
 		return
 	}
+
+	request.StartTracing()
+	defer request.FinishTracing()
+	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
 	}
 
 	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, req.Header.Get("Origin"), elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		writeHTTPError(w, request, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
@@ -392,7 +406,7 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 	)
 
 	if err != nil {
-		writeHTTPError(w, w.Header().Get("Origin"), err)
+		writeHTTPError(w, request, err)
 		return
 	}
 

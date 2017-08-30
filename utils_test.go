@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -33,7 +34,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = HandleRecoveredPanic(recover())
+				err = HandleRecoveredPanic(recover(), elemental.NewRequest())
 				wg.Done()
 			}()
 			func() { panic("this is a panic!") }()
@@ -54,7 +55,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = HandleRecoveredPanic(recover())
+				err = HandleRecoveredPanic(recover(), elemental.NewRequest())
 				wg.Done()
 			}()
 			func() {}()

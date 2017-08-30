@@ -50,16 +50,7 @@ func writeWebSocketError(ws *websocket.Conn, response *elemental.Response, err e
 		return
 	}
 
-	var outError elemental.Errors
-
-	switch e := err.(type) {
-	case elemental.Error:
-		outError = elemental.NewErrors(e)
-	case elemental.Errors:
-		outError = e
-	default:
-		outError = elemental.NewErrors(elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError))
-	}
+	outError := processError(err, response.Request)
 
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {

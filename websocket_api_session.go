@@ -114,7 +114,7 @@ func (s *wsAPISession) listen() {
 
 func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
 
-	err := HandleRecoveredPanic(recover())
+	err := HandleRecoveredPanic(recover(), response.Request)
 	if err == nil {
 		return
 	}
@@ -127,6 +127,8 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
@@ -164,6 +166,8 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
@@ -196,6 +200,8 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
@@ -233,6 +239,8 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
@@ -265,6 +273,8 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
@@ -297,6 +307,8 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
@@ -333,6 +345,8 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 	response := elemental.NewResponse()
 	response.Request = request
 
+	request.StartTracing()
+	defer request.FinishTracing()
 	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity

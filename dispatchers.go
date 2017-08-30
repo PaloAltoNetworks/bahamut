@@ -38,9 +38,6 @@ func dispatchRetrieveManyOperation(
 		return nil, err
 	}
 
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
-
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -88,9 +85,6 @@ func dispatchRetrieveOperation(
 		return nil, err
 	}
 
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
-
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -137,9 +131,6 @@ func dispatchCreateOperation(
 	if err := ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
-
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -209,9 +200,6 @@ func dispatchUpdateOperation(
 		return nil, err
 	}
 
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
-
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -280,9 +268,6 @@ func dispatchDeleteOperation(
 		return nil, err
 	}
 
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
-
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
@@ -335,9 +320,6 @@ func dispatchPatchOperation(
 	if err := ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
-
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -398,9 +380,6 @@ func dispatchInfoOperation(
 	if err := ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
-
-	ctx.Request.StartTracing()
-	defer ctx.Request.FinishTracing()
 
 	if err := CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
