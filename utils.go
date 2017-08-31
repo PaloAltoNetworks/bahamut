@@ -73,6 +73,7 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 		er := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
 		er.Trace = request.RequestID
 		outError = elemental.NewErrors(er)
+		zap.L().Error("Internal Server Error", zap.Error(er), zap.String("trace", request.RequestID))
 	}
 
 	if request.Span() != nil {
