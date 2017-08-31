@@ -145,7 +145,7 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (a *restServer) handleEventualPanic(w http.ResponseWriter, request *elemental.Request) {
 
-	err := HandleRecoveredPanic(recover(), request)
+	err := handleRecoveredPanic(recover(), request)
 	if err == nil {
 		return
 	}

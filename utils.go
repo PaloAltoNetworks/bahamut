@@ -26,8 +26,7 @@ ___________________________________________________________________
 `)
 }
 
-// HandleRecoveredPanic returns a well formatted elemental error and logs its if a panic occurred.
-func HandleRecoveredPanic(r interface{}, req *elemental.Request) error {
+func handleRecoveredPanic(r interface{}, req *elemental.Request) error {
 
 	if r == nil {
 		return nil
@@ -78,10 +77,7 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 	if request.Span() != nil {
 		sp := request.NewChildSpan("bahamut.result.error")
 		sp.SetTag("error", true)
-		sp.LogFields(
-			log.Object("elemental.error", outError),
-			log.Object("stacktrace", string(debug.Stack())),
-		)
+		sp.LogFields(log.Object("elemental.error", outError))
 		sp.Finish()
 	}
 

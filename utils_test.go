@@ -34,7 +34,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = HandleRecoveredPanic(recover(), elemental.NewRequest())
+				err = handleRecoveredPanic(recover(), elemental.NewRequest())
 				wg.Done()
 			}()
 			func() { panic("this is a panic!") }()
@@ -55,7 +55,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = HandleRecoveredPanic(recover(), elemental.NewRequest())
+				err = handleRecoveredPanic(recover(), elemental.NewRequest())
 				wg.Done()
 			}()
 			func() {}()

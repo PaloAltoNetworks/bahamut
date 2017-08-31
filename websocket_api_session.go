@@ -114,7 +114,7 @@ func (s *wsAPISession) listen() {
 
 func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
 
-	err := HandleRecoveredPanic(recover(), response.Request)
+	err := handleRecoveredPanic(recover(), response.Request)
 	if err == nil {
 		return
 	}
