@@ -35,7 +35,6 @@ func HandleRecoveredPanic(r interface{}, req *elemental.Request) error {
 
 	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
 	st := string(debug.Stack())
-	err.Data = map[string]interface{}{"stacktrace": st}
 	zap.L().Error("panic", zap.String("stacktrace", st))
 
 	sp := req.NewChildSpan("bahamut.result.panic")
@@ -79,7 +78,10 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 	if request.Span() != nil {
 		sp := request.NewChildSpan("bahamut.result.error")
 		sp.SetTag("error", true)
-		sp.LogFields(log.Object("elemental.error", outError))
+		sp.LogFields(
+			log.Object("elemental.error", outError),
+			log.Object("stacktrace", string(debug.Stack())),
+		)
 		sp.Finish()
 	}
 
