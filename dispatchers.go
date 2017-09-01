@@ -11,7 +11,16 @@ func audit(auditer Auditer, ctx *Context, err error) {
 	if auditer == nil {
 		return
 	}
-	auditer.Audit(ctx, err)
+
+	// TODO: this is not very optimized as we do processError twice in the flow.
+	// one here, and one after the dispatcher returns.
+	// We need to refactor the code so we can do this only once.
+	var e error
+	if err != nil {
+		e = processError(err, ctx.Request)
+	}
+
+	auditer.Audit(ctx, e)
 }
 
 func notImplementedErr(request *elemental.Request) error {
@@ -31,19 +40,19 @@ func dispatchRetrieveManyOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -51,12 +60,12 @@ func dispatchRetrieveManyOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(RetrieveManyProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
+	if err = proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -78,19 +87,19 @@ func dispatchRetrieveOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -98,12 +107,12 @@ func dispatchRetrieveOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(RetrieveProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
+	if err = proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -125,19 +134,19 @@ func dispatchCreateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -145,19 +154,19 @@ func dispatchCreateOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(CreateProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	obj := factory(request.Identity.Name, ctx.Request.Version)
-	if err := request.Decode(&obj); err != nil {
+	if err = request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
-		if err := v.Validate(); err != nil {
+		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
 			return nil, err
 		}
@@ -165,7 +174,7 @@ func dispatchCreateOperation(
 
 	ctx.InputData = obj
 
-	if err := proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
+	if err = proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -193,19 +202,19 @@ func dispatchUpdateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -213,19 +222,19 @@ func dispatchUpdateOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(UpdateProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	obj := factory(request.Identity.Name, ctx.Request.Version)
-	if err := request.Decode(&obj); err != nil {
+	if err = request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
-		if err := v.Validate(); err != nil {
+		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
 			return nil, err
 		}
@@ -233,7 +242,7 @@ func dispatchUpdateOperation(
 
 	ctx.InputData = obj
 
-	if err := proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
+	if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -261,19 +270,19 @@ func dispatchDeleteOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -281,12 +290,12 @@ func dispatchDeleteOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(DeleteProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
+	if err = proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -314,19 +323,19 @@ func dispatchPatchOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -334,20 +343,20 @@ func dispatchPatchOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(PatchProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	var assignation *elemental.Assignation
-	if err := request.Decode(&assignation); err != nil {
+	if err = request.Decode(&assignation); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
 	ctx.InputData = assignation
 
-	if err := proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
+	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -374,19 +383,19 @@ func dispatchInfoOperation(
 	authenticator RequestAuthenticator,
 	authorizer Authorizer,
 	auditer Auditer,
-) (*Context, error) {
+) (ctx *Context, err error) {
 
-	ctx := NewContext()
-	if err := ctx.ReadElementalRequest(request); err != nil {
+	ctx = NewContext()
+	if err = ctx.ReadElementalRequest(request); err != nil {
 		return nil, err
 	}
 
-	if err := CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticator, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -394,12 +403,12 @@ func dispatchInfoOperation(
 	proc, _ := processorFinder(request.Identity)
 
 	if _, ok := proc.(InfoProcessor); !ok {
-		err := notImplementedErr(request)
+		err = notImplementedErr(request)
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err := proc.(InfoProcessor).ProcessInfo(ctx); err != nil {
+	if err = proc.(InfoProcessor).ProcessInfo(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
