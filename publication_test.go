@@ -37,7 +37,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 
 			Convey("Then the publication contains the correct data", func() {
-				So(string(publication.Data()), ShouldEqual, "{\"ID\":\"xxx\",\"creationOnly\":\"\",\"description\":\"\",\"name\":\"l1\",\"parentID\":\"\",\"parentType\":\"\",\"readOnly\":\"\"}\n")
+				So(string(publication.Data), ShouldEqual, "{\"ID\":\"xxx\",\"creationOnly\":\"\",\"description\":\"\",\"name\":\"l1\",\"parentID\":\"\",\"parentType\":\"\",\"readOnly\":\"\"}\n")
 			})
 
 			Convey("When I decode the object", func() {
@@ -55,15 +55,6 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 		})
 
-		Convey("When I manually set the data", func() {
-
-			publication.SetData([]byte("coucou"))
-
-			Convey("Then the publication contains the correct data", func() {
-				So(string(publication.Data()), ShouldEqual, "coucou")
-			})
-		})
-
 		Convey("When I encode some unencodable object", func() {
 
 			list := NewUnmarshalableList()
@@ -77,7 +68,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 
 			Convey("Then the publication contains the correct data", func() {
-				So(string(publication.Data()), ShouldEqual, "")
+				So(string(publication.Data), ShouldEqual, "")
 			})
 
 			Convey("When I decode the non existing object", func() {

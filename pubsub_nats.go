@@ -3,6 +3,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -52,13 +53,18 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		return fmt.Errorf("Not connected to nats. Messages dropped")
 	}
 
+	data, err := json.Marshal(publication)
+	if err != nil {
+		return fmt.Errorf("Unable to encode publication. Message dropped: %s", err)
+	}
+
 	zap.L().Debug("Publishing message in nats",
 		zap.String("topic", publication.Topic),
 		zap.String("natsURL", p.natsURL),
-		zap.ByteString("data", publication.data),
+		zap.ByteString("data", publication.Data),
 	)
 
-	return p.client.Publish(publication.Topic, publication.data)
+	return p.client.Publish(publication.Topic, data)
 }
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
@@ -89,7 +95,10 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 
 	handler := func(m *stan.Msg) {
 		publication := NewPublication(topic)
-		publication.data = m.Data
+		if e := json.Unmarshal(m.Data, publication); e != nil {
+			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
+			return
+		}
 		pubs <- publication
 	}
 
