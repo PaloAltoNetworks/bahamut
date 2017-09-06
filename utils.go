@@ -41,7 +41,7 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request) error {
 	sp.SetTag("panic", true)
 	sp.LogFields(
 		log.String("panic", fmt.Sprintf("%v", r)),
-		log.String("stacktrace", st),
+		log.String("stack", st),
 	)
 	sp.Finish()
 
@@ -53,30 +53,32 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 	var outError elemental.Errors
 
 	switch e := err.(type) {
+
 	case elemental.Error:
 		e.Trace = request.RequestID
 		outError = elemental.NewErrors(e)
 
 	case elemental.Errors:
-		for _, ee := range e {
-			if eee, ok := ee.(elemental.Error); ok {
-				eee.Trace = request.RequestID
-				outError = append(outError, eee)
+		for _, err := range e {
+			if eerr, ok := err.(elemental.Error); ok {
+				eerr.Trace = request.RequestID
+				outError = append(outError, eerr)
 			} else {
-				outError = append(outError, ee)
+				outError = append(outError, err)
 			}
 		}
 
 	default:
-		er := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
-		er.Trace = request.RequestID
-		outError = elemental.NewErrors(er)
-		zap.L().Error("Internal Server Error", zap.Error(er), zap.String("trace", request.RequestID))
+		eerr := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
+		eerr.Trace = request.RequestID
+		outError = elemental.NewErrors(eerr)
+		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", request.RequestID))
 	}
 
 	if request.Span() != nil {
 		sp := request.NewChildSpan("bahamut.result.error")
 		sp.SetTag("error", true)
+		sp.SetTag("error.code", outError.Code())
 		sp.LogFields(log.Object("elemental.error", outError))
 		sp.Finish()
 	}
