@@ -1,4 +1,4 @@
-package mtlsauthorizer
+package mtls
 
 import (
 	"github.com/aporeto-inc/bahamut"
