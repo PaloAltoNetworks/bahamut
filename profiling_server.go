@@ -27,7 +27,7 @@ func newProfilingServer(config Config) *profilingServer {
 // start starts the profilingServer.
 func (s *profilingServer) start() {
 
-	if err := agent.Listen(agent.Options{}); err != nil {
+	if err := agent.Listen(nil); err != nil {
 		zap.L().Fatal("Unable to start the gops agent", zap.Error(err))
 	}
 
