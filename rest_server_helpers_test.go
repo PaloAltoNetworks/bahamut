@@ -153,7 +153,7 @@ func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
+				So(string(w.Body.Bytes()), ShouldResemble, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\"\\u003cnil\\u003e\"}]\n")
 			})
 		})
 
@@ -167,7 +167,7 @@ func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
+				So(string(w.Body.Bytes()), ShouldResemble, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\"\\u003cnil\\u003e\"}]\n")
 			})
 		})
 	})
