@@ -1,0 +1,5 @@
+package: github.com/aporeto-inc/bahamut
+ description: ""
+ import:
+ - package: github.com/google/gops
+   version: ^0.3.1
