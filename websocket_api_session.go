@@ -222,6 +222,7 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 		s.config.Security.Authorizer,
 		s.eventPusher,
 		s.config.Security.Auditer,
+		s.config.Model.ReadOnly,
 	)
 
 	if err != nil {
@@ -256,6 +257,7 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 		s.config.Security.Authorizer,
 		s.eventPusher,
 		s.config.Security.Auditer,
+		s.config.Model.ReadOnly,
 	)
 
 	if err != nil {
@@ -290,6 +292,7 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 		s.config.Security.Authorizer,
 		s.eventPusher,
 		s.config.Security.Auditer,
+		s.config.Model.ReadOnly,
 	)
 
 	if err != nil {
@@ -367,6 +370,7 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 		s.config.Security.Authorizer,
 		s.eventPusher,
 		s.config.Security.Auditer,
+		s.config.Model.ReadOnly,
 	)
 
 	if err != nil {

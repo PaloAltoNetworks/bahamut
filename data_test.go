@@ -14,6 +14,12 @@ var ListIdentity = elemental.Identity{
 // ListsList represents a list of Lists
 type ListsList []*List
 
+// Copy returns a copy the TasksList.
+func (o ListsList) Copy() elemental.ContentIdentifiable {
+
+	return append(ListsList{}, o...)
+}
+
 // ContentIdentity returns the identity of the objects in the list.
 func (o ListsList) ContentIdentity() elemental.Identity {
 
@@ -421,6 +427,12 @@ var TaskIdentity = elemental.Identity{
 
 // TasksList represents a list of Tasks
 type TasksList []*Task
+
+// Copy returns a copy the TasksList.
+func (o TasksList) Copy() elemental.ContentIdentifiable {
+
+	return append(TasksList{}, o...)
+}
 
 // ContentIdentity returns the identity of the objects in the list.
 func (o TasksList) ContentIdentity() elemental.Identity {
@@ -945,6 +957,12 @@ var UserIdentity = elemental.Identity{
 
 // UsersList represents a list of Users
 type UsersList []*User
+
+// Copy returns a copy the TasksList.
+func (o UsersList) Copy() elemental.ContentIdentifiable {
+
+	return append(UsersList{}, o...)
+}
 
 // ContentIdentity returns the identity of the objects in the list.
 func (o UsersList) ContentIdentity() elemental.Identity {

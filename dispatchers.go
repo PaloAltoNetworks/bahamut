@@ -134,6 +134,7 @@ func dispatchCreateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -149,6 +150,10 @@ func dispatchCreateOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		return nil, makeReadOnlyError()
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -202,6 +207,7 @@ func dispatchUpdateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -217,6 +223,10 @@ func dispatchUpdateOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		return nil, makeReadOnlyError()
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -270,6 +280,7 @@ func dispatchDeleteOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -285,6 +296,10 @@ func dispatchDeleteOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		return nil, makeReadOnlyError()
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -323,6 +338,7 @@ func dispatchPatchOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -338,6 +354,10 @@ func dispatchPatchOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		return nil, makeReadOnlyError()
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -416,4 +436,8 @@ func dispatchInfoOperation(
 	audit(auditer, ctx, nil)
 
 	return ctx, nil
+}
+
+func makeReadOnlyError() error {
+	return elemental.NewError("Locked", "This api is currently locked. Please try again later", "bahamut", http.StatusLocked)
 }

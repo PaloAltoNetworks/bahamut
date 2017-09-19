@@ -376,7 +376,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedNbCalls := 1
 
@@ -385,6 +385,29 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			So(ctx, ShouldNotBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessCreate function with read only mode", t, func() {
+		request := elemental.NewRequest()
+		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &FakeCompleteProcessor{}, nil
+		}
+
+		factory := func(identity string, version int) elemental.Identifiable {
+			return &FakeIdentifiable{}
+		}
+
+		auditer := &FakeAuditer{}
+
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, true)
+
+		Convey("Then I should have a 423 error and context should be nil", func() {
+			So(err, ShouldNotBeNil)
+			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
+			So(ctx, ShouldBeNil)
 		})
 	})
 
@@ -404,7 +427,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -429,7 +452,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (elemental): Bad Request: Something went wrong in the server when reading the body of the request"
 		expectedNbCalls := 1
@@ -455,7 +478,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -483,7 +506,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Object validation has failed."
 		expectedNbCalls := 1
@@ -513,7 +536,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -543,7 +566,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -577,7 +600,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -604,7 +627,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedNbCalls := 1
 
@@ -613,6 +636,29 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			So(ctx, ShouldNotBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessUpdate function with read only mode", t, func() {
+		request := elemental.NewRequest()
+		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &FakeCompleteProcessor{}, nil
+		}
+
+		factory := func(identity string, version int) elemental.Identifiable {
+			return &FakeIdentifiable{}
+		}
+
+		auditer := &FakeAuditer{}
+
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, true)
+
+		Convey("Then I should have a 423 error and context should be nil", func() {
+			So(err, ShouldNotBeNil)
+			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
+			So(ctx, ShouldBeNil)
 		})
 	})
 
@@ -632,7 +678,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -657,7 +703,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (elemental): Bad Request: Something went wrong in the server when reading the body of the request"
 		expectedNbCalls := 1
@@ -683,7 +729,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -711,7 +757,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Object validation has failed."
 		expectedNbCalls := 1
@@ -741,7 +787,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -771,7 +817,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -805,7 +851,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -832,7 +878,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedNbCalls := 1
 
@@ -840,6 +886,29 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(ctx, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessDelete function with read only mode", t, func() {
+		request := elemental.NewRequest()
+		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &FakeCompleteProcessor{}, nil
+		}
+
+		factory := func(identity string, version int) elemental.Identifiable {
+			return &FakeIdentifiable{}
+		}
+
+		auditer := &FakeAuditer{}
+
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer, true)
+
+		Convey("Then I should have a 423 error and context should be nil", func() {
+			So(err, ShouldNotBeNil)
+			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
+			So(ctx, ShouldBeNil)
 		})
 	})
 
@@ -859,7 +928,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -889,7 +958,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -919,7 +988,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -953,7 +1022,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -980,7 +1049,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedNbCalls := 1
 
@@ -988,6 +1057,29 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(ctx, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessPatch function with read only mode", t, func() {
+		request := elemental.NewRequest()
+		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &FakeCompleteProcessor{}, nil
+		}
+
+		factory := func(identity string, version int) elemental.Identifiable {
+			return &FakeIdentifiable{}
+		}
+
+		auditer := &FakeAuditer{}
+
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer, true)
+
+		Convey("Then I should have a 423 error and context should be nil", func() {
+			So(err, ShouldNotBeNil)
+			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
+			So(ctx, ShouldBeNil)
 		})
 	})
 
@@ -1005,7 +1097,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -1033,7 +1125,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		auditer := &FakeAuditer{}
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -1063,7 +1155,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, nil, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1093,7 +1185,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1127,7 +1219,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
