@@ -78,7 +78,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			})
 
 			Convey("Then the status should be 200", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
+				So(w.Body.String(), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
 			})
 		})
 
@@ -153,7 +153,7 @@ func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
+				So(w.Body.String(), ShouldResemble, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\"\\u003cnil\\u003e\"}]\n")
 			})
 		})
 
@@ -167,7 +167,7 @@ func TestRestServerHelpers_writeHTTPError(t *testing.T) {
 			})
 
 			Convey("Then the body should be correct", func() {
-				So(string(w.Body.Bytes()), ShouldEqual, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
+				So(w.Body.String(), ShouldResemble, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\"\\u003cnil\\u003e\"}]\n")
 			})
 		})
 	})

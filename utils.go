@@ -55,13 +55,13 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 	switch e := err.(type) {
 
 	case elemental.Error:
-		e.Trace = request.RequestID
+		e.Trace = fmt.Sprintf("%v", request.Span())
 		outError = elemental.NewErrors(e)
 
 	case elemental.Errors:
 		for _, err := range e {
 			if eerr, ok := err.(elemental.Error); ok {
-				eerr.Trace = request.RequestID
+				eerr.Trace = fmt.Sprintf("%v", request.Span())
 				outError = append(outError, eerr)
 			} else {
 				outError = append(outError, err)
@@ -70,7 +70,7 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 
 	default:
 		eerr := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
-		eerr.Trace = request.RequestID
+		eerr.Trace = fmt.Sprintf("%v", request.Span())
 		outError = elemental.NewErrors(eerr)
 		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", request.RequestID))
 	}
