@@ -154,7 +154,9 @@ func dispatchCreateOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -228,7 +230,9 @@ func dispatchUpdateOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -302,7 +306,9 @@ func dispatchDeleteOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -361,7 +367,9 @@ func dispatchPatchOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
