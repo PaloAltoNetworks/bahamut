@@ -213,6 +213,8 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authorizer,
 		a.pusher,
 		a.config.Security.Auditer,
+		a.config.Model.ReadOnly,
+		a.config.Model.ReadOnlyExcludedIdentities,
 	)
 
 	if err != nil {
@@ -248,6 +250,8 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authorizer,
 		a.pusher,
 		a.config.Security.Auditer,
+		a.config.Model.ReadOnly,
+		a.config.Model.ReadOnlyExcludedIdentities,
 	)
 
 	if err != nil {
@@ -326,6 +330,8 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authorizer,
 		a.pusher,
 		a.config.Security.Auditer,
+		a.config.Model.ReadOnly,
+		a.config.Model.ReadOnlyExcludedIdentities,
 	)
 
 	if err != nil {
@@ -403,6 +409,8 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 		a.config.Security.Authorizer,
 		a.pusher,
 		a.config.Security.Auditer,
+		a.config.Model.ReadOnly,
+		a.config.Model.ReadOnlyExcludedIdentities,
 	)
 
 	if err != nil {

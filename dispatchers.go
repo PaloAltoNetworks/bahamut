@@ -134,6 +134,8 @@ func dispatchCreateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -149,6 +151,12 @@ func dispatchCreateOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -202,6 +210,8 @@ func dispatchUpdateOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -217,6 +227,12 @@ func dispatchUpdateOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -270,6 +286,8 @@ func dispatchDeleteOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -285,6 +303,12 @@ func dispatchDeleteOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -323,6 +347,8 @@ func dispatchPatchOperation(
 	authorizer Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
+	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -338,6 +364,12 @@ func dispatchPatchOperation(
 	if err = CheckAuthorization(authorizer, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
+	}
+
+	if readOnlyMode {
+		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
+			return nil, err
+		}
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -416,4 +448,15 @@ func dispatchInfoOperation(
 	audit(auditer, ctx, nil)
 
 	return ctx, nil
+}
+
+func makeReadOnlyError(identity elemental.Identity, readOnlyExclusion []elemental.Identity) error {
+
+	for _, i := range readOnlyExclusion {
+		if i.IsEqual(identity) {
+			return nil
+		}
+	}
+
+	return elemental.NewError("Locked", "This api is currently locked. Please try again later", "bahamut", http.StatusLocked)
 }
