@@ -135,6 +135,7 @@ func dispatchCreateOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -153,7 +154,7 @@ func dispatchCreateOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError()
+		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -208,6 +209,7 @@ func dispatchUpdateOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -226,7 +228,7 @@ func dispatchUpdateOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError()
+		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -281,6 +283,7 @@ func dispatchDeleteOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -299,7 +302,7 @@ func dispatchDeleteOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError()
+		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -339,6 +342,7 @@ func dispatchPatchOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
 	ctx = NewContext()
@@ -357,7 +361,7 @@ func dispatchPatchOperation(
 	}
 
 	if readOnlyMode {
-		return nil, makeReadOnlyError()
+		return nil, makeReadOnlyError(request.Identity, readOnlyExclusion)
 	}
 
 	proc, _ := processorFinder(request.Identity)
@@ -438,6 +442,13 @@ func dispatchInfoOperation(
 	return ctx, nil
 }
 
-func makeReadOnlyError() error {
+func makeReadOnlyError(identity elemental.Identity, readOnlyExclusion []elemental.Identity) error {
+
+	for _, i := range readOnlyExclusion {
+		if i.IsEqual(identity) {
+			return nil
+		}
+	}
+
 	return elemental.NewError("Locked", "This api is currently locked. Please try again later", "bahamut", http.StatusLocked)
 }

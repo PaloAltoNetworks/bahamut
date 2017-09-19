@@ -166,5 +166,8 @@ type Config struct {
 		// If ReadOnly is set to true, all write operations will return a Locked HTTP Code (423)
 		// This is useful during maintenance.
 		ReadOnly bool
+
+		// If ReadOnly is aset to true, this will bypass the readonly mode for the set identities.
+		ReadOnlyExcludedIdentities []elemental.Identity
 	}
 }
