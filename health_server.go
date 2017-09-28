@@ -6,6 +6,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// HealthCheckStatusOK represents the status "ok"
+	HealthCheckStatusOK = "ok"
+	// HealthCheckStatusError represents the status "error"
+	HealthCheckStatusError = "error"
+)
+
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
 	config Config
@@ -41,11 +48,10 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.config.HealthServer.HealthHandler(); err != nil {
+	if err := s.config.HealthServer.HealthHandler(w); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // stop stops the healthServer.
