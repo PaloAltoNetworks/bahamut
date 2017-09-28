@@ -9,6 +9,8 @@ import (
 const (
 	// HealthCheckStatusOK represents the status "ok"
 	HealthCheckStatusOK = "ok"
+	// HealthCheckStatusTimeout represents the status "timeout"
+	HealthCheckStatusTimeout = "timeout"
 	// HealthCheckStatusError represents the status "error"
 	HealthCheckStatusError = "error"
 )
