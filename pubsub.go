@@ -16,6 +16,11 @@ type PubSubServer interface {
 	Disconnect() error
 }
 
+// A PingPubSubServer is PubSubServer that has a Ping method
+type PingPubSubServer interface {
+	Ping(timeout time.Duration) error
+}
+
 // NewNATSPubSubServer returns a PubSubServer backed by NATS.
 func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubSubServer {
 
