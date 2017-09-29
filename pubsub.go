@@ -16,8 +16,8 @@ type PubSubServer interface {
 	Disconnect() error
 }
 
-// A PingPubSubServer is PubSubServer that has a Ping method
-type PingPubSubServer interface {
+// A Pinger is PubSubServer that has a Ping method
+type Pinger interface {
 	Ping(timeout time.Duration) error
 }
 
