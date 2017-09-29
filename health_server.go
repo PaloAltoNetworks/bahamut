@@ -6,15 +6,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// HealthCheckStatusOK represents the status "ok"
-	HealthCheckStatusOK = "ok"
-	// HealthCheckStatusTimeout represents the status "timeout"
-	HealthCheckStatusTimeout = "timeout"
-	// HealthCheckStatusError represents the status "error"
-	HealthCheckStatusError = "error"
-)
-
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
 	config Config
