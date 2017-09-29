@@ -5,62 +5,11 @@
 package bahamut
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-type FakeProcessor struct {
-}
-
-type Auth struct {
-	authenticated bool
-	authorized    bool
-	errored       bool
-	err           error
-}
-
-func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
-
-	if a.errored {
-		if a.err == nil {
-			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
-		}
-		return false, a.err
-	}
-
-	return a.authenticated, nil
-}
-
-func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
-
-	if a.errored {
-		if a.err == nil {
-			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
-		}
-		return false, a.err
-	}
-
-	return a.authorized, nil
-}
-
-type testSessionHandler struct {
-	sessionCount int
-	shouldCalls  int
-	block        bool
-}
-
-func (h *testSessionHandler) OnPushSessionStart(session *wsPushSession) { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *wsPushSession)  { h.sessionCount-- }
-func (h *testSessionHandler) IsAuthenticated(session *wsPushSession) (bool, error) {
-	return true, nil
-}
-func (h *testSessionHandler) ShouldPush(session *wsPushSession, event *elemental.Event) (bool, error) {
-	h.shouldCalls++
-	return !h.block, nil
-}
 
 func TestBahamut_NewBahamut(t *testing.T) {
 
@@ -113,7 +62,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 	Convey("Given I create a Bahamut, aProcessor and an Identity", t, func() {
 
-		p := &FakeProcessor{}
+		p := &MockProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
 		b := NewServer(Config{})
 

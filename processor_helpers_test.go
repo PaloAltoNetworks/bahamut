@@ -16,7 +16,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &MockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
@@ -37,7 +37,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
-			auth.authenticated = true
+			auth.ExpectedAuthenticatedResult = true
 
 			err := CheckAuthentication(auth, ctx)
 
@@ -48,8 +48,8 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
-			auth.authenticated = false
-			auth.errored = false
+			auth.ExpectedAuthenticatedResult = false
+			auth.DefinedHasError = false
 
 			err := CheckAuthentication(auth, ctx)
 
@@ -64,8 +64,8 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
-			auth.authenticated = false
-			auth.errored = true
+			auth.ExpectedAuthenticatedResult = false
+			auth.DefinedHasError = true
 
 			err := CheckAuthentication(auth, ctx)
 
@@ -80,7 +80,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &MockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
@@ -101,8 +101,8 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
-			auth.authorized = true
-			auth.errored = false
+			auth.ExpectedAuthorizedResult = true
+			auth.DefinedHasError = false
 
 			err := CheckAuthorization(auth, ctx)
 
@@ -113,8 +113,8 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
-			auth.authorized = false
-			auth.errored = false
+			auth.ExpectedAuthorizedResult = false
+			auth.DefinedHasError = false
 
 			err := CheckAuthorization(auth, ctx)
 
@@ -129,8 +129,8 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
-			auth.authorized = false
-			auth.errored = true
+			auth.ExpectedAuthorizedResult = false
+			auth.DefinedHasError = true
 
 			err := CheckAuthorization(auth, ctx)
 
