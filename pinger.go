@@ -32,7 +32,19 @@ func RetrieveHealthStatus(timeout time.Duration, pingers map[string]Pinger) map[
 	for name, pinger := range pingers {
 		go func(name string, pinger Pinger) {
 			defer wg.Done()
-			status := stringifyStatus(pinger.Ping(timeout))
+
+			start := time.Now()
+			err := pinger.Ping(timeout)
+			status := stringifyStatus(err)
+			duration := time.Since(start)
+
+			zap.L().Info("Ping",
+				zap.String("service", name),
+				zap.String("status", status),
+				zap.String("duration", duration.String()),
+				zap.Error(err),
+			)
+
 			m.Lock()
 			results[name] = status
 			m.Unlock()
@@ -55,6 +67,5 @@ func stringifyStatus(err error) string {
 		return PingStatusTimeout
 	}
 
-	zap.L().Error("Health error", zap.Error(err))
 	return PingStatusError
 }
