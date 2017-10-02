@@ -27,10 +27,20 @@ func Test_RetrieveHealthStatus(t *testing.T) {
 		results := RetrieveHealthStatus(time.Second, pingers)
 
 		Convey("Then I should have the following status results", func() {
-			So(len(results), ShouldEqual, len(pingers))
-			So(results["p1"], ShouldEqual, PingStatusOK)
-			So(results["p2"], ShouldEqual, PingStatusTimeout)
-			So(results["p3"], ShouldEqual, PingStatusError)
+			So(results, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Given the following pingers", t, func() {
+		pingers := map[string]Pinger{
+			"p1": MockPinger{PingStatus: nil},
+			"p2": MockPinger{PingStatus: nil},
+			"p3": MockPinger{PingStatus: nil},
+		}
+		results := RetrieveHealthStatus(time.Second, pingers)
+
+		Convey("Then I should have the following status results", func() {
+			So(results, ShouldBeNil)
 		})
 	})
 }

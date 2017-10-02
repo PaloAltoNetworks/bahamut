@@ -41,10 +41,12 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.config.HealthServer.HealthHandler(w); err != nil {
+	if err := s.config.HealthServer.HealthHandler(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // stop stops the healthServer.

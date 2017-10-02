@@ -22,9 +22,9 @@ type Pinger interface {
 }
 
 // RetrieveHealthStatus returns the status for each Pinger.
-func RetrieveHealthStatus(timeout time.Duration, pingers map[string]Pinger) map[string]string {
+func RetrieveHealthStatus(timeout time.Duration, pingers map[string]Pinger) error {
 
-	results := map[string]string{}
+	var firstError error
 
 	var wg sync.WaitGroup
 	wg.Add(len(pingers))
@@ -46,14 +46,16 @@ func RetrieveHealthStatus(timeout time.Duration, pingers map[string]Pinger) map[
 			)
 
 			m.Lock()
-			results[name] = status
+			if err != nil && firstError == nil {
+				firstError = err
+			}
 			m.Unlock()
 		}(name, pinger)
 	}
 
 	wg.Wait()
 
-	return results
+	return firstError
 }
 
 // stringify status output

@@ -14,7 +14,7 @@ import (
 )
 
 // HealthServerFunc is the type used by the Health Server to check the health of the server
-type HealthServerFunc func(w http.ResponseWriter) error
+type HealthServerFunc func() error
 
 // A Config represents the configuration of Bahamut.
 type Config struct {
