@@ -36,8 +36,8 @@ func dispatchRetrieveManyOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 ) (ctx *Context, err error) {
@@ -47,12 +47,12 @@ func dispatchRetrieveManyOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func dispatchRetrieveOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 ) (ctx *Context, err error) {
@@ -94,12 +94,12 @@ func dispatchRetrieveOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -130,8 +130,8 @@ func dispatchCreateOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
@@ -143,12 +143,12 @@ func dispatchCreateOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -206,8 +206,8 @@ func dispatchUpdateOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
@@ -219,12 +219,12 @@ func dispatchUpdateOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -282,8 +282,8 @@ func dispatchDeleteOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
@@ -295,12 +295,12 @@ func dispatchDeleteOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -343,8 +343,8 @@ func dispatchPatchOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
 	readOnlyMode bool,
@@ -356,12 +356,12 @@ func dispatchPatchOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
@@ -412,8 +412,8 @@ func dispatchInfoOperation(
 	request *elemental.Request,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	authenticator RequestAuthenticator,
-	authorizer Authorizer,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
 	auditer Auditer,
 ) (ctx *Context, err error) {
 
@@ -422,12 +422,12 @@ func dispatchInfoOperation(
 		return nil, err
 	}
 
-	if err = CheckAuthentication(authenticator, ctx); err != nil {
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}
 
-	if err = CheckAuthorization(authorizer, ctx); err != nil {
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return nil, err
 	}

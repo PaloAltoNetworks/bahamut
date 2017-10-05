@@ -133,15 +133,21 @@ type Config struct {
 	// Security contains the Authenticator and Authorizer.
 	Security struct {
 
-		// RequestAuthenticator is the RequestAuthenticator to use to authenticate the requests.
-		RequestAuthenticator RequestAuthenticator
+		// RequestAuthenticators defines the list the RequestAuthenticator to use to authenticate the requests.
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		RequestAuthenticators []RequestAuthenticator
 
-		// SessionAuthenticator defines the SessionAuthenticator that will be used to
+		// SessionAuthenticators defines the list of SessionAuthenticator that will be used to
 		// initially authentify a websocket connection.
-		SessionAuthenticator SessionAuthenticator
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		SessionAuthenticators []SessionAuthenticator
 
-		// Authorizer is the Authorizer to use to authorize the requests.
-		Authorizer Authorizer
+		// Authorizers defines the list Authorizers to use to authorize the requests.
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		Authorizers []Authorizer
 
 		// Auditer is the Auditer to use to audit the requests.
 		Auditer Auditer
