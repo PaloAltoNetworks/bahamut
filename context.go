@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aporeto-inc/elemental"
 
@@ -44,9 +45,10 @@ type Context struct {
 	// Metadata is contains random user defined metadata.
 	Metadata map[string]interface{}
 
-	events elemental.Events
-	id     string
-	claims []string
+	events    elemental.Events
+	id        string
+	claims    []string
+	claimsMap map[string]string
 }
 
 // NewContext creates a new *Context for the given Operation.
@@ -55,19 +57,33 @@ type Context struct {
 func NewContext() *Context {
 
 	return &Context{
-		Request:  elemental.NewRequest(),
-		Metadata: map[string]interface{}{},
-		claims:   []string{},
-		id:       uuid.NewV4().String(),
-		events:   elemental.Events{},
+		Request:   elemental.NewRequest(),
+		Metadata:  map[string]interface{}{},
+		claims:    []string{},
+		claimsMap: map[string]string{},
+		id:        uuid.NewV4().String(),
+		events:    elemental.Events{},
 	}
 }
 
 // SetClaims implements elemental.ClaimsHolder
-func (c *Context) SetClaims(claims []string) { c.claims = claims }
+func (c *Context) SetClaims(claims []string) {
+
+	c.claims = claims
+
+	for _, claim := range claims {
+		parts := strings.SplitN(claim, "=", 2)
+		if len(parts) == 2 {
+			c.claimsMap[parts[0]] = parts[1]
+		}
+	}
+}
 
 // GetClaims implements elemental.ClaimsHolder
 func (c *Context) GetClaims() []string { return c.claims }
+
+// GetClaimsMap returns a list of claims as map.
+func (c *Context) GetClaimsMap() map[string]string { return c.claimsMap }
 
 // ReadElementalRequest reads information from the given elemental.Request and polulate the Context.
 func (c *Context) ReadElementalRequest(req *elemental.Request) error {
@@ -124,8 +140,11 @@ func (c *Context) Duplicate() *Context {
 	ctx.InputData = c.InputData
 	ctx.OutputData = c.OutputData
 	ctx.Request = c.Request.Duplicate()
-
 	ctx.claims = append(ctx.claims, c.claims...)
+
+	for k, v := range c.claimsMap {
+		ctx.claimsMap[k] = v
+	}
 
 	for k, v := range c.Metadata {
 		ctx.Metadata[k] = v
