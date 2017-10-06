@@ -54,6 +54,6 @@ func (a *barretAuthorizer) IsAuthorized(ctx *bahamut.Context) (bool, error) {
 		return false, err
 	}
 
-	a.authCache.SetWithExpiration(token, false, a.cacheDuration)
+	a.authCache.SetWithExpiration(token, true, a.cacheDuration)
 	return true, nil
 }
