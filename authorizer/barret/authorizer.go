@@ -38,15 +38,15 @@ func NewBarretAuthorizer(m manipulate.Manipulator, cacheDuration time.Duration) 
 // IsAuthorized is the main method that returns whether the API call is authorized or not.
 func (a *barretAuthorizer) IsAuthorized(ctx *bahamut.Context) (bool, error) {
 
+	// If it is not a token issued from a certificate, we do nothing.
+	cm := ctx.GetClaimsMap()
+	if cm[authClaimRealmKey] != authRealmCertificateKey {
+		return true, nil
+	}
+
 	token := ctx.Request.Password
 	if ok := a.authCache.Get(token); ok != nil {
 		return ok.(bool), nil
-	}
-
-	cm := ctx.GetClaimsMap()
-	if cm[authClaimRealmKey] != authRealmCertificateKey {
-		a.authCache.SetWithExpiration(token, true, a.cacheDuration)
-		return true, nil
 	}
 
 	if err := certification.CheckRevocation(a.manipulator, cm[authClaimCertSerialNumberKey], nil); err != nil {
