@@ -20,6 +20,17 @@ func (o ListsList) Copy() elemental.ContentIdentifiable {
 	return append(ListsList{}, o...)
 }
 
+// Append appends.
+func (o ListsList) Append(objects ...elemental.Identifiable) elemental.ContentIdentifiable {
+
+	out := append(ListsList{}, o...)
+	for _, obj := range objects {
+		out = append(out, obj.(*List))
+	}
+
+	return out
+}
+
 // ContentIdentity returns the identity of the objects in the list.
 func (o ListsList) ContentIdentity() elemental.Identity {
 
@@ -432,6 +443,17 @@ type TasksList []*Task
 func (o TasksList) Copy() elemental.ContentIdentifiable {
 
 	return append(TasksList{}, o...)
+}
+
+// Append appends.
+func (o TasksList) Append(objects ...elemental.Identifiable) elemental.ContentIdentifiable {
+
+	out := append(TasksList{}, o...)
+	for _, obj := range objects {
+		out = append(out, obj.(*Task))
+	}
+
+	return out
 }
 
 // ContentIdentity returns the identity of the objects in the list.
@@ -962,6 +984,17 @@ type UsersList []*User
 func (o UsersList) Copy() elemental.ContentIdentifiable {
 
 	return append(UsersList{}, o...)
+}
+
+// Append appends.
+func (o UsersList) Append(objects ...elemental.Identifiable) elemental.ContentIdentifiable {
+
+	out := append(UsersList{}, o...)
+	for _, obj := range objects {
+		out = append(out, obj.(*User))
+	}
+
+	return out
 }
 
 // ContentIdentity returns the identity of the objects in the list.
