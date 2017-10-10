@@ -112,11 +112,18 @@ type Config struct {
 		// ClientCAPool is the *x509.CertPool to use for the authentifying client.
 		ClientCAPool *x509.CertPool
 
-		// ServerCertificates are the TLS certficates to use for the secure api server.
-		ServerCertificates []tls.Certificate
-
 		// AuthType defines the tls authentication mode to use for a secure server.
 		AuthType tls.ClientAuthType
+
+		// ServerCertificates are the TLS certficates to use for the secure api server.
+		// If you set ServerCertificatesRetrieverFunc, the value of ServerCertificates will be ignored.
+		ServerCertificates []tls.Certificate
+
+		// ServerCertificatesRetrieverFunc is standard tls GetCertifcate function to use to
+		// retrieve the server certificates dynamically.
+		// - If you set this, the value of ServerCertificates will be ignored.
+		// - If EnableLetsEncrypt is set, this will be ignored
+		ServerCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 
 		// EnableLetsEncrypt defines if the server should get a certificate from letsencrypt automagically.
 		EnableLetsEncrypt bool

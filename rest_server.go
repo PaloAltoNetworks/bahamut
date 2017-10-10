@@ -61,8 +61,13 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 	if !a.config.TLS.EnableLetsEncrypt {
 
 		// If letsencrypt is not enabled we simply set the given list of
-		// certificate in the TLS option.
-		tlsConfig.Certificates = a.config.TLS.ServerCertificates
+		// certificates or the ServerCertificatesRetrieverFunc in the TLS option.
+
+		if a.config.TLS.ServerCertificatesRetrieverFunc != nil {
+			tlsConfig.GetCertificate = a.config.TLS.ServerCertificatesRetrieverFunc
+		} else {
+			tlsConfig.Certificates = a.config.TLS.ServerCertificates
+		}
 
 	} else {
 
