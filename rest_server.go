@@ -471,7 +471,7 @@ func (a *restServer) start() {
 	a.installRoutes()
 
 	var err error
-	if a.config.TLS.ServerCertificates != nil {
+	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
 		a.server, err = a.createSecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	} else {
 		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
@@ -487,7 +487,7 @@ func (a *restServer) start() {
 		a.server.Handler = a.multiplexer
 	}
 
-	if a.config.TLS.ServerCertificates != nil {
+	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
 		err = a.server.ListenAndServeTLS("", "")
 	} else {
 		err = a.server.ListenAndServe()
