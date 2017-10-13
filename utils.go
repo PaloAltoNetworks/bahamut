@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"strings"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"
 )
+
+type tracerIdentifier interface {
+	TraceID() uint64
+}
 
 // PrintBanner prints the Bahamut Banner.
 //
@@ -52,16 +57,21 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 
 	var outError elemental.Errors
 
+	spanID := request.RequestID
+	if stringer, ok := request.Span().(fmt.Stringer); ok {
+		spanID = strings.SplitN(stringer.String(), ":", 2)[0]
+	}
+
 	switch e := err.(type) {
 
 	case elemental.Error:
-		e.Trace = request.RequestID
+		e.Trace = spanID
 		outError = elemental.NewErrors(e)
 
 	case elemental.Errors:
 		for _, err := range e {
 			if eerr, ok := err.(elemental.Error); ok {
-				eerr.Trace = request.RequestID
+				eerr.Trace = spanID
 				outError = append(outError, eerr)
 			} else {
 				outError = append(outError, err)
@@ -70,9 +80,9 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 
 	default:
 		eerr := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
-		eerr.Trace = request.RequestID
+		eerr.Trace = spanID
 		outError = elemental.NewErrors(eerr)
-		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", request.RequestID))
+		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", spanID))
 	}
 
 	if request.Span() != nil {
