@@ -11,10 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type tracerIdentifier interface {
-	TraceID() uint64
-}
-
 // PrintBanner prints the Bahamut Banner.
 //
 // Yey!
