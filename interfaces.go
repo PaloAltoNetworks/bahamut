@@ -19,12 +19,12 @@ type AuthAction int
 
 const (
 
-	// AuthActionOK means the authenticator/authorizer takes the responsability
+	// AuthActionOK means the authenticator/authorizer takes the responsibility
 	// to grant the request. The execution in the chain will
 	// stop and will be considered as a success.
 	AuthActionOK AuthAction = iota
 
-	// AuthActionKO means the authenticator/authorizer takes the responsability
+	// AuthActionKO means the authenticator/authorizer takes the responsibility
 	// to reject the request. The execution in the chain will
 	// stop and will be considered as a success.
 	AuthActionKO
