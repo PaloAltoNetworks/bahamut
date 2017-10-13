@@ -2,13 +2,12 @@ package mtls
 
 import (
 	"crypto/x509"
-	"fmt"
 
 	"github.com/aporeto-inc/bahamut"
 	"github.com/aporeto-inc/elemental"
 )
 
-type mtlsAuthorizer struct {
+type mtlsVerifier struct {
 	verifyOptions     x509.VerifyOptions
 	ignoredIdentitied []elemental.Identity
 	authActionSuccess bahamut.AuthAction
@@ -20,9 +19,9 @@ func newMTLSVerifier(
 	authActionSuccess bahamut.AuthAction,
 	authActionFailure bahamut.AuthAction,
 	ignoredIdentitied []elemental.Identity,
-) *mtlsAuthorizer {
+) *mtlsVerifier {
 
-	return &mtlsAuthorizer{
+	return &mtlsVerifier{
 		verifyOptions:     verifyOptions,
 		ignoredIdentitied: ignoredIdentitied,
 		authActionSuccess: authActionSuccess,
@@ -55,7 +54,7 @@ func NewMTLSRequestAuthenticator(
 	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil)
 }
 
-func (a *mtlsAuthorizer) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
 	for _, i := range a.ignoredIdentitied {
 		if ctx.Request.Identity.IsEqual(i) {
@@ -78,26 +77,19 @@ func (a *mtlsAuthorizer) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction,
 	return a.authActionFailure, nil
 }
 
-func (a *mtlsAuthorizer) AuthenticateRequest(req *elemental.Request, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
 
 	if req.TLSConnectionState == nil {
 		return bahamut.AuthActionContinue, nil
 	}
 
-	fmt.Println(req.TLSConnectionState.PeerCertificates)
-
 	// If we can verify, we return the success auth action
 	for _, cert := range req.TLSConnectionState.PeerCertificates {
-		fmt.Println("ICI")
-		_, err := cert.Verify(a.verifyOptions)
-		if err == nil {
-			fmt.Println("SUCCESS")
+		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			return a.authActionSuccess, nil
 		}
-		fmt.Println("err", err)
 	}
 
-	fmt.Println("ZOB")
 	// If we can verify, we return the failure auth action.
 	return a.authActionFailure, nil
 }
