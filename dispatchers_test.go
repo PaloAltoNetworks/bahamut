@@ -159,9 +159,14 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -169,7 +174,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchRetrieveManyOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchRetrieveManyOperation(request, processorFinder, factory, authenticators, nil, nil, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -189,13 +194,23 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -203,7 +218,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchRetrieveManyOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchRetrieveManyOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -305,9 +320,14 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -315,7 +335,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchRetrieveOperation(request, processorFinder, factory, authenticator, nil, nil, auditer)
+		ctx, err := dispatchRetrieveOperation(request, processorFinder, factory, authenticators, nil, nil, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -335,13 +355,23 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -349,7 +379,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchRetrieveOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer)
+		ctx, err := dispatchRetrieveOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -556,9 +586,14 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -566,7 +601,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false, nil)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -586,13 +621,23 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -600,7 +645,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false, nil)
+		ctx, err := dispatchCreateOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -807,9 +852,14 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -817,7 +867,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false, nil)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -837,13 +887,23 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -851,7 +911,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false, nil)
+		ctx, err := dispatchUpdateOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -978,9 +1038,14 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -988,7 +1053,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false, nil)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1008,13 +1073,23 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -1022,7 +1097,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false, nil)
+		ctx, err := dispatchDeleteOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1175,9 +1250,14 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -1185,7 +1265,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, nil, nil, auditer, false, nil)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1205,13 +1285,23 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -1219,7 +1309,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticator, authorizer, nil, auditer, false, nil)
+		ctx, err := dispatchPatchOperation(request, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1323,9 +1413,14 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authenticator does not authenticate.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -1333,7 +1428,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchInfoOperation(request, processorFinder, factory, authenticator, nil, auditer)
+		ctx, err := dispatchInfoOperation(request, processorFinder, factory, authenticators, nil, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1353,13 +1448,23 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 			return &FakeIdentifiable{}
 		}
 
-		authenticator := &Auth{
-			authenticated: true,
+		authenticators := []RequestAuthenticator{
+			&Auth{
+				authenticated: true,
+			},
+			&Auth{
+				authenticated: true,
+			},
 		}
 
-		authorizer := &Auth{
-			errored: true,
-			err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+		authorizers := []Authorizer{
+			&Auth{
+				authorized: true,
+			},
+			&Auth{
+				errored: true,
+				err:     elemental.NewError("Error", "Authorizer does not authorize.", "bahamut-test", http.StatusInternalServerError),
+			},
 		}
 
 		auditer := &FakeAuditer{}
@@ -1367,7 +1472,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
-		ctx, err := dispatchInfoOperation(request, processorFinder, factory, authenticator, authorizer, auditer)
+		ctx, err := dispatchInfoOperation(request, processorFinder, factory, authenticators, authorizers, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)

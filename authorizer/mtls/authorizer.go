@@ -1,6 +1,8 @@
 package mtls
 
 import (
+	"crypto/x509"
+
 	"github.com/aporeto-inc/bahamut"
 	"github.com/aporeto-inc/elemental"
 )
@@ -41,4 +43,37 @@ func (a *simpleMTLSAuthorizer) IsAuthorized(ctx *bahamut.Context) (bool, error) 
 	)
 
 	return err == nil, err
+}
+
+type verifierMTLSAuthorizer struct {
+	verifyOptions     x509.VerifyOptions
+	ignoredIdentitied []elemental.Identity
+}
+
+// NewMTLSVerifierAuthorizer returns a new Authorizer that ensures the client certificate are
+// can be verified using the given x509.VerifyOptions.
+// The Authorizer will not enforce this for identities given by ignoredIdentitied.
+func NewMTLSVerifierAuthorizer(verifyOptions x509.VerifyOptions, ignoredIdentitied []elemental.Identity) bahamut.Authorizer {
+
+	return &verifierMTLSAuthorizer{
+		verifyOptions:     verifyOptions,
+		ignoredIdentitied: ignoredIdentitied,
+	}
+}
+
+func (a *verifierMTLSAuthorizer) IsAuthorized(ctx *bahamut.Context) (bool, error) {
+
+	for _, i := range a.ignoredIdentitied {
+		if ctx.Request.Identity.IsEqual(i) {
+			return true, nil
+		}
+	}
+
+	for _, cert := range ctx.Request.TLSConnectionState.PeerCertificates {
+		if _, err := cert.Verify(a.verifyOptions); err != nil {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

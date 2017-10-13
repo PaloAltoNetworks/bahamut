@@ -39,7 +39,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 			auth.authenticated = true
 
-			err := CheckAuthentication(auth, ctx)
+			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
 
 			Convey("Then it should be authenticated", func() {
 				So(err, ShouldBeNil)
@@ -51,7 +51,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.authenticated = false
 			auth.errored = false
 
-			err := CheckAuthentication(auth, ctx)
+			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
 
 			Convey("Then it should not be authenticated", func() {
 				So(err, ShouldNotBeNil)
@@ -67,7 +67,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 			auth.authenticated = false
 			auth.errored = true
 
-			err := CheckAuthentication(auth, ctx)
+			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
 
 			Convey("Then it should be authenticated", func() {
 				So(err, ShouldNotBeNil)
@@ -104,7 +104,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = true
 			auth.errored = false
 
-			err := CheckAuthorization(auth, ctx)
+			err := CheckAuthorization([]Authorizer{auth}, ctx)
 
 			Convey("Then it should be authorized", func() {
 				So(err, ShouldBeNil)
@@ -116,7 +116,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = false
 			auth.errored = false
 
-			err := CheckAuthorization(auth, ctx)
+			err := CheckAuthorization([]Authorizer{auth}, ctx)
 
 			Convey("Then it should not be authorized", func() {
 				So(err, ShouldNotBeNil)
@@ -132,7 +132,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 			auth.authorized = false
 			auth.errored = true
 
-			err := CheckAuthorization(auth, ctx)
+			err := CheckAuthorization([]Authorizer{auth}, ctx)
 
 			Convey("Then it should not be authorized", func() {
 				So(err, ShouldNotBeNil)

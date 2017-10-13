@@ -83,31 +83,36 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 	session.setRemoteAddress(ws.Request().RemoteAddr)
 
-	if n.config.Security.SessionAuthenticator != nil {
+	if len(n.config.Security.SessionAuthenticators) != 0 {
 
 		spanHolder := newSessionTracer(session)
 
-		ok, err := n.config.Security.SessionAuthenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
-		if err != nil {
-			spanHolder.Span().SetTag("error", true)
-			spanHolder.Span().LogFields(log.Error(err))
-			spanHolder.Span().Finish()
-		}
+		var ok bool
+		var err error
+		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-		if !ok || err != nil {
-
-			if _, ok := session.(*wsAPISession); ok {
-				response := elemental.NewResponse()
-				response.Request = elemental.NewRequest()
-				if err != nil {
-					writeWebSocketError(ws, response, err)
-				} else {
-					writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
-				}
+			ok, err = authenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
+			if err != nil {
+				spanHolder.Span().SetTag("error", true)
+				spanHolder.Span().LogFields(log.Error(err))
+				spanHolder.Span().Finish()
 			}
-			ws.Close() // nolint: errcheck
-			spanHolder.Span().Finish()
-			return
+
+			if !ok || err != nil {
+
+				if _, ok := session.(*wsAPISession); ok {
+					response := elemental.NewResponse()
+					response.Request = elemental.NewRequest()
+					if err != nil {
+						writeWebSocketError(ws, response, err)
+					} else {
+						writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
+					}
+				}
+				ws.Close() // nolint: errcheck
+				spanHolder.Span().Finish()
+				return
+			}
 		}
 
 		spanHolder.Span().Finish()

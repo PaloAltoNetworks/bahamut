@@ -112,11 +112,18 @@ type Config struct {
 		// ClientCAPool is the *x509.CertPool to use for the authentifying client.
 		ClientCAPool *x509.CertPool
 
-		// ServerCertificates are the TLS certficates to use for the secure api server.
-		ServerCertificates []tls.Certificate
-
 		// AuthType defines the tls authentication mode to use for a secure server.
 		AuthType tls.ClientAuthType
+
+		// ServerCertificates are the TLS certficates to use for the secure api server.
+		// If you set ServerCertificatesRetrieverFunc, the value of ServerCertificates will be ignored.
+		ServerCertificates []tls.Certificate
+
+		// ServerCertificatesRetrieverFunc is standard tls GetCertifcate function to use to
+		// retrieve the server certificates dynamically.
+		// - If you set this, the value of ServerCertificates will be ignored.
+		// - If EnableLetsEncrypt is set, this will be ignored
+		ServerCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 
 		// EnableLetsEncrypt defines if the server should get a certificate from letsencrypt automagically.
 		EnableLetsEncrypt bool
@@ -133,15 +140,21 @@ type Config struct {
 	// Security contains the Authenticator and Authorizer.
 	Security struct {
 
-		// RequestAuthenticator is the RequestAuthenticator to use to authenticate the requests.
-		RequestAuthenticator RequestAuthenticator
+		// RequestAuthenticators defines the list the RequestAuthenticator to use to authenticate the requests.
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		RequestAuthenticators []RequestAuthenticator
 
-		// SessionAuthenticator defines the SessionAuthenticator that will be used to
+		// SessionAuthenticators defines the list of SessionAuthenticator that will be used to
 		// initially authentify a websocket connection.
-		SessionAuthenticator SessionAuthenticator
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		SessionAuthenticators []SessionAuthenticator
 
-		// Authorizer is the Authorizer to use to authorize the requests.
-		Authorizer Authorizer
+		// Authorizers defines the list Authorizers to use to authorize the requests.
+		// They are executed in order from index 0 to index n. The first one that returns a failure will
+		// stop the chain.
+		Authorizers []Authorizer
 
 		// Auditer is the Auditer to use to audit the requests.
 		Auditer Auditer

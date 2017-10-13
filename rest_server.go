@@ -61,8 +61,13 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 	if !a.config.TLS.EnableLetsEncrypt {
 
 		// If letsencrypt is not enabled we simply set the given list of
-		// certificate in the TLS option.
-		tlsConfig.Certificates = a.config.TLS.ServerCertificates
+		// certificates or the ServerCertificatesRetrieverFunc in the TLS option.
+
+		if a.config.TLS.ServerCertificatesRetrieverFunc != nil {
+			tlsConfig.GetCertificate = a.config.TLS.ServerCertificatesRetrieverFunc
+		} else {
+			tlsConfig.Certificates = a.config.TLS.ServerCertificates
+		}
 
 	} else {
 
@@ -174,8 +179,8 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 	)
@@ -209,8 +214,8 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 		a.config.Model.ReadOnly,
@@ -246,8 +251,8 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 		a.config.Model.ReadOnly,
@@ -287,8 +292,8 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 	)
@@ -326,8 +331,8 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 		a.config.Model.ReadOnly,
@@ -367,8 +372,8 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.config.Security.Auditer,
 	)
 
@@ -405,8 +410,8 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 		request,
 		a.processorFinder,
 		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticator,
-		a.config.Security.Authorizer,
+		a.config.Security.RequestAuthenticators,
+		a.config.Security.Authorizers,
 		a.pusher,
 		a.config.Security.Auditer,
 		a.config.Model.ReadOnly,
@@ -466,7 +471,7 @@ func (a *restServer) start() {
 	a.installRoutes()
 
 	var err error
-	if a.config.TLS.ServerCertificates != nil {
+	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
 		a.server, err = a.createSecureHTTPServer(a.config.ReSTServer.ListenAddress)
 	} else {
 		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
@@ -482,7 +487,7 @@ func (a *restServer) start() {
 		a.server.Handler = a.multiplexer
 	}
 
-	if a.config.TLS.ServerCertificates != nil {
+	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
 		err = a.server.ListenAndServeTLS("", "")
 	} else {
 		err = a.server.ListenAndServe()

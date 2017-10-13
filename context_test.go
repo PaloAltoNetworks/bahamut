@@ -143,10 +143,10 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.Request = req
 		ctx.CountTotal = 10
 		ctx.Metadata = map[string]interface{}{"hello": "world"}
-		ctx.claims = []string{"ouais"}
 		ctx.InputData = "input"
 		ctx.OutputData = "output"
 		ctx.StatusCode = 42
+		ctx.SetClaims([]string{"ouais=yes"})
 
 		Convey("When I call the Duplicate method", func() {
 
@@ -161,6 +161,7 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.Request.ParentID, ShouldEqual, ctx2.Request.ParentID)
 				So(ctx.StatusCode, ShouldEqual, ctx2.StatusCode)
 				So(ctx.claims, ShouldResemble, ctx2.claims)
+				So(ctx.claimsMap, ShouldResemble, ctx2.claimsMap)
 			})
 		})
 	})
