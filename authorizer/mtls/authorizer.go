@@ -2,6 +2,7 @@ package mtls
 
 import (
 	"crypto/x509"
+	"fmt"
 
 	"github.com/aporeto-inc/bahamut"
 	"github.com/aporeto-inc/elemental"
@@ -83,13 +84,20 @@ func (a *mtlsAuthorizer) AuthenticateRequest(req *elemental.Request, claimsHolde
 		return bahamut.AuthActionContinue, nil
 	}
 
+	fmt.Println(req.TLSConnectionState.PeerCertificates)
+
 	// If we can verify, we return the success auth action
 	for _, cert := range req.TLSConnectionState.PeerCertificates {
-		if _, err := cert.Verify(a.verifyOptions); err == nil {
+		fmt.Println("ICI")
+		_, err := cert.Verify(a.verifyOptions)
+		if err == nil {
+			fmt.Println("SUCCESS")
 			return a.authActionSuccess, nil
 		}
+		fmt.Println("err", err)
 	}
 
+	fmt.Println("ZOB")
 	// If we can verify, we return the failure auth action.
 	return a.authActionFailure, nil
 }
