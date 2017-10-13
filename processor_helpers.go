@@ -22,17 +22,21 @@ func CheckAuthentication(authenticators []RequestAuthenticator, ctx *Context) (e
 		return nil
 	}
 
-	var ok bool
+	var action AuthAction
 	for _, authenticator := range authenticators {
 
-		ok, err = authenticator.AuthenticateRequest(ctx.Request, ctx)
-
+		action, err = authenticator.AuthenticateRequest(ctx.Request, ctx)
 		if err != nil {
 			return err
 		}
 
-		if !ok {
+		switch action {
+		case AuthActionOK:
+			return nil
+		case AuthActionKO:
 			return elemental.NewError("Unauthorized", "You are not authorized to access this resource.", "bahamut", http.StatusUnauthorized)
+		case AuthActionContinue:
+			continue
 		}
 	}
 
@@ -51,17 +55,21 @@ func CheckAuthorization(authorizers []Authorizer, ctx *Context) (err error) {
 		return nil
 	}
 
-	var ok bool
+	var action AuthAction
 	for _, authorizer := range authorizers {
 
-		ok, err = authorizer.IsAuthorized(ctx)
-
+		action, err = authorizer.IsAuthorized(ctx)
 		if err != nil {
 			return err
 		}
 
-		if !ok {
+		switch action {
+		case AuthActionOK:
+			return nil
+		case AuthActionKO:
 			return elemental.NewError("Forbidden", "You are not allowed to access this resource.", "bahamut", http.StatusForbidden)
+		case AuthActionContinue:
+			continue
 		}
 	}
 

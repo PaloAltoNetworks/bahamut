@@ -26,11 +26,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I create an empty authorizer", func() {
 
-			a := NewSimpleMTLSAuthorizer(nil, nil, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
+			a := NewSimpleMTLSAuthorizer(nil, nil, nil, nil, bahamut.AuthActionContinue)
+			action, err := a.IsAuthorized(ctx)
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then err should be nil", func() {
@@ -40,11 +40,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I create an non empty authorizer with met expectations", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
+			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, nil, bahamut.AuthActionContinue)
+			action, err := a.IsAuthorized(ctx)
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then err should be nil", func() {
@@ -54,11 +54,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I create an non empty authorizer with met expectations and ignored identity", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, []elemental.Identity{testIdentity})
-			ok, err := a.IsAuthorized(ctx)
+			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, []elemental.Identity{testIdentity}, bahamut.AuthActionContinue)
+			action, err := a.IsAuthorized(ctx)
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then err should be nil", func() {
@@ -68,11 +68,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I create an non empty authorizer with unmet expectations", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
+			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, nil, bahamut.AuthActionContinue)
+			action, err := a.IsAuthorized(ctx)
 
 			Convey("Then ok should be false", func() {
-				So(ok, ShouldBeFalse)
+				So(action, ShouldEqual, bahamut.AuthActionKO)
 			})
 
 			Convey("Then err should not be nil", func() {
@@ -82,11 +82,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I create an non empty authorizer with unmet expectations but I ignore the identity", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, []elemental.Identity{testIdentity})
-			ok, err := a.IsAuthorized(ctx)
+			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, []elemental.Identity{testIdentity}, bahamut.AuthActionContinue)
+			action, err := a.IsAuthorized(ctx)
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then err should be nil", func() {
