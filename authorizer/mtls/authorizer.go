@@ -7,11 +7,17 @@ import (
 	"github.com/aporeto-inc/elemental"
 )
 
+// VerifierFunc is the type of function you can pass to do custom
+// verification on the certificates, like checking for the DN.
+// NOTE: Not implemented yet.
+type VerifierFunc func(*x509.Certificate) (bahamut.AuthAction, error)
+
 type mtlsVerifier struct {
 	verifyOptions     x509.VerifyOptions
 	ignoredIdentitied []elemental.Identity
 	authActionSuccess bahamut.AuthAction
 	authActionFailure bahamut.AuthAction
+	verifier          VerifierFunc
 }
 
 func newMTLSVerifier(
@@ -32,6 +38,14 @@ func newMTLSVerifier(
 // NewMTLSAuthorizer returns a new Authorizer that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
 // The Authorizer will not enforce this for identities given by ignoredIdentitied.
+//
+// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
+// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+//
+// authActionFailure is the bahamut.AuthAction to return if the verification fails.
+// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
 func NewMTLSAuthorizer(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
@@ -45,6 +59,14 @@ func NewMTLSAuthorizer(
 // NewMTLSRequestAuthenticator returns a new Authenticator that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
 // The Authenticator will not enforce this for identities given by ignoredIdentitied.
+//
+// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
+// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+//
+// authActionFailure is the bahamut.AuthAction to return if the verification fails.
+// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
 func NewMTLSRequestAuthenticator(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
@@ -73,7 +95,7 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 		}
 	}
 
-	// If we can verify, we return the failure auth action.
+	// If we can't verify, we return the failure auth action.
 	return a.authActionFailure, nil
 }
 
@@ -91,26 +113,6 @@ func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder 
 		}
 	}
 
-	// If we can verify, we return the failure auth action.
+	// If we can't verify, we return the failure auth action.
 	return a.authActionFailure, nil
-}
-
-func makeClaims(cert *x509.Certificate) []string {
-
-	claims := []string{
-		"@auth:realm=certificate",
-		"@auth:mode=internal",
-		"@auth:serialnumber=" + cert.SerialNumber.String(),
-		"@auth:commonname=" + cert.Subject.CommonName,
-	}
-
-	for _, o := range cert.Subject.Organization {
-		claims = append(claims, "@auth:organization="+o)
-	}
-
-	for _, ou := range cert.Subject.OrganizationalUnit {
-		claims = append(claims, "@auth:organizationalunit="+ou)
-	}
-
-	return claims
 }
