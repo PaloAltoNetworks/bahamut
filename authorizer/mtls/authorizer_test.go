@@ -13,6 +13,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type claimsHolder struct {
+	claims []string
+}
+
+func (h *claimsHolder) SetClaims(c []string) { h.claims = c }
+func (h *claimsHolder) GetClaims() []string  { return h.claims }
+
 func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 	Convey("Given I have a some certificates", t, func() {
@@ -232,7 +239,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 		userCertExtBlock, _ := pem.Decode(userCertExtData)
 		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
 
-		Convey("When I try check auth with no certificate provides", func() {
+		Convey("When I try check auth with no certificate provided", func() {
 
 			req := &elemental.Request{}
 			opts := x509.VerifyOptions{
@@ -270,7 +277,9 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			action, err := auth.AuthenticateRequest(req, nil)
+			ch := &claimsHolder{}
+
+			action, err := auth.AuthenticateRequest(req, ch)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
@@ -278,6 +287,10 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			Convey("Then action should be bahamut.AuthActionOK", func() {
 				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
+
+			Convey("Then claims should be correctly populated", func() {
+				So(ch.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
 			})
 		})
 

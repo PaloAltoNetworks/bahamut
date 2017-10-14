@@ -86,10 +86,31 @@ func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder 
 	// If we can verify, we return the success auth action
 	for _, cert := range req.TLSConnectionState.PeerCertificates {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
+			claimsHolder.SetClaims(makeClaims(cert))
 			return a.authActionSuccess, nil
 		}
 	}
 
 	// If we can verify, we return the failure auth action.
 	return a.authActionFailure, nil
+}
+
+func makeClaims(cert *x509.Certificate) []string {
+
+	claims := []string{
+		"@auth:realm=certificate",
+		"@auth:mode=internal",
+		"@auth:serialnumber=" + cert.SerialNumber.String(),
+		"@auth:commonname=" + cert.Subject.CommonName,
+	}
+
+	for _, o := range cert.Subject.Organization {
+		claims = append(claims, "@auth:organization="+o)
+	}
+
+	for _, ou := range cert.Subject.OrganizationalUnit {
+		claims = append(claims, "@auth:organizationalunit="+ou)
+	}
+
+	return claims
 }
