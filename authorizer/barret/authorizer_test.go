@@ -33,13 +33,13 @@ func TestBahamut_BarretAuthorizer(t *testing.T) {
 				return nil
 			})
 
-			ok, err := a.IsAuthorized(ctx)
+			action, err := a.IsAuthorized(ctx)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then expectedSerialNumber should be xxxx", func() {
@@ -57,13 +57,13 @@ func TestBahamut_BarretAuthorizer(t *testing.T) {
 				return elemental.NewError("revoked", "completely revoked dude", "test", http.StatusForbidden)
 			})
 
-			ok, err := a.IsAuthorized(ctx)
+			action, err := a.IsAuthorized(ctx)
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
 			})
 
 			Convey("Then ok should be false", func() {
-				So(ok, ShouldBeFalse)
+				So(action, ShouldEqual, bahamut.AuthActionKO)
 			})
 
 			Convey("Then expectedSerialNumber should be yyyy", func() {
@@ -81,8 +81,8 @@ func TestBahamut_BarretAuthorizer(t *testing.T) {
 				return elemental.NewError("revoked", "completely revoked dude", "test", http.StatusForbidden)
 			})
 
-			ok1, err1 := a.IsAuthorized(ctx)
-			ok2, err2 := a.IsAuthorized(ctx)
+			action1, err1 := a.IsAuthorized(ctx)
+			action2, err2 := a.IsAuthorized(ctx)
 			Convey("Then err1 should not be nil", func() {
 				So(err1, ShouldNotBeNil)
 			})
@@ -91,10 +91,10 @@ func TestBahamut_BarretAuthorizer(t *testing.T) {
 			})
 
 			Convey("Then ok1 should be false", func() {
-				So(ok1, ShouldBeFalse)
+				So(action1, ShouldEqual, bahamut.AuthActionKO)
 			})
 			Convey("Then ok2 should be false", func() {
-				So(ok2, ShouldBeFalse)
+				So(action2, ShouldEqual, bahamut.AuthActionKO)
 			})
 
 			Convey("Then callN should be 1", func() {
@@ -112,13 +112,13 @@ func TestBahamut_BarretAuthorizer(t *testing.T) {
 				return nil
 			})
 
-			ok, err := a.IsAuthorized(ctx)
+			action, err := a.IsAuthorized(ctx)
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
 
 			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then called should be falsed", func() {

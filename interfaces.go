@@ -14,6 +14,28 @@ type processorFinderFunc func(identity elemental.Identity) (Processor, error)
 
 type eventPusherFunc func(...*elemental.Event)
 
+// AuthAction is the type of action an Authenticator or an Authorizer can return.
+type AuthAction int
+
+const (
+
+	// AuthActionOK means the authenticator/authorizer takes the responsibility
+	// to grant the request. The execution in the chain will
+	// stop and will be considered as a success.
+	AuthActionOK AuthAction = iota
+
+	// AuthActionKO means the authenticator/authorizer takes the responsibility
+	// to reject the request. The execution in the chain will
+	// stop and will be considered as a success.
+	AuthActionKO
+
+	// AuthActionContinue means the authenticator/authorizer does not take
+	// any responsabolity and let the chain continue.
+	// If the last authenticator in the chain returns AuthActionContinue,
+	// Then the request will be considered as a success.
+	AuthActionContinue
+)
+
 // Server is the interface of a bahamut server.
 type Server interface {
 
@@ -88,19 +110,19 @@ type InfoProcessor interface {
 // RequestAuthenticator is the interface that must be implemented in order to
 // to be used as the Bahamut main Authenticator.
 type RequestAuthenticator interface {
-	AuthenticateRequest(*elemental.Request, elemental.ClaimsHolder) (bool, error)
+	AuthenticateRequest(*elemental.Request, elemental.ClaimsHolder) (AuthAction, error)
 }
 
 // SessionAuthenticator is the interface that must be implemented in order to
 // be used as the initial Web socket session Authenticator.
 type SessionAuthenticator interface {
-	AuthenticateSession(elemental.SessionHolder, elemental.SpanHolder) (bool, error)
+	AuthenticateSession(elemental.SessionHolder, elemental.SpanHolder) (AuthAction, error)
 }
 
 // Authorizer is the interface that must be implemented in order to
 // to be used as the Bahamut main Authorizer.
 type Authorizer interface {
-	IsAuthorized(*Context) (bool, error)
+	IsAuthorized(*Context) (AuthAction, error)
 }
 
 // PushSessionsHandler is the interface that must be implemented in order to

@@ -141,19 +141,22 @@ type Config struct {
 	Security struct {
 
 		// RequestAuthenticators defines the list the RequestAuthenticator to use to authenticate the requests.
-		// They are executed in order from index 0 to index n. The first one that returns a failure will
-		// stop the chain.
+		// They are executed in order from index 0 to index n. They will return a bahamut.AuthAction to tell if
+		// the current request authenticator grants, denies or let the chain continue. If an error is returned, the
+		// chain fails immediately.
 		RequestAuthenticators []RequestAuthenticator
 
 		// SessionAuthenticators defines the list of SessionAuthenticator that will be used to
 		// initially authentify a websocket connection.
-		// They are executed in order from index 0 to index n. The first one that returns a failure will
-		// stop the chain.
+		// They are executed in order from index 0 to index n.They will return a bahamut.AuthAction to tell if
+		// the current session authenticator grants, denies or let the chain continue. If an error is returned, the
+		// chain fails immediately.
 		SessionAuthenticators []SessionAuthenticator
 
 		// Authorizers defines the list Authorizers to use to authorize the requests.
-		// They are executed in order from index 0 to index n. The first one that returns a failure will
-		// stop the chain.
+		// They are executed in order from index 0 to index n. They will return a bahamut.AuthAction to tell if
+		// the current authorizer grants, denies or let the chain continue. If an error is returned, the
+		// chain fails immediately.
 		Authorizers []Authorizer
 
 		// Auditer is the Auditer to use to audit the requests.

@@ -2,95 +2,379 @@ package mtls
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
 	"testing"
 
 	"github.com/aporeto-inc/bahamut"
 	"github.com/aporeto-inc/elemental"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type claimsHolder struct {
+	claims []string
+}
+
+func (h *claimsHolder) SetClaims(c []string) { h.claims = c }
+func (h *claimsHolder) GetClaims() []string  { return h.claims }
+
 func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
-	Convey("Given I have a certificate and a context", t, func() {
+	Convey("Given I have a some certificates", t, func() {
+		caChainAData, _ := ioutil.ReadFile("./fixtures/ca-chain-a.pem")
+		certPoolA := x509.NewCertPool()
+		certPoolA.AppendCertsFromPEM(caChainAData)
 
-		_, _, clientcerts := loadFixtureCertificates()
-		testIdentity := elemental.MakeIdentity("test", "test")
-		ctx := &bahamut.Context{
-			Request: &elemental.Request{
-				TLSConnectionState: &tls.ConnectionState{
-					PeerCertificates: clientcerts,
+		userCertAData, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+		userCertABlock, _ := pem.Decode(userCertAData)
+		userCertA, _ := x509.ParseCertificate(userCertABlock.Bytes)
+
+		serverCertAData, _ := ioutil.ReadFile("./fixtures/server-a-cert.pem")
+		serverCertABlock, _ := pem.Decode(serverCertAData)
+		serverCertA, _ := x509.ParseCertificate(serverCertABlock.Bytes)
+
+		userCertBData, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+		userCertBlock, _ := pem.Decode(userCertBData)
+		userCertB, _ := x509.ParseCertificate(userCertBlock.Bytes)
+
+		userCertExtData, _ := ioutil.ReadFile("./fixtures/user-ext-cert.pem")
+		userCertExtBlock, _ := pem.Decode(userCertExtData)
+		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
+
+		Convey("When I try check auth with no certificate provides", func() {
+
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionContinue", func() {
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
+			})
+		})
+
+		Convey("When I try check auth for user-a using chain-a", func() {
+
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
 				},
-				Identity: testIdentity,
-			},
-		}
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
 
-		Convey("When I create an empty authorizer", func() {
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
 
-			a := NewSimpleMTLSAuthorizer(nil, nil, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
-
-			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
-			})
+			action, err := auth.IsAuthorized(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
 		})
 
-		Convey("When I create an non empty authorizer with met expectations", func() {
+		Convey("When I try check auth for server-a using chain-a", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							serverCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
 
-			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
-			})
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+
+			action, err := auth.IsAuthorized(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
 		})
 
-		Convey("When I create an non empty authorizer with met expectations and ignored identity", func() {
+		Convey("When I try check auth for user-ext using chain-a", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"SuperAdmin"}, nil, []elemental.Identity{testIdentity})
-			ok, err := a.IsAuthorized(ctx)
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertExt,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
 
-			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
-			})
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+
+			action, err := auth.IsAuthorized(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
 			})
-		})
 
-		Convey("When I create an non empty authorizer with unmet expectations", func() {
-
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, nil)
-			ok, err := a.IsAuthorized(ctx)
-
-			Convey("Then ok should be false", func() {
-				So(ok, ShouldBeFalse)
-			})
-
-			Convey("Then err should not be nil", func() {
-				So(err, ShouldNotBeNil)
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
 			})
 		})
 
-		Convey("When I create an non empty authorizer with unmet expectations but I ignore the identity", func() {
+		Convey("When I try check auth for user-b using chain-a", func() {
 
-			a := NewSimpleMTLSAuthorizer([]string{"aporeto.com"}, []string{"nope"}, nil, []elemental.Identity{testIdentity})
-			ok, err := a.IsAuthorized(ctx)
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
 
-			Convey("Then ok should be true", func() {
-				So(ok, ShouldBeTrue)
-			})
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+
+			action, err := auth.IsAuthorized(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth for server-a using chain-a but using an ignored identity", func() {
+
+			identity := elemental.MakeIdentity("thing", "things")
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Identity: identity,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							serverCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, []elemental.Identity{identity})
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionContinue", func() {
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
+			})
+		})
+
+	})
+}
+
+func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
+
+	Convey("Given I have a some certificates", t, func() {
+		caChainAData, _ := ioutil.ReadFile("./fixtures/ca-chain-a.pem")
+		certPoolA := x509.NewCertPool()
+		certPoolA.AppendCertsFromPEM(caChainAData)
+
+		userCertAData, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+		userCertABlock, _ := pem.Decode(userCertAData)
+		userCertA, _ := x509.ParseCertificate(userCertABlock.Bytes)
+
+		serverCertAData, _ := ioutil.ReadFile("./fixtures/server-a-cert.pem")
+		serverCertABlock, _ := pem.Decode(serverCertAData)
+		serverCertA, _ := x509.ParseCertificate(serverCertABlock.Bytes)
+
+		userCertBData, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+		userCertBlock, _ := pem.Decode(userCertBData)
+		userCertB, _ := x509.ParseCertificate(userCertBlock.Bytes)
+
+		userCertExtData, _ := ioutil.ReadFile("./fixtures/user-ext-cert.pem")
+		userCertExtBlock, _ := pem.Decode(userCertExtData)
+		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
+
+		Convey("When I try check auth with no certificate provided", func() {
+
+			req := &elemental.Request{}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
+
+			action, err := auth.AuthenticateRequest(req, nil)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionContinue", func() {
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
+			})
+		})
+
+		Convey("When I try check auth for user-a using chain-a", func() {
+
+			req := &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
+					},
+				},
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
+
+			ch := &claimsHolder{}
+
+			action, err := auth.AuthenticateRequest(req, ch)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
+
+			Convey("Then claims should be correctly populated", func() {
+				So(ch.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+			})
+		})
+
+		Convey("When I try check auth for server-a using chain-a", func() {
+
+			req := &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						serverCertA,
+					},
+				},
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
+
+			action, err := auth.AuthenticateRequest(req, nil)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth for user-ext using chain-a", func() {
+
+			req := &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertExt,
+					},
+				},
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
+
+			action, err := auth.AuthenticateRequest(req, nil)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth for user-b using chain-a", func() {
+
+			req := &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
+					},
+				},
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
+
+			action, err := auth.AuthenticateRequest(req, nil)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
 			})
 		})
 	})

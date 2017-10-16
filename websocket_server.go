@@ -87,19 +87,18 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 		spanHolder := newSessionTracer(session)
 
-		var ok bool
+		var action AuthAction
 		var err error
 		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-			ok, err = authenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
+			action, err = authenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
 			if err != nil {
 				spanHolder.Span().SetTag("error", true)
 				spanHolder.Span().LogFields(log.Error(err))
 				spanHolder.Span().Finish()
 			}
 
-			if !ok || err != nil {
-
+			if action == AuthActionKO || err != nil {
 				if _, ok := session.(*wsAPISession); ok {
 					response := elemental.NewResponse()
 					response.Request = elemental.NewRequest()
@@ -112,6 +111,9 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 				ws.Close() // nolint: errcheck
 				spanHolder.Span().Finish()
 				return
+			}
+			if action == AuthActionOK {
+				break
 			}
 		}
 

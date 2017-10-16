@@ -22,28 +22,34 @@ type Auth struct {
 	err           error
 }
 
-func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (bool, error) {
+func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
 			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
 		}
-		return false, a.err
+		return AuthActionKO, a.err
 	}
 
-	return a.authenticated, nil
+	if a.authenticated {
+		return AuthActionContinue, nil
+	}
+	return AuthActionKO, nil
 }
 
-func (a *Auth) IsAuthorized(ctx *Context) (bool, error) {
+func (a *Auth) IsAuthorized(ctx *Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
 			a.err = elemental.NewError("Error", "This is an error.", "bahamut-test", http.StatusInternalServerError)
 		}
-		return false, a.err
+		return AuthActionKO, a.err
 	}
 
-	return a.authorized, nil
+	if a.authorized {
+		return AuthActionContinue, nil
+	}
+	return AuthActionKO, nil
 }
 
 type testSessionHandler struct {
@@ -54,9 +60,6 @@ type testSessionHandler struct {
 
 func (h *testSessionHandler) OnPushSessionStart(session *wsPushSession) { h.sessionCount++ }
 func (h *testSessionHandler) OnPushSessionStop(session *wsPushSession)  { h.sessionCount-- }
-func (h *testSessionHandler) IsAuthenticated(session *wsPushSession) (bool, error) {
-	return true, nil
-}
 func (h *testSessionHandler) ShouldPush(session *wsPushSession, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
 	return !h.block, nil
