@@ -17,7 +17,7 @@ type mtlsVerifier struct {
 	ignoredIdentitied []elemental.Identity
 	authActionSuccess bahamut.AuthAction
 	authActionFailure bahamut.AuthAction
-	verifier          VerifierFunc
+	// verifier          VerifierFunc
 }
 
 func newMTLSVerifier(
