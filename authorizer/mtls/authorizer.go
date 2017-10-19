@@ -91,7 +91,7 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 	// If we can verify, we return the success auth action.
 	for _, cert := range ctx.Request.TLSConnectionState.PeerCertificates {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-			return a.authActionSuccess, nil
+			return bahamut.AuthActionContinue, nil
 		}
 	}
 
@@ -109,7 +109,7 @@ func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder 
 	for _, cert := range req.TLSConnectionState.PeerCertificates {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			claimsHolder.SetClaims(makeClaims(cert))
-			return a.authActionSuccess, nil
+			return bahamut.AuthActionContinue, nil
 		}
 	}
 
