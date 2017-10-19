@@ -91,7 +91,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 
 			Convey("Then action should be bahamut.AuthActionOK", func() {
-				So(action, ShouldEqual, bahamut.AuthActionOK)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 		})
 
@@ -286,7 +286,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then action should be bahamut.AuthActionOK", func() {
-				So(action, ShouldEqual, bahamut.AuthActionOK)
+				So(action, ShouldEqual, bahamut.AuthActionContinue)
 			})
 
 			Convey("Then claims should be correctly populated", func() {
