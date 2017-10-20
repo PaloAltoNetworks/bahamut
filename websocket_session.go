@@ -12,6 +12,7 @@ import (
 
 type wsSession struct {
 	claims     []string
+	claimsMap  map[string]string
 	config     Config
 	headers    http.Header
 	id         string
@@ -39,6 +40,7 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) 
 
 	return &wsSession{
 		claims:     []string{},
+		claimsMap:  map[string]string{},
 		config:     config,
 		headers:    headers,
 		id:         uuid.NewV4().String(),
@@ -59,10 +61,16 @@ func (s *wsSession) Identifier() string {
 }
 
 // SetClaims implements elemental.ClaimsHolder.
-func (s *wsSession) SetClaims(claims []string) { s.claims = claims }
+func (s *wsSession) SetClaims(claims []string) {
+	s.claims = claims
+	s.claimsMap = claimsToMap(claims)
+}
 
 // GetClaims implements elemental.ClaimsHolder.
 func (s *wsSession) GetClaims() []string { return s.claims }
+
+// GetClaimsMap implements elemental.ClaimsHolder.
+func (s *wsSession) GetClaimsMap() map[string]string { return s.claimsMap }
 
 // GetToken implements elemental.TokenHolder.
 func (s *wsSession) GetToken() string { return s.parameters.Get("token") }
