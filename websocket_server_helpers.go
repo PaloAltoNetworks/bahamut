@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,7 @@ import (
 type internalWSSession interface {
 	Session
 	setRemoteAddress(string)
+	setTLSConnectionState(*tls.ConnectionState)
 	listen()
 	close()
 }
