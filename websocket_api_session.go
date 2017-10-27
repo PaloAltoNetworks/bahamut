@@ -84,7 +84,6 @@ func (s *wsAPISession) listen() {
 
 			// And we set the TLSConnectionState
 			request.TLSConnectionState = s.TLSConnectionState()
-			fmt.Println(s.TLSConnectionState())
 
 			switch request.Operation {
 
