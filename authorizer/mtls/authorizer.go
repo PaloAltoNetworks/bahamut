@@ -1,6 +1,7 @@
 package mtls
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 
 	"github.com/aporeto-inc/bahamut"
@@ -76,6 +77,26 @@ func NewMTLSRequestAuthenticator(
 	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil)
 }
 
+// NewMTLSSessionAuthenticator returns a new Authenticator that ensures the client certificate are
+// can be verified using the given x509.VerifyOptions.
+// The Authenticator will not enforce this for identities given by ignoredIdentitied.
+//
+// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
+// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+//
+// authActionFailure is the bahamut.AuthAction to return if the verification fails.
+// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
+// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+func NewMTLSSessionAuthenticator(
+	verifyOptions x509.VerifyOptions,
+	authActionSuccess bahamut.AuthAction,
+	authActionFailure bahamut.AuthAction,
+) bahamut.SessionAuthenticator {
+
+	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil)
+}
+
 func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
 	for _, i := range a.ignoredIdentitied {
@@ -101,12 +122,22 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 
 func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
 
-	if req.TLSConnectionState == nil {
+	return a.checkAction(req.TLSConnectionState, claimsHolder)
+}
+
+func (a *mtlsVerifier) AuthenticateSession(sessionHolder elemental.SessionHolder, spanHolder elemental.SpanHolder) (bahamut.AuthAction, error) {
+
+	return a.checkAction(sessionHolder.TLSConnectionState(), sessionHolder)
+}
+
+func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
+
+	if tlsState == nil {
 		return bahamut.AuthActionContinue, nil
 	}
 
 	// If we can verify, we return the success auth action
-	for _, cert := range req.TLSConnectionState.PeerCertificates {
+	for _, cert := range tlsState.PeerCertificates {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			claimsHolder.SetClaims(makeClaims(cert))
 			return a.authActionSuccess, nil

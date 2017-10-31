@@ -82,6 +82,7 @@ func (n *websocketServer) unregisterSession(session internalWSSession) {
 func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSession) {
 
 	session.setRemoteAddress(ws.Request().RemoteAddr)
+	session.setTLSConnectionState(ws.Request().TLS)
 
 	if len(n.config.Security.SessionAuthenticators) != 0 {
 

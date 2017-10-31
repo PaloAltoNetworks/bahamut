@@ -91,3 +91,17 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 
 	return outError
 }
+
+func claimsToMap(claims []string) map[string]string {
+
+	claimsMap := map[string]string{}
+
+	for _, claim := range claims {
+		parts := strings.SplitN(claim, "=", 2)
+		if len(parts) == 2 {
+			claimsMap[parts[0]] = parts[1]
+		}
+	}
+
+	return claimsMap
+}

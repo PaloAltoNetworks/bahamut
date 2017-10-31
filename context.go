@@ -6,7 +6,6 @@ package bahamut
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aporeto-inc/elemental"
 
@@ -70,13 +69,7 @@ func NewContext() *Context {
 func (c *Context) SetClaims(claims []string) {
 
 	c.claims = claims
-
-	for _, claim := range claims {
-		parts := strings.SplitN(claim, "=", 2)
-		if len(parts) == 2 {
-			c.claimsMap[parts[0]] = parts[1]
-		}
-	}
+	c.claimsMap = claimsToMap(claims)
 }
 
 // GetClaims implements elemental.ClaimsHolder

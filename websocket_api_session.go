@@ -82,6 +82,9 @@ func (s *wsAPISession) listen() {
 				}
 			}
 
+			// And we set the TLSConnectionState
+			request.TLSConnectionState = s.TLSConnectionState()
+
 			switch request.Operation {
 
 			case elemental.OperationRetrieveMany:

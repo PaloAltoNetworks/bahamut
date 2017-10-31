@@ -17,8 +17,9 @@ type claimsHolder struct {
 	claims []string
 }
 
-func (h *claimsHolder) SetClaims(c []string) { h.claims = c }
-func (h *claimsHolder) GetClaims() []string  { return h.claims }
+func (h *claimsHolder) SetClaims(c []string)            { h.claims = c }
+func (h *claimsHolder) GetClaims() []string             { return h.claims }
+func (h *claimsHolder) GetClaimsMap() map[string]string { return nil }
 
 func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
