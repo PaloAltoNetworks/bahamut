@@ -22,7 +22,7 @@ type Auth struct {
 	err           error
 }
 
-func (a *Auth) AuthenticateRequest(req *elemental.Request, ch elemental.ClaimsHolder) (AuthAction, error) {
+func (a *Auth) AuthenticateRequest(ctx *Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {

@@ -242,7 +242,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth with no certificate provided", func() {
 
-			req := &elemental.Request{}
+			ctx := &bahamut.Context{Request: &elemental.Request{}}
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -250,7 +250,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			action, err := auth.AuthenticateRequest(req, nil)
+			action, err := auth.AuthenticateRequest(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
@@ -263,10 +263,12 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a", func() {
 
-			req := &elemental.Request{
-				TLSConnectionState: &tls.ConnectionState{
-					PeerCertificates: []*x509.Certificate{
-						userCertA,
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
 					},
 				},
 			}
@@ -278,9 +280,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			ch := &claimsHolder{}
-
-			action, err := auth.AuthenticateRequest(req, ch)
+			action, err := auth.AuthenticateRequest(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
@@ -291,16 +291,18 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ch.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+				So(ctx.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
 			})
 		})
 
 		Convey("When I try check auth for server-a using chain-a", func() {
 
-			req := &elemental.Request{
-				TLSConnectionState: &tls.ConnectionState{
-					PeerCertificates: []*x509.Certificate{
-						serverCertA,
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							serverCertA,
+						},
 					},
 				},
 			}
@@ -312,7 +314,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			action, err := auth.AuthenticateRequest(req, nil)
+			action, err := auth.AuthenticateRequest(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
@@ -325,10 +327,12 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-ext using chain-a", func() {
 
-			req := &elemental.Request{
-				TLSConnectionState: &tls.ConnectionState{
-					PeerCertificates: []*x509.Certificate{
-						userCertExt,
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertExt,
+						},
 					},
 				},
 			}
@@ -340,7 +344,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			action, err := auth.AuthenticateRequest(req, nil)
+			action, err := auth.AuthenticateRequest(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)
@@ -353,10 +357,12 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-b using chain-a", func() {
 
-			req := &elemental.Request{
-				TLSConnectionState: &tls.ConnectionState{
-					PeerCertificates: []*x509.Certificate{
-						userCertB,
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
 					},
 				},
 			}
@@ -368,7 +374,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO)
 
-			action, err := auth.AuthenticateRequest(req, nil)
+			action, err := auth.AuthenticateRequest(ctx)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)

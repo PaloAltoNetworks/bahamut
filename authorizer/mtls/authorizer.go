@@ -120,17 +120,17 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 	return a.authActionFailure, nil
 }
 
-func (a *mtlsVerifier) AuthenticateRequest(req *elemental.Request, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) AuthenticateRequest(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
-	return a.checkAction(req.TLSConnectionState, claimsHolder)
+	return a.checkAction(ctx.Request.TLSConnectionState, ctx.SetClaims)
 }
 
-func (a *mtlsVerifier) AuthenticateSession(sessionHolder elemental.SessionHolder, spanHolder elemental.SpanHolder) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) AuthenticateSession(session bahamut.Session) (bahamut.AuthAction, error) {
 
-	return a.checkAction(sessionHolder.TLSConnectionState(), sessionHolder)
+	return a.checkAction(session.TLSConnectionState(), session.SetClaims)
 }
 
-func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimsHolder elemental.ClaimsHolder) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimSetter func([]string)) (bahamut.AuthAction, error) {
 
 	if tlsState == nil {
 		return bahamut.AuthActionContinue, nil
@@ -139,7 +139,7 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimsHolder e
 	// If we can verify, we return the success auth action
 	for _, cert := range tlsState.PeerCertificates {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-			claimsHolder.SetClaims(makeClaims(cert))
+			claimSetter(makeClaims(cert))
 			return a.authActionSuccess, nil
 		}
 	}

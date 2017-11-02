@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// internal interface that enhance what a Session can do.
+// internalWSSession interface that enhance what a Session can do.
 type internalWSSession interface {
 	Session
 	setRemoteAddress(string)

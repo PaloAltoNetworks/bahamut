@@ -92,7 +92,7 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 		var err error
 		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-			action, err = authenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
+			action, err = authenticator.AuthenticateSession(session)
 			if err != nil {
 				spanHolder.Span().SetTag("error", true)
 				spanHolder.Span().LogFields(log.Error(err))

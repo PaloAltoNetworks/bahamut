@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"crypto/tls"
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
@@ -110,13 +111,13 @@ type InfoProcessor interface {
 // RequestAuthenticator is the interface that must be implemented in order to
 // to be used as the Bahamut main Authenticator.
 type RequestAuthenticator interface {
-	AuthenticateRequest(*elemental.Request, elemental.ClaimsHolder) (AuthAction, error)
+	AuthenticateRequest(*Context) (AuthAction, error)
 }
 
 // SessionAuthenticator is the interface that must be implemented in order to
 // be used as the initial Web socket session Authenticator.
 type SessionAuthenticator interface {
-	AuthenticateSession(elemental.SessionHolder, elemental.SpanHolder) (AuthAction, error)
+	AuthenticateSession(Session) (AuthAction, error)
 }
 
 // Authorizer is the interface that must be implemented in order to
@@ -149,6 +150,11 @@ type RateLimiter interface {
 type Session interface {
 	Identifier() string
 	GetParameter(string) string
+	SetClaims([]string)
+	GetClaims() []string
+	GetClaimsMap() map[string]string
+	GetToken() string
+	TLSConnectionState() *tls.ConnectionState
 }
 
 // PushSession is a Push Session
