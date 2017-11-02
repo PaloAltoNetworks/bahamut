@@ -2,10 +2,12 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
 
 	"golang.org/x/net/websocket"
@@ -26,9 +28,15 @@ type wsSession struct {
 	stopWrite          chan bool
 	unregister         unregisterFunc
 	tlsConnectionState *tls.ConnectionState
+	span               opentracing.Span
 }
 
 func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) *wsSession {
+
+	id := uuid.NewV4().String()
+
+	sp := opentracing.StartSpan(fmt.Sprintf("bahamut.session"))
+	sp.SetTag("bahamut.session.id", id)
 
 	var parameters url.Values
 	if request := ws.Request(); request != nil {
@@ -45,7 +53,7 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) 
 		claimsMap:  map[string]string{},
 		config:     config,
 		headers:    headers,
-		id:         uuid.NewV4().String(),
+		id:         id,
 		parameters: parameters,
 		socket:     ws,
 		startTime:  time.Now(),
@@ -53,6 +61,7 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) 
 		stopRead:   make(chan bool, 2),
 		stopWrite:  make(chan bool, 2),
 		unregister: unregister,
+		span:       sp,
 	}
 }
 
@@ -83,6 +92,15 @@ func (s *wsSession) TLSConnectionState() *tls.ConnectionState { return s.tlsConn
 // GetParameter implements the WebSocketSession interface.
 func (s *wsSession) GetParameter(key string) string {
 	return s.parameters.Get(key)
+}
+
+func (s *wsSession) Span() opentracing.Span {
+	return s.span
+}
+
+func (s *wsSession) NewChildSpan(name string) opentracing.Span {
+
+	return opentracing.StartSpan(name, opentracing.ChildOf(s.span.Context()))
 }
 
 // setRemoteAddress implements the internalWSSession interface.

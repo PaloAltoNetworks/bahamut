@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type processorFinderFunc func(identity elemental.Identity) (Processor, error)
@@ -155,6 +156,8 @@ type Session interface {
 	GetClaimsMap() map[string]string
 	GetToken() string
 	TLSConnectionState() *tls.ConnectionState
+	NewChildSpan(string) opentracing.Span
+	Span() opentracing.Span
 }
 
 // PushSession is a Push Session

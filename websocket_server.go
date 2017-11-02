@@ -86,17 +86,15 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 	if len(n.config.Security.SessionAuthenticators) != 0 {
 
-		spanHolder := newSessionTracer(session)
-
 		var action AuthAction
 		var err error
 		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
 			action, err = authenticator.AuthenticateSession(session)
 			if err != nil {
-				spanHolder.Span().SetTag("error", true)
-				spanHolder.Span().LogFields(log.Error(err))
-				spanHolder.Span().Finish()
+				session.Span().SetTag("error", true)
+				session.Span().LogFields(log.Error(err))
+				session.Span().Finish()
 			}
 
 			if action == AuthActionKO || err != nil {
@@ -110,7 +108,7 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 					}
 				}
 				ws.Close() // nolint: errcheck
-				spanHolder.Span().Finish()
+				session.Span().Finish()
 				return
 			}
 			if action == AuthActionOK {
@@ -118,7 +116,7 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 			}
 		}
 
-		spanHolder.Span().Finish()
+		session.Span().Finish()
 	}
 
 	// Send the first hello message.
