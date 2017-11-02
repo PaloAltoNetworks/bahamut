@@ -110,7 +110,7 @@ type InfoProcessor interface {
 }
 
 // RequestAuthenticator is the interface that must be implemented in order to
-// to be used as the Bahamut main Authenticator.
+// to be used as the Bahamut Authenticator.
 type RequestAuthenticator interface {
 	AuthenticateRequest(*Context) (AuthAction, error)
 }
@@ -122,7 +122,7 @@ type SessionAuthenticator interface {
 }
 
 // Authorizer is the interface that must be implemented in order to
-// to be used as the Bahamut main Authorizer.
+// to be used as the Bahamut Authorizer.
 type Authorizer interface {
 	IsAuthorized(*Context) (AuthAction, error)
 }
