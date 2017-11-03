@@ -110,6 +110,9 @@ func (s *wsPushSession) write() {
 	}
 }
 
+// while this function is the same for wsAPISession and wsPushSession
+// it has to be written in both of the struc instead of wsSession as
+// if would call s.unregister using *wsSession and not a *wsPushSession
 func (s *wsPushSession) stop() {
 
 	s.stopRead <- true
