@@ -115,6 +115,18 @@ func (s *wsAPISession) listen() {
 	}
 }
 
+// while this function is the same for wsAPISession and wsPushSession
+// it has to be written in both of the struc instead of wsSession as
+// if would call s.unregister using *wsSession and not a *wsAPISession
+func (s *wsAPISession) stop() {
+
+	s.stopRead <- true
+	s.stopWrite <- true
+
+	s.unregister(s)
+	s.socket.Close() // nolint: errcheck
+}
+
 func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
 
 	err := handleRecoveredPanic(recover(), response.Request)

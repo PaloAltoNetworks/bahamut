@@ -118,13 +118,4 @@ func (s *wsSession) close() {
 	s.stopAll <- true
 }
 
-func (s *wsSession) stop() {
-
-	s.stopRead <- true
-	s.stopWrite <- true
-
-	s.unregister(s)
-	s.socket.Close() // nolint: errcheck
-}
-
 func (s *wsSession) listen() {}

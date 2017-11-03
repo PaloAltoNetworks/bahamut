@@ -110,6 +110,15 @@ func (s *wsPushSession) write() {
 	}
 }
 
+func (s *wsPushSession) stop() {
+
+	s.stopRead <- true
+	s.stopWrite <- true
+
+	s.unregister(s)
+	s.socket.Close() // nolint: errcheck
+}
+
 func (s *wsPushSession) listen() {
 
 	go s.read()
