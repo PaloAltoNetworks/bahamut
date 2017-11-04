@@ -174,7 +174,7 @@ func (n *websocketServer) start() {
 		defer unsubscribe()
 	}
 
-	zap.L().Info("Websocket server started",
+	zap.L().Debug("Websocket server started",
 		zap.Bool("api-enabled", !n.config.WebSocketServer.APIDisabled),
 		zap.Bool("push-enabled", !n.config.WebSocketServer.PushDisabled),
 	)
