@@ -2,7 +2,6 @@ package bahamut
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -32,12 +31,10 @@ type wsSession struct {
 	span               opentracing.Span
 }
 
-func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) *wsSession {
+func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
 
 	id := uuid.NewV4().String()
-
-	sp := opentracing.StartSpan(fmt.Sprintf("bahamut.session"))
-	sp.SetTag("bahamut.session.id", id)
+	span.SetTag("bahamut.session.id", id)
 
 	var parameters url.Values
 	if request := ws.Request(); request != nil {
@@ -62,7 +59,7 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc) 
 		stopRead:   make(chan bool, 2),
 		stopWrite:  make(chan bool, 2),
 		unregister: unregister,
-		span:       sp,
+		span:       span,
 	}
 }
 

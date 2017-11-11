@@ -11,6 +11,8 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
+
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsAPISession struct {
@@ -23,7 +25,7 @@ type wsAPISession struct {
 func newWSAPISession(ws *websocket.Conn, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, eventPusher eventPusherFunc) internalWSSession {
 
 	return &wsAPISession{
-		wsSession:       newWSSession(ws, config, unregister),
+		wsSession:       newWSSession(ws, config, unregister, opentracing.StartSpan("bahamut.session.api")),
 		processorFinder: processorFinder,
 		eventPusher:     eventPusher,
 		requests:        make(chan *elemental.Request, 8),

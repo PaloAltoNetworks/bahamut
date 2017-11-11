@@ -10,6 +10,8 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
+
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsPushSession struct {
@@ -24,7 +26,7 @@ type wsPushSession struct {
 func newWSPushSession(ws *websocket.Conn, config Config, unregister unregisterFunc) *wsPushSession {
 
 	return &wsPushSession{
-		wsSession:         newWSSession(ws, config, unregister),
+		wsSession:         newWSSession(ws, config, unregister, opentracing.StartSpan("bahamut.session.push")),
 		events:            make(chan *elemental.Event),
 		filters:           make(chan *elemental.PushFilter, 8),
 		currentFilterLock: &sync.Mutex{},

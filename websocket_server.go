@@ -12,7 +12,6 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-	"github.com/opentracing/opentracing-go/log"
 	"golang.org/x/net/websocket"
 )
 
@@ -90,16 +89,8 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 		var err error
 		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-			action, err = authenticator.AuthenticateSession(session)
-			if err != nil {
-				session.Span().SetTag("error", true)
-				session.Span().LogFields(log.Error(err))
-				session.Span().Finish()
-			}
-
-			if action == AuthActionKO || err != nil {
+			if action, err = authenticator.AuthenticateSession(session); action == AuthActionKO || err != nil {
 				ws.Close() // nolint: errcheck
-				session.Span().Finish()
 				return
 			}
 
@@ -107,28 +98,20 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 				break
 			}
 		}
-
-		session.Span().Finish()
 	}
 
 	switch s := session.(type) {
-
 	case *wsAPISession:
-		// Send the first hello message.
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
-			zap.L().Error("Error while sending hello message", zap.Error(err))
+			ws.Close() // nolint: errcheck
 			return
 		}
 
 	case *wsPushSession:
-		// Validate initial connection
 		if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
 			if ok, err := handler.OnPushSessionInit(s); !ok || err != nil {
-				if err != nil {
-					zap.L().Error("Error while calling OnPushSessionInit", zap.Error(err))
-				}
 				ws.Close() // nolint: errcheck
 				return
 			}
