@@ -98,19 +98,11 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 			}
 
 			if action == AuthActionKO || err != nil {
-				if _, ok := session.(*wsAPISession); ok {
-					response := elemental.NewResponse()
-					response.Request = elemental.NewRequest()
-					if err != nil {
-						writeWebSocketError(ws, response, err)
-					} else {
-						writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
-					}
-				}
 				ws.Close() // nolint: errcheck
 				session.Span().Finish()
 				return
 			}
+
 			if action == AuthActionOK {
 				break
 			}
@@ -119,13 +111,27 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 		session.Span().Finish()
 	}
 
-	// Send the first hello message.
-	if _, ok := session.(*wsAPISession); ok {
+	switch s := session.(type) {
+
+	case *wsAPISession:
+		// Send the first hello message.
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
 			zap.L().Error("Error while sending hello message", zap.Error(err))
 			return
+		}
+
+	case *wsPushSession:
+		// Validate initial connection
+		if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+			if ok, err := handler.OnPushSessionInit(s); !ok || err != nil {
+				if err != nil {
+					zap.L().Error("Error while calling OnPushSessionInit", zap.Error(err))
+				}
+				ws.Close() // nolint: errcheck
+				return
+			}
 		}
 	}
 

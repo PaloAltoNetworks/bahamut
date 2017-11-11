@@ -130,6 +130,7 @@ type Authorizer interface {
 // PushSessionsHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Server handler.
 type PushSessionsHandler interface {
+	OnPushSessionInit(PushSession) (bool, error)
 	OnPushSessionStart(PushSession)
 	OnPushSessionStop(PushSession)
 	ShouldPush(PushSession, *elemental.Event) (bool, error)
@@ -158,6 +159,8 @@ type Session interface {
 	TLSConnectionState() *tls.ConnectionState
 	NewChildSpan(string) opentracing.Span
 	Span() opentracing.Span
+	GetMetadata() interface{}
+	SetMetadata(interface{})
 }
 
 // PushSession is a Push Session

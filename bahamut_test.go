@@ -58,8 +58,9 @@ type testSessionHandler struct {
 	block        bool
 }
 
-func (h *testSessionHandler) OnPushSessionStart(session *wsPushSession) { h.sessionCount++ }
-func (h *testSessionHandler) OnPushSessionStop(session *wsPushSession)  { h.sessionCount-- }
+func (h *testSessionHandler) OnPushSessionInit(session *wsPushSession) (bool, error) { return true, nil }
+func (h *testSessionHandler) OnPushSessionStart(session *wsPushSession)              { h.sessionCount++ }
+func (h *testSessionHandler) OnPushSessionStop(session *wsPushSession)               { h.sessionCount-- }
 func (h *testSessionHandler) ShouldPush(session *wsPushSession, event *elemental.Event) (bool, error) {
 	h.shouldCalls++
 	return !h.block, nil

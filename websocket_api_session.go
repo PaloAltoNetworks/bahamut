@@ -17,7 +17,6 @@ type wsAPISession struct {
 	processorFinder processorFinderFunc
 	eventPusher     eventPusherFunc
 	requests        chan *elemental.Request
-
 	*wsSession
 }
 

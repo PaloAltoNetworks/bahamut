@@ -19,6 +19,7 @@ type wsSession struct {
 	config             Config
 	headers            http.Header
 	id                 string
+	metadata           interface{}
 	parameters         url.Values
 	remoteAddr         string
 	socket             *websocket.Conn
@@ -77,19 +78,18 @@ func (s *wsSession) SetClaims(claims []string) {
 	s.claimsMap = claimsToMap(claims)
 }
 
-// GetClaims implements elemental.ClaimsHolder.
 func (s *wsSession) GetClaims() []string { return s.claims }
 
-// GetClaimsMap implements elemental.ClaimsHolder.
 func (s *wsSession) GetClaimsMap() map[string]string { return s.claimsMap }
 
-// GetToken implements elemental.TokenHolder.
 func (s *wsSession) GetToken() string { return s.parameters.Get("token") }
 
-// TLSConnectionState implements elemental.TokenHolder.
 func (s *wsSession) TLSConnectionState() *tls.ConnectionState { return s.tlsConnectionState }
 
-// GetParameter implements the WebSocketSession interface.
+func (s *wsSession) GetMetadata() interface{} { return s.metadata }
+
+func (s *wsSession) SetMetadata(m interface{}) { s.metadata = m }
+
 func (s *wsSession) GetParameter(key string) string {
 	return s.parameters.Get(key)
 }
