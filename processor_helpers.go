@@ -25,7 +25,7 @@ func CheckAuthentication(authenticators []RequestAuthenticator, ctx *Context) (e
 	var action AuthAction
 	for _, authenticator := range authenticators {
 
-		action, err = authenticator.AuthenticateRequest(ctx.Request, ctx)
+		action, err = authenticator.AuthenticateRequest(ctx)
 		if err != nil {
 			return err
 		}

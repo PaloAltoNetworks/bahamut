@@ -12,7 +12,6 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-	"github.com/opentracing/opentracing-go/log"
 	"golang.org/x/net/websocket"
 )
 
@@ -86,48 +85,36 @@ func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSe
 
 	if len(n.config.Security.SessionAuthenticators) != 0 {
 
-		spanHolder := newSessionTracer(session)
-
 		var action AuthAction
 		var err error
 		for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-			action, err = authenticator.AuthenticateSession(session.(elemental.SessionHolder), spanHolder)
-			if err != nil {
-				spanHolder.Span().SetTag("error", true)
-				spanHolder.Span().LogFields(log.Error(err))
-				spanHolder.Span().Finish()
-			}
-
-			if action == AuthActionKO || err != nil {
-				if _, ok := session.(*wsAPISession); ok {
-					response := elemental.NewResponse()
-					response.Request = elemental.NewRequest()
-					if err != nil {
-						writeWebSocketError(ws, response, err)
-					} else {
-						writeWebSocketError(ws, response, elemental.NewError("Unauthorized", "You are not authorized to access this api", "bahamut", http.StatusUnauthorized))
-					}
-				}
+			if action, err = authenticator.AuthenticateSession(session); action == AuthActionKO || err != nil {
 				ws.Close() // nolint: errcheck
-				spanHolder.Span().Finish()
 				return
 			}
+
 			if action == AuthActionOK {
 				break
 			}
 		}
-
-		spanHolder.Span().Finish()
 	}
 
-	// Send the first hello message.
-	if _, ok := session.(*wsAPISession); ok {
+	switch s := session.(type) {
+	case *wsAPISession:
 		response := elemental.NewResponse()
 		response.StatusCode = http.StatusOK
 		if err := websocket.JSON.Send(ws, response); err != nil {
-			zap.L().Error("Error while sending hello message", zap.Error(err))
+			ws.Close() // nolint: errcheck
 			return
+		}
+
+	case *wsPushSession:
+		if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+			if ok, err := handler.OnPushSessionInit(s); !ok || err != nil {
+				ws.Close() // nolint: errcheck
+				return
+			}
 		}
 	}
 
@@ -176,7 +163,7 @@ func (n *websocketServer) start() {
 		defer unsubscribe()
 	}
 
-	zap.L().Info("Websocket server started",
+	zap.L().Debug("Websocket server started",
 		zap.Bool("api-enabled", !n.config.WebSocketServer.APIDisabled),
 		zap.Bool("push-enabled", !n.config.WebSocketServer.PushDisabled),
 	)

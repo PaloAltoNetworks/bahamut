@@ -10,6 +10,8 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
+
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsPushSession struct {
@@ -24,7 +26,7 @@ type wsPushSession struct {
 func newWSPushSession(ws *websocket.Conn, config Config, unregister unregisterFunc) *wsPushSession {
 
 	return &wsPushSession{
-		wsSession:         newWSSession(ws, config, unregister),
+		wsSession:         newWSSession(ws, config, unregister, opentracing.StartSpan("bahamut.session.push")),
 		events:            make(chan *elemental.Event),
 		filters:           make(chan *elemental.PushFilter, 8),
 		currentFilterLock: &sync.Mutex{},
@@ -108,6 +110,18 @@ func (s *wsPushSession) write() {
 			return
 		}
 	}
+}
+
+// while this function is the same for wsAPISession and wsPushSession
+// it has to be written in both of the struc instead of wsSession as
+// if would call s.unregister using *wsSession and not a *wsPushSession
+func (s *wsPushSession) stop() {
+
+	s.stopRead <- true
+	s.stopWrite <- true
+
+	s.unregister(s)
+	s.socket.Close() // nolint: errcheck
 }
 
 func (s *wsPushSession) listen() {

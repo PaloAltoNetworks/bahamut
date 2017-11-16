@@ -5,9 +5,11 @@
 package bahamut
 
 import (
+	"crypto/tls"
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type processorFinderFunc func(identity elemental.Identity) (Processor, error)
@@ -108,19 +110,19 @@ type InfoProcessor interface {
 }
 
 // RequestAuthenticator is the interface that must be implemented in order to
-// to be used as the Bahamut main Authenticator.
+// to be used as the Bahamut Authenticator.
 type RequestAuthenticator interface {
-	AuthenticateRequest(*elemental.Request, elemental.ClaimsHolder) (AuthAction, error)
+	AuthenticateRequest(*Context) (AuthAction, error)
 }
 
 // SessionAuthenticator is the interface that must be implemented in order to
 // be used as the initial Web socket session Authenticator.
 type SessionAuthenticator interface {
-	AuthenticateSession(elemental.SessionHolder, elemental.SpanHolder) (AuthAction, error)
+	AuthenticateSession(Session) (AuthAction, error)
 }
 
 // Authorizer is the interface that must be implemented in order to
-// to be used as the Bahamut main Authorizer.
+// to be used as the Bahamut Authorizer.
 type Authorizer interface {
 	IsAuthorized(*Context) (AuthAction, error)
 }
@@ -128,6 +130,7 @@ type Authorizer interface {
 // PushSessionsHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Server handler.
 type PushSessionsHandler interface {
+	OnPushSessionInit(PushSession) (bool, error)
 	OnPushSessionStart(PushSession)
 	OnPushSessionStop(PushSession)
 	ShouldPush(PushSession, *elemental.Event) (bool, error)
@@ -149,6 +152,15 @@ type RateLimiter interface {
 type Session interface {
 	Identifier() string
 	GetParameter(string) string
+	SetClaims([]string)
+	GetClaims() []string
+	GetClaimsMap() map[string]string
+	GetToken() string
+	TLSConnectionState() *tls.ConnectionState
+	NewChildSpan(string) opentracing.Span
+	Span() opentracing.Span
+	GetMetadata() interface{}
+	SetMetadata(interface{})
 }
 
 // PushSession is a Push Session

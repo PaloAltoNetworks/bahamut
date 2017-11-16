@@ -11,20 +11,21 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"golang.org/x/net/websocket"
+
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsAPISession struct {
 	processorFinder processorFinderFunc
 	eventPusher     eventPusherFunc
 	requests        chan *elemental.Request
-
 	*wsSession
 }
 
 func newWSAPISession(ws *websocket.Conn, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, eventPusher eventPusherFunc) internalWSSession {
 
 	return &wsAPISession{
-		wsSession:       newWSSession(ws, config, unregister),
+		wsSession:       newWSSession(ws, config, unregister, opentracing.StartSpan("bahamut.session.api")),
 		processorFinder: processorFinder,
 		eventPusher:     eventPusher,
 		requests:        make(chan *elemental.Request, 8),
@@ -113,6 +114,18 @@ func (s *wsAPISession) listen() {
 			return
 		}
 	}
+}
+
+// while this function is the same for wsAPISession and wsPushSession
+// it has to be written in both of the struc instead of wsSession as
+// if would call s.unregister using *wsSession and not a *wsAPISession
+func (s *wsAPISession) stop() {
+
+	s.stopRead <- true
+	s.stopWrite <- true
+
+	s.unregister(s)
+	s.socket.Close() // nolint: errcheck
 }
 
 func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
