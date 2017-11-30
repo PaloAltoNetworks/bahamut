@@ -166,3 +166,54 @@ func TestContext_Duplicate(t *testing.T) {
 		})
 	})
 }
+
+func TestContext_GetClaims(t *testing.T) {
+
+	Convey("Given I have a Context with claims", t, func() {
+
+		ctx := NewContext()
+		ctx.SetClaims([]string{"ouais=yes"})
+
+		Convey("When I call GetClaims", func() {
+
+			claims := ctx.GetClaims()
+
+			Convey("Then claims should be correct", func() {
+				So(claims, ShouldResemble, []string{"ouais=yes"})
+			})
+		})
+
+		Convey("When I call GetClaimsMap", func() {
+
+			claimsMap := ctx.GetClaimsMap()
+
+			Convey("Then claims should be correct", func() {
+				So(claimsMap, ShouldResemble, map[string]string{"ouais": "yes"})
+			})
+		})
+	})
+
+	Convey("Given I have a Context nil claims", t, func() {
+
+		ctx := NewContext()
+		ctx.SetClaims(nil)
+
+		Convey("When I call GetClaims", func() {
+
+			claims := ctx.GetClaims()
+
+			Convey("Then claims should be correct", func() {
+				So(claims, ShouldResemble, []string{})
+			})
+		})
+
+		Convey("When I call GetClaimsMap", func() {
+
+			claimsMap := ctx.GetClaimsMap()
+
+			Convey("Then claims should be correct", func() {
+				So(claimsMap, ShouldResemble, map[string]string{})
+			})
+		})
+	})
+}

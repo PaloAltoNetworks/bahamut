@@ -68,6 +68,10 @@ func NewContext() *Context {
 // SetClaims implements elemental.ClaimsHolder
 func (c *Context) SetClaims(claims []string) {
 
+	if claims == nil {
+		return
+	}
+
 	c.claims = claims
 	c.claimsMap = claimsToMap(claims)
 }
