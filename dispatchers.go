@@ -42,10 +42,7 @@ func dispatchRetrieveManyOperation(
 	auditer Auditer,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -89,10 +86,7 @@ func dispatchRetrieveOperation(
 	auditer Auditer,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -138,10 +132,7 @@ func dispatchCreateOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -214,10 +205,7 @@ func dispatchUpdateOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -290,10 +278,7 @@ func dispatchDeleteOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -351,10 +336,7 @@ func dispatchPatchOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -417,10 +399,7 @@ func dispatchInfoOperation(
 	auditer Auditer,
 ) (ctx *Context, err error) {
 
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+	ctx = NewContextWithRequest(request)
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)

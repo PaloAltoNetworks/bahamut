@@ -1481,3 +1481,29 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		})
 	})
 }
+
+func TestDispatchers_makeReadOnlyError(t *testing.T) {
+
+	Convey("Given I have an exclustion list", t, func() {
+
+		ex := []elemental.Identity{ListIdentity}
+
+		Convey("When I call makeReadOnlyError on an identity that is not excluded", func() {
+
+			err := makeReadOnlyError(UserIdentity, ex)
+
+			Convey("Then err should not be nil", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("When I call makeReadOnlyError on an identity that is excluded", func() {
+
+			err := makeReadOnlyError(ListIdentity, ex)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
