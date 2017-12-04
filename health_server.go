@@ -27,13 +27,11 @@ func (s *healthServer) start() {
 	s.server.Handler = s
 	s.server.SetKeepAlivesEnabled(true)
 
-	zap.L().Info("Health server is about to start", zap.String("address", s.config.HealthServer.ListenAddress))
+	zap.L().Debug("Health server enabled", zap.String("listen", s.config.HealthServer.ListenAddress))
 
 	if err := s.server.ListenAndServe(); err != nil {
 		zap.L().Panic("Unable to start health server", zap.Error(err))
 	}
-
-	zap.L().Info("Health server stopped", zap.String("address", s.config.HealthServer.ListenAddress))
 }
 
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
