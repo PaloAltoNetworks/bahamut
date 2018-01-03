@@ -49,7 +49,7 @@ func (s *wsAPISession) read() {
 		if err := websocket.JSON.Receive(s.socket, request); err != nil {
 			if _, ok := err.(*json.SyntaxError); !ok {
 				s.cancel()
-				s.close()
+				s.stopAll <- true
 				return
 			}
 
@@ -60,7 +60,7 @@ func (s *wsAPISession) read() {
 
 		select {
 		case s.requests <- request:
-		case <-s.closeCh:
+		case <-s.stopRead:
 			s.cancel()
 			return
 		}
@@ -111,7 +111,7 @@ func (s *wsAPISession) listen() {
 				go s.handlePatch(request)
 			}
 
-		case <-s.closeCh:
+		case <-s.stopAll:
 			s.cancel()
 			return
 		}
@@ -123,7 +123,9 @@ func (s *wsAPISession) listen() {
 // if would call s.unregister using *wsSession and not a *wsAPISession
 func (s *wsAPISession) stop() {
 
-	s.close()
+	s.stopRead <- true
+	s.stopWrite <- true
+
 	s.unregister(s)
 	s.socket.Close() // nolint: errcheck
 }

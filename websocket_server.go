@@ -17,7 +17,7 @@ import (
 
 type websocketServer struct {
 	sessions        map[string]internalWSSession
-	close           chan struct{}
+	close           chan bool
 	multiplexer     *bone.Mux
 	config          Config
 	processorFinder processorFinderFunc
@@ -28,7 +28,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 	srv := &websocketServer{
 		sessions:        map[string]internalWSSession{},
-		close:           make(chan struct{}, 1),
+		close:           make(chan bool, 2),
 		multiplexer:     multiplexer,
 		config:          config,
 		sessionsLock:    &sync.Mutex{},
@@ -237,5 +237,5 @@ func (n *websocketServer) start() {
 
 func (n *websocketServer) stop() {
 
-	close(n.close)
+	n.close <- true
 }
