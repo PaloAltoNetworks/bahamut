@@ -33,7 +33,7 @@ type wsSession struct {
 
 func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
 
-	id := uuid.NewV4().String()
+	id := uuid.Must(uuid.NewV4()).String()
 	span.SetTag("bahamut.session.id", id)
 
 	var parameters url.Values
