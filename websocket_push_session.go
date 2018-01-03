@@ -78,13 +78,13 @@ func (s *wsPushSession) read() {
 		var filter *elemental.PushFilter
 
 		if err := websocket.JSON.Receive(s.socket, &filter); err != nil {
-			s.stopAll <- true
+			s.close()
 			return
 		}
 
 		select {
 		case s.filters <- filter:
-		case <-s.stopRead:
+		case <-s.closeCh:
 			return
 		}
 	}
@@ -102,11 +102,11 @@ func (s *wsPushSession) write() {
 			}
 
 			if err := websocket.JSON.Send(s.socket, event); err != nil {
-				s.stopAll <- true
+				s.close()
 				return
 			}
 
-		case <-s.stopWrite:
+		case <-s.closeCh:
 			return
 		}
 	}
@@ -117,9 +117,7 @@ func (s *wsPushSession) write() {
 // if would call s.unregister using *wsSession and not a *wsPushSession
 func (s *wsPushSession) stop() {
 
-	s.stopRead <- true
-	s.stopWrite <- true
-
+	s.close()
 	s.unregister(s)
 	s.socket.Close() // nolint: errcheck
 }
@@ -135,7 +133,7 @@ func (s *wsPushSession) listen() {
 		case filter := <-s.filters:
 			s.setCurrentFilter(filter)
 
-		case <-s.stopAll:
+		case <-s.closeCh:
 			return
 		}
 	}

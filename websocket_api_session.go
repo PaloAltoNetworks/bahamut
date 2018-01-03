@@ -43,24 +43,25 @@ func (s *wsAPISession) String() string {
 func (s *wsAPISession) read() {
 
 	for {
-		request := elemental.NewRequest()
+		request := elemental.NewRequestWithContext(s.context)
 		request.ClientIP = s.remoteAddr
 
 		if err := websocket.JSON.Receive(s.socket, request); err != nil {
-			if _, ok := err.(*json.SyntaxError); ok {
-				response := elemental.NewResponse()
-				response.Request = request
-				writeWebSocketError(s.socket, response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
-				continue
+			if _, ok := err.(*json.SyntaxError); !ok {
+				s.cancel()
+				s.close()
+				return
 			}
 
-			s.stopAll <- true
-			return
+			response := elemental.NewResponse()
+			response.Request = request
+			writeWebSocketError(s.socket, response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
 		}
 
 		select {
 		case s.requests <- request:
-		case <-s.stopRead:
+		case <-s.closeCh:
+			s.cancel()
 			return
 		}
 	}
@@ -110,7 +111,8 @@ func (s *wsAPISession) listen() {
 				go s.handlePatch(request)
 			}
 
-		case <-s.stopAll:
+		case <-s.closeCh:
+			s.cancel()
 			return
 		}
 	}
@@ -121,9 +123,7 @@ func (s *wsAPISession) listen() {
 // if would call s.unregister using *wsSession and not a *wsAPISession
 func (s *wsAPISession) stop() {
 
-	s.stopRead <- true
-	s.stopWrite <- true
-
+	s.close()
 	s.unregister(s)
 	s.socket.Close() // nolint: errcheck
 }
@@ -157,24 +157,24 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchRetrieveManyOperation(
-		request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
+	ctx := NewContextWithRequest(request)
+
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchRetrieveManyOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
@@ -191,24 +191,24 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchRetrieveOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
+	ctx := NewContextWithRequest(request)
+
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchRetrieveOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handleCreate(request *elemental.Request) {
@@ -230,26 +230,26 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchCreateOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
-		s.config.Model.ReadOnly,
-		s.config.Model.ReadOnlyExcludedIdentities,
+	ctx := NewContextWithRequest(request)
+
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchCreateOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+				s.config.Model.ReadOnly,
+				s.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handleUpdate(request *elemental.Request) {
@@ -266,26 +266,26 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchUpdateOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
-		s.config.Model.ReadOnly,
-		s.config.Model.ReadOnlyExcludedIdentities,
+	ctx := NewContextWithRequest(request)
+
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchUpdateOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+				s.config.Model.ReadOnly,
+				s.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handleDelete(request *elemental.Request) {
@@ -302,26 +302,26 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchDeleteOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
-		s.config.Model.ReadOnly,
-		s.config.Model.ReadOnlyExcludedIdentities,
+	ctx := NewContextWithRequest(request)
+
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchDeleteOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+				s.config.Model.ReadOnly,
+				s.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handleInfo(request *elemental.Request) {
@@ -343,23 +343,22 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchInfoOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.config.Security.Auditer,
+	ctx := NewContextWithRequest(request)
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchInfoOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
 
 func (s *wsAPISession) handlePatch(request *elemental.Request) {
@@ -381,24 +380,23 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 		return
 	}
 
-	ctx, err := dispatchPatchOperation(
-		response.Request,
-		s.processorFinder,
-		s.config.Model.IdentifiablesFactory,
-		s.config.Security.RequestAuthenticators,
-		s.config.Security.Authorizers,
-		s.eventPusher,
-		s.config.Security.Auditer,
-		s.config.Model.ReadOnly,
-		s.config.Model.ReadOnlyExcludedIdentities,
+	ctx := NewContextWithRequest(request)
+	runWSDispatcher(
+		ctx,
+		s.socket,
+		response,
+		func() error {
+			return dispatchPatchOperation(
+				ctx,
+				s.processorFinder,
+				s.config.Model.IdentifiablesFactory,
+				s.config.Security.RequestAuthenticators,
+				s.config.Security.Authorizers,
+				s.eventPusher,
+				s.config.Security.Auditer,
+				s.config.Model.ReadOnly,
+				s.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeWebSocketError(s.socket, response, err)
-		return
-	}
-
-	if err := writeWebsocketResponse(s.socket, response, ctx); err != nil {
-		writeWebSocketError(s.socket, response, err)
-	}
 }
