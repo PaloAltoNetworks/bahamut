@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
@@ -24,14 +25,14 @@ type wsSession struct {
 	remoteAddr         string
 	socket             *websocket.Conn
 	startTime          time.Time
-	stopAll            chan bool
-	stopRead           chan bool
-	stopWrite          chan bool
 	unregister         unregisterFunc
 	tlsConnectionState *tls.ConnectionState
 	span               opentracing.Span
 	context            context.Context
 	cancel             context.CancelFunc
+	closeCh            chan struct{}
+	isClosed           bool
+	isClosedLock       sync.Mutex
 }
 
 func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
@@ -52,21 +53,20 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &wsSession{
-		claims:     []string{},
-		claimsMap:  map[string]string{},
-		config:     config,
-		headers:    headers,
-		id:         id,
-		parameters: parameters,
-		socket:     ws,
-		startTime:  time.Now(),
-		stopAll:    make(chan bool, 2),
-		stopRead:   make(chan bool, 2),
-		stopWrite:  make(chan bool, 2),
-		unregister: unregister,
-		span:       span,
-		context:    ctx,
-		cancel:     cancel,
+		claims:       []string{},
+		claimsMap:    map[string]string{},
+		config:       config,
+		headers:      headers,
+		id:           id,
+		parameters:   parameters,
+		socket:       ws,
+		startTime:    time.Now(),
+		closeCh:      make(chan struct{}),
+		unregister:   unregister,
+		span:         span,
+		context:      ctx,
+		cancel:       cancel,
+		isClosedLock: sync.Mutex{},
 	}
 }
 
@@ -117,9 +117,16 @@ func (s *wsSession) setTLSConnectionState(tlsConnectionState *tls.ConnectionStat
 	s.tlsConnectionState = tlsConnectionState
 }
 
-// Close implements the internalWSSession interface.
 func (s *wsSession) close() {
-	s.stopAll <- true
+
+	s.isClosedLock.Lock()
+	defer s.isClosedLock.Unlock()
+	if s.isClosed {
+		return
+	}
+
+	s.isClosed = true
+	close(s.closeCh)
 }
 
 func (s *wsSession) listen() {}
