@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 	"net/url"
@@ -29,6 +30,8 @@ type wsSession struct {
 	unregister         unregisterFunc
 	tlsConnectionState *tls.ConnectionState
 	span               opentracing.Span
+	context            context.Context
+	cancel             context.CancelFunc
 }
 
 func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
@@ -46,6 +49,8 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, 
 		headers = config.Header
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &wsSession{
 		claims:     []string{},
 		claimsMap:  map[string]string{},
@@ -60,6 +65,8 @@ func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, 
 		stopWrite:  make(chan bool, 2),
 		unregister: unregister,
 		span:       span,
+		context:    ctx,
+		cancel:     cancel,
 	}
 }
 

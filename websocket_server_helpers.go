@@ -73,3 +73,26 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 
 	return websocket.JSON.Send(ws, response)
 }
+
+func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error) {
+
+	e := make(chan error, 1)
+
+	go func() {
+		e <- d()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return
+	case err := <-e:
+		if err != nil {
+			writeWebSocketError(s, r, err)
+			return
+		}
+
+		if err = writeWebsocketResponse(s, r, ctx); err != nil {
+			writeWebSocketError(s, r, err)
+		}
+	}
+}

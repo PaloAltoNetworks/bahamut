@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 
@@ -157,3 +158,15 @@ func (c *Context) String() string {
 		c.CountTotal,
 	)
 }
+
+// Done implements the context.Context interface.
+func (c *Context) Done() <-chan struct{} { return c.Request.Context().Done() }
+
+// Err implements the context.Context interface.
+func (c *Context) Err() error { return c.Request.Context().Err() }
+
+// Deadline implements the context.Context interface.
+func (c *Context) Deadline() (time.Time, bool) { return c.Request.Context().Deadline() }
+
+// Value implements the context.Context interface.
+func (c *Context) Value(key interface{}) interface{} { return c.Request.Context().Value(key) }
