@@ -210,3 +210,25 @@ func (p *natsPubSub) Disconnect() error {
 
 	return p.client.Close()
 }
+
+func (p *natsPubSub) Ping(timeout time.Duration) error {
+
+	errChannel := make(chan error, 1)
+
+	go func() {
+		if p.nc.IsConnected() {
+			errChannel <- nil
+		} else if p.nc.IsReconnecting() {
+			errChannel <- fmt.Errorf("Reconnecting")
+		} else {
+			errChannel <- fmt.Errorf("Connection closed")
+		}
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return fmt.Errorf("Connection Timeout")
+	case err := <-errChannel:
+		return err
+	}
+}
