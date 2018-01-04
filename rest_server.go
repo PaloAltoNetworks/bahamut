@@ -53,7 +53,6 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
 	}
@@ -175,22 +174,24 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchRetrieveOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
+		func() error {
+			return dispatchRetrieveOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
@@ -210,24 +211,27 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchUpdateOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
-		a.config.Model.ReadOnly,
-		a.config.Model.ReadOnlyExcludedIdentities,
+		func() error {
+			return dispatchUpdateOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+				a.config.Model.ReadOnly,
+				a.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
 
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
@@ -247,24 +251,26 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchDeleteOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
-		a.config.Model.ReadOnly,
-		a.config.Model.ReadOnlyExcludedIdentities,
+		func() error {
+			return dispatchDeleteOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+				a.config.Model.ReadOnly,
+				a.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
@@ -288,22 +294,24 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	ctx, err := dispatchRetrieveManyOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
+		func() error {
+			return dispatchRetrieveManyOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
@@ -327,24 +335,26 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchCreateOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
-		a.config.Model.ReadOnly,
-		a.config.Model.ReadOnlyExcludedIdentities,
+		func() error {
+			return dispatchCreateOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+				a.config.Model.ReadOnly,
+				a.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
@@ -368,21 +378,23 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchInfoOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.config.Security.Auditer,
+		func() error {
+			return dispatchInfoOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.config.Security.Auditer,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
@@ -406,24 +418,26 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx, err := dispatchPatchOperation(
+	ctx := NewContextWithRequest(request)
+
+	runHTTPDispatcher(
+		ctx,
+		w,
 		request,
-		a.processorFinder,
-		a.config.Model.IdentifiablesFactory,
-		a.config.Security.RequestAuthenticators,
-		a.config.Security.Authorizers,
-		a.pusher,
-		a.config.Security.Auditer,
-		a.config.Model.ReadOnly,
-		a.config.Model.ReadOnlyExcludedIdentities,
+		func() error {
+			return dispatchPatchOperation(
+				ctx,
+				a.processorFinder,
+				a.config.Model.IdentifiablesFactory,
+				a.config.Security.RequestAuthenticators,
+				a.config.Security.Authorizers,
+				a.pusher,
+				a.config.Security.Auditer,
+				a.config.Model.ReadOnly,
+				a.config.Model.ReadOnlyExcludedIdentities,
+			)
+		},
 	)
-
-	if err != nil {
-		writeHTTPError(w, request, err)
-		return
-	}
-
-	writeHTTPResponse(w, ctx)
 }
 
 // installRoutes installs all the routes declared in the APIServerConfig.

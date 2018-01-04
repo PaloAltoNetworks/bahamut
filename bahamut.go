@@ -37,6 +37,7 @@ type server struct {
 	websocketServer *websocketServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
+	tracingServer   *tracingServer
 
 	stop chan bool
 }
@@ -65,8 +66,12 @@ func NewServer(config Config) Server {
 		srv.healthServer = newHealthServer(config)
 	}
 
-	if !config.ProfilingServer.Disabled {
+	if config.ProfilingServer.Enabled {
 		srv.profilingServer = newProfilingServer(config)
+	}
+
+	if config.TracingServer.Enabled {
+		srv.tracingServer = newTracingServer(config)
 	}
 
 	return srv
@@ -147,6 +152,10 @@ func (b *server) Start() {
 		go b.profilingServer.start()
 	}
 
+	if b.tracingServer != nil {
+		go b.tracingServer.start()
+	}
+
 	go b.handleExit()
 
 	<-b.stop
@@ -168,6 +177,10 @@ func (b *server) Stop() {
 
 	if b.profilingServer != nil {
 		b.profilingServer.stop()
+	}
+
+	if b.tracingServer != nil {
+		b.tracingServer.stop()
 	}
 
 	b.stop <- true

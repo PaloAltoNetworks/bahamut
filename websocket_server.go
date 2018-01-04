@@ -130,13 +130,21 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
 	for _, event := range events {
 
+		ok, err := n.config.WebSocketServer.SessionsHandler.ShouldPublish(event)
+		if err != nil {
+			zap.L().Error("Error while calling ShouldPublish. Event will not be published.", zap.Error(err))
+		}
+
+		if !ok {
+			continue
+		}
+
 		publication := NewPublication(n.config.WebSocketServer.Topic)
-		if err := publication.Encode(event); err != nil {
+		if err = publication.Encode(event); err != nil {
 			zap.L().Error("Unable to encode event. Message dropped", zap.Error(err))
 			break
 		}
 
-		var err error
 		for i := 0; i < 3; i++ {
 			err = n.config.WebSocketServer.Service.Publish(publication)
 			if err == nil {

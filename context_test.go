@@ -26,8 +26,7 @@ func TestContext_MakeContext(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
-		c := NewContext()
-		_ = c.ReadElementalRequest(request)
+		c := NewContextWithRequest(request)
 
 		Convey("Then it should be correctly initialized", func() {
 
@@ -162,6 +161,57 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.StatusCode, ShouldEqual, ctx2.StatusCode)
 				So(ctx.claims, ShouldResemble, ctx2.claims)
 				So(ctx.claimsMap, ShouldResemble, ctx2.claimsMap)
+			})
+		})
+	})
+}
+
+func TestContext_GetClaims(t *testing.T) {
+
+	Convey("Given I have a Context with claims", t, func() {
+
+		ctx := NewContext()
+		ctx.SetClaims([]string{"ouais=yes"})
+
+		Convey("When I call GetClaims", func() {
+
+			claims := ctx.GetClaims()
+
+			Convey("Then claims should be correct", func() {
+				So(claims, ShouldResemble, []string{"ouais=yes"})
+			})
+		})
+
+		Convey("When I call GetClaimsMap", func() {
+
+			claimsMap := ctx.GetClaimsMap()
+
+			Convey("Then claims should be correct", func() {
+				So(claimsMap, ShouldResemble, map[string]string{"ouais": "yes"})
+			})
+		})
+	})
+
+	Convey("Given I have a Context nil claims", t, func() {
+
+		ctx := NewContext()
+		ctx.SetClaims(nil)
+
+		Convey("When I call GetClaims", func() {
+
+			claims := ctx.GetClaims()
+
+			Convey("Then claims should be correct", func() {
+				So(claims, ShouldResemble, []string{})
+			})
+		})
+
+		Convey("When I call GetClaimsMap", func() {
+
+			claimsMap := ctx.GetClaimsMap()
+
+			Convey("Then claims should be correct", func() {
+				So(claimsMap, ShouldResemble, map[string]string{})
 			})
 		})
 	})

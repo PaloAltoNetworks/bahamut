@@ -61,8 +61,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req)
 
-		c := NewContext()
-		_ = c.ReadElementalRequest(request)
+		c := NewContextWithRequest(request)
 
 		c.CountTotal = 40
 

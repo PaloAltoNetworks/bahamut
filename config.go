@@ -99,8 +99,18 @@ type Config struct {
 		// ListenAddress is the general listening address for the profiling server.
 		ListenAddress string
 
-		// Disabled defines if the profiling server should be disabled.
-		Disabled bool
+		// Enabled defines if the profiling server should be enabled.
+		Enabled bool
+	}
+
+	// TracingServer contains information about tracing server.
+	TracingServer struct {
+
+		// ListenAddress is the general listening address for the profiling server.
+		OutFilePath string
+
+		// Enabled defines if the profiling server should be enabled.
+		Enabled bool
 	}
 
 	// TLS contains the TLS configuration.

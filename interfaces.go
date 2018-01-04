@@ -133,6 +133,7 @@ type PushSessionsHandler interface {
 	OnPushSessionInit(PushSession) (bool, error)
 	OnPushSessionStart(PushSession)
 	OnPushSessionStop(PushSession)
+	ShouldPublish(*elemental.Event) (bool, error)
 	ShouldPush(PushSession, *elemental.Event) (bool, error)
 }
 

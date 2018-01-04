@@ -33,41 +33,36 @@ func notImplementedErr(request *elemental.Request) error {
 }
 
 func dispatchRetrieveManyOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(RetrieveManyProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -76,45 +71,40 @@ func dispatchRetrieveManyOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchRetrieveOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
 	auditer Auditer,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(RetrieveProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -123,11 +113,11 @@ func dispatchRetrieveOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchCreateOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
@@ -136,47 +126,42 @@ func dispatchCreateOperation(
 	auditer Auditer,
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
-			return nil, err
+		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+			return
 		}
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(CreateProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
-	obj := factory(request.Identity.Name, ctx.Request.Version)
-	if err = request.Decode(&obj); err != nil {
+	obj := factory(ctx.Request.Identity.Name, ctx.Request.Version)
+	if err = ctx.Request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			return nil, err
+			return
 		}
 	}
 
@@ -184,7 +169,7 @@ func dispatchCreateOperation(
 
 	if err = proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -199,11 +184,11 @@ func dispatchCreateOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchUpdateOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
@@ -212,47 +197,42 @@ func dispatchUpdateOperation(
 	auditer Auditer,
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
-			return nil, err
+		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+			return
 		}
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(UpdateProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
-	obj := factory(request.Identity.Name, ctx.Request.Version)
-	if err = request.Decode(&obj); err != nil {
+	obj := factory(ctx.Request.Identity.Name, ctx.Request.Version)
+	if err = ctx.Request.Decode(&obj); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			return nil, err
+			return
 		}
 	}
 
@@ -260,7 +240,7 @@ func dispatchUpdateOperation(
 
 	if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -275,11 +255,11 @@ func dispatchUpdateOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchDeleteOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
@@ -288,40 +268,35 @@ func dispatchDeleteOperation(
 	auditer Auditer,
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
-			return nil, err
+		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+			return
 		}
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(DeleteProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -336,11 +311,11 @@ func dispatchDeleteOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchPatchOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
@@ -349,48 +324,43 @@ func dispatchPatchOperation(
 	auditer Auditer,
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(request.Identity, readOnlyExclusion); err != nil {
-			return nil, err
+		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+			return
 		}
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(PatchProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	var assignation *elemental.Assignation
-	if err = request.Decode(&assignation); err != nil {
+	if err = ctx.Request.Decode(&assignation); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	ctx.InputData = assignation
 
 	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if ctx.HasEvents() {
@@ -405,49 +375,44 @@ func dispatchPatchOperation(
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func dispatchInfoOperation(
-	request *elemental.Request,
+	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	auditer Auditer,
-) (ctx *Context, err error) {
-
-	ctx = NewContext()
-	if err = ctx.ReadElementalRequest(request); err != nil {
-		return nil, err
-	}
+) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
-	proc, _ := processorFinder(request.Identity)
+	proc, _ := processorFinder(ctx.Request.Identity)
 
 	if _, ok := proc.(InfoProcessor); !ok {
-		err = notImplementedErr(request)
+		err = notImplementedErr(ctx.Request)
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	if err = proc.(InfoProcessor).ProcessInfo(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return nil, err
+		return
 	}
 
 	audit(auditer, ctx, nil)
 
-	return ctx, nil
+	return
 }
 
 func makeReadOnlyError(identity elemental.Identity, readOnlyExclusion []elemental.Identity) error {

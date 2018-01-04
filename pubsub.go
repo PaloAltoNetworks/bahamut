@@ -26,7 +26,7 @@ func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubS
 func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID string, username string, password string) PubSubServer {
 
 	if clientID == "" {
-		clientID = uuid.NewV4().String()
+		clientID = uuid.Must(uuid.NewV4()).String()
 	}
 
 	if clusterID == "" {
@@ -40,7 +40,7 @@ func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID stri
 func NewNATSPubSubServerWithTLSAuth(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) PubSubServer {
 
 	if clientID == "" {
-		clientID = uuid.NewV4().String()
+		clientID = uuid.Must(uuid.NewV4()).String()
 	}
 
 	if clusterID == "" {
