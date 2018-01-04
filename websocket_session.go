@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+
 	opentracing "github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
-
-	"golang.org/x/net/websocket"
 )
 
 type wsSession struct {
@@ -35,38 +35,29 @@ type wsSession struct {
 	isClosedLock       sync.Mutex
 }
 
-func newWSSession(ws *websocket.Conn, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
+func newWSSession(request *http.Request, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
 
 	id := uuid.Must(uuid.NewV4()).String()
 	span.SetTag("bahamut.session.id", id)
 
-	var parameters url.Values
-	if request := ws.Request(); request != nil {
-		parameters = request.URL.Query()
-	}
-
-	var headers http.Header
-	if config := ws.Config(); config != nil {
-		headers = config.Header
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &wsSession{
-		claims:       []string{},
-		claimsMap:    map[string]string{},
-		config:       config,
-		headers:      headers,
-		id:           id,
-		parameters:   parameters,
-		socket:       ws,
-		startTime:    time.Now(),
-		closeCh:      make(chan struct{}),
-		unregister:   unregister,
-		span:         span,
-		context:      ctx,
-		cancel:       cancel,
-		isClosedLock: sync.Mutex{},
+		claims:             []string{},
+		claimsMap:          map[string]string{},
+		config:             config,
+		headers:            request.Header,
+		id:                 id,
+		parameters:         request.URL.Query(),
+		startTime:          time.Now(),
+		closeCh:            make(chan struct{}),
+		unregister:         unregister,
+		span:               span,
+		context:            ctx,
+		cancel:             cancel,
+		isClosedLock:       sync.Mutex{},
+		tlsConnectionState: request.TLS,
+		remoteAddr:         request.RemoteAddr,
 	}
 }
 
@@ -115,6 +106,10 @@ func (s *wsSession) setRemoteAddress(addr string) {
 // setTLSConnectionState implements internalWSSession.
 func (s *wsSession) setTLSConnectionState(tlsConnectionState *tls.ConnectionState) {
 	s.tlsConnectionState = tlsConnectionState
+}
+
+func (s *wsSession) setSocket(ws *websocket.Conn) {
+	s.socket = ws
 }
 
 func (s *wsSession) close() {

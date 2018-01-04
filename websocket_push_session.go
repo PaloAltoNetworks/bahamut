@@ -6,10 +6,10 @@ package bahamut
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 
 	"github.com/aporeto-inc/elemental"
-	"golang.org/x/net/websocket"
 
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -23,10 +23,10 @@ type wsPushSession struct {
 	*wsSession
 }
 
-func newWSPushSession(ws *websocket.Conn, config Config, unregister unregisterFunc) *wsPushSession {
+func newWSPushSession(request *http.Request, config Config, unregister unregisterFunc) *wsPushSession {
 
 	return &wsPushSession{
-		wsSession:         newWSSession(ws, config, unregister, opentracing.StartSpan("bahamut.session.push")),
+		wsSession:         newWSSession(request, config, unregister, opentracing.StartSpan("bahamut.session.push")),
 		events:            make(chan *elemental.Event),
 		filters:           make(chan *elemental.PushFilter, 8),
 		currentFilterLock: &sync.Mutex{},
@@ -77,7 +77,7 @@ func (s *wsPushSession) read() {
 	for {
 		var filter *elemental.PushFilter
 
-		if err := websocket.JSON.Receive(s.socket, &filter); err != nil {
+		if err := s.socket.ReadJSON(&filter); err != nil {
 			s.close()
 			return
 		}
@@ -101,7 +101,7 @@ func (s *wsPushSession) write() {
 				break
 			}
 
-			if err := websocket.JSON.Send(s.socket, event); err != nil {
+			if err := s.socket.WriteJSON(event); err != nil {
 				s.close()
 				return
 			}

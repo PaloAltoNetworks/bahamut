@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 type websocketServer struct {
@@ -35,17 +34,64 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 		processorFinder: processorFinder,
 	}
 
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     func(r *http.Request) bool { return true },
+	}
+
 	if !config.WebSocketServer.PushDisabled {
-		srv.multiplexer.Handle("/events", websocket.Handler(func(ws *websocket.Conn) {
-			srv.handleSession(ws, newWSPushSession(ws, srv.config, srv.unregisterSession))
+		srv.multiplexer.Handle("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			request, err := elemental.NewRequestFromHTTPRequest(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			session := newWSPushSession(r, config, srv.unregisterSession)
+			if err = srv.authSession(session); err != nil {
+				writeHTTPError(w, request, err)
+				return
+			}
+
+			if err = srv.initPushSession(session); err != nil {
+				writeHTTPError(w, request, err)
+				return
+			}
+
+			ws, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				writeHTTPError(w, request, err)
+				return
+			}
+
+			srv.registerSession(session)
+			session.setSocket(ws)
+			session.listen()
 		}))
+
 		zap.L().Debug("Websocket push handlers installed")
 	}
 
 	if !config.WebSocketServer.APIDisabled {
-		srv.multiplexer.Handle("/wsapi", websocket.Handler(func(ws *websocket.Conn) {
-			srv.handleSession(ws, newWSAPISession(ws, srv.config, srv.unregisterSession, srv.processorFinder, srv.pushEvents))
+		srv.multiplexer.Handle("/wsapi", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			session := newWSAPISession(r, config, srv.unregisterSession, srv.processorFinder, srv.pushEvents)
+			if err := srv.authSession(session); err != nil {
+				return
+			}
+
+			ws, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				return
+			}
+
+			srv.registerSession(session)
+			session.setSocket(ws)
+			session.listen()
 		}))
+
 		zap.L().Debug("Websocket api handlers installed")
 	}
 
@@ -78,48 +124,45 @@ func (n *websocketServer) unregisterSession(session internalWSSession) {
 	}
 }
 
-func (n *websocketServer) handleSession(ws *websocket.Conn, session internalWSSession) {
+func (n *websocketServer) authSession(session internalWSSession) error {
 
-	session.setRemoteAddress(ws.Request().RemoteAddr)
-	session.setTLSConnectionState(ws.Request().TLS)
+	if len(n.config.Security.SessionAuthenticators) == 0 {
+		return nil
+	}
 
-	if len(n.config.Security.SessionAuthenticators) != 0 {
+	var action AuthAction
+	var err error
 
-		var action AuthAction
-		var err error
-		for _, authenticator := range n.config.Security.SessionAuthenticators {
+	for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-			if action, err = authenticator.AuthenticateSession(session); action == AuthActionKO || err != nil {
-				ws.Close() // nolint: errcheck
-				return
-			}
+		if action, err = authenticator.AuthenticateSession(session); action == AuthActionKO || err != nil {
+			return elemental.NewError("Unauthorized", err.Error(), "bahamut", http.StatusUnauthorized)
+		}
 
-			if action == AuthActionOK {
-				break
-			}
+		if action == AuthActionOK {
+			break
 		}
 	}
 
-	switch s := session.(type) {
-	case *wsAPISession:
-		response := elemental.NewResponse()
-		response.StatusCode = http.StatusOK
-		if err := websocket.JSON.Send(ws, response); err != nil {
-			ws.Close() // nolint: errcheck
-			return
-		}
+	return nil
+}
 
-	case *wsPushSession:
-		if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
-			if ok, err := handler.OnPushSessionInit(s); !ok || err != nil {
-				ws.Close() // nolint: errcheck
-				return
-			}
-		}
+func (n *websocketServer) initPushSession(session *wsPushSession) error {
+
+	if n.config.WebSocketServer.SessionsHandler == nil {
+		return nil
 	}
 
-	n.registerSession(session)
-	session.listen()
+	ok, err := n.config.WebSocketServer.SessionsHandler.OnPushSessionInit(session)
+	if err != nil {
+		return elemental.NewError("Forbidden", err.Error(), "bahamut", http.StatusForbidden)
+	}
+
+	if !ok {
+		return elemental.NewError("Forbidden", "Rejected and refused to provide a reason", "bahamut", http.StatusForbidden)
+	}
+
+	return nil
 }
 
 func (n *websocketServer) pushEvents(events ...*elemental.Event) {
