@@ -34,10 +34,14 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 		processorFinder: processorFinder,
 	}
 
+	// TODO: this is also a hack for compat with
+	// golang/x/net/websocket.
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     func(r *http.Request) bool { return true },
+		ReadBufferSize:  32 << 20,
+		WriteBufferSize: 32 << 20,
+		// ReadBufferSize:  1024,
+		// WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
 	if !config.WebSocketServer.PushDisabled {
@@ -86,6 +90,14 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 			if err != nil {
 				return
 			}
+
+			// TODO: this is here for backward compat.
+			// we should remvove this when all enforcers
+			// are switched to at least manipulate 2.x
+			ws.WriteJSON(&elemental.Response{ // nolint: errcheck
+				StatusCode: http.StatusOK,
+			})
+			// END OF HACK
 
 			srv.registerSession(session)
 			session.setSocket(ws)
