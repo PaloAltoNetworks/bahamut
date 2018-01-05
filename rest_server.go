@@ -179,7 +179,6 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchRetrieveOperation(
 				ctx,
@@ -216,7 +215,6 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchUpdateOperation(
 				ctx,
@@ -256,7 +254,6 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchDeleteOperation(
 				ctx,
@@ -299,7 +296,6 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchRetrieveManyOperation(
 				ctx,
@@ -340,7 +336,6 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchCreateOperation(
 				ctx,
@@ -383,7 +378,6 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchInfoOperation(
 				ctx,
@@ -423,7 +417,6 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 	runHTTPDispatcher(
 		ctx,
 		w,
-		request,
 		func() error {
 			return dispatchPatchOperation(
 				ctx,

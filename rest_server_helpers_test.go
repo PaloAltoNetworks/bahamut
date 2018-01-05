@@ -1,10 +1,12 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	. "github.com/smartystreets/goconvey/convey"
@@ -128,8 +130,23 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			c.OutputData = NewUnmarshalableList()
 			writeHTTPResponse(w, c)
 
-			Convey("Then err should not be nil", func() {
+			Convey("Then status code should not be 500", func() {
 				So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+		})
+
+		Convey("When I try write the response with an redirect object", func() {
+
+			w := httptest.NewRecorder()
+			c.Redirect = "http://toto.com"
+			writeHTTPResponse(w, c)
+
+			Convey("Then status code should not be 302", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+			})
+
+			Convey("Then redirect header should be set", func() {
+				So(w.Header().Get("Location"), ShouldEqual, "http://toto.com")
 			})
 		})
 	})
@@ -205,5 +222,74 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
 			})
 		})
+	})
+}
+
+func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
+
+	Convey("Given I have a fake dispatcher", t, func() {
+
+		called := 0
+
+		w := httptest.NewRecorder()
+		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		ctx := NewContext()
+		ctx.Request = elemental.NewRequestWithContext(gctx)
+
+		Convey("When I call runHTTPDispatcher", func() {
+
+			d := func() error {
+				called++
+				return nil
+			}
+
+			runHTTPDispatcher(ctx, w, d)
+
+			Convey("Then the code should be 204", func() {
+				So(w.Code, ShouldEqual, 204)
+			})
+
+			Convey("Then the dispatcher should have been called once", func() {
+				So(called, ShouldEqual, 1)
+			})
+		})
+
+		Convey("When I call runHTTPDispatcher and it returns an error", func() {
+
+			d := func() error {
+				called++
+				return elemental.NewError("nop", "nope", "test", 42)
+			}
+
+			runHTTPDispatcher(ctx, w, d)
+
+			Convey("Then the code should be 42", func() {
+				So(w.Code, ShouldEqual, 42)
+			})
+
+			Convey("Then the dispatcher should have been called once", func() {
+				So(called, ShouldEqual, 1)
+			})
+		})
+
+		Convey("When I call runHTTPDispatcher and cancel the context", func() {
+
+			d := func() error {
+				time.Sleep(2 * time.Second)
+				called++
+				return nil
+			}
+
+			go func() { runHTTPDispatcher(ctx, nil, d) }()
+			time.Sleep(300 * time.Millisecond)
+			cancel()
+
+			Convey("Then the dispatcher should have been called once", func() {
+				So(called, ShouldEqual, 0)
+			})
+		})
+
 	})
 }

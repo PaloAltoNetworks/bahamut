@@ -130,7 +130,7 @@ func fakeElementalRequest(req *http.Request) *elemental.Request {
 	return r
 }
 
-func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, r *elemental.Request, d func() error) {
+func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error) {
 
 	e := make(chan error, 1)
 
@@ -143,7 +143,7 @@ func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, r *elemental.Request
 		return
 	case err := <-e:
 		if err != nil {
-			writeHTTPError(w, r, err)
+			writeHTTPError(w, ctx.Request, err)
 			return
 		}
 		writeHTTPResponse(w, ctx)
