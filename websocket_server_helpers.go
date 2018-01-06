@@ -21,22 +21,19 @@ type internalWSSession interface {
 
 type unregisterFunc func(internalWSSession)
 
-func writeWebSocketError(ws *websocket.Conn, response *elemental.Response, err error) {
+func writeWebSocketError(response *elemental.Response, err error) *elemental.Response {
 
 	outError := processError(err, response.Request)
 
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {
-		zap.L().Error("Unable to encode error", zap.Error(err))
-		return
+		zap.L().Panic("Unable to encode error", zap.Error(err))
 	}
 
-	if e := ws.WriteJSON(response); e != nil {
-		zap.L().Error("Unable to send error", zap.Error(err))
-	}
+	return response
 }
 
-func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c *Context) error {
+func writeWebsocketResponse(response *elemental.Response, c *Context) *elemental.Response {
 
 	if c.StatusCode == 0 {
 		switch c.Request.Operation {
@@ -55,7 +52,7 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 
 	if c.OutputData != nil {
 		if err := response.Encode(c.OutputData); err != nil {
-			return err
+			zap.L().Panic("Unable to encode output data", zap.Error(err))
 		}
 	} else {
 		c.StatusCode = http.StatusNoContent
@@ -63,10 +60,10 @@ func writeWebsocketResponse(ws *websocket.Conn, response *elemental.Response, c 
 
 	response.StatusCode = c.StatusCode
 
-	return ws.WriteJSON(response)
+	return response
 }
 
-func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error) {
+func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error) *elemental.Response {
 
 	e := make(chan error, 1)
 
@@ -75,16 +72,16 @@ func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d f
 	}()
 
 	select {
+
 	case <-ctx.Done():
-		return
+		return nil
+
 	case err := <-e:
+
 		if err != nil {
-			writeWebSocketError(s, r, err)
-			return
+			return writeWebSocketError(r, err)
 		}
 
-		if err = writeWebsocketResponse(s, r, ctx); err != nil {
-			writeWebSocketError(s, r, err)
-		}
+		return writeWebsocketResponse(r, ctx)
 	}
 }

@@ -18,6 +18,7 @@ type wsAPISession struct {
 	processorFinder processorFinderFunc
 	eventPusher     eventPusherFunc
 	requests        chan *elemental.Request
+	responses       chan *elemental.Response
 	*wsSession
 }
 
@@ -28,6 +29,7 @@ func newWSAPISession(request *http.Request, config Config, unregister unregister
 		processorFinder: processorFinder,
 		eventPusher:     eventPusher,
 		requests:        make(chan *elemental.Request, 8),
+		responses:       make(chan *elemental.Response, 8),
 	}
 }
 
@@ -54,7 +56,8 @@ func (s *wsAPISession) read() {
 
 			response := elemental.NewResponse()
 			response.Request = request
-			writeWebSocketError(s.socket, response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
+
+			s.responses <- writeWebSocketError(response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
 		}
 
 		select {
@@ -66,10 +69,36 @@ func (s *wsAPISession) read() {
 	}
 }
 
+func (s *wsAPISession) write() {
+
+	for {
+		select {
+		case resp := <-s.responses:
+
+			if err := s.socket.WriteJSON(resp); err != nil {
+				s.close()
+				return
+			}
+
+		case <-s.closeCh:
+			return
+		}
+	}
+}
+
 func (s *wsAPISession) listen() {
 
-	go s.read()
 	defer s.stop()
+
+	go s.read()
+	go s.write()
+
+	// TODO: this is here for backward compat.
+	// we should remvove this when all enforcers
+	// are switched to at least manipulate 2.x
+	s.responses <- &elemental.Response{
+		StatusCode: http.StatusOK,
+	}
 
 	for {
 		select {
@@ -89,25 +118,25 @@ func (s *wsAPISession) listen() {
 			switch request.Operation {
 
 			case elemental.OperationRetrieveMany:
-				go s.handleRetrieveMany(request)
+				s.handleRetrieveMany(request)
 
 			case elemental.OperationRetrieve:
-				go s.handleRetrieve(request)
+				s.handleRetrieve(request)
 
 			case elemental.OperationCreate:
-				go s.handleCreate(request)
+				s.handleCreate(request)
 
 			case elemental.OperationUpdate:
-				go s.handleUpdate(request)
+				s.handleUpdate(request)
 
 			case elemental.OperationDelete:
-				go s.handleDelete(request)
+				s.handleDelete(request)
 
 			case elemental.OperationInfo:
-				go s.handleInfo(request)
+				s.handleInfo(request)
 
 			case elemental.OperationPatch:
-				go s.handlePatch(request)
+				s.handlePatch(request)
 			}
 
 		case <-s.closeCh:
@@ -134,7 +163,7 @@ func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
 		return
 	}
 
-	writeWebSocketError(s.socket, response, err)
+	s.responses <- writeWebSocketError(response, err)
 }
 
 func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
@@ -152,13 +181,13 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 	}
 
 	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
 
-	runWSDispatcher(
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -186,13 +215,13 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
 
-	runWSDispatcher(
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -225,13 +254,13 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 	}
 
 	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
 
-	runWSDispatcher(
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -261,13 +290,13 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
 
-	runWSDispatcher(
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -297,13 +326,13 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 	defer s.handleEventualPanic(response)
 
 	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
 
-	runWSDispatcher(
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -338,12 +367,13 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 	}
 
 	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
-	runWSDispatcher(
+
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,
@@ -375,12 +405,13 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 	}
 
 	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		writeWebSocketError(s.socket, response, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
+		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
 		return
 	}
 
 	ctx := NewContextWithRequest(request)
-	runWSDispatcher(
+
+	s.responses <- runWSDispatcher(
 		ctx,
 		s.socket,
 		response,

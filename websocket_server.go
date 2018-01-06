@@ -91,14 +91,6 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 				return
 			}
 
-			// TODO: this is here for backward compat.
-			// we should remvove this when all enforcers
-			// are switched to at least manipulate 2.x
-			ws.WriteJSON(&elemental.Response{ // nolint: errcheck
-				StatusCode: http.StatusOK,
-			})
-			// END OF HACK
-
 			srv.registerSession(session)
 			session.setSocket(ws)
 			session.listen()
