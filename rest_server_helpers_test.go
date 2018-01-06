@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -276,9 +277,13 @@ func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
 
 		Convey("When I call runHTTPDispatcher and cancel the context", func() {
 
+			l := &sync.Mutex{}
+
 			d := func() error {
 				time.Sleep(2 * time.Second)
+				l.Lock()
 				called++
+				l.Unlock()
 				return nil
 			}
 
@@ -287,7 +292,9 @@ func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
 			cancel()
 
 			Convey("Then the dispatcher should have been called once", func() {
+				l.Lock()
 				So(called, ShouldEqual, 0)
+				l.Unlock()
 			})
 		})
 
