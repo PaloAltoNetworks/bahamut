@@ -51,7 +51,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(recover(), elemental.NewRequest(), false)
+				handleRecoveredPanic(recover(), elemental.NewRequest(), false) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}
