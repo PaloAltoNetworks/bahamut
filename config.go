@@ -45,6 +45,9 @@ type Config struct {
 
 		// CustomRootHandlerFunc defines a custom handler func for / API.
 		CustomRootHandlerFunc http.HandlerFunc
+
+		// Set this to false to disable panic recovery.
+		PanicRecoveryDisabled bool
 	}
 
 	// WebSocketServer contains the configuration for the WebSocket Server.
@@ -69,6 +72,9 @@ type Config struct {
 
 		// PushDisabled defines if the Push system should be disabled.
 		PushDisabled bool
+
+		// Set this to false to disable panic recovery.
+		PanicRecoveryDisabled bool
 	}
 
 	// HealthServer contains the configuration for the Health Server.

@@ -130,19 +130,19 @@ func fakeElementalRequest(req *http.Request) *elemental.Request {
 	return r
 }
 
-func handleEventualPanicHTTP(w http.ResponseWriter, request *elemental.Request, c chan error) {
+func handleEventualPanicHTTP(w http.ResponseWriter, request *elemental.Request, c chan error, reco bool) {
 
-	if err := handleRecoveredPanic(recover(), request); err != nil {
+	if err := handleRecoveredPanic(recover(), request, reco); err != nil {
 		c <- err
 	}
 }
 
-func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error) {
+func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error, recover bool) {
 
 	e := make(chan error, 1)
 
 	go func() {
-		defer handleEventualPanicHTTP(w, ctx.Request, e)
+		defer handleEventualPanicHTTP(w, ctx.Request, e, recover)
 		e <- d()
 
 	}()

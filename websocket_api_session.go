@@ -191,6 +191,7 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 				s.config.Security.Auditer,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -224,6 +225,7 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 				s.config.Security.Auditer,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -264,6 +266,7 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 				s.config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -299,6 +302,7 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 				s.config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -334,6 +338,7 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 				s.config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -371,6 +376,7 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 				s.config.Security.Auditer,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }
 
@@ -411,5 +417,6 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 				s.config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
+		s.config.WebSocketServer.PanicRecoveryDisabled,
 	)
 }

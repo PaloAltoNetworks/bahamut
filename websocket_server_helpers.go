@@ -63,19 +63,19 @@ func writeWebsocketResponse(response *elemental.Response, c *Context) *elemental
 	return response
 }
 
-func handleEventualPanicWebsocket(response *elemental.Response, c chan error) {
+func handleEventualPanicWebsocket(response *elemental.Response, c chan error, reco bool) {
 
-	if err := handleRecoveredPanic(recover(), response.Request); err != nil {
+	if err := handleRecoveredPanic(recover(), response.Request, reco); err != nil {
 		c <- err
 	}
 }
 
-func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error) *elemental.Response {
+func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error, recover bool) *elemental.Response {
 
 	e := make(chan error, 1)
 
 	go func() {
-		defer handleEventualPanicWebsocket(r, e)
+		defer handleEventualPanicWebsocket(r, e, recover)
 		e <- d()
 	}()
 

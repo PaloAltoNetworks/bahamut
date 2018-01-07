@@ -246,7 +246,7 @@ func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
 				return nil
 			}
 
-			runHTTPDispatcher(ctx, w, d)
+			runHTTPDispatcher(ctx, w, d, true)
 
 			Convey("Then the code should be 204", func() {
 				So(w.Code, ShouldEqual, 204)
@@ -264,7 +264,7 @@ func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
 				return elemental.NewError("nop", "nope", "test", 42)
 			}
 
-			runHTTPDispatcher(ctx, w, d)
+			runHTTPDispatcher(ctx, w, d, true)
 
 			Convey("Then the code should be 42", func() {
 				So(w.Code, ShouldEqual, 42)
@@ -287,7 +287,7 @@ func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
 				return nil
 			}
 
-			go func() { runHTTPDispatcher(ctx, nil, d) }()
+			go func() { runHTTPDispatcher(ctx, nil, d, true) }()
 			time.Sleep(300 * time.Millisecond)
 			cancel()
 

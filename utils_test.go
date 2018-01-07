@@ -34,7 +34,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(recover(), elemental.NewRequest())
+				err = handleRecoveredPanic(recover(), elemental.NewRequest(), true)
 				wg.Done()
 			}()
 			func() { panic("this is a panic!") }()
@@ -47,6 +47,22 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		})
 	})
 
+	Convey("Given I call a function that panics and I don't want to recover", t, func() {
+
+		var err error
+
+		f := func() {
+			defer func() {
+				err = handleRecoveredPanic(recover(), elemental.NewRequest(), false)
+			}()
+			func() { panic("this is a panic!") }()
+		}
+
+		Convey("Then err should not be nil", func() {
+			So(f, ShouldPanic)
+		})
+	})
+
 	Convey("Given I call a function that doesn't panic", t, func() {
 
 		var err error
@@ -55,7 +71,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(recover(), elemental.NewRequest())
+				err = handleRecoveredPanic(recover(), elemental.NewRequest(), true)
 				wg.Done()
 			}()
 			func() {}()

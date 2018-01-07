@@ -28,13 +28,17 @@ ___________________________________________________________________
 `)
 }
 
-func handleRecoveredPanic(r interface{}, req *elemental.Request) error {
+func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) error {
 
 	if r == nil {
 		return nil
 	}
 
 	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
+	if !recover {
+		panic(err)
+	}
+
 	st := string(debug.Stack())
 	zap.L().Error("panic", zap.String("stacktrace", st))
 
