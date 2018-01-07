@@ -49,11 +49,9 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 	Convey("Given I call a function that panics and I don't want to recover", t, func() {
 
-		var err error
-
 		f := func() {
 			defer func() {
-				err = handleRecoveredPanic(recover(), elemental.NewRequest(), false)
+				handleRecoveredPanic(recover(), elemental.NewRequest(), false)
 			}()
 			func() { panic("this is a panic!") }()
 		}
