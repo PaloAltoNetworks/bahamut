@@ -147,16 +147,6 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	a.multiplexer.ServeHTTP(w, req)
 }
 
-func (a *restServer) handleEventualPanic(w http.ResponseWriter, request *elemental.Request) {
-
-	err := handleRecoveredPanic(recover(), request)
-	if err == nil {
-		return
-	}
-
-	writeHTTPError(w, request, err)
-}
-
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 	request, err := elemental.NewRequestFromHTTPRequest(req)
@@ -167,7 +157,6 @@ func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
 		writeHTTPError(w, request, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -203,7 +192,6 @@ func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
 		writeHTTPError(w, request, elemental.NewError("Not allowed", "Update opration not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -242,7 +230,6 @@ func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
 		writeHTTPError(w, request, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -280,7 +267,6 @@ func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
@@ -320,7 +306,6 @@ func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
@@ -362,7 +347,6 @@ func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity
@@ -401,7 +385,6 @@ func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer a.handleEventualPanic(w, request)
 
 	if request.ParentIdentity.IsEmpty() {
 		request.ParentIdentity = elemental.RootIdentity

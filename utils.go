@@ -3,6 +3,7 @@ package bahamut
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strings"
 
@@ -36,6 +37,9 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request) error {
 	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
 	st := string(debug.Stack())
 	zap.L().Error("panic", zap.String("stacktrace", st))
+
+	// Print the panic as it would have happened
+	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck
 
 	sp := req.NewChildSpan("bahamut.result.panic")
 	sp.SetTag("error", true)

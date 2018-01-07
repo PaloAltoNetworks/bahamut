@@ -63,11 +63,19 @@ func writeWebsocketResponse(response *elemental.Response, c *Context) *elemental
 	return response
 }
 
+func handleEventualPanicWebsocket(response *elemental.Response, c chan error) {
+
+	if err := handleRecoveredPanic(recover(), response.Request); err != nil {
+		c <- err
+	}
+}
+
 func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error) *elemental.Response {
 
 	e := make(chan error, 1)
 
 	go func() {
+		defer handleEventualPanicWebsocket(r, e)
 		e <- d()
 	}()
 
@@ -77,11 +85,9 @@ func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d f
 		return nil
 
 	case err := <-e:
-
 		if err != nil {
 			return writeWebSocketError(r, err)
 		}
-
 		return writeWebsocketResponse(r, ctx)
 	}
 }

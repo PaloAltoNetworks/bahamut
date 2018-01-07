@@ -156,16 +156,6 @@ func (s *wsAPISession) stop() {
 	s.socket.Close() // nolint: errcheck
 }
 
-func (s *wsAPISession) handleEventualPanic(response *elemental.Response) {
-
-	err := handleRecoveredPanic(recover(), response.Request)
-	if err == nil {
-		return
-	}
-
-	s.responses <- writeWebSocketError(response, err)
-}
-
 func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 
 	response := elemental.NewResponse()
@@ -173,7 +163,6 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -212,7 +201,6 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -246,7 +234,6 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -287,7 +274,6 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -323,7 +309,6 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
@@ -359,7 +344,6 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -397,7 +381,6 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 
 	request.StartTracing()
 	defer request.FinishTracing()
-	defer s.handleEventualPanic(response)
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
