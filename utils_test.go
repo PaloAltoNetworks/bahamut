@@ -37,7 +37,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 				err = handleRecoveredPanic(recover(), elemental.NewRequest(), true)
 				wg.Done()
 			}()
-			func() { panic("this is a panic!") }()
+			panic("this is a panic!")
 		}()
 
 		wg.Wait()
