@@ -39,6 +39,11 @@ func (r *basicRateLimiter) RateLimit(req *http.Request) (bool, error) {
 		return false, err
 	}
 
+	return r.rateLimitWithIP(ip)
+}
+
+func (r *basicRateLimiter) rateLimitWithIP(ip string) (bool, error) {
+
 	var count int
 	if c := r.cache.Get(ip); c != nil {
 		count = c.(int)
@@ -83,7 +88,7 @@ func (r *rateLimiterWithBan) RateLimit(req *http.Request) (bool, error) {
 		return true, nil
 	}
 
-	limited, err := r.basicRateLimiter.RateLimit(req)
+	limited, err := r.rateLimitWithIP(ip)
 	if err != nil {
 		return false, err
 	}
