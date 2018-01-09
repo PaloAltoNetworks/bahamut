@@ -109,6 +109,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 	if c.OutputData != nil {
 		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
 			writeHTTPError(w, c.Request, err)
+			return
 		}
 	} else {
 		c.StatusCode = http.StatusNoContent
@@ -119,6 +120,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 	if buffer != nil {
 		if _, err := io.Copy(w, buffer); err != nil {
 			writeHTTPError(w, c.Request, err)
+			return
 		}
 	}
 }
