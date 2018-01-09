@@ -2,6 +2,7 @@ package bahamut
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/aporeto-inc/elemental"
@@ -42,29 +43,56 @@ func (p *FakeIdentifiable) Validate() error {
 
 // FakeCompleteProcessor
 type FakeCompleteProcessor struct {
-	err error
+	err    error
+	output interface{}
+	events []*elemental.Event
 }
 
-func (p *FakeCompleteProcessor) ProcessRetrieveMany(*Context) error {
+func (p *FakeCompleteProcessor) ProcessRetrieveMany(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessRetrieve(*Context) error {
+func (p *FakeCompleteProcessor) ProcessRetrieve(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessCreate(*Context) error {
+func (p *FakeCompleteProcessor) ProcessCreate(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessUpdate(*Context) error {
+func (p *FakeCompleteProcessor) ProcessUpdate(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessDelete(*Context) error {
+func (p *FakeCompleteProcessor) ProcessDelete(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessPatch(*Context) error {
+func (p *FakeCompleteProcessor) ProcessPatch(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
 }
-func (p *FakeCompleteProcessor) ProcessInfo(*Context) error {
+func (p *FakeCompleteProcessor) ProcessInfo(ctx *Context) error {
+	ctx.OutputData = p.output
+	ctx.EnqueueEvents(p.events...)
 	return p.err
+}
+
+type FakePusher struct {
+	events []*elemental.Event
+	sync.Mutex
+}
+
+func (f *FakePusher) Push(evt ...*elemental.Event) {
+	f.Lock()
+	defer f.Unlock()
+	f.events = append(f.events, evt...)
 }
 
 // TestDispatchers_dispatchRetrieveManyOperation tests dispatchRetrieveManyOperation method
@@ -74,7 +102,10 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		request := elemental.NewRequest()
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: "hello",
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventUpdate, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -82,15 +113,19 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchRetrieveManyOperation(ctx, processorFinder, factory, nil, nil, nil, auditer)
+		err := dispatchRetrieveManyOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer)
 
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, "hello")
+			So(len(pusher.events), ShouldEqual, 1)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 
@@ -235,7 +270,10 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 		request := elemental.NewRequest()
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: "hello",
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventUpdate, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -243,15 +281,19 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchRetrieveOperation(ctx, processorFinder, factory, nil, nil, nil, auditer)
+		err := dispatchRetrieveOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer)
 
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, "hello")
+			So(len(pusher.events), ShouldEqual, 1)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 
@@ -397,7 +439,10 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: &FakeIdentifiable{identifier: "a"},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventUpdate, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -405,9 +450,10 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
@@ -415,6 +461,10 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, &FakeIdentifiable{identifier: "a"})
+			So(len(pusher.events), ShouldEqual, 2)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventCreate)
 		})
 	})
 
@@ -663,7 +713,10 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: &FakeIdentifiable{identifier: "a"},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -671,9 +724,10 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
@@ -681,6 +735,10 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, &FakeIdentifiable{identifier: "a"})
+			So(len(pusher.events), ShouldEqual, 2)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 
@@ -929,7 +987,10 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: &FakeIdentifiable{identifier: "a"},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventCreate, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -937,15 +998,20 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchDeleteOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchDeleteOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, &FakeIdentifiable{identifier: "a"})
+			So(len(pusher.events), ShouldEqual, 2)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventCreate)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventDelete)
 		})
 	})
 
@@ -1115,7 +1181,10 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		request.Data = []byte(`{"ID": "1234", "Name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &FakeCompleteProcessor{}, nil
+			return &FakeCompleteProcessor{
+				output: &elemental.Assignation{Type: elemental.AssignationTypeAdd},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &FakeIdentifiable{})},
+			}, nil
 		}
 
 		factory := func(identity string, version int) elemental.Identifiable {
@@ -1123,15 +1192,20 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchPatchOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(ctx.OutputData, ShouldResemble, &elemental.Assignation{Type: elemental.AssignationTypeAdd})
+			So(len(pusher.events), ShouldEqual, 2)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventCreate)
 		})
 	})
 
