@@ -150,6 +150,23 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 				So(w.Header().Get("Location"), ShouldEqual, "http://toto.com")
 			})
 		})
+
+		Convey("When I try write the response with a message", func() {
+
+			w := httptest.NewRecorder()
+			c.AddMessage("coucou")
+			c.AddMessage("hello")
+
+			writeHTTPResponse(w, c)
+
+			Convey("Then status code should not be 204", func() {
+				So(w.Code, ShouldEqual, http.StatusNoContent)
+			})
+
+			Convey("Then redirect header should be set", func() {
+				So(w.Header().Get("X-Messages"), ShouldEqual, "coucou;hello")
+			})
+		})
 	})
 }
 
@@ -203,7 +220,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace")
+				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
 				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
@@ -217,7 +234,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "*")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace")
+				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
 				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")

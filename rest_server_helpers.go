@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -25,7 +26,7 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 	w.Header().Set("Cache-control", "private, no-transform")
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace")
+	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -104,6 +105,10 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
 		w.Header().Set("X-Count-Total", strconv.Itoa(c.CountTotal))
+	}
+
+	if msgs := c.messages(); len(msgs) > 0 {
+		w.Header().Set("X-Messages", strings.Join(msgs, ";"))
 	}
 
 	if c.OutputData != nil {

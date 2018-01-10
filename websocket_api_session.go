@@ -178,7 +178,6 @@ func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchRetrieveManyOperation(
@@ -212,7 +211,6 @@ func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchRetrieveOperation(
@@ -251,7 +249,6 @@ func (s *wsAPISession) handleCreate(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchCreateOperation(
@@ -287,7 +284,6 @@ func (s *wsAPISession) handleUpdate(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchUpdateOperation(
@@ -323,7 +319,6 @@ func (s *wsAPISession) handleDelete(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchDeleteOperation(
@@ -364,7 +359,6 @@ func (s *wsAPISession) handleInfo(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchInfoOperation(
@@ -402,7 +396,6 @@ func (s *wsAPISession) handlePatch(request *elemental.Request) {
 
 	s.responses <- runWSDispatcher(
 		ctx,
-		s.socket,
 		response,
 		func() error {
 			return dispatchPatchOperation(

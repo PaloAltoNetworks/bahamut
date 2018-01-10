@@ -145,6 +145,8 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.InputData = "input"
 		ctx.OutputData = "output"
 		ctx.StatusCode = 42
+		ctx.AddMessage("a")
+		ctx.AddMessage("b")
 		ctx.SetClaims([]string{"ouais=yes"})
 
 		Convey("When I call the Duplicate method", func() {
@@ -161,6 +163,7 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.StatusCode, ShouldEqual, ctx2.StatusCode)
 				So(ctx.claims, ShouldResemble, ctx2.claims)
 				So(ctx.claimsMap, ShouldResemble, ctx2.claimsMap)
+				So(ctx.messages(), ShouldResemble, ctx2.messages())
 			})
 		})
 	})

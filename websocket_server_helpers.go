@@ -39,8 +39,6 @@ func writeWebsocketResponse(response *elemental.Response, c *Context) *elemental
 		switch c.Request.Operation {
 		case elemental.OperationCreate:
 			c.StatusCode = http.StatusCreated
-		case elemental.OperationInfo:
-			c.StatusCode = http.StatusNoContent
 		default:
 			c.StatusCode = http.StatusOK
 		}
@@ -59,6 +57,7 @@ func writeWebsocketResponse(response *elemental.Response, c *Context) *elemental
 	}
 
 	response.StatusCode = c.StatusCode
+	response.Messages = c.messages()
 
 	return response
 }
@@ -70,7 +69,7 @@ func handleEventualPanicWebsocket(response *elemental.Response, c chan error, re
 	}
 }
 
-func runWSDispatcher(ctx *Context, s *websocket.Conn, r *elemental.Response, d func() error, recover bool) *elemental.Response {
+func runWSDispatcher(ctx *Context, r *elemental.Response, d func() error, recover bool) *elemental.Response {
 
 	e := make(chan error, 1)
 

@@ -6,6 +6,7 @@ package bahamut
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
@@ -45,22 +46,25 @@ type Context struct {
 	// Metadata is contains random user defined metadata.
 	Metadata map[string]interface{}
 
-	events    elemental.Events
-	id        string
-	claims    []string
-	claimsMap map[string]string
+	customMessages     []string
+	customMessagesLock *sync.Mutex
+	events             elemental.Events
+	id                 string
+	claims             []string
+	claimsMap          map[string]string
 }
 
 // NewContext creates a new *Context.
 func NewContext() *Context {
 
 	return &Context{
-		Request:   elemental.NewRequest(),
-		Metadata:  map[string]interface{}{},
-		claims:    []string{},
-		claimsMap: map[string]string{},
-		id:        uuid.Must(uuid.NewV4()).String(),
-		events:    elemental.Events{},
+		Request:            elemental.NewRequest(),
+		Metadata:           map[string]interface{}{},
+		claims:             []string{},
+		claimsMap:          map[string]string{},
+		id:                 uuid.Must(uuid.NewV4()).String(),
+		events:             elemental.Events{},
+		customMessagesLock: &sync.Mutex{},
 	}
 }
 
@@ -127,6 +131,20 @@ func (c *Context) Events() elemental.Events {
 	return c.events
 }
 
+// AddMessage adds a new message that will be sent in the response.
+func (c *Context) AddMessage(msg string) {
+	c.customMessagesLock.Lock()
+	c.customMessages = append(c.customMessages, msg)
+	c.customMessagesLock.Unlock()
+}
+
+func (c *Context) messages() []string {
+	c.customMessagesLock.Lock()
+	defer c.customMessagesLock.Unlock()
+
+	return c.customMessages
+}
+
 // Duplicate duplicates the context.
 func (c *Context) Duplicate() *Context {
 
@@ -138,6 +156,7 @@ func (c *Context) Duplicate() *Context {
 	ctx.OutputData = c.OutputData
 	ctx.Request = c.Request.Duplicate()
 	ctx.claims = append(ctx.claims, c.claims...)
+	ctx.customMessages = append(ctx.customMessages, c.customMessages...)
 
 	for k, v := range c.claimsMap {
 		ctx.claimsMap[k] = v
