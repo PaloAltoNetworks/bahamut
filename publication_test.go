@@ -3,6 +3,7 @@ package bahamut
 import (
 	"testing"
 
+	"github.com/aporeto-inc/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -26,7 +27,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 		Convey("When I encode some object", func() {
 
-			list := NewList()
+			list := testmodel.NewList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -42,7 +43,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the object", func() {
 
-				var l2 *List
+				var l2 *testmodel.List
 				err := publication.Decode(l2)
 
 				Convey("Then err should be nil", func() {
@@ -57,7 +58,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 		Convey("When I encode some unencodable object", func() {
 
-			list := NewUnmarshalableList()
+			list := testmodel.NewUnmarshalableList()
 			list.Name = "l1"
 			list.ID = "xxx"
 
@@ -73,7 +74,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the non existing object", func() {
 
-				var l2 *List
+				var l2 *testmodel.List
 				err := publication.Decode(l2)
 
 				Convey("Then err should not be nil", func() {

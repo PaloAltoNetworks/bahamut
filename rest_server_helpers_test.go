@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -128,7 +129,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		Convey("When I try write the response with an unmarshallable object", func() {
 
 			w := httptest.NewRecorder()
-			c.OutputData = NewUnmarshalableList()
+			c.OutputData = testmodel.NewUnmarshalableList()
 			writeHTTPResponse(w, c)
 
 			Convey("Then status code should not be 500", func() {

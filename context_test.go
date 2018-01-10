@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -64,8 +65,8 @@ func TestContext_Events(t *testing.T) {
 		Convey("When I enqueue 2 events", func() {
 
 			c.EnqueueEvents(
-				elemental.NewEvent(elemental.EventCreate, NewList()),
-				elemental.NewEvent(elemental.EventCreate, NewList()))
+				elemental.NewEvent(elemental.EventCreate, testmodel.NewList()),
+				elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should have 2 events in the queue", func() {
 				So(c.HasEvents(), ShouldBeTrue)
@@ -76,13 +77,13 @@ func TestContext_Events(t *testing.T) {
 		Convey("When I set the Events", func() {
 
 			c.EnqueueEvents(
-				elemental.NewEvent(elemental.EventCreate, NewList()),
-				elemental.NewEvent(elemental.EventCreate, NewList()),
+				elemental.NewEvent(elemental.EventCreate, testmodel.NewList()),
+				elemental.NewEvent(elemental.EventCreate, testmodel.NewList()),
 			)
 
 			c.SetEvents(
 				elemental.NewEvents(
-					elemental.NewEvent(elemental.EventCreate, NewList()),
+					elemental.NewEvent(elemental.EventCreate, testmodel.NewList()),
 				),
 			)
 

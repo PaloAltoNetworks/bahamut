@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -1560,11 +1561,11 @@ func TestDispatchers_makeReadOnlyError(t *testing.T) {
 
 	Convey("Given I have an exclustion list", t, func() {
 
-		ex := []elemental.Identity{ListIdentity}
+		ex := []elemental.Identity{testmodel.ListIdentity}
 
 		Convey("When I call makeReadOnlyError on an identity that is not excluded", func() {
 
-			err := makeReadOnlyError(UserIdentity, ex)
+			err := makeReadOnlyError(testmodel.UserIdentity, ex)
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
@@ -1573,7 +1574,7 @@ func TestDispatchers_makeReadOnlyError(t *testing.T) {
 
 		Convey("When I call makeReadOnlyError on an identity that is excluded", func() {
 
-			err := makeReadOnlyError(ListIdentity, ex)
+			err := makeReadOnlyError(testmodel.ListIdentity, ex)
 
 			Convey("Then err should be nil", func() {
 				So(err, ShouldBeNil)

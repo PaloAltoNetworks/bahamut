@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -97,7 +98,7 @@ func TestWebsocketServerHelper_writeWebsocketResponse(t *testing.T) {
 
 		Convey("When I call writeWebsocketResponse for operation create with output data", func() {
 
-			ctx.OutputData = &List{ID: "a"}
+			ctx.OutputData = &testmodel.List{ID: "a"}
 			ctx.Request.Operation = elemental.OperationCreate
 
 			r := writeWebsocketResponse(resp, ctx)
@@ -124,7 +125,7 @@ func TestWebsocketServerHelper_writeWebsocketResponse(t *testing.T) {
 
 		Convey("When I call writeWebsocketResponse for operation with unmarshalable identity", func() {
 
-			ctx.OutputData = &UnmarshalableList{}
+			ctx.OutputData = &testmodel.UnmarshalableList{}
 			ctx.Request.Operation = elemental.OperationCreate
 
 			Convey("Then it should panic", func() {

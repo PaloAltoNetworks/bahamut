@@ -22,11 +22,11 @@ func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificat
 
 	systemCAPool, _ := x509.SystemCertPool()
 
-	clientCACertData, _ := ioutil.ReadFile("fixtures/ca.pem")
+	clientCACertData, _ := ioutil.ReadFile("fixtures/certs/ca-cert.pem")
 	clientCAPool := x509.NewCertPool()
 	clientCAPool.AppendCertsFromPEM(clientCACertData)
 
-	serverCert, _ := tls.LoadX509KeyPair("fixtures/server-cert.pem", "fixtures/server-key.pem")
+	serverCert, _ := tls.LoadX509KeyPair("fixtures/certs/server-cert.pem", "fixtures/certs/server-key.pem")
 	return systemCAPool, clientCAPool, []tls.Certificate{serverCert}
 }
 
@@ -188,8 +188,8 @@ func TestServer_Start(t *testing.T) {
 			go c.start()
 			time.Sleep(1 * time.Second)
 
-			cert, _ := tls.LoadX509KeyPair("fixtures/client-cert.pem", "fixtures/client-key.pem")
-			cacert, _ := ioutil.ReadFile("fixtures/ca.pem")
+			cert, _ := tls.LoadX509KeyPair("fixtures/certs/client-cert.pem", "fixtures/certs/client-key.pem")
+			cacert, _ := ioutil.ReadFile("fixtures/certs/ca-cert.pem")
 			pool := x509.NewCertPool()
 			pool.AppendCertsFromPEM(cacert)
 			tlsConfig := &tls.Config{
