@@ -107,7 +107,7 @@ func TestWebsocketServerHelper_writeWebsocketResponse(t *testing.T) {
 				So(r.StatusCode, ShouldEqual, http.StatusCreated)
 			})
 			Convey("Then data should be correct", func() {
-				So(string(r.Data), ShouldEqual, `{"ID":"a","creationOnly":"","description":"","name":"","parentID":"","parentType":"","readOnly":""}`)
+				So(string(r.Data), ShouldEqual, `{"date":"0001-01-01T00:00:00Z","description":"","name":"","ID":"a","parentID":"","parentType":""}`)
 			})
 		})
 
