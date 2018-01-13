@@ -77,6 +77,24 @@ type Config struct {
 		PanicRecoveryDisabled bool
 	}
 
+	MockServer struct {
+
+		// ListenAddress is the general listening address for the mock server.
+		ListenAddress string
+
+		// ReadTimeout defines the read http timeout.
+		ReadTimeout time.Duration
+
+		// WriteTimeout defines the write http timeout.
+		WriteTimeout time.Duration
+
+		// WriteTimeout defines the idle http timeout.
+		IdleTimeout time.Duration
+
+		// Enabled defines if the profiling server should be enabled.
+		Enabled bool
+	}
+
 	// HealthServer contains the configuration for the Health Server.
 	HealthServer struct {
 
