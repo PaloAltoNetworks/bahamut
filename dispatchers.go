@@ -45,7 +45,7 @@ func dispatchRetrieveManyOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -96,7 +96,7 @@ func dispatchRetrieveOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -149,7 +149,7 @@ func dispatchCreateOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -229,7 +229,7 @@ func dispatchUpdateOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -309,7 +309,7 @@ func dispatchDeleteOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -374,7 +374,7 @@ func dispatchPatchOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}
@@ -444,7 +444,7 @@ func dispatchInfoOperation(
 	if currentMocker != nil {
 		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
 			a, merr := mock.execute(ctx)
-			if err != nil || a == MockActionDone {
+			if err != nil || a == mockActionDone {
 				return merr
 			}
 		}

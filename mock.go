@@ -8,15 +8,16 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-// MockAction represents the action a mock can do.
-type MockAction int
+type mockAction int
 
-// Various values for MockAction.
 const (
-	MockActionDone MockAction = iota
-	MockActionContinue
-	MockActionEOF
+	mockActionDone mockAction = iota
+	mockActionContinue
 )
+
+type errMockPanicRequested struct{}
+
+func (e errMockPanicRequested) Error() string { return "Panic requested by mock" }
 
 // A Mock represents a mocked action that you can install
 // to run integration test with the bahamut server.
@@ -24,45 +25,50 @@ type Mock struct {
 	Operation    elemental.Operation `json:"operation"`
 	IdentityName string              `json:"identity"`
 	Code         string              `json:"code"`
+	Panic        bool                `json:"panic"`
 
 	vm *otto.Otto
 }
 
-func (m *Mock) execute(ctx *Context) (MockAction, error) {
+func (m *Mock) execute(ctx *Context) (mockAction, error) {
+
+	if m.Panic {
+		return mockActionDone, errMockPanicRequested{}
+	}
 
 	if m.vm == nil {
 		m.vm = otto.New()
 		if _, err := m.vm.Run(m.Code); err != nil {
-			return MockActionDone, fmt.Errorf("mock: unable to parse code: %s", err)
+			return mockActionDone, fmt.Errorf("mock: unable to parse code: %s", err)
 		}
 	}
 
 	v, err := m.vm.Call(`process`, nil, ctx)
 	if err != nil {
-		return MockActionDone, fmt.Errorf("mock: unable to call 'process': %s", err)
+		return mockActionDone, fmt.Errorf("mock: unable to call 'process': %s", err)
 	}
 
 	out := v.Object()
 	if out == nil {
-		return MockActionContinue, nil
+		return mockActionContinue, nil
 	}
 
 	codeValue, err := out.Get("code")
 	if err != nil {
-		return MockActionDone, err
+		return mockActionDone, err
 	}
 	code, err := codeValue.ToInteger()
 	if err != nil {
-		return MockActionDone, err
+		return mockActionDone, err
 	}
 
 	bodyValue, err := out.Get("data")
 	if err != nil {
-		return MockActionDone, err
+		return mockActionDone, err
 	}
 	body, err := bodyValue.ToString()
 	if err != nil {
-		return MockActionDone, err
+		return mockActionDone, err
 	}
 
 	var data interface{}
@@ -73,11 +79,11 @@ func (m *Mock) execute(ctx *Context) (MockAction, error) {
 	}
 
 	if err := json.Unmarshal([]byte(body), &data); err != nil {
-		return MockActionDone, err
+		return mockActionDone, err
 	}
 
 	ctx.StatusCode = int(code)
 	ctx.OutputData = data
 
-	return MockActionDone, nil
+	return mockActionDone, nil
 }
