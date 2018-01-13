@@ -3,6 +3,7 @@ package bahamut
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/robertkrimen/otto"
@@ -19,18 +20,44 @@ type errMockPanicRequested struct{}
 
 func (e errMockPanicRequested) Error() string { return "Panic requested by mock" }
 
-// A Mock represents a mocked action that you can install
-// to run integration test with the bahamut server.
+// A Mock represents a mocked action that you can install to run integration test with the bahamut server.
 type Mock struct {
-	Operation    elemental.Operation `json:"operation"`
-	IdentityName string              `json:"identity"`
-	Code         string              `json:"code"`
-	Panic        bool                `json:"panic"`
+	// The operation to mock. Must be one of "retrieve", "retrieve-many", "create", "update", "delete", "info", "patch"
+	Operation elemental.Operation `json:"operation"`
+
+	// The name of the indentity you want to mock the response for.
+	IdentityName string `json:"identity"`
+
+	// Javascript function to execute in place for the processor.
+	// The code MUST contain the at least the process function.
+	// This function must returns an object that is the status code
+	// and the json of the response.
+	//
+	//      function process(ctx) {
+	//          return {code: 200, body: json.Stringify({name: "mocked name"})}
+	//      }
+	Code string `json:"code"`
+
+	// If set to true, the processor will panic causing an EOF.
+	// If panic is set, the Code is not executed.
+	Panic bool `json:"panic"`
+
+	// If set, the output (either panic or code return) will be delayed
+	// by the given duration.
+	Delay string `json:"delay"`
 
 	vm *otto.Otto
 }
 
 func (m *Mock) execute(ctx *Context) (mockAction, error) {
+
+	if m.Delay != "" {
+		d, err := time.ParseDuration(m.Delay)
+		if err != nil {
+			return mockActionDone, fmt.Errorf("mock: unable to parse duration: %s", err)
+		}
+		time.Sleep(d)
+	}
 
 	if m.Panic {
 		return mockActionDone, errMockPanicRequested{}
