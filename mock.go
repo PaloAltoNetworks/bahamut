@@ -36,6 +36,9 @@ type Mock struct {
 	//      function process(ctx) {
 	//          return {code: 200, body: json.Stringify({name: "mocked name"})}
 	//      }
+	//
+	// If the code cannot compile, the mock will not be installed. If you
+	// have runtime error in your code, they will be visible only during execution.
 	Code string `json:"code"`
 
 	// If set to true, the processor will panic causing an EOF.

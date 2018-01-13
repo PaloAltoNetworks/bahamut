@@ -62,7 +62,10 @@ func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	currentMocker.installMock(mock)
+	if err := currentMocker.installMock(mock); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	zap.L().Info("mock installed",
 		zap.String("identity", mock.IdentityName),
@@ -81,9 +84,8 @@ func (s *mockServer) handleUninstallMock(w http.ResponseWriter, req *http.Reques
 	}
 
 	identity := bone.GetValue(req, "identity")
-	ok := currentMocker.uninstallMock(elemental.Operation(op), identity)
-	if !ok {
-		http.Error(w, fmt.Sprintf("No mock installed for operation %s and identity %s", op, identity), http.StatusNotFound)
+	if err := currentMocker.uninstallMock(elemental.Operation(op), identity); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
