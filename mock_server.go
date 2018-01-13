@@ -51,7 +51,7 @@ func (s *mockServer) start() {
 
 func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request) {
 
-	mock := &mock{}
+	mock := &Mock{}
 	if err := json.NewDecoder(req.Body).Decode(mock); err != nil {
 		http.Error(w, fmt.Sprintf("Unable to decode provided mock: %s", err), http.StatusBadRequest)
 		return

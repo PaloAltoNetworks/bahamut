@@ -1,85 +1,12 @@
 package bahamut
 
 import (
-	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/aporeto-inc/elemental"
-	"github.com/robertkrimen/otto"
 )
 
-type mock struct {
-	Operation    elemental.Operation `json:"operation"`
-	IdentityName string              `json:"identity"`
-	Code         string              `json:"code"`
-
-	vm *otto.Otto
-}
-
-type mockAction int
-
-const (
-	mockActionDone mockAction = iota
-	mockActionContinue
-	mockActionEOF
-)
-
-func (m *mock) execute(ctx *Context) (mockAction, error) {
-
-	if m.vm == nil {
-		m.vm = otto.New()
-		if _, err := m.vm.Run(m.Code); err != nil {
-			return mockActionDone, fmt.Errorf("mock: unable to parse code: %s", err)
-		}
-	}
-
-	v, err := m.vm.Call(`process`, nil, ctx)
-	if err != nil {
-		return mockActionDone, fmt.Errorf("mock: unable to call 'process': %s", err)
-	}
-
-	out := v.Object()
-	if out == nil {
-		return mockActionContinue, nil
-	}
-
-	codeValue, err := out.Get("code")
-	if err != nil {
-		return mockActionDone, err
-	}
-	code, err := codeValue.ToInteger()
-	if err != nil {
-		return mockActionDone, err
-	}
-
-	bodyValue, err := out.Get("data")
-	if err != nil {
-		return mockActionDone, err
-	}
-	body, err := bodyValue.ToString()
-	if err != nil {
-		return mockActionDone, err
-	}
-
-	var data interface{}
-	if ctx.Request.Operation == elemental.OperationRetrieveMany {
-		data = []map[string]interface{}{}
-	} else {
-		data = map[string]interface{}{}
-	}
-
-	if err := json.Unmarshal([]byte(body), &data); err != nil {
-		return mockActionDone, err
-	}
-
-	ctx.StatusCode = int(code)
-	ctx.OutputData = data
-
-	return mockActionDone, nil
-}
-
-type registryContent map[elemental.Operation]map[string]*mock
+type registryContent map[elemental.Operation]map[string]*Mock
 
 type mocker struct {
 	registry registryContent
@@ -89,18 +16,18 @@ type mocker struct {
 func newMocker() *mocker {
 	return &mocker{
 		registry: registryContent{
-			elemental.OperationRetrieve:     map[string]*mock{},
-			elemental.OperationRetrieveMany: map[string]*mock{},
-			elemental.OperationCreate:       map[string]*mock{},
-			elemental.OperationUpdate:       map[string]*mock{},
-			elemental.OperationDelete:       map[string]*mock{},
-			elemental.OperationInfo:         map[string]*mock{},
-			elemental.OperationPatch:        map[string]*mock{},
+			elemental.OperationRetrieve:     map[string]*Mock{},
+			elemental.OperationRetrieveMany: map[string]*Mock{},
+			elemental.OperationCreate:       map[string]*Mock{},
+			elemental.OperationUpdate:       map[string]*Mock{},
+			elemental.OperationDelete:       map[string]*Mock{},
+			elemental.OperationInfo:         map[string]*Mock{},
+			elemental.OperationPatch:        map[string]*Mock{},
 		},
 	}
 }
 
-func (r *mocker) installMock(m *mock) {
+func (r *mocker) installMock(m *Mock) {
 
 	r.Lock()
 	defer r.Unlock()
@@ -122,7 +49,7 @@ func (r *mocker) uninstallMock(op elemental.Operation, identityName string) bool
 	return true
 }
 
-func (r *mocker) get(op elemental.Operation, identityName string) *mock {
+func (r *mocker) get(op elemental.Operation, identityName string) *Mock {
 
 	r.Lock()
 	defer r.Unlock()
