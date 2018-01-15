@@ -159,6 +159,10 @@ func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error, reco
 		return
 	case err := <-e:
 		if err != nil {
+			if _, ok := err.(errMockPanicRequested); ok {
+				panic(err.Error())
+			}
+
 			writeHTTPError(w, ctx.Request, err)
 			return
 		}

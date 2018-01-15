@@ -38,6 +38,7 @@ type server struct {
 	healthServer    *healthServer
 	profilingServer *profilingServer
 	tracingServer   *tracingServer
+	mockServer      *mockServer
 
 	stop chan bool
 }
@@ -72,6 +73,10 @@ func NewServer(config Config) Server {
 
 	if config.TracingServer.Enabled {
 		srv.tracingServer = newTracingServer(config)
+	}
+
+	if config.MockServer.Enabled {
+		srv.mockServer = newMockServer(config)
 	}
 
 	return srv
@@ -156,6 +161,10 @@ func (b *server) Start() {
 		go b.tracingServer.start()
 	}
 
+	if b.mockServer != nil {
+		go b.mockServer.start()
+	}
+
 	go b.handleExit()
 
 	<-b.stop
@@ -181,6 +190,10 @@ func (b *server) Stop() {
 
 	if b.tracingServer != nil {
 		b.tracingServer.stop()
+	}
+
+	if b.mockServer != nil {
+		b.mockServer.stop()
 	}
 
 	b.stop <- true

@@ -85,8 +85,12 @@ func runWSDispatcher(ctx *Context, r *elemental.Response, d func() error, recove
 
 	case err := <-e:
 		if err != nil {
+			if _, ok := err.(errMockPanicRequested); ok {
+				panic(err.Error())
+			}
 			return writeWebSocketError(r, err)
 		}
+
 		return writeWebsocketResponse(r, ctx)
 	}
 }
