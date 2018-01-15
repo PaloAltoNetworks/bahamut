@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aporeto-inc/addedeffect/cache"
+	"github.com/bluele/gcache"
 )
 
 type basicRateLimiter struct {
-	cache cache.Cacher
+	cache gcache.Cache
 	rps   int
 }
 
@@ -17,7 +17,7 @@ type basicRateLimiter struct {
 func NewRateLimiter(rps int) RateLimiter {
 
 	return &basicRateLimiter{
-		cache: cache.NewMemoryCache(),
+		cache: gcache.New(1024).LRU().Build(),
 		rps:   rps,
 	}
 }
@@ -45,19 +45,19 @@ func (r *basicRateLimiter) RateLimit(req *http.Request) (bool, error) {
 func (r *basicRateLimiter) rateLimitWithIP(ip string) (bool, error) {
 
 	var count int
-	if c := r.cache.Get(ip); c != nil {
+	if c, _ := r.cache.Get(ip); c != nil {
 		count = c.(int)
 	}
 
 	count++
 
-	r.cache.SetWithExpiration(ip, count, time.Second)
+	r.cache.SetWithExpire(ip, count, time.Second) // nolint: errcheck
 
 	return count > r.rps, nil
 }
 
 type rateLimiterWithBan struct {
-	banCache cache.Cacher
+	banCache gcache.Cache
 	banTime  time.Duration
 
 	basicRateLimiter
@@ -68,10 +68,10 @@ type rateLimiterWithBan struct {
 func NewRateLimiterWithBan(rps int, banTime time.Duration) RateLimiter {
 
 	return &rateLimiterWithBan{
-		banCache: cache.NewMemoryCache(),
+		banCache: gcache.New(1024).LRU().Build(),
 		banTime:  banTime,
 		basicRateLimiter: basicRateLimiter{
-			cache: cache.NewMemoryCache(),
+			cache: gcache.New(1024).LRU().Build(),
 			rps:   rps,
 		},
 	}
@@ -84,7 +84,7 @@ func (r *rateLimiterWithBan) RateLimit(req *http.Request) (bool, error) {
 		return false, err
 	}
 
-	if r.banCache.Exists(ip) {
+	if ok, _ := r.banCache.Get(ip); ok != nil {
 		return true, nil
 	}
 
@@ -94,7 +94,7 @@ func (r *rateLimiterWithBan) RateLimit(req *http.Request) (bool, error) {
 	}
 
 	if limited {
-		r.banCache.SetWithExpiration(ip, true, r.banTime)
+		r.banCache.SetWithExpire(ip, true, r.banTime) // nolint: errcheck
 	}
 
 	return limited, nil
