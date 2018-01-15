@@ -32,9 +32,9 @@ func newMocker() *mocker {
 
 func (r *mocker) installMock(m *Mock) error {
 
-	if m.Code != "" {
+	if m.Function != "" {
 		vm := otto.New()
-		if _, err := vm.Eval(m.Code); err != nil {
+		if _, err := vm.Eval(m.Function); err != nil {
 			return fmt.Errorf("Invalid code: %s", err)
 		}
 	}

@@ -2,6 +2,7 @@ package bahamut
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +40,7 @@ type Mock struct {
 	//
 	// If the code cannot compile, the mock will not be installed. If you
 	// have runtime error in your code, they will be visible only during execution.
-	Code string `json:"code"`
+	Function string `json:"function"`
 
 	// If set to true, the processor will panic causing an EOF.
 	// If panic is set, the Code is not executed.
@@ -68,8 +69,8 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 
 	if m.vm == nil {
 		m.vm = otto.New()
-		if _, err := m.vm.Run(m.Code); err != nil {
-			return mockActionDone, fmt.Errorf("mock: unable to parse code: %s", err)
+		if _, err := m.vm.Run(m.Function); err != nil {
+			return mockActionDone, fmt.Errorf("mock: unable to parse function: %s", err)
 		}
 	}
 
@@ -87,6 +88,12 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 	if err != nil {
 		return mockActionDone, err
 	}
+	if codeValue.IsUndefined() {
+		return mockActionDone, errors.New("mock: function returned undefined for 'code'")
+	}
+	if codeValue.IsString() {
+		return mockActionDone, fmt.Errorf("mock: function returned a string for 'code': %s", codeValue.String())
+	}
 	code, err := codeValue.ToInteger()
 	if err != nil {
 		return mockActionDone, err
@@ -95,6 +102,12 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 	bodyValue, err := out.Get("data")
 	if err != nil {
 		return mockActionDone, err
+	}
+	if bodyValue.IsUndefined() {
+		return mockActionDone, errors.New("mock: function returned undefined for 'data'")
+	}
+	if !bodyValue.IsString() {
+		return mockActionDone, fmt.Errorf("mock: function returned a non string for 'data': %s", bodyValue.String())
 	}
 	body, err := bodyValue.ToString()
 	if err != nil {
@@ -109,7 +122,7 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 	}
 
 	if err := json.Unmarshal([]byte(body), &data); err != nil {
-		return mockActionDone, err
+		return mockActionDone, fmt.Errorf("mock: unable to decode provided data: %s", err)
 	}
 
 	ctx.StatusCode = int(code)

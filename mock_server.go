@@ -70,7 +70,7 @@ func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request)
 	zap.L().Info("mock installed",
 		zap.String("identity", mock.IdentityName),
 		zap.String("operation", string(mock.Operation)),
-		zap.String("code", mock.Code),
+		zap.String("code", mock.Function),
 	)
 
 	w.WriteHeader(http.StatusCreated)
