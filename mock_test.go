@@ -208,6 +208,5 @@ func TestMock_execute(t *testing.T) {
 				So(ctx.OutputData.(map[string]interface{})["name"], ShouldEqual, "toto1")
 			})
 		})
-
 	})
 }
