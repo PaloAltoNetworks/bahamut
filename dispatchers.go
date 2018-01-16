@@ -422,7 +422,7 @@ func dispatchPatchOperation(
 	}
 
 	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*elemental.Patch))
+		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}
