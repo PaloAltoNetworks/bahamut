@@ -40,7 +40,7 @@ type server struct {
 	tracingServer   *tracingServer
 	mockServer      *mockServer
 
-	stop chan bool
+	stop chan struct{}
 }
 
 // NewServer returns a new Bahamut Server.
@@ -51,7 +51,7 @@ func NewServer(config Config) Server {
 	mux := bone.New()
 	srv := &server{
 		multiplexer: mux,
-		stop:        make(chan bool),
+		stop:        make(chan struct{}),
 		processors:  make(map[string]Processor),
 	}
 
@@ -196,5 +196,5 @@ func (b *server) Stop() {
 		b.mockServer.stop()
 	}
 
-	b.stop <- true
+	close(b.stop)
 }

@@ -50,12 +50,12 @@ func newNatsPubSub(natsURL string, clusterID string, clientID string, username s
 func (p *natsPubSub) Publish(publication *Publication) error {
 
 	if p.client == nil {
-		return fmt.Errorf("Not connected to nats. Messages dropped")
+		return fmt.Errorf("not connected to nats. messages dropped")
 	}
 
 	data, err := json.Marshal(publication)
 	if err != nil {
-		return fmt.Errorf("Unable to encode publication. Message dropped: %s", err)
+		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
 	zap.L().Debug("Publishing message in nats",
@@ -118,8 +118,8 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 
 func (p *natsPubSub) Connect() Waiter {
 
-	abort := make(chan bool, 2)
-	connected := make(chan bool, 2)
+	abort := make(chan struct{})
+	connected := make(chan bool)
 
 	go func() {
 
@@ -219,15 +219,15 @@ func (p *natsPubSub) Ping(timeout time.Duration) error {
 		if p.nc.IsConnected() {
 			errChannel <- nil
 		} else if p.nc.IsReconnecting() {
-			errChannel <- fmt.Errorf("Reconnecting")
+			errChannel <- fmt.Errorf("reconnecting")
 		} else {
-			errChannel <- fmt.Errorf("Connection closed")
+			errChannel <- fmt.Errorf("connection closed")
 		}
 	}()
 
 	select {
 	case <-time.After(timeout):
-		return fmt.Errorf("Connection Timeout")
+		return fmt.Errorf("connection timeout")
 	case err := <-errChannel:
 		return err
 	}

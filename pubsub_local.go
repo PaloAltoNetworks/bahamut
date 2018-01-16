@@ -13,7 +13,7 @@ type localPubSub struct {
 	register     chan *registration
 	unregister   chan *registration
 	publications chan *Publication
-	stop         chan bool
+	stop         chan struct{}
 
 	lock *sync.Mutex
 }
@@ -25,7 +25,7 @@ func newlocalPubSub(services []string) *localPubSub {
 		subscribers:  map[string][]chan *Publication{},
 		register:     make(chan *registration, 2),
 		unregister:   make(chan *registration, 2),
-		stop:         make(chan bool, 2),
+		stop:         make(chan struct{}),
 		publications: make(chan *Publication, 1024),
 		lock:         &sync.Mutex{},
 	}
@@ -42,7 +42,7 @@ func (p *localPubSub) Publish(publication *Publication) error {
 // Subscribe will subscribe the given channel to the given topic
 func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string, args ...interface{}) func() {
 
-	unsubscribe := make(chan bool)
+	unsubscribe := make(chan struct{})
 
 	p.registerSubscriberChannel(c, topic)
 
@@ -51,14 +51,14 @@ func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic st
 		p.unregisterSubscriberChannel(c, topic)
 	}()
 
-	return func() { unsubscribe <- true }
+	return func() { close(unsubscribe) }
 }
 
 // Connect connects the PubSubServer to the remote service.
 func (p *localPubSub) Connect() Waiter {
 
-	abort := make(chan bool, 2)
-	connected := make(chan bool, 2)
+	abort := make(chan struct{})
+	connected := make(chan bool)
 
 	go func() {
 		go p.listen()
@@ -74,7 +74,7 @@ func (p *localPubSub) Connect() Waiter {
 // Disconnect disconnects the PubSubServer from the remote service..
 func (p *localPubSub) Disconnect() error {
 
-	p.stop <- true
+	close(p.stop)
 
 	return nil
 }

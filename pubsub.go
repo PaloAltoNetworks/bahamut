@@ -65,7 +65,7 @@ type Waiter interface {
 // A connectionWaiter is the Waiter for the PubSub Server connection
 type connectionWaiter struct {
 	ok    chan bool
-	abort chan bool
+	abort chan struct{}
 }
 
 // Wait waits at most for the given timeout for the connection.
@@ -75,7 +75,7 @@ func (w connectionWaiter) Wait(timeout time.Duration) bool {
 	case status := <-w.ok:
 		return status
 	case <-time.After(timeout):
-		w.abort <- true
+		close(w.abort)
 		return false
 	}
 }
