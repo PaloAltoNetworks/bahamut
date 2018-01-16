@@ -404,13 +404,13 @@ func dispatchPatchOperation(
 		return
 	}
 
-	var assignation *elemental.Assignation
-	if err = ctx.Request.Decode(&assignation); err != nil {
+	var patch *elemental.Patch
+	if err = ctx.Request.Decode(&patch); err != nil {
 		audit(auditer, ctx, err)
 		return
 	}
 
-	ctx.InputData = assignation
+	ctx.InputData = patch
 
 	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -422,7 +422,7 @@ func dispatchPatchOperation(
 	}
 
 	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(*elemental.Assignation))
+		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(*elemental.Patch))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}

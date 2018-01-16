@@ -1183,7 +1183,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &FakeCompleteProcessor{
-				output: &elemental.Assignation{Type: elemental.AssignationTypeAdd},
+				output: &elemental.Patch{Type: elemental.PatchTypeSetIfZero},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &FakeIdentifiable{})},
 			}, nil
 		}
@@ -1203,10 +1203,10 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
-			So(ctx.OutputData, ShouldResemble, &elemental.Assignation{Type: elemental.AssignationTypeAdd})
+			So(ctx.OutputData, ShouldResemble, &elemental.Patch{Type: elemental.PatchTypeSetIfZero})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
-			So(pusher.events[1].Type, ShouldEqual, elemental.EventCreate)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 
