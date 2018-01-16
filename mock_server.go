@@ -2,7 +2,6 @@ package bahamut
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -79,10 +78,6 @@ func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request)
 func (s *mockServer) handleUninstallMock(w http.ResponseWriter, req *http.Request) {
 
 	op := bone.GetValue(req, "operation")
-	if err := checkOperation(op); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-
 	identity := bone.GetValue(req, "identity")
 	if err := currentMocker.uninstallMock(elemental.Operation(op), identity); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -102,13 +97,4 @@ func (s *mockServer) stop() {
 
 	// a.server.Shutdown() // Uncomment with Go 1.8
 	// a.server = nil
-}
-
-func checkOperation(op string) error {
-	switch op {
-	case "create", "update", "delete", "retrieve-many", "retrieve", "patch", "info":
-		return nil
-	}
-
-	return errors.New("Invalid operation: %s. Must be one of 'create', 'update', 'delete', 'retrieve-many', 'retrieve', 'patch' or 'info'")
 }
