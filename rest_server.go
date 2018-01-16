@@ -438,6 +438,7 @@ func (a *restServer) installRoutes() {
 	// non versioned routes
 	a.multiplexer.Get("/:category/:id", http.HandlerFunc(a.handleRetrieve))
 	a.multiplexer.Put("/:category/:id", http.HandlerFunc(a.handleUpdate))
+	a.multiplexer.Patch("/:category/:id", http.HandlerFunc(a.handlePatch))
 	a.multiplexer.Delete("/:category/:id", http.HandlerFunc(a.handleDelete))
 	a.multiplexer.Get("/:category", http.HandlerFunc(a.handleRetrieveMany))
 	a.multiplexer.Get("/:parentcategory/:id/:category", http.HandlerFunc(a.handleRetrieveMany))
@@ -445,12 +446,11 @@ func (a *restServer) installRoutes() {
 	a.multiplexer.Post("/:parentcategory/:id/:category", http.HandlerFunc(a.handleCreate))
 	a.multiplexer.Head("/:category", http.HandlerFunc(a.handleInfo))
 	a.multiplexer.Head("/:parentcategory/:id/:category", http.HandlerFunc(a.handleInfo))
-	a.multiplexer.Patch("/:category", http.HandlerFunc(a.handlePatch))
-	a.multiplexer.Patch("/:parentcategory/:id/:category", http.HandlerFunc(a.handlePatch))
 
 	// versioned routes
 	a.multiplexer.Get("/v/:version/:category/:id", http.HandlerFunc(a.handleRetrieve))
 	a.multiplexer.Put("/v/:version/:category/:id", http.HandlerFunc(a.handleUpdate))
+	a.multiplexer.Patch("/v/:version/:category/:id", http.HandlerFunc(a.handlePatch))
 	a.multiplexer.Delete("/v/:version/:category/:id", http.HandlerFunc(a.handleDelete))
 	a.multiplexer.Get("/v/:version/:category", http.HandlerFunc(a.handleRetrieveMany))
 	a.multiplexer.Get("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleRetrieveMany))
@@ -458,8 +458,7 @@ func (a *restServer) installRoutes() {
 	a.multiplexer.Post("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleCreate))
 	a.multiplexer.Head("/v/:version/:category", http.HandlerFunc(a.handleInfo))
 	a.multiplexer.Head("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleInfo))
-	a.multiplexer.Patch("/v/:version/:category", http.HandlerFunc(a.handlePatch))
-	a.multiplexer.Patch("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handlePatch))
+
 }
 
 // start starts the apiServer.
