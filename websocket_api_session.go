@@ -47,7 +47,7 @@ func (s *wsAPISession) read() {
 		request := elemental.NewRequestWithContext(s.context)
 		request.ClientIP = s.remoteAddr
 
-		if err := s.socket.ReadJSON(request); err != nil {
+		if err := s.conn.ReadJSON(request); err != nil {
 			if _, ok := err.(*json.SyntaxError); !ok {
 				s.cancel()
 				s.close()
@@ -75,7 +75,7 @@ func (s *wsAPISession) write() {
 		select {
 		case resp := <-s.responses:
 
-			if err := s.socket.WriteJSON(resp); err != nil {
+			if err := s.conn.WriteJSON(resp); err != nil {
 				s.close()
 				return
 			}
@@ -153,7 +153,7 @@ func (s *wsAPISession) stop() {
 
 	s.close()
 	s.unregister(s)
-	s.socket.Close() // nolint: errcheck
+	s.conn.Close() // nolint: errcheck
 }
 
 func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {

@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
-
 	opentracing "github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
 )
@@ -23,7 +21,7 @@ type wsSession struct {
 	metadata           interface{}
 	parameters         url.Values
 	remoteAddr         string
-	socket             *websocket.Conn
+	conn               internalWSConn
 	startTime          time.Time
 	unregister         unregisterFunc
 	tlsConnectionState *tls.ConnectionState
@@ -108,8 +106,8 @@ func (s *wsSession) setTLSConnectionState(tlsConnectionState *tls.ConnectionStat
 	s.tlsConnectionState = tlsConnectionState
 }
 
-func (s *wsSession) setSocket(ws *websocket.Conn) {
-	s.socket = ws
+func (s *wsSession) setConn(conn internalWSConn) {
+	s.conn = conn
 }
 
 func (s *wsSession) close() {

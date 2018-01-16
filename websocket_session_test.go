@@ -166,10 +166,10 @@ func TestWebsocketSession_accessors(t *testing.T) {
 		Convey("When I call setSocket()", func() {
 
 			ws := &websocket.Conn{}
-			s.setSocket(ws)
+			s.setConn(ws)
 
 			Convey("Then ws should be correct", func() {
-				So(s.socket, ShouldEqual, ws)
+				So(s.conn, ShouldEqual, ws)
 			})
 		})
 	})

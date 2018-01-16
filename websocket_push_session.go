@@ -77,7 +77,7 @@ func (s *wsPushSession) read() {
 	for {
 		var filter *elemental.PushFilter
 
-		if err := s.socket.ReadJSON(&filter); err != nil {
+		if err := s.conn.ReadJSON(&filter); err != nil {
 			s.close()
 			return
 		}
@@ -101,7 +101,7 @@ func (s *wsPushSession) write() {
 				break
 			}
 
-			if err := s.socket.WriteJSON(event); err != nil {
+			if err := s.conn.WriteJSON(event); err != nil {
 				s.close()
 				return
 			}
@@ -119,7 +119,7 @@ func (s *wsPushSession) stop() {
 
 	s.close()
 	s.unregister(s)
-	s.socket.Close() // nolint: errcheck
+	s.conn.Close() // nolint: errcheck
 }
 
 func (s *wsPushSession) listen() {

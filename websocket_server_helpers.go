@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
-	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
 
@@ -14,9 +13,15 @@ type internalWSSession interface {
 	Session
 	setRemoteAddress(string)
 	setTLSConnectionState(*tls.ConnectionState)
-	setSocket(*websocket.Conn)
+	setConn(internalWSConn)
 	listen()
 	close()
+}
+
+type internalWSConn interface {
+	ReadJSON(interface{}) error
+	WriteJSON(interface{}) error
+	Close() error
 }
 
 type unregisterFunc func(internalWSSession)

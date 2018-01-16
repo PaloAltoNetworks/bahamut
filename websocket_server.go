@@ -71,7 +71,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 			}
 
 			srv.registerSession(session)
-			session.setSocket(ws)
+			session.setConn(ws)
 			session.listen()
 		}))
 
@@ -92,7 +92,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 			}
 
 			srv.registerSession(session)
-			session.setSocket(ws)
+			session.setConn(ws)
 			session.listen()
 		}))
 
