@@ -213,7 +213,7 @@ func (p *natsPubSub) Disconnect() error {
 
 func (p *natsPubSub) Ping(timeout time.Duration) error {
 
-	errChannel := make(chan error, 1)
+	errChannel := make(chan error)
 
 	go func() {
 		if p.nc.IsConnected() {

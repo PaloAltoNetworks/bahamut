@@ -27,7 +27,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 	srv := &websocketServer{
 		sessions:        map[string]internalWSSession{},
-		close:           make(chan struct{}, 1),
+		close:           make(chan struct{}),
 		multiplexer:     multiplexer,
 		config:          config,
 		sessionsLock:    &sync.Mutex{},

@@ -8,7 +8,7 @@ type Job func() error
 // RunJob runs a Job can than be canceled at any time according to the context.
 func RunJob(ctx context.Context, job Job) (bool, error) {
 
-	out := make(chan error, 1)
+	out := make(chan error)
 
 	go func() { out <- job() }()
 

@@ -23,8 +23,8 @@ func newlocalPubSub(services []string) *localPubSub {
 
 	return &localPubSub{
 		subscribers:  map[string][]chan *Publication{},
-		register:     make(chan *registration, 2),
-		unregister:   make(chan *registration, 2),
+		register:     make(chan *registration),
+		unregister:   make(chan *registration),
 		stop:         make(chan struct{}),
 		publications: make(chan *Publication, 1024),
 		lock:         &sync.Mutex{},
