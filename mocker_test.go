@@ -129,6 +129,15 @@ func TestMocker_installation(t *testing.T) {
 						So(err.Error(), ShouldEqual, "no mock installed for operation 'create' and identity 'titi'")
 					})
 				})
+
+				Convey("When I unregister it using a good operation but a empty identity name", func() {
+
+					err := m.uninstallMock(elemental.OperationCreate, "")
+
+					Convey("Then err should not be nil", func() {
+						So(err.Error(), ShouldEqual, "invalid empty identity name")
+					})
+				})
 			})
 
 			Convey("When I try to use get with valid op and invalid identity", func() {
