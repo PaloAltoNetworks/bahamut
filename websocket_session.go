@@ -145,7 +145,7 @@ func (s *wsSession) stop() {
 	close(s.closeCh)
 	s.closeCh = nil
 
-	// s.cancel()
+	s.cancel()
 
 	s.unregister(s)
 
