@@ -272,7 +272,7 @@ func (n *websocketServer) start() {
 
 			n.sessionsLock.Lock()
 			for _, session := range n.sessions {
-				session.close()
+				session.stop()
 			}
 			n.sessionsLock.Unlock()
 

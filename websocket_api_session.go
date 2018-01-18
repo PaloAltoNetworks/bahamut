@@ -22,14 +22,14 @@ type wsAPISession struct {
 	*wsSession
 }
 
-func newWSAPISession(request *http.Request, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, eventPusher eventPusherFunc) internalWSSession {
+func newWSAPISession(request *http.Request, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, eventPusher eventPusherFunc) *wsAPISession {
 
 	return &wsAPISession{
 		wsSession:       newWSSession(request, config, unregister, opentracing.StartSpan("bahamut.session.api")),
 		processorFinder: processorFinder,
 		eventPusher:     eventPusher,
-		requests:        make(chan *elemental.Request, 8),
-		responses:       make(chan *elemental.Response, 8),
+		requests:        make(chan *elemental.Request),
+		responses:       make(chan *elemental.Response),
 	}
 }
 
@@ -49,8 +49,7 @@ func (s *wsAPISession) read() {
 
 		if err := s.conn.ReadJSON(request); err != nil {
 			if _, ok := err.(*json.SyntaxError); !ok {
-				s.cancel()
-				s.close()
+				s.stop()
 				return
 			}
 
@@ -60,12 +59,7 @@ func (s *wsAPISession) read() {
 			s.responses <- writeWebSocketError(response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
 		}
 
-		select {
-		case s.requests <- request:
-		case <-s.closeCh:
-			s.cancel()
-			return
-		}
+		s.requests <- request
 	}
 }
 
@@ -76,7 +70,7 @@ func (s *wsAPISession) write() {
 		case resp := <-s.responses:
 
 			if err := s.conn.WriteJSON(resp); err != nil {
-				s.close()
+				s.stop()
 				return
 			}
 
@@ -87,8 +81,6 @@ func (s *wsAPISession) write() {
 }
 
 func (s *wsAPISession) listen() {
-
-	defer s.stop()
 
 	go s.read()
 	go s.write()
@@ -140,20 +132,9 @@ func (s *wsAPISession) listen() {
 			}
 
 		case <-s.closeCh:
-			s.cancel()
 			return
 		}
 	}
-}
-
-// while this function is the same for wsAPISession and wsPushSession
-// it has to be written in both of the struc instead of wsSession as
-// if would call s.unregister using *wsSession and not a *wsAPISession
-func (s *wsAPISession) stop() {
-
-	s.close()
-	s.unregister(s)
-	s.conn.Close() // nolint: errcheck
 }
 
 func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {

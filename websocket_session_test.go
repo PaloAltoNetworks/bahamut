@@ -187,27 +187,26 @@ func TestWebsocketSession_close(t *testing.T) {
 			TLS:        &tls.ConnectionState{},
 			RemoteAddr: "1.2.3.4",
 		}
-		unregister := func(i internalWSSession) {}
+		var unregisterCalled int
+		unregister := func(i internalWSSession) { unregisterCalled++ }
 		span := opentracing.StartSpan("test")
 
 		s := newWSSession(req, conf, unregister, span)
 
-		Convey("When I call close", func() {
-			s.close()
+		Convey("When I call stop", func() {
+			s.stop()
 
 			Convey("Then the session should be closed", func() {
-				So(s.isClosed, ShouldEqual, true)
-				So(func() { close(s.closeCh) }, ShouldPanicWith, "close of closed channel")
+				So(s.closeCh, ShouldBeNil)
+				So(unregisterCalled, ShouldEqual, 1)
 			})
-		})
 
-		Convey("When I simulate the session is already closed", func() {
+			Convey("When I stop it again", func() {
 
-			s.isClosed = true
-			s.close()
-
-			Convey("Then the session should be closed", func() {
-				So(func() { close(s.closeCh) }, ShouldNotPanic)
+				Convey("Then it should not panic", func() {
+					So(func() { s.stop() }, ShouldNotPanic)
+					So(unregisterCalled, ShouldEqual, 1)
+				})
 			})
 		})
 

@@ -28,7 +28,7 @@ func newWSPushSession(request *http.Request, config Config, unregister unregiste
 	return &wsPushSession{
 		wsSession:         newWSSession(request, config, unregister, opentracing.StartSpan("bahamut.session.push")),
 		events:            make(chan *elemental.Event),
-		filters:           make(chan *elemental.PushFilter, 8),
+		filters:           make(chan *elemental.PushFilter),
 		currentFilterLock: &sync.Mutex{},
 	}
 }
@@ -78,15 +78,11 @@ func (s *wsPushSession) read() {
 		var filter *elemental.PushFilter
 
 		if err := s.conn.ReadJSON(&filter); err != nil {
-			s.close()
+			s.stop()
 			return
 		}
 
-		select {
-		case s.filters <- filter:
-		case <-s.closeCh:
-			return
-		}
+		s.filters <- filter
 	}
 }
 
@@ -102,7 +98,7 @@ func (s *wsPushSession) write() {
 			}
 
 			if err := s.conn.WriteJSON(event); err != nil {
-				s.close()
+				s.stop()
 				return
 			}
 
@@ -112,21 +108,10 @@ func (s *wsPushSession) write() {
 	}
 }
 
-// while this function is the same for wsAPISession and wsPushSession
-// it has to be written in both of the struc instead of wsSession as
-// if would call s.unregister using *wsSession and not a *wsPushSession
-func (s *wsPushSession) stop() {
-
-	s.close()
-	s.unregister(s)
-	s.conn.Close() // nolint: errcheck
-}
-
 func (s *wsPushSession) listen() {
 
 	go s.read()
 	go s.write()
-	defer s.stop()
 
 	for {
 		select {

@@ -15,7 +15,7 @@ type internalWSSession interface {
 	setTLSConnectionState(*tls.ConnectionState)
 	setConn(internalWSConn)
 	listen()
-	close()
+	stop()
 }
 
 type internalWSConn interface {

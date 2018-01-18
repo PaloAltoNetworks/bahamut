@@ -29,8 +29,7 @@ type wsSession struct {
 	context            context.Context
 	cancel             context.CancelFunc
 	closeCh            chan struct{}
-	isClosed           bool
-	isClosedLock       sync.Mutex
+	closeLock          *sync.Mutex
 }
 
 func newWSSession(request *http.Request, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
@@ -53,9 +52,9 @@ func newWSSession(request *http.Request, config Config, unregister unregisterFun
 		span:               span,
 		context:            ctx,
 		cancel:             cancel,
-		isClosedLock:       sync.Mutex{},
 		tlsConnectionState: request.TLS,
 		remoteAddr:         request.RemoteAddr,
+		closeLock:          &sync.Mutex{},
 	}
 }
 
@@ -134,16 +133,25 @@ func (s *wsSession) setConn(conn internalWSConn) {
 	s.conn = conn
 }
 
-func (s *wsSession) close() {
+func (s *wsSession) stop() {
 
-	s.isClosedLock.Lock()
-	defer s.isClosedLock.Unlock()
-	if s.isClosed {
+	s.closeLock.Lock()
+	defer s.closeLock.Unlock()
+
+	if s.closeCh == nil {
 		return
 	}
 
-	s.isClosed = true
 	close(s.closeCh)
+	s.closeCh = nil
+
+	// s.cancel()
+
+	s.unregister(s)
+
+	if s.conn != nil {
+		s.conn.Close() // nolint: errcheck
+	}
 }
 
 func (s *wsSession) listen() {}
