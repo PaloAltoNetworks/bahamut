@@ -147,7 +147,6 @@ func handleEventualPanicHTTP(w http.ResponseWriter, request *elemental.Request, 
 func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error, recover bool) {
 
 	e := make(chan error)
-	defer close(e)
 
 	go func() {
 		defer handleEventualPanicHTTP(w, ctx.Request, e, recover)

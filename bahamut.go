@@ -136,9 +136,6 @@ func (b *server) handleExit() {
 
 	<-c
 
-	signal.Stop(c)
-	close(c)
-
 	b.Stop()
 }
 

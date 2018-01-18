@@ -77,7 +77,6 @@ func handleEventualPanicWebsocket(response *elemental.Response, c chan error, re
 func runWSDispatcher(ctx *Context, r *elemental.Response, d func() error, recover bool) *elemental.Response {
 
 	e := make(chan error)
-	defer close(e)
 
 	go func() {
 		defer handleEventualPanicWebsocket(r, e, recover)

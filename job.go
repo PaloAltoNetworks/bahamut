@@ -9,7 +9,6 @@ type Job func() error
 func RunJob(ctx context.Context, job Job) (bool, error) {
 
 	out := make(chan error)
-	defer close(out)
 
 	go func() { out <- job() }()
 
