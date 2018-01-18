@@ -212,8 +212,12 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 func (n *websocketServer) start() {
 
 	publications := make(chan *Publication)
+	defer close(publications)
+
 	if n.config.WebSocketServer.Service != nil {
 		errors := make(chan error)
+		defer close(errors)
+
 		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
 		defer unsubscribe()
 	}
@@ -272,7 +276,12 @@ func (n *websocketServer) start() {
 
 			n.sessionsLock.Lock()
 			for _, session := range n.sessions {
-				session.close()
+				switch s := session.(type) {
+				case *wsAPISession:
+					s.stop()
+				case *wsPushSession:
+					s.stop()
+				}
 			}
 			n.sessionsLock.Unlock()
 
