@@ -253,7 +253,7 @@ func (n *websocketServer) start() {
 
 						ok, err := n.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
 						if err != nil {
-							zap.L().Error("Error while checking authorization", zap.Error(err))
+							zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
 							return
 						}
 
