@@ -8,18 +8,14 @@ import (
 	"github.com/magefile/mage/mg"
 )
 
-func init() {
-	domingo.SetProjectName("bahamut")
-}
-
 // Init initialize the project.
 func Init() {
 	mg.Deps(
-		domingo.Init,
+		domingo.InstallDependencies,
 	)
 }
 
-// Test runs unit tests.
+// Test runs the unit tests.
 func Test() {
 	mg.Deps(
 		domingo.Lint,
