@@ -82,3 +82,34 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		})
 	})
 }
+
+func TestUtils_claimsToMap(t *testing.T) {
+
+	Convey("Given I have a claims list", t, func() {
+
+		claims := []string{"a=b", "c=d"}
+
+		Convey("When I call claimsToMap", func() {
+
+			out := claimsToMap(claims)
+
+			Convey("Then the maps should be correct", func() {
+				So(len(out), ShouldEqual, 2)
+				So(out["a"], ShouldEqual, "b")
+				So(out["c"], ShouldEqual, "d")
+			})
+		})
+	})
+
+	Convey("Given I have a claims with bad claims", t, func() {
+
+		claims := []string{"a=b", "c"}
+
+		Convey("When I call claimsToMap", func() {
+
+			Convey("Then it should should panic", func() {
+				So(func() { claimsToMap(claims) }, ShouldPanic)
+			})
+		})
+	})
+}

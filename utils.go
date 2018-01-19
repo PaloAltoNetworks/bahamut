@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/aporeto-inc/addedeffect/tagutils"
 	"github.com/aporeto-inc/elemental"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"
@@ -104,11 +105,13 @@ func claimsToMap(claims []string) map[string]string {
 
 	claimsMap := map[string]string{}
 
+	var k, v string
+
 	for _, claim := range claims {
-		parts := strings.SplitN(claim, "=", 2)
-		if len(parts) == 2 {
-			claimsMap[parts[0]] = parts[1]
+		if err := tagutils.SplitPtr(claim, &k, &v); err != nil {
+			panic(err)
 		}
+		claimsMap[k] = v
 	}
 
 	return claimsMap
