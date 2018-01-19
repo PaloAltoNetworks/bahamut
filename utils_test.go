@@ -12,18 +12,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestUtils_printBanner(t *testing.T) {
-
-	Convey("Given I print the banner", t, func() {
-
-		PrintBanner()
-
-		Convey("Then I increase my test coverage", func() {
-			So(1, ShouldEqual, 1)
-		})
-	})
-}
-
 func TestUtils_RecoverFromPanic(t *testing.T) {
 
 	Convey("Given I call a function that panics", t, func() {
