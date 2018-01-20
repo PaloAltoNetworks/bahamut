@@ -68,5 +68,5 @@ func (s *healthServer) stop() {
 		zap.L().Error("Could not gracefuly stop health server", zap.Error(err))
 	}
 
-	zap.L().Info("Health server stopped")
+	zap.L().Debug("Health server stopped")
 }
