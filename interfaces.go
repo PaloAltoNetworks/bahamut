@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 
@@ -58,10 +59,12 @@ type Server interface {
 	Push(...*elemental.Event)
 
 	// Start starts the Bahamut server.
-	Start()
+	StartWithContext(context.Context)
 
-	// Stop stops the Bahamut server.
-	Stop()
+	// Start starts the Bahamut server.
+	//
+	// Deprecated: use StartWithContext.
+	Start()
 }
 
 // Processor is the interface for a Processor Unit

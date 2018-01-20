@@ -1,8 +1,10 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
 	"net/http/pprof"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -25,7 +27,7 @@ func newProfilingServer(config Config) *profilingServer {
 }
 
 // start starts the profilingServer.
-func (s *profilingServer) start() {
+func (s *profilingServer) start(ctx context.Context) {
 
 	if err := agent.Listen(agent.Options{}); err != nil {
 		zap.L().Fatal("Unable to start the gops agent", zap.Error(err))
@@ -43,16 +45,27 @@ func (s *profilingServer) start() {
 
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil {
-			zap.L().Panic("Unable to start profiling http server", zap.Error(err))
+			if err == http.ErrServerClosed {
+				return
+			}
+			zap.L().Fatal("Unable to start profile server", zap.Error(err))
 		}
 	}()
 
-	zap.L().Info("pprof server started", zap.String("address", s.config.ProfilingServer.ListenAddress))
+	zap.L().Info("Profile server started", zap.String("address", s.config.ProfilingServer.ListenAddress))
+
+	<-ctx.Done()
 }
 
 // stop stops the profilingServer.
 func (s *profilingServer) stop() {
 
-	// s.server.Shutdown() // Uncomment with Go 1.8
-	// s.server = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		zap.L().Error("Could not gracefuly stop profile server", zap.Error(err))
+	}
+
+	zap.L().Debug("Profile server stopped")
 }

@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
 	"sync"
 
@@ -16,7 +17,6 @@ import (
 
 type websocketServer struct {
 	sessions        map[string]internalWSSession
-	close           chan struct{}
 	multiplexer     *bone.Mux
 	config          Config
 	processorFinder processorFinderFunc
@@ -27,7 +27,6 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 	srv := &websocketServer{
 		sessions:        map[string]internalWSSession{},
-		close:           make(chan struct{}),
 		multiplexer:     multiplexer,
 		config:          config,
 		sessionsLock:    &sync.Mutex{},
@@ -209,7 +208,7 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 	}
 }
 
-func (n *websocketServer) start() {
+func (n *websocketServer) start(ctx context.Context) {
 
 	publications := make(chan *Publication)
 	if n.config.WebSocketServer.Service != nil {
@@ -268,7 +267,7 @@ func (n *websocketServer) start() {
 				}(session, event.Duplicate())
 			}
 
-		case <-n.close:
+		case <-ctx.Done():
 
 			n.sessionsLock.Lock()
 			for _, session := range n.sessions {
@@ -280,9 +279,4 @@ func (n *websocketServer) start() {
 			return
 		}
 	}
-}
-
-func (n *websocketServer) stop() {
-
-	close(n.close)
 }
