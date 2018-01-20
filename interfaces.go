@@ -58,12 +58,15 @@ type Server interface {
 	// It will use the PubSubServer configured in the pushConfig.
 	Push(...*elemental.Event)
 
-	// Start starts the Bahamut server.
-	StartWithContext(context.Context)
+	// Run runs the server using the given context.Context.
+	// You can stop the server by canceling the context.
+	Run(context.Context)
 
 	// Start starts the Bahamut server.
+	// This will install signal handler to handle
+	// graceful interruption.
 	//
-	// Deprecated: use StartWithContext.
+	// Deprecated: Start is deprecation. use Run.
 	Start()
 }
 

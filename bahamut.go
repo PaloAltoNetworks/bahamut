@@ -138,16 +138,16 @@ func (b *server) Push(events ...*elemental.Event) {
 
 func (b *server) Start() {
 
-	zap.L().Warn("Deprecated: bahamut.Server.Start is deprecated. Use bahamut.Server.StartWithContext")
+	zap.L().Warn("Bahamut: deprecated: Server.Start is deprecated. Use Server.Run")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	InstallSIGINTHanler(cancel)
-	b.StartWithContext(ctx)
+	b.Run(ctx)
 }
 
-func (b *server) StartWithContext(ctx context.Context) {
+func (b *server) Run(ctx context.Context) {
 
 	if b.profilingServer != nil {
 		go b.profilingServer.start(ctx)
