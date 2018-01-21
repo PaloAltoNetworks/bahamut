@@ -25,6 +25,7 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
+	mainContext     context.Context
 }
 
 // newRestServer returns a new apiServer.
@@ -146,7 +147,7 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	a.multiplexer.ServeHTTP(w, req)
+	a.multiplexer.ServeHTTP(w, req.WithContext(a.mainContext))
 }
 
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
@@ -464,6 +465,9 @@ func (a *restServer) installRoutes() {
 }
 
 func (a *restServer) start(ctx context.Context) {
+
+	a.mainContext = ctx
+	defer func() { a.mainContext = nil }()
 
 	a.installRoutes()
 

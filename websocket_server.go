@@ -21,6 +21,7 @@ type websocketServer struct {
 	config          Config
 	processorFinder processorFinderFunc
 	sessionsLock    *sync.Mutex
+	mainContext     context.Context
 }
 
 func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *websocketServer {
@@ -45,6 +46,8 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 	if !config.WebSocketServer.PushDisabled {
 		srv.multiplexer.Handle("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			r = r.WithContext(srv.mainContext)
 
 			request, err := elemental.NewRequestFromHTTPRequest(r)
 			if err != nil {
@@ -209,6 +212,9 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 }
 
 func (n *websocketServer) start(ctx context.Context) {
+
+	n.mainContext = ctx
+	defer func() { n.mainContext = nil }()
 
 	publications := make(chan *Publication)
 	if n.config.WebSocketServer.Service != nil {
