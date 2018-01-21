@@ -64,7 +64,7 @@ func (s *profilingServer) stop() {
 	defer cancel()
 
 	if err := s.server.Shutdown(ctx); err != nil {
-		zap.L().Error("Could not gracefuly stop profile server", zap.Error(err))
+		zap.L().Error("Could not gracefully stop profile server", zap.Error(err))
 	}
 
 	zap.L().Debug("Profile server stopped")

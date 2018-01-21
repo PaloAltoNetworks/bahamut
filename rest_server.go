@@ -510,7 +510,7 @@ func (a *restServer) stop() {
 	defer cancel()
 
 	if err := a.server.Shutdown(ctx); err != nil {
-		zap.L().Error("Could not gracefuly stop API server", zap.Error(err))
+		zap.L().Error("Could not gracefully stop API server", zap.Error(err))
 	}
 
 	zap.L().Debug("API server stopped")

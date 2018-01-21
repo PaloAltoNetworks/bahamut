@@ -106,7 +106,7 @@ func (s *mockServer) stop() {
 	defer cancel()
 
 	if err := s.server.Shutdown(ctx); err != nil {
-		zap.L().Error("Could not gracefuly stop mock server", zap.Error(err))
+		zap.L().Error("Could not gracefully stop mock server", zap.Error(err))
 	}
 
 	zap.L().Debug("Mock server stopped")
