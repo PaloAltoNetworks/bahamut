@@ -168,6 +168,7 @@ type Session interface {
 	Span() opentracing.Span
 	GetMetadata() interface{}
 	SetMetadata(interface{})
+	GetContext() context.Context
 }
 
 // PushSession is a Push Session

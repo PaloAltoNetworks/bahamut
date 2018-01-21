@@ -37,7 +37,7 @@ func newWSSession(request *http.Request, config Config, unregister unregisterFun
 	id := uuid.Must(uuid.NewV4()).String()
 	span.SetTag("bahamut.session.id", id)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsSession{
 		claims:             []string{},
@@ -85,6 +85,11 @@ func (s *wsSession) GetClaimsMap() map[string]string {
 func (s *wsSession) GetToken() string {
 
 	return s.parameters.Get("token")
+}
+
+func (s *wsSession) GetContext() context.Context {
+
+	return s.context
 }
 
 func (s *wsSession) TLSConnectionState() *tls.ConnectionState {
