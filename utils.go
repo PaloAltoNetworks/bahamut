@@ -20,9 +20,6 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) e
 	}
 
 	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
-	if !recover {
-		panic(err)
-	}
 
 	st := string(debug.Stack())
 	zap.L().Error("panic", zap.String("stacktrace", st))
@@ -38,6 +35,10 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) e
 		log.String("stack", st),
 	)
 	sp.Finish()
+
+	if !recover {
+		panic(err)
+	}
 
 	return err
 }
