@@ -1,9 +1,11 @@
 package bahamut
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -27,24 +29,6 @@ func newMockServer(config Config) *mockServer {
 
 	return &mockServer{
 		config: config,
-	}
-}
-
-// start starts the mockServer.
-func (s *mockServer) start() {
-
-	s.server = &http.Server{Addr: s.config.MockServer.ListenAddress}
-
-	mux := bone.New()
-	mux.Post("/mock/install", http.HandlerFunc(s.handleInstallMock))
-	mux.Delete("/mock/uninstall/:operation/:identity", http.HandlerFunc(s.handleUninstallMock))
-
-	s.server.Handler = mux
-
-	zap.L().Warn("Mock server enabled", zap.String("listen", s.config.MockServer.ListenAddress))
-
-	if err := s.server.ListenAndServe(); err != nil {
-		zap.L().Panic("Unable to start mock server", zap.Error(err))
 	}
 }
 
@@ -92,9 +76,38 @@ func (s *mockServer) handleUninstallMock(w http.ResponseWriter, req *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
-// stop stops the mockServer.
+func (s *mockServer) start(ctx context.Context) {
+
+	s.server = &http.Server{Addr: s.config.MockServer.ListenAddress}
+
+	mux := bone.New()
+	mux.Post("/mock/install", http.HandlerFunc(s.handleInstallMock))
+	mux.Delete("/mock/uninstall/:operation/:identity", http.HandlerFunc(s.handleUninstallMock))
+
+	s.server.Handler = mux
+
+	go func() {
+		if err := s.server.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			zap.L().Fatal("Unable to start mock server", zap.Error(err))
+		}
+	}()
+
+	zap.L().Warn("Mock server started", zap.String("listen", s.config.MockServer.ListenAddress))
+
+	<-ctx.Done()
+}
+
 func (s *mockServer) stop() {
 
-	// a.server.Shutdown() // Uncomment with Go 1.8
-	// a.server = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		zap.L().Error("Could not gracefully stop mock server", zap.Error(err))
+	}
+
+	zap.L().Debug("Mock server stopped")
 }

@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 
@@ -57,11 +58,16 @@ type Server interface {
 	// It will use the PubSubServer configured in the pushConfig.
 	Push(...*elemental.Event)
 
-	// Start starts the Bahamut server.
-	Start()
+	// Run runs the server using the given context.Context.
+	// You can stop the server by canceling the context.
+	Run(context.Context)
 
-	// Stop stops the Bahamut server.
-	Stop()
+	// Start starts the Bahamut server.
+	// This will install signal handler to handle
+	// graceful interruption.
+	//
+	// Deprecated: Start is deprecation. use Run.
+	Start()
 }
 
 // Processor is the interface for a Processor Unit
@@ -162,6 +168,7 @@ type Session interface {
 	Span() opentracing.Span
 	GetMetadata() interface{}
 	SetMetadata(interface{})
+	GetContext() context.Context
 }
 
 // PushSession is a Push Session

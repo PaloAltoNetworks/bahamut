@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -29,6 +30,19 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 	}
 }
 
+// InstallSIGINTHanler installs signal handlers for graceful shutdown.
+func InstallSIGINTHanler(cancelFunc context.CancelFunc) {
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt)
+	go func() {
+		<-signalCh
+		cancelFunc()
+		signal.Stop(signalCh)
+		close(signalCh)
+	}()
+}
+
 type server struct {
 	multiplexer *bone.Mux
 	processors  map[string]Processor
@@ -39,19 +53,14 @@ type server struct {
 	profilingServer *profilingServer
 	tracingServer   *tracingServer
 	mockServer      *mockServer
-
-	stop chan struct{}
 }
 
 // NewServer returns a new Bahamut Server.
-//
-// It will use the given apiConfig and pushConfig to initialize the various servers.
 func NewServer(config Config) Server {
 
 	mux := bone.New()
 	srv := &server{
 		multiplexer: mux,
-		stop:        make(chan struct{}),
 		processors:  make(map[string]Processor),
 	}
 
@@ -127,62 +136,44 @@ func (b *server) Push(events ...*elemental.Event) {
 	b.websocketServer.pushEvents(events...)
 }
 
-// handleExit handle the interrupt signal an will try
-// to cleanly stop all current routines.
-func (b *server) handleExit() {
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	<-c
-
-	b.Stop()
-}
-
 func (b *server) Start() {
 
-	if b.restServer != nil {
-		go b.restServer.start()
-	}
+	zap.L().Warn("Bahamut: deprecated: Server.Start is deprecated. Use Server.Run")
 
-	if b.websocketServer != nil {
-		go b.websocketServer.start()
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	if b.healthServer != nil {
-		go b.healthServer.start()
-	}
+	InstallSIGINTHanler(cancel)
+	b.Run(ctx)
+}
+
+func (b *server) Run(ctx context.Context) {
 
 	if b.profilingServer != nil {
-		go b.profilingServer.start()
+		go b.profilingServer.start(ctx)
 	}
 
 	if b.tracingServer != nil {
-		go b.tracingServer.start()
-	}
-
-	if b.mockServer != nil {
-		go b.mockServer.start()
-	}
-
-	go b.handleExit()
-
-	<-b.stop
-}
-
-func (b *server) Stop() {
-
-	if b.restServer != nil {
-		b.restServer.stop()
-	}
-
-	if b.websocketServer != nil {
-		b.websocketServer.stop()
+		go b.tracingServer.start(ctx)
 	}
 
 	if b.healthServer != nil {
-		b.healthServer.stop()
+		go b.healthServer.start(ctx)
 	}
+
+	if b.mockServer != nil {
+		go b.mockServer.start(ctx)
+	}
+
+	if b.restServer != nil {
+		go b.restServer.start(ctx)
+	}
+
+	if b.websocketServer != nil {
+		go b.websocketServer.start(ctx)
+	}
+
+	<-ctx.Done()
 
 	if b.profilingServer != nil {
 		b.profilingServer.stop()
@@ -192,9 +183,15 @@ func (b *server) Stop() {
 		b.tracingServer.stop()
 	}
 
+	if b.healthServer != nil {
+		b.healthServer.stop()
+	}
+
 	if b.mockServer != nil {
 		b.mockServer.stop()
 	}
 
-	close(b.stop)
+	if b.restServer != nil {
+		b.restServer.stop()
+	}
 }

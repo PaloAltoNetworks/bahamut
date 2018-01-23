@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
@@ -154,7 +155,7 @@ func TestServer_Start(t *testing.T) {
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
 
-			go c.start()
+			go c.start(context.TODO())
 			time.Sleep(1 * time.Second)
 
 			resp, err := http.Get("http://127.0.0.1:" + port1)
@@ -185,7 +186,7 @@ func TestServer_Start(t *testing.T) {
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
 
-			go c.start()
+			go c.start(context.TODO())
 			time.Sleep(1 * time.Second)
 
 			cert, _ := tls.LoadX509KeyPair("fixtures/certs/client-cert.pem", "fixtures/certs/client-key.pem")

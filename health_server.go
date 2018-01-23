@@ -1,7 +1,9 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -20,20 +22,6 @@ func newHealthServer(config Config) *healthServer {
 	}
 }
 
-// start starts the healthServer.
-func (s *healthServer) start() {
-
-	s.server = &http.Server{Addr: s.config.HealthServer.ListenAddress}
-	s.server.Handler = s
-	s.server.SetKeepAlivesEnabled(true)
-
-	zap.L().Debug("Health server enabled", zap.String("listen", s.config.HealthServer.ListenAddress))
-
-	if err := s.server.ListenAndServe(); err != nil {
-		zap.L().Panic("Unable to start health server", zap.Error(err))
-	}
-}
-
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if s.config.HealthServer.HealthHandler == nil {
@@ -49,9 +37,36 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// stop stops the healthServer.
+func (s *healthServer) start(ctx context.Context) {
+
+	s.server = &http.Server{Addr: s.config.HealthServer.ListenAddress}
+	s.server.Handler = s
+	s.server.SetKeepAlivesEnabled(true)
+
+	zap.L().Debug("Health server enabled", zap.String("listen", s.config.HealthServer.ListenAddress))
+
+	go func() {
+		if err := s.server.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			zap.L().Fatal("Unable to start health server", zap.Error(err))
+		}
+	}()
+
+	zap.L().Info("Health server started", zap.String("address", s.config.HealthServer.ListenAddress))
+
+	<-ctx.Done()
+}
+
 func (s *healthServer) stop() {
 
-	// a.server.Shutdown() // Uncomment with Go 1.8
-	// a.server = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		zap.L().Error("Could not gracefully stop health server", zap.Error(err))
+	}
+
+	zap.L().Debug("Health server stopped")
 }

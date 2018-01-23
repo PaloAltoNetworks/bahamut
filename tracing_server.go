@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"context"
 	"os"
 	"runtime/trace"
 
@@ -22,7 +23,7 @@ func newTracingServer(config Config) *tracingServer {
 }
 
 // start starts the tracingServer.
-func (s *tracingServer) start() {
+func (s *tracingServer) start(ctx context.Context) {
 
 	var err error
 
@@ -39,6 +40,8 @@ func (s *tracingServer) start() {
 	}
 
 	zap.L().Info("Trace server started", zap.String("out", s.config.TracingServer.OutFilePath))
+
+	<-ctx.Done()
 }
 
 // stop stops the tracingServer.
@@ -46,4 +49,6 @@ func (s *tracingServer) stop() {
 
 	trace.Stop()
 	s.traceFile.Close() // nolint: errcheck
+
+	zap.L().Debug("Trace server stopped")
 }

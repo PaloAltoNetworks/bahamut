@@ -5,10 +5,12 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
@@ -23,6 +25,7 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
+	mainContext     context.Context
 }
 
 // newRestServer returns a new apiServer.
@@ -144,7 +147,7 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	a.multiplexer.ServeHTTP(w, req)
+	a.multiplexer.ServeHTTP(w, req.WithContext(a.mainContext))
 }
 
 func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
@@ -461,8 +464,10 @@ func (a *restServer) installRoutes() {
 
 }
 
-// start starts the apiServer.
-func (a *restServer) start() {
+func (a *restServer) start(ctx context.Context) {
+
+	a.mainContext = ctx
+	defer func() { a.mainContext = nil }()
 
 	a.installRoutes()
 
@@ -483,22 +488,34 @@ func (a *restServer) start() {
 		a.server.Handler = a.multiplexer
 	}
 
-	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
-		err = a.server.ListenAndServeTLS("", "")
-	} else {
-		err = a.server.ListenAndServe()
-	}
+	go func() {
+		if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
+			err = a.server.ListenAndServeTLS("", "")
+		} else {
+			err = a.server.ListenAndServe()
+		}
 
-	if err != nil {
-		zap.L().Fatal("Unable to start api server", zap.Error(err))
-	}
+		if err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			zap.L().Fatal("Unable to start api server", zap.Error(err))
+		}
+	}()
 
-	zap.L().Info("rest server started", zap.String("address", a.config.ReSTServer.ListenAddress))
+	zap.L().Info("API server started", zap.String("address", a.config.ReSTServer.ListenAddress))
+
+	<-ctx.Done()
 }
 
-// stop stops the apiServer.
 func (a *restServer) stop() {
 
-	// a.server.Shutdown() // Uncomment with Go 1.8
-	// a.server = nil
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := a.server.Shutdown(ctx); err != nil {
+		zap.L().Error("Could not gracefully stop API server", zap.Error(err))
+	}
+
+	zap.L().Debug("API server stopped")
 }
