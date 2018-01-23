@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/aporeto-inc/elemental"
+	"github.com/opentracing/opentracing-go/log"
 )
 
 func setCommonHeader(w http.ResponseWriter, origin string) {
@@ -116,6 +117,9 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 			writeHTTPError(w, c.Request, err)
 			return
 		}
+
+		c.Request.Span().LogFields(log.Object("response", buffer.String()))
+
 	} else {
 		c.StatusCode = http.StatusNoContent
 	}
