@@ -17,7 +17,7 @@ func audit(auditer Auditer, ctx *Context, err error) {
 	// We need to refactor the code so we can do this only once.
 	var e error
 	if err != nil {
-		e = processError(err, ctx.Request)
+		e = processError(err, ctx.Request, nil)
 	}
 
 	auditer.Audit(ctx, e)

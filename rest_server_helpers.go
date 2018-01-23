@@ -35,7 +35,7 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 
 func writeHTTPError(w http.ResponseWriter, request *elemental.Request, err error) {
 
-	outError := processError(err, request)
+	outError := processError(err, request, request.Span())
 
 	setCommonHeader(w, request.Headers.Get("Origin"))
 	w.WriteHeader(outError.Code())
@@ -82,14 +82,18 @@ func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certi
 
 func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
-	buffer := &bytes.Buffer{}
-
 	if c.Redirect != "" {
 		w.Header().Set("Location", c.Redirect)
 		w.WriteHeader(http.StatusFound)
-		_, _ = io.Copy(w, buffer)
 		return
 	}
+
+	var fields []log.Field
+	span := c.Request.NewChildSpan("bahamut.result.response")
+	defer func() {
+		span.LogFields(fields...)
+		span.Finish()
+	}()
 
 	setCommonHeader(w, c.Request.Headers.Get("Origin"))
 
@@ -106,24 +110,26 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 
 	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
 		w.Header().Set("X-Count-Total", strconv.Itoa(c.CountTotal))
+		fields = append(fields, (log.Int("count-total", c.CountTotal)))
 	}
 
 	if msgs := c.messages(); len(msgs) > 0 {
 		w.Header().Set("X-Messages", strings.Join(msgs, ";"))
+		fields = append(fields, (log.Object("messages", msgs)))
 	}
 
+	buffer := &bytes.Buffer{}
 	if c.OutputData != nil {
 		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
 			writeHTTPError(w, c.Request, err)
 			return
 		}
-
-		c.Request.Span().LogFields(log.Object("response", buffer.String()))
-
+		fields = append(fields, (log.Object("response", buffer.String())))
 	} else {
 		c.StatusCode = http.StatusNoContent
 	}
 
+	fields = append(fields, (log.Int("status.code", c.StatusCode)))
 	w.WriteHeader(c.StatusCode)
 
 	if buffer != nil {
@@ -135,6 +141,7 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 }
 
 func fakeElementalRequest(req *http.Request) *elemental.Request {
+
 	r := elemental.NewRequest()
 	r.Headers.Set("Origin", req.Header.Get("Origin"))
 

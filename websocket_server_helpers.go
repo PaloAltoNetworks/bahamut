@@ -28,7 +28,7 @@ type unregisterFunc func(internalWSSession)
 
 func writeWebSocketError(response *elemental.Response, err error) *elemental.Response {
 
-	outError := processError(err, response.Request)
+	outError := processError(err, response.Request, response.Request.Span())
 
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/aporeto-inc/addedeffect/tagutils"
 	"github.com/aporeto-inc/elemental"
+	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"
 )
@@ -43,7 +44,7 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) e
 	return err
 }
 
-func processError(err error, request *elemental.Request) elemental.Errors {
+func processError(err error, request *elemental.Request, span opentracing.Span) elemental.Errors {
 
 	var outError elemental.Errors
 
@@ -75,10 +76,10 @@ func processError(err error, request *elemental.Request) elemental.Errors {
 		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", spanID))
 	}
 
-	if request.Span() != nil {
-		sp := request.NewChildSpan("bahamut.result.error")
+	if span != nil {
+		sp := opentracing.StartSpan("bahamut.result.error", opentracing.ChildOf(span.Context()))
 		sp.SetTag("error", true)
-		sp.SetTag("error.code", outError.Code())
+		sp.SetTag("status.code", outError.Code())
 		sp.LogFields(log.Object("elemental.error", outError))
 		sp.Finish()
 	}
