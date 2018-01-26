@@ -102,6 +102,10 @@ func (s *wsAPISession) listen() {
 		select {
 		case request := <-s.requests:
 
+			ctx := traceRequest(s.context, request)
+			bctx := NewContextWithRequest(request)
+			bctx.ctx = ctx
+
 			// We backport the token of the session into the request if we don't have an explicit one given in the request.
 			if request.Password == "" {
 				if t := s.GetToken(); t != "" {
@@ -109,9 +113,6 @@ func (s *wsAPISession) listen() {
 					request.Password = t
 				}
 			}
-
-			bctx := NewContextWithRequest(request)
-			bctx.ctx = s.context
 
 			// And we set the TLSConnectionState
 			request.TLSConnectionState = s.TLSConnectionState()
@@ -139,6 +140,7 @@ func (s *wsAPISession) listen() {
 			case elemental.OperationPatch:
 				s.responses <- handlePatch(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 			}
+			finishTracing(ctx)
 
 		case <-s.closeCh:
 			return

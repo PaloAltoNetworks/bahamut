@@ -9,6 +9,7 @@ import (
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
+	uuid "github.com/satori/go.uuid"
 )
 
 // internalWSSession interface that enhance what a Session can do.
@@ -50,9 +51,11 @@ type wsSession struct {
 
 func newWSSession(request *http.Request, config Config, unregister unregisterFunc) *wsSession {
 
+	id := uuid.Must(uuid.NewV4()).String()
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsSession{
+		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
 		config:             config,
