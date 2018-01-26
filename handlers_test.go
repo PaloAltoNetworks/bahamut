@@ -236,7 +236,6 @@ func TestHandlers_makeResponse(t *testing.T) {
 			})
 		})
 	})
-
 	Convey("Given I have context with messages and a response", t, func() {
 
 		ctx := NewContext()

@@ -100,46 +100,46 @@ func traceRequest(ctx context.Context, r *elemental.Request) context.Context {
 		safeHeaders[k] = v
 	}
 
-	span.SetTag("elemental.request.api_version", r.Version)
-	span.SetTag("elemental.request.id", r.RequestID)
-	span.SetTag("elemental.request.identity", r.Identity.Name)
-	span.SetTag("elemental.request.recursive", r.Recursive)
-	span.SetTag("elemental.request.operation", r.Operation)
-	span.SetTag("elemental.request.override_protection", r.OverrideProtection)
+	span.SetTag("req.api_version", r.Version)
+	span.SetTag("req.id", r.RequestID)
+	span.SetTag("req.identity", r.Identity.Name)
+	span.SetTag("req.recursive", r.Recursive)
+	span.SetTag("req.operation", r.Operation)
+	span.SetTag("req.override_protection", r.OverrideProtection)
 
 	if r.ExternalTrackingID != "" {
-		span.SetTag("elemental.request.external_tracking_id", r.ExternalTrackingID)
+		span.SetTag("req.external_tracking_id", r.ExternalTrackingID)
 	}
 
 	if r.ExternalTrackingType != "" {
-		span.SetTag("elemental.request.external_tracking_type", r.ExternalTrackingType)
+		span.SetTag("req.external_tracking_type", r.ExternalTrackingType)
 	}
 
 	if r.Namespace != "" {
-		span.SetTag("elemental.request.namespace", r.Namespace)
+		span.SetTag("req.namespace", r.Namespace)
 	}
 
 	if r.ObjectID != "" {
-		span.SetTag("elemental.request.object.id", r.ObjectID)
+		span.SetTag("req.object.id", r.ObjectID)
 	}
 
 	if r.ParentID != "" {
-		span.SetTag("elemental.request.parent.id", r.ParentID)
+		span.SetTag("req.parent.id", r.ParentID)
 	}
 
 	if !r.ParentIdentity.IsEmpty() {
-		span.SetTag("elemental.request.parent.identity", r.ParentIdentity.Name)
+		span.SetTag("req.parent.identity", r.ParentIdentity.Name)
 	}
 
 	span.LogFields(
-		log.Int("elemental.request.page.number", r.Page),
-		log.Int("elemental.request.page.size", r.PageSize),
-		log.Object("elemental.request.headers", safeHeaders),
-		log.Object("elemental.request.claims", extractClaims(r)),
-		log.Object("elemental.request.client_ip", r.ClientIP),
-		log.Object("elemental.request.parameters", safeParameters),
-		log.Object("elemental.request.order_by", r.Order),
-		log.String("elemental.request.payload", string(r.Data)),
+		log.Int("req.page.number", r.Page),
+		log.Int("req.page.size", r.PageSize),
+		log.Object("req.headers", safeHeaders),
+		log.Object("req.claims", extractClaims(r)),
+		log.Object("req.client_ip", r.ClientIP),
+		log.Object("req.parameters", safeParameters),
+		log.Object("req.order_by", r.Order),
+		log.String("req.payload", string(r.Data)),
 	)
 
 	return trackingCtx

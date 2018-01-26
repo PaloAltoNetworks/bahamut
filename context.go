@@ -67,6 +67,7 @@ func NewContext() *Context {
 		id:                 uuid.Must(uuid.NewV4()).String(),
 		events:             elemental.Events{},
 		customMessagesLock: &sync.Mutex{},
+		ctx:                context.Background(),
 	}
 }
 

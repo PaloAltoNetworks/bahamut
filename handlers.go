@@ -13,24 +13,24 @@ import (
 
 type handlerFunc func(*Context, Config, *elemental.Request, processorFinderFunc, eventPusherFunc) *elemental.Response
 
-func makeResponse(c *Context, response *elemental.Response) *elemental.Response {
+func makeResponse(ctx *Context, response *elemental.Response) *elemental.Response {
 
-	if c.Redirect != "" {
-		response.Redirect = c.Redirect
+	if ctx.Redirect != "" {
+		response.Redirect = ctx.Redirect
 		return response
 	}
 
 	var fields []log.Field
 	defer func() {
-		span := opentracing.SpanFromContext(c)
+		span := opentracing.SpanFromContext(ctx)
 		if span != nil {
 			span.LogFields(fields...)
 		}
 	}()
 
-	response.StatusCode = c.StatusCode
+	response.StatusCode = ctx.StatusCode
 	if response.StatusCode == 0 {
-		switch c.Request.Operation {
+		switch ctx.Request.Operation {
 		case elemental.OperationCreate:
 			response.StatusCode = http.StatusCreated
 		case elemental.OperationInfo:
@@ -40,18 +40,18 @@ func makeResponse(c *Context, response *elemental.Response) *elemental.Response 
 		}
 	}
 
-	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
-		response.Count = c.CountTotal
-		fields = append(fields, (log.Int("count-total", c.CountTotal)))
+	if ctx.Request.Operation == elemental.OperationRetrieveMany || ctx.Request.Operation == elemental.OperationInfo {
+		response.Count = ctx.CountTotal
+		fields = append(fields, (log.Int("count-total", ctx.CountTotal)))
 	}
 
-	if msgs := c.messages(); len(msgs) > 0 {
+	if msgs := ctx.messages(); len(msgs) > 0 {
 		response.Messages = msgs
 		fields = append(fields, (log.Object("messages", msgs)))
 	}
 
-	if c.OutputData != nil {
-		if err := response.Encode(c.OutputData); err != nil {
+	if ctx.OutputData != nil {
+		if err := response.Encode(ctx.OutputData); err != nil {
 			zap.L().Panic("Unable to encode output data", zap.Error(err))
 		}
 		fields = append(fields, (log.Object("response", string(response.Data))))
