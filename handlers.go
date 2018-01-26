@@ -41,7 +41,7 @@ func makeResponse(ctx *Context, response *elemental.Response) *elemental.Respons
 	}
 
 	if ctx.Request.Operation == elemental.OperationRetrieveMany || ctx.Request.Operation == elemental.OperationInfo {
-		response.Count = ctx.CountTotal
+		response.Total = ctx.CountTotal
 		fields = append(fields, (log.Int("count-total", ctx.CountTotal)))
 	}
 

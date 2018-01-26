@@ -52,7 +52,7 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
 		return
 	}
 
-	w.Header().Set("X-Count-Total", strconv.Itoa(r.Count))
+	w.Header().Set("X-Count-Total", strconv.Itoa(r.Total))
 
 	if len(r.Messages) > 0 {
 		w.Header().Set("X-Messages", strings.Join(r.Messages, ";"))
