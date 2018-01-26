@@ -57,18 +57,18 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 			session := newWSPushSession(r, config, srv.unregisterSession)
 			if err = srv.authSession(session); err != nil {
-				writeHTTPError(w, request, err)
+				writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(request.Context()), err))
 				return
 			}
 
 			if err = srv.initPushSession(session); err != nil {
-				writeHTTPError(w, request, err)
+				writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(request.Context()), err))
 				return
 			}
 
 			ws, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
-				writeHTTPError(w, request, err)
+				writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(request.Context()), err))
 				return
 			}
 

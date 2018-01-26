@@ -10,24 +10,22 @@ import (
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
-
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsAPISession struct {
 	processorFinder processorFinderFunc
-	eventPusher     eventPusherFunc
+	pusherFunc      eventPusherFunc
 	requests        chan *elemental.Request
 	responses       chan *elemental.Response
 	*wsSession
 }
 
-func newWSAPISession(request *http.Request, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, eventPusher eventPusherFunc) *wsAPISession {
+func newWSAPISession(request *http.Request, config Config, unregister unregisterFunc, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) *wsAPISession {
 
 	return &wsAPISession{
-		wsSession:       newWSSession(request, config, unregister, opentracing.StartSpan("bahamut.session.api")),
+		wsSession:       newWSSession(request, config, unregister),
 		processorFinder: processorFinder,
-		eventPusher:     eventPusher,
+		pusherFunc:      pusherFunc,
 		requests:        make(chan *elemental.Request),
 		responses:       make(chan *elemental.Response),
 	}
@@ -53,10 +51,17 @@ func (s *wsAPISession) read() {
 				return
 			}
 
-			response := elemental.NewResponse()
-			response.Request = request
+			response := elemental.NewResponse(request.Context())
 
-			s.responses <- writeWebSocketError(response, elemental.NewError("Bad Request", "Invalid JSON", "bahamut", http.StatusBadRequest))
+			s.responses <- makeErrorResponse(
+				response,
+				elemental.NewError(
+					"Bad Request",
+					"Invalid JSON",
+					"bahamut",
+					http.StatusBadRequest,
+				),
+			)
 		}
 
 		s.requests <- request
@@ -96,8 +101,8 @@ func (s *wsAPISession) listen() {
 		select {
 		case request := <-s.requests:
 
-			request.StartTracing()
-			defer request.FinishTracing()
+			traceRequest(request)
+			defer finishTracing(request)
 
 			// We backport the token of the session into the request if we don't have an explicit one given in the request.
 			if request.Password == "" {
@@ -113,266 +118,29 @@ func (s *wsAPISession) listen() {
 			switch request.Operation {
 
 			case elemental.OperationRetrieveMany:
-				s.handleRetrieveMany(request)
+				s.responses <- handleRetrieveMany(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationRetrieve:
-				s.handleRetrieve(request)
+				s.responses <- handleRetrieve(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationCreate:
-				s.handleCreate(request)
+				s.responses <- handleCreate(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationUpdate:
-				s.handleUpdate(request)
+				s.responses <- handleUpdate(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationDelete:
-				s.handleDelete(request)
+				s.responses <- handleDelete(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationInfo:
-				s.handleInfo(request)
+				s.responses <- handleInfo(s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationPatch:
-				s.handlePatch(request)
+				s.responses <- handlePatch(s.config, request, s.processorFinder, s.pusherFunc)
 			}
 
 		case <-s.closeCh:
 			return
 		}
 	}
-}
-
-func (s *wsAPISession) handleRetrieveMany(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsRetrieveManyAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchRetrieveManyOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handleRetrieve(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	if !elemental.IsRetrieveAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchRetrieveOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handleCreate(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsCreateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchCreateOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-				s.config.Model.ReadOnly,
-				s.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handleUpdate(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	if !elemental.IsUpdateAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Update operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchUpdateOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-				s.config.Model.ReadOnly,
-				s.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handleDelete(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	if !elemental.IsDeleteAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchDeleteOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-				s.config.Model.ReadOnly,
-				s.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handleInfo(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsInfoAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchInfoOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.config.Security.Auditer,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
-}
-
-func (s *wsAPISession) handlePatch(request *elemental.Request) {
-
-	response := elemental.NewResponse()
-	response.Request = request
-
-	parentIdentity := request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsPatchAllowed(s.config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
-		s.responses <- writeWebSocketError(response, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	s.responses <- runWSDispatcher(
-		ctx,
-		response,
-		func() error {
-			return dispatchPatchOperation(
-				ctx,
-				s.processorFinder,
-				s.config.Model.IdentifiablesFactory,
-				s.config.Security.RequestAuthenticators,
-				s.config.Security.Authorizers,
-				s.eventPusher,
-				s.config.Security.Auditer,
-				s.config.Model.ReadOnly,
-				s.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		s.config.WebSocketServer.PanicRecoveryDisabled,
-	)
 }

@@ -135,295 +135,24 @@ func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, err
 // is configured. Otherwise, the main http handler will be directly the multiplexer.
 func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
+	req = req.WithContext(a.mainContext)
 
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError))
-		return
+	if a.config.RateLimiting.RateLimiter != nil {
+		limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
+		if err != nil {
+			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)))
+			return
+		}
+
+		if limited {
+			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), ErrRateLimit))
+			return
+		}
 	}
 
-	if limited {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests))
-		return
-	}
+	setCommonHeader(w, req.Header.Get("Origin"))
 
-	a.multiplexer.ServeHTTP(w, req.WithContext(a.mainContext))
-}
-
-func (a *restServer) handleRetrieve(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if !elemental.IsRetrieveAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Retrieve operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchRetrieveOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-}
-
-func (a *restServer) handleUpdate(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if !elemental.IsUpdateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Update opration not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchUpdateOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-				a.config.Model.ReadOnly,
-				a.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-
-}
-
-func (a *restServer) handleDelete(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if !elemental.IsDeleteAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Delete operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchDeleteOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-				a.config.Model.ReadOnly,
-				a.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-}
-
-func (a *restServer) handleRetrieveMany(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if request.ParentIdentity.IsEmpty() {
-		request.ParentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsRetrieveManyAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "RetrieveMany operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchRetrieveManyOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-}
-
-func (a *restServer) handleCreate(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if request.ParentIdentity.IsEmpty() {
-		request.ParentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsCreateAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Create operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchCreateOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-				a.config.Model.ReadOnly,
-				a.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-}
-
-func (a *restServer) handleInfo(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if request.ParentIdentity.IsEmpty() {
-		request.ParentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsInfoAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Info operation not allowed on "+request.Identity.Category, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchInfoOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.config.Security.Auditer,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
-}
-
-func (a *restServer) handlePatch(w http.ResponseWriter, req *http.Request) {
-
-	request, err := elemental.NewRequestFromHTTPRequest(req)
-	if err != nil {
-		writeHTTPError(w, fakeElementalRequest(req), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest))
-		return
-	}
-
-	request.StartTracing()
-	defer request.FinishTracing()
-
-	if request.ParentIdentity.IsEmpty() {
-		request.ParentIdentity = elemental.RootIdentity
-	}
-
-	if !elemental.IsPatchAllowed(a.config.Model.RelationshipsRegistry[request.Version], request.Identity, request.ParentIdentity) {
-		writeHTTPError(w, request, elemental.NewError("Not allowed", "Patch operation not allowed on "+request.Identity.Name, "bahamut", http.StatusMethodNotAllowed))
-		return
-	}
-
-	ctx := NewContextWithRequest(request)
-
-	runHTTPDispatcher(
-		ctx,
-		w,
-		func() error {
-			return dispatchPatchOperation(
-				ctx,
-				a.processorFinder,
-				a.config.Model.IdentifiablesFactory,
-				a.config.Security.RequestAuthenticators,
-				a.config.Security.Authorizers,
-				a.pusher,
-				a.config.Security.Auditer,
-				a.config.Model.ReadOnly,
-				a.config.Model.ReadOnlyExcludedIdentities,
-			)
-		},
-		!a.config.ReSTServer.PanicRecoveryDisabled,
-	)
+	a.multiplexer.ServeHTTP(w, req)
 }
 
 // installRoutes installs all the routes declared in the APIServerConfig.
@@ -439,29 +168,28 @@ func (a *restServer) installRoutes() {
 	}
 
 	// non versioned routes
-	a.multiplexer.Get("/:category/:id", http.HandlerFunc(a.handleRetrieve))
-	a.multiplexer.Put("/:category/:id", http.HandlerFunc(a.handleUpdate))
-	a.multiplexer.Patch("/:category/:id", http.HandlerFunc(a.handlePatch))
-	a.multiplexer.Delete("/:category/:id", http.HandlerFunc(a.handleDelete))
-	a.multiplexer.Get("/:category", http.HandlerFunc(a.handleRetrieveMany))
-	a.multiplexer.Get("/:parentcategory/:id/:category", http.HandlerFunc(a.handleRetrieveMany))
-	a.multiplexer.Post("/:category", http.HandlerFunc(a.handleCreate))
-	a.multiplexer.Post("/:parentcategory/:id/:category", http.HandlerFunc(a.handleCreate))
-	a.multiplexer.Head("/:category", http.HandlerFunc(a.handleInfo))
-	a.multiplexer.Head("/:parentcategory/:id/:category", http.HandlerFunc(a.handleInfo))
+	a.multiplexer.Get("/:category/:id", a.makeHandler(handleRetrieve))
+	a.multiplexer.Put("/:category/:id", a.makeHandler(handleUpdate))
+	a.multiplexer.Patch("/:category/:id", a.makeHandler(handlePatch))
+	a.multiplexer.Delete("/:category/:id", a.makeHandler(handleDelete))
+	a.multiplexer.Get("/:category", a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Get("/:parentcategory/:id/:category", a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Post("/:category", a.makeHandler(handleCreate))
+	a.multiplexer.Post("/:parentcategory/:id/:category", a.makeHandler(handleCreate))
+	a.multiplexer.Head("/:category", a.makeHandler(handleInfo))
+	a.multiplexer.Head("/:parentcategory/:id/:category", a.makeHandler(handleInfo))
 
 	// versioned routes
-	a.multiplexer.Get("/v/:version/:category/:id", http.HandlerFunc(a.handleRetrieve))
-	a.multiplexer.Put("/v/:version/:category/:id", http.HandlerFunc(a.handleUpdate))
-	a.multiplexer.Patch("/v/:version/:category/:id", http.HandlerFunc(a.handlePatch))
-	a.multiplexer.Delete("/v/:version/:category/:id", http.HandlerFunc(a.handleDelete))
-	a.multiplexer.Get("/v/:version/:category", http.HandlerFunc(a.handleRetrieveMany))
-	a.multiplexer.Get("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleRetrieveMany))
-	a.multiplexer.Post("/v/:version/:category", http.HandlerFunc(a.handleCreate))
-	a.multiplexer.Post("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleCreate))
-	a.multiplexer.Head("/v/:version/:category", http.HandlerFunc(a.handleInfo))
-	a.multiplexer.Head("/v/:version/:parentcategory/:id/:category", http.HandlerFunc(a.handleInfo))
-
+	a.multiplexer.Get("/v/:version/:category/:id", a.makeHandler(handleRetrieve))
+	a.multiplexer.Put("/v/:version/:category/:id", a.makeHandler(handleUpdate))
+	a.multiplexer.Patch("/v/:version/:category/:id", a.makeHandler(handlePatch))
+	a.multiplexer.Delete("/v/:version/:category/:id", a.makeHandler(handleDelete))
+	a.multiplexer.Get("/v/:version/:category", a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Get("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Post("/v/:version/:category", a.makeHandler(handleCreate))
+	a.multiplexer.Post("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleCreate))
+	a.multiplexer.Head("/v/:version/:category", a.makeHandler(handleInfo))
+	a.multiplexer.Head("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleInfo))
 }
 
 func (a *restServer) start(ctx context.Context) {
@@ -481,12 +209,7 @@ func (a *restServer) start(ctx context.Context) {
 		zap.L().Fatal("Unable to create api server", zap.Error(err))
 	}
 
-	// If we have a RateLimiter configured, we use our own main handler.
-	if a.config.RateLimiting.RateLimiter != nil {
-		a.server.Handler = a
-	} else {
-		a.server.Handler = a.multiplexer
-	}
+	a.server.Handler = a
 
 	go func() {
 		if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
@@ -518,4 +241,21 @@ func (a *restServer) stop() {
 	}
 
 	zap.L().Debug("API server stopped")
+}
+
+func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		request, err := elemental.NewRequestFromHTTPRequest(req)
+		if err != nil {
+			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)))
+			return
+		}
+
+		traceRequest(request)
+		defer finishTracing(request)
+
+		writeHTTPResponse(w, handler(a.config, request, a.processorFinder, a.pusher))
+	}
 }

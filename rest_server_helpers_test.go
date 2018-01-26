@@ -4,209 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"sync"
 	"testing"
-	"time"
+
+	"github.com/aporeto-inc/elemental/test/model"
 
 	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/elemental/test/model"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func TestRestServerHelper_corsHandler(t *testing.T) {
-
-	Convey("Given I call the corsHandler", t, func() {
-
-		h := http.Header{}
-		h.Add("Origin", "toto")
-
-		w := httptest.NewRecorder()
-		corsHandler(w, &http.Request{Header: h})
-
-		Convey("Then the response should be correct", func() {
-			So(w.Code, ShouldEqual, http.StatusOK)
-		})
-	})
-}
-
-func TestRestServerHelper_notFoundHandler(t *testing.T) {
-
-	Convey("Given I call the notFoundHandler", t, func() {
-
-		h := http.Header{}
-		h.Add("Origin", "toto")
-
-		w := httptest.NewRecorder()
-		notFoundHandler(w, &http.Request{Header: h})
-
-		Convey("Then the response should be correct", func() {
-			So(w.Code, ShouldEqual, http.StatusNotFound)
-		})
-	})
-}
-
-func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
-
-	type Entity struct {
-		Name string `json:"name"`
-	}
-
-	e1 := &Entity{Name: "e1"}
-	e2 := &Entity{Name: "e2"}
-
-	Convey("Given I create Context from a request with pagination info", t, func() {
-
-		u, _ := url.Parse("http://link.com/path?page=2&per_page=10")
-		req := &http.Request{
-			Host:   "link.com",
-			URL:    u,
-			Method: http.MethodGet,
-		}
-		request, _ := elemental.NewRequestFromHTTPRequest(req)
-
-		c := NewContextWithRequest(request)
-
-		c.CountTotal = 40
-
-		Convey("When I write the response from a context with no error for a retrieve", func() {
-
-			w := httptest.NewRecorder()
-			c.OutputData = []*Entity{e1, e2}
-			req.Method = http.MethodGet
-			writeHTTPResponse(w, c)
-
-			Convey("Then the status code should be default to 200", func() {
-				So(w.Code, ShouldEqual, 200)
-			})
-
-			Convey("Then the status should be 200", func() {
-				So(w.Body.String(), ShouldEqual, "[{\"name\":\"e1\"},{\"name\":\"e2\"}]\n")
-			})
-		})
-
-		Convey("When I write the response from a context with no error for a info", func() {
-
-			w := httptest.NewRecorder()
-			c.Request.Operation = elemental.OperationInfo
-			req.Method = http.MethodHead
-			writeHTTPResponse(w, c)
-
-			Convey("Then the status code should be default to 204", func() {
-				So(w.Code, ShouldEqual, 204)
-			})
-
-			Convey("Then the body should be empty", func() {
-				So(len(w.Body.Bytes()), ShouldEqual, 0)
-			})
-		})
-
-		Convey("When I write the response from a context with no error for a create and some data", func() {
-
-			w := httptest.NewRecorder()
-			c.Request.Operation = elemental.OperationCreate
-			req.Method = http.MethodPost
-			c.OutputData = struct{}{}
-			writeHTTPResponse(w, c)
-
-			Convey("Then the status code should be default to 201", func() {
-				So(w.Code, ShouldEqual, 201)
-			})
-		})
-
-		Convey("When I write the response from a context with no error for a create and no data", func() {
-
-			w := httptest.NewRecorder()
-			c.Request.Operation = elemental.OperationCreate
-			req.Method = http.MethodPost
-			writeHTTPResponse(w, c)
-
-			Convey("Then the status code should be default to 201", func() {
-				So(w.Code, ShouldEqual, 204)
-			})
-		})
-
-		Convey("When I try write the response with an unmarshallable object", func() {
-
-			w := httptest.NewRecorder()
-			c.OutputData = testmodel.NewUnmarshalableList()
-			writeHTTPResponse(w, c)
-
-			Convey("Then status code should not be 500", func() {
-				So(w.Code, ShouldEqual, http.StatusInternalServerError)
-			})
-		})
-
-		Convey("When I try write the response with an redirect object", func() {
-
-			w := httptest.NewRecorder()
-			c.Redirect = "http://toto.com"
-			writeHTTPResponse(w, c)
-
-			Convey("Then status code should not be 302", func() {
-				So(w.Code, ShouldEqual, http.StatusFound)
-			})
-
-			Convey("Then redirect header should be set", func() {
-				So(w.Header().Get("Location"), ShouldEqual, "http://toto.com")
-			})
-		})
-
-		Convey("When I try write the response with a message", func() {
-
-			w := httptest.NewRecorder()
-			c.AddMessage("coucou")
-			c.AddMessage("hello")
-
-			writeHTTPResponse(w, c)
-
-			Convey("Then status code should not be 204", func() {
-				So(w.Code, ShouldEqual, http.StatusNoContent)
-			})
-
-			Convey("Then redirect header should be set", func() {
-				So(w.Header().Get("X-Messages"), ShouldEqual, "coucou;hello")
-			})
-		})
-	})
-}
-
-func TestRestServerHelpers_writeHTTPError(t *testing.T) {
-
-	Convey("Given I create a http.ResponseWriter", t, func() {
-
-		w := httptest.NewRecorder()
-		req := elemental.NewRequest()
-		req.Headers.Set("Origin", "origin")
-
-		Convey("When I use writeHTTPError with a simple elemental.Error", func() {
-
-			writeHTTPError(w, req, elemental.NewError("title", "description", "subject", 42))
-
-			Convey("Then the status should be 42", func() {
-				So(w.Code, ShouldEqual, 42)
-			})
-
-			Convey("Then the body should be correct", func() {
-				So(w.Body.String(), ShouldResemble, "[{\"code\":42,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
-			})
-		})
-
-		Convey("When I use writeHTTPError with an elemental.Errors", func() {
-
-			errs := elemental.NewErrors(elemental.NewError("title", "description", "subject", 43))
-			writeHTTPError(w, req, errs)
-
-			Convey("Then the status should be 43", func() {
-				So(w.Code, ShouldEqual, 43)
-			})
-
-			Convey("Then the body should be correct", func() {
-				So(w.Body.String(), ShouldResemble, "[{\"code\":43,\"description\":\"description\",\"subject\":\"subject\",\"title\":\"title\",\"data\":null,\"trace\":\""+req.RequestID+"\"}]\n")
-			})
-		})
-	})
-}
 
 func TestRestServerHelpers_commonHeaders(t *testing.T) {
 
@@ -244,77 +49,115 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 	})
 }
 
-func TestRestServerHelpers_runHTTPDispatcher(t *testing.T) {
+func TestRestServerHelper_corsHandler(t *testing.T) {
 
-	Convey("Given I have a fake dispatcher", t, func() {
+	Convey("Given I call the corsHandler", t, func() {
 
-		called := 0
+		h := http.Header{}
+		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-		defer cancel()
+		corsHandler(w, &http.Request{Header: h})
 
-		ctx := NewContext()
-		ctx.Request = elemental.NewRequestWithContext(gctx)
+		Convey("Then the response should be correct", func() {
+			So(w.Code, ShouldEqual, http.StatusOK)
+		})
+	})
+}
 
-		Convey("When I call runHTTPDispatcher", func() {
+func TestRestServerHelper_notFoundHandler(t *testing.T) {
 
-			d := func() error {
-				called++
-				return nil
-			}
+	Convey("Given I call the notFoundHandler", t, func() {
 
-			runHTTPDispatcher(ctx, w, d, true)
+		h := http.Header{}
+		h.Add("Origin", "toto")
 
-			Convey("Then the code should be 204", func() {
-				So(w.Code, ShouldEqual, 204)
-			})
+		w := httptest.NewRecorder()
+		notFoundHandler(w, &http.Request{Header: h})
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(called, ShouldEqual, 1)
+		Convey("Then the response should be correct", func() {
+			So(w.Code, ShouldEqual, http.StatusNotFound)
+		})
+	})
+}
+
+func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
+
+	Convey("Given I have a response with a redirect", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(context.TODO())
+		r.Redirect = "https://la.bas"
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			writeHTTPResponse(w, r)
+
+			Convey("Then the should header Location should be set", func() {
+				So(w.Header().Get("location"), ShouldEqual, "https://la.bas")
 			})
 		})
+	})
 
-		Convey("When I call runHTTPDispatcher and it returns an error", func() {
+	Convey("Given I have a response with no data", t, func() {
 
-			d := func() error {
-				called++
-				return elemental.NewError("nop", "nope", "test", 42)
-			}
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(context.TODO())
 
-			runHTTPDispatcher(ctx, w, d, true)
+		r.StatusCode = http.StatusNoContent
 
-			Convey("Then the code should be 42", func() {
-				So(w.Code, ShouldEqual, 42)
+		Convey("When I call writeHTTPResponse", func() {
+
+			writeHTTPResponse(w, r)
+
+			Convey("Then the should headers should be correct", func() {
+				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
+				So(w.Header().Get("X-Messages"), ShouldEqual, "")
 			})
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(called, ShouldEqual, 1)
-			})
-		})
-
-		Convey("When I call runHTTPDispatcher and cancel the context", func() {
-
-			l := &sync.Mutex{}
-
-			d := func() error {
-				time.Sleep(2 * time.Second)
-				l.Lock()
-				called++
-				l.Unlock()
-				return nil
-			}
-
-			go func() { runHTTPDispatcher(ctx, nil, d, true) }()
-			time.Sleep(300 * time.Millisecond)
-			cancel()
-
-			Convey("Then the dispatcher should have been called once", func() {
-				l.Lock()
-				So(called, ShouldEqual, 0)
-				l.Unlock()
+			Convey("Then the code should correct", func() {
+				So(w.Code, ShouldEqual, http.StatusNoContent)
 			})
 		})
+	})
 
+	Convey("Given I have a response messages", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(context.TODO())
+
+		r.Messages = []string{"msg1", "msg2"}
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			writeHTTPResponse(w, r)
+
+			Convey("Then the should header message should be set", func() {
+				So(w.Header().Get("X-Messages"), ShouldEqual, "msg1;msg2")
+			})
+		})
+	})
+
+	Convey("Given I have a response with data", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(context.TODO())
+
+		l1 := testmodel.NewList()
+		l1.ID = "id"
+		l1.Name = "toto"
+
+		_ = r.Encode(l1)
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			writeHTTPResponse(w, r)
+
+			Convey("Then the body should be correct", func() {
+				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
+				So(w.Header().Get("X-Messages"), ShouldEqual, "")
+				So(w.Body.String(), ShouldEqual, string(r.Data))
+			})
+		})
 	})
 }

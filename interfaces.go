@@ -164,7 +164,6 @@ type Session interface {
 	GetClaimsMap() map[string]string
 	GetToken() string
 	TLSConnectionState() *tls.ConnectionState
-	NewChildSpan(string) opentracing.Span
 	Span() opentracing.Span
 	GetMetadata() interface{}
 	SetMetadata(interface{})
