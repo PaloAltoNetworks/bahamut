@@ -12,6 +12,24 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// internalWSSession interface that enhance what a Session can do.
+type internalWSSession interface {
+	Session
+	setRemoteAddress(string)
+	setTLSConnectionState(*tls.ConnectionState)
+	setConn(internalWSConn)
+	listen()
+	stop()
+}
+
+type internalWSConn interface {
+	ReadJSON(interface{}) error
+	WriteJSON(interface{}) error
+	Close() error
+}
+
+type unregisterFunc func(internalWSSession)
+
 type wsSession struct {
 	claims             []string
 	claimsMap          map[string]string
@@ -25,31 +43,27 @@ type wsSession struct {
 	startTime          time.Time
 	unregister         unregisterFunc
 	tlsConnectionState *tls.ConnectionState
-	span               opentracing.Span
 	context            context.Context
 	cancel             context.CancelFunc
 	closeCh            chan struct{}
 	closeLock          *sync.Mutex
 }
 
-func newWSSession(request *http.Request, config Config, unregister unregisterFunc, span opentracing.Span) *wsSession {
+func newWSSession(request *http.Request, config Config, unregister unregisterFunc) *wsSession {
 
 	id := uuid.Must(uuid.NewV4()).String()
-	span.SetTag("bahamut.session.id", id)
-
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsSession{
+		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
 		config:             config,
 		headers:            request.Header,
-		id:                 id,
 		parameters:         request.URL.Query(),
 		startTime:          time.Now(),
 		closeCh:            make(chan struct{}),
 		unregister:         unregister,
-		span:               span,
 		context:            ctx,
 		cancel:             cancel,
 		tlsConnectionState: request.TLS,
@@ -108,17 +122,13 @@ func (s *wsSession) SetMetadata(m interface{}) {
 }
 
 func (s *wsSession) GetParameter(key string) string {
+
 	return s.parameters.Get(key)
 }
 
 func (s *wsSession) Span() opentracing.Span {
 
-	return s.span
-}
-
-func (s *wsSession) NewChildSpan(name string) opentracing.Span {
-
-	return opentracing.StartSpan(name, opentracing.ChildOf(s.span.Context()))
+	return opentracing.SpanFromContext(s.context)
 }
 
 // setRemoteAddress implements the internalWSSession interface.

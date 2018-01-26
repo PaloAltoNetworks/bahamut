@@ -49,26 +49,20 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 
 			r = r.WithContext(srv.mainContext)
 
-			request, err := elemental.NewRequestFromHTTPRequest(r)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
 			session := newWSPushSession(r, config, srv.unregisterSession)
-			if err = srv.authSession(session); err != nil {
-				writeHTTPError(w, request, err)
+			if err := srv.authSession(session); err != nil {
+				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(), err))
 				return
 			}
 
-			if err = srv.initPushSession(session); err != nil {
-				writeHTTPError(w, request, err)
+			if err := srv.initPushSession(session); err != nil {
+				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(), err))
 				return
 			}
 
 			ws, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
-				writeHTTPError(w, request, err)
+				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(), err))
 				return
 			}
 

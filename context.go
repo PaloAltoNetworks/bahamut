@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -46,6 +47,7 @@ type Context struct {
 	// Metadata is contains random user defined metadata.
 	Metadata map[string]interface{}
 
+	ctx                context.Context
 	customMessages     []string
 	customMessagesLock *sync.Mutex
 	events             elemental.Events
@@ -65,6 +67,7 @@ func NewContext() *Context {
 		id:                 uuid.Must(uuid.NewV4()).String(),
 		events:             elemental.Events{},
 		customMessagesLock: &sync.Mutex{},
+		ctx:                context.Background(),
 	}
 }
 
@@ -179,13 +182,13 @@ func (c *Context) String() string {
 }
 
 // Done implements the context.Context interface.
-func (c *Context) Done() <-chan struct{} { return c.Request.Context().Done() }
+func (c *Context) Done() <-chan struct{} { return c.ctx.Done() }
 
 // Err implements the context.Context interface.
-func (c *Context) Err() error { return c.Request.Context().Err() }
+func (c *Context) Err() error { return c.ctx.Err() }
 
 // Deadline implements the context.Context interface.
-func (c *Context) Deadline() (time.Time, bool) { return c.Request.Context().Deadline() }
+func (c *Context) Deadline() (time.Time, bool) { return c.ctx.Deadline() }
 
 // Value implements the context.Context interface.
-func (c *Context) Value(key interface{}) interface{} { return c.Request.Context().Value(key) }
+func (c *Context) Value(key interface{}) interface{} { return c.ctx.Value(key) }

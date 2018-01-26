@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) error {
+func handleRecoveredPanic(ctx context.Context, r interface{}, response *elemental.Response, recover bool) error {
 
 	if r == nil {
 		return nil
@@ -28,28 +29,32 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) e
 	// Print the panic as it would have happened
 	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck
 
-	sp := req.NewChildSpan("bahamut.result.panic")
-	sp.SetTag("error", true)
-	sp.SetTag("panic", true)
-	sp.LogFields(
-		log.String("panic", fmt.Sprintf("%v", r)),
-		log.String("stack", st),
-	)
-	sp.Finish()
+	sp := opentracing.SpanFromContext(ctx)
+	if sp != nil {
+		sp.SetTag("error", true)
+		sp.SetTag("panic", true)
+		sp.LogFields(
+			log.String("panic", fmt.Sprintf("%v", r)),
+			log.String("stack", st),
+		)
+	}
 
 	if !recover {
+		if sp != nil {
+			sp.Finish()
+		}
 		panic(err)
 	}
 
 	return err
 }
 
-func processError(err error, request *elemental.Request, span opentracing.Span) elemental.Errors {
+func processError(ctx context.Context, err error, response *elemental.Response) (outError elemental.Errors) {
 
-	var outError elemental.Errors
+	span := opentracing.SpanFromContext(ctx)
 
-	spanID := request.RequestID
-	if stringer, ok := request.Span().(fmt.Stringer); ok {
+	spanID := "unknown"
+	if stringer, ok := span.(fmt.Stringer); ok {
 		spanID = strings.SplitN(stringer.String(), ":", 2)[0]
 	}
 
@@ -65,7 +70,9 @@ func processError(err error, request *elemental.Request, span opentracing.Span) 
 				eerr.Trace = spanID
 				outError = append(outError, eerr)
 			} else {
-				outError = append(outError, err)
+				cerr := elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)
+				cerr.Trace = spanID
+				outError = append(outError, cerr)
 			}
 		}
 
@@ -77,11 +84,9 @@ func processError(err error, request *elemental.Request, span opentracing.Span) 
 	}
 
 	if span != nil {
-		sp := opentracing.StartSpan("bahamut.result.error", opentracing.ChildOf(span.Context()))
-		sp.SetTag("error", true)
-		sp.SetTag("status.code", outError.Code())
-		sp.LogFields(log.Object("elemental.error", outError))
-		sp.Finish()
+		span.SetTag("error", true)
+		span.SetTag("status.code", outError.Code())
+		span.LogFields(log.Object("elemental.error", outError))
 	}
 
 	return outError

@@ -10,8 +10,6 @@ import (
 	"sync"
 
 	"github.com/aporeto-inc/elemental"
-
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsPushSession struct {
@@ -26,7 +24,7 @@ type wsPushSession struct {
 func newWSPushSession(request *http.Request, config Config, unregister unregisterFunc) *wsPushSession {
 
 	return &wsPushSession{
-		wsSession:         newWSSession(request, config, unregister, opentracing.StartSpan("bahamut.session.push")),
+		wsSession:         newWSSession(request, config, unregister),
 		events:            make(chan *elemental.Event),
 		filters:           make(chan *elemental.PushFilter),
 		currentFilterLock: &sync.Mutex{},

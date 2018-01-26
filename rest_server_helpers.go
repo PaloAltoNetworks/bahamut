@@ -1,19 +1,19 @@
 package bahamut
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/aporeto-inc/elemental"
-	"github.com/opentracing/opentracing-go/log"
+)
+
+// Various common errors
+var (
+	ErrNotFound  = elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound)
+	ErrRateLimit = elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests)
 )
 
 func setCommonHeader(w http.ResponseWriter, origin string) {
@@ -33,25 +33,38 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func writeHTTPError(w http.ResponseWriter, request *elemental.Request, err error) {
-
-	outError := processError(err, request, request.Span())
-
-	setCommonHeader(w, request.Headers.Get("Origin"))
-	w.WriteHeader(outError.Code())
-
-	if e := json.NewEncoder(w).Encode(&outError); e != nil {
-		zap.L().Error("Unable to encode error", zap.Error(e))
-	}
-}
-
 func corsHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w, r.Header.Get("Origin"))
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	writeHTTPError(w, fakeElementalRequest(r), elemental.NewError("Not Found", "Unable to find the requested resource", "bahamut", http.StatusNotFound))
+
+	writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(), ErrNotFound))
+}
+
+// writeHTTPResponse writes the response into the given http.ResponseWriter.
+func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
+
+	if r.Redirect != "" {
+		w.Header().Set("Location", r.Redirect)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
+	w.Header().Set("X-Count-Total", strconv.Itoa(r.Total))
+
+	if len(r.Messages) > 0 {
+		w.Header().Set("X-Messages", strings.Join(r.Messages, ";"))
+	}
+
+	w.WriteHeader(r.StatusCode)
+
+	if r.Data != nil {
+		if _, err := w.Write(r.Data); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certificate {
@@ -78,104 +91,4 @@ func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certi
 	}
 
 	return out
-}
-
-func writeHTTPResponse(w http.ResponseWriter, c *Context) {
-
-	if c.Redirect != "" {
-		w.Header().Set("Location", c.Redirect)
-		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	var fields []log.Field
-	span := c.Request.NewChildSpan("bahamut.result.response")
-	defer func() {
-		span.LogFields(fields...)
-		span.Finish()
-	}()
-
-	setCommonHeader(w, c.Request.Headers.Get("Origin"))
-
-	if c.StatusCode == 0 {
-		switch c.Request.Operation {
-		case elemental.OperationCreate:
-			c.StatusCode = http.StatusCreated
-		case elemental.OperationInfo:
-			c.StatusCode = http.StatusNoContent
-		default:
-			c.StatusCode = http.StatusOK
-		}
-	}
-
-	if c.Request.Operation == elemental.OperationRetrieveMany || c.Request.Operation == elemental.OperationInfo {
-		w.Header().Set("X-Count-Total", strconv.Itoa(c.CountTotal))
-		fields = append(fields, (log.Int("count-total", c.CountTotal)))
-	}
-
-	if msgs := c.messages(); len(msgs) > 0 {
-		w.Header().Set("X-Messages", strings.Join(msgs, ";"))
-		fields = append(fields, (log.Object("messages", msgs)))
-	}
-
-	buffer := &bytes.Buffer{}
-	if c.OutputData != nil {
-		if err := json.NewEncoder(buffer).Encode(c.OutputData); err != nil {
-			writeHTTPError(w, c.Request, err)
-			return
-		}
-		fields = append(fields, (log.Object("response", buffer.String())))
-	} else {
-		c.StatusCode = http.StatusNoContent
-	}
-
-	fields = append(fields, (log.Int("status.code", c.StatusCode)))
-	w.WriteHeader(c.StatusCode)
-
-	if buffer != nil {
-		if _, err := io.Copy(w, buffer); err != nil {
-			writeHTTPError(w, c.Request, err)
-			return
-		}
-	}
-}
-
-func fakeElementalRequest(req *http.Request) *elemental.Request {
-
-	r := elemental.NewRequest()
-	r.Headers.Set("Origin", req.Header.Get("Origin"))
-
-	return r
-}
-
-func handleEventualPanicHTTP(w http.ResponseWriter, request *elemental.Request, c chan error, reco bool) {
-
-	if err := handleRecoveredPanic(recover(), request, reco); err != nil {
-		c <- err
-	}
-}
-
-func runHTTPDispatcher(ctx *Context, w http.ResponseWriter, d func() error, recover bool) {
-
-	e := make(chan error)
-
-	go func() {
-		defer handleEventualPanicHTTP(w, ctx.Request, e, recover)
-		e <- d()
-	}()
-
-	select {
-	case <-ctx.Done():
-		return
-	case err := <-e:
-		if err != nil {
-			if _, ok := err.(errMockPanicRequested); ok {
-				panic(err.Error())
-			}
-
-			writeHTTPError(w, ctx.Request, err)
-			return
-		}
-		writeHTTPResponse(w, ctx)
-	}
 }

@@ -8,19 +8,12 @@ import (
 )
 
 func audit(auditer Auditer, ctx *Context, err error) {
+
 	if auditer == nil {
 		return
 	}
 
-	// TODO: this is not very optimized as we do processError twice in the flow.
-	// one here, and one after the dispatcher returns.
-	// We need to refactor the code so we can do this only once.
-	var e error
-	if err != nil {
-		e = processError(err, ctx.Request, nil)
-	}
-
-	auditer.Audit(ctx, e)
+	auditer.Audit(ctx, err)
 }
 
 func notImplementedErr(request *elemental.Request) error {
@@ -438,6 +431,7 @@ func dispatchInfoOperation(
 	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
+	pusher eventPusherFunc,
 	auditer Auditer,
 ) (err error) {
 

@@ -1410,9 +1410,10 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, auditer)
+		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer)
 
 		expectedNbCalls := 1
 
@@ -1437,9 +1438,10 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, auditer)
+		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -1464,12 +1466,13 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, auditer)
+		err := dispatchInfoOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1499,12 +1502,13 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchInfoOperation(ctx, processorFinder, factory, authenticators, nil, auditer)
+		err := dispatchInfoOperation(ctx, processorFinder, factory, authenticators, nil, pusher.Push, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1543,12 +1547,13 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &FakeAuditer{}
+		pusher := &FakePusher{}
 
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchInfoOperation(ctx, processorFinder, factory, authenticators, authorizers, auditer)
+		err := dispatchInfoOperation(ctx, processorFinder, factory, authenticators, authorizers, pusher.Push, auditer)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
