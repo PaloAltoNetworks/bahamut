@@ -122,8 +122,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should be set", func() {
-				So(response.Count, ShouldEqual, 42)
+			Convey("Then response.Total should be set", func() {
+				So(response.Total, ShouldEqual, 42)
 			})
 		})
 
@@ -133,8 +133,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should be set", func() {
-				So(response.Count, ShouldEqual, 42)
+			Convey("Then response.Total should be set", func() {
+				So(response.Total, ShouldEqual, 42)
 			})
 		})
 
@@ -144,8 +144,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should not be set", func() {
-				So(response.Count, ShouldEqual, 0)
+			Convey("Then response.Total should not be set", func() {
+				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
@@ -155,8 +155,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should not be set", func() {
-				So(response.Count, ShouldEqual, 0)
+			Convey("Then response.Total should not be set", func() {
+				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
@@ -166,8 +166,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should not be set", func() {
-				So(response.Count, ShouldEqual, 0)
+			Convey("Then response.Total should not be set", func() {
+				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
@@ -177,8 +177,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response)
 
-			Convey("Then response.Count should not be set", func() {
-				So(response.Count, ShouldEqual, 0)
+			Convey("Then response.Total should not be set", func() {
+				So(response.Total, ShouldEqual, 0)
 			})
 		})
 	})
