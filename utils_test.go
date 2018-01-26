@@ -27,7 +27,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(recover(), elemental.NewResponse(context.TODO()), true)
+				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), true)
 				wg.Done()
 			}()
 			panic("this is a panic!")
@@ -44,7 +44,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(recover(), elemental.NewResponse(context.TODO()), false) // nolint
+				handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), false) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}
@@ -62,7 +62,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(recover(), elemental.NewResponse(context.TODO()), true)
+				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), true)
 				wg.Done()
 			}()
 			func() {}()
@@ -81,12 +81,12 @@ func TestUtils_processError(t *testing.T) {
 	Convey("Given I have an error and response with a span", t, func() {
 
 		_, ctx := opentracing.StartSpanFromContext(context.Background(), "test")
-		resp := elemental.NewResponse(ctx)
+		resp := elemental.NewResponse()
 
 		Convey("When I call processError on standard error", func() {
 
 			errIn := errors.New("boom")
-			errOut := processError(errIn, resp)
+			errOut := processError(ctx, errIn, resp)
 
 			Convey("Then errOut should be correct", func() {
 				So(errOut, ShouldHaveSameTypeAs, elemental.Errors{})
@@ -98,7 +98,7 @@ func TestUtils_processError(t *testing.T) {
 		Convey("When I call processError on elemental.Error error", func() {
 
 			errIn := elemental.NewError("boom", "blang", "sub", http.StatusNotFound)
-			errOut := processError(errIn, resp)
+			errOut := processError(ctx, errIn, resp)
 
 			Convey("Then errOut should be correct", func() {
 				So(errOut, ShouldHaveSameTypeAs, elemental.Errors{})
@@ -115,7 +115,7 @@ func TestUtils_processError(t *testing.T) {
 				errors.New("kaboom"),
 			)
 
-			errOut := processError(errIn, resp)
+			errOut := processError(ctx, errIn, resp)
 
 			Convey("Then errOut should be correct", func() {
 				So(errOut, ShouldHaveSameTypeAs, elemental.Errors{})

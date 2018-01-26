@@ -140,12 +140,12 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if a.config.RateLimiting.RateLimiter != nil {
 		limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
 		if err != nil {
-			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)))
+			writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(), elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)))
 			return
 		}
 
 		if limited {
-			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), ErrRateLimit))
+			writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(), ErrRateLimit))
 			return
 		}
 	}
@@ -249,13 +249,16 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req)
 		if err != nil {
-			writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(req.Context()), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)))
+			writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(), elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)))
 			return
 		}
 
-		traceRequest(request)
-		defer finishTracing(request)
+		ctx := traceRequest(req.Context(), request)
+		defer finishTracing(ctx)
 
-		writeHTTPResponse(w, handler(a.config, request, a.processorFinder, a.pusher))
+		bctx := NewContextWithRequest(request)
+		bctx.ctx = ctx
+
+		writeHTTPResponse(w, handler(bctx, a.config, request, a.processorFinder, a.pusher))
 	}
 }

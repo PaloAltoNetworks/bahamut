@@ -40,7 +40,7 @@ func corsHandler(w http.ResponseWriter, r *http.Request) {
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
-	writeHTTPResponse(w, makeErrorResponse(elemental.NewResponse(r.Context()), ErrNotFound))
+	writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(), ErrNotFound))
 }
 
 // writeHTTPResponse writes the response into the given http.ResponseWriter.

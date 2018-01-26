@@ -42,7 +42,7 @@ func (s *wsAPISession) String() string {
 func (s *wsAPISession) read() {
 
 	for {
-		request := elemental.NewRequestWithContext(s.context)
+		request := elemental.NewRequest()
 		request.ClientIP = s.remoteAddr
 
 		if err := s.conn.ReadJSON(request); err != nil {
@@ -51,9 +51,10 @@ func (s *wsAPISession) read() {
 				return
 			}
 
-			response := elemental.NewResponse(request.Context())
+			response := elemental.NewResponse()
 
 			s.responses <- makeErrorResponse(
+				s.context,
 				response,
 				elemental.NewError(
 					"Bad Request",
@@ -101,9 +102,6 @@ func (s *wsAPISession) listen() {
 		select {
 		case request := <-s.requests:
 
-			traceRequest(request)
-			defer finishTracing(request)
-
 			// We backport the token of the session into the request if we don't have an explicit one given in the request.
 			if request.Password == "" {
 				if t := s.GetToken(); t != "" {
@@ -112,31 +110,34 @@ func (s *wsAPISession) listen() {
 				}
 			}
 
+			bctx := NewContextWithRequest(request)
+			bctx.ctx = s.context
+
 			// And we set the TLSConnectionState
 			request.TLSConnectionState = s.TLSConnectionState()
 
 			switch request.Operation {
 
 			case elemental.OperationRetrieveMany:
-				s.responses <- handleRetrieveMany(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleRetrieveMany(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationRetrieve:
-				s.responses <- handleRetrieve(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleRetrieve(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationCreate:
-				s.responses <- handleCreate(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleCreate(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationUpdate:
-				s.responses <- handleUpdate(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleUpdate(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationDelete:
-				s.responses <- handleDelete(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleDelete(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationInfo:
-				s.responses <- handleInfo(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleInfo(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationPatch:
-				s.responses <- handlePatch(s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handlePatch(bctx, s.config, request, s.processorFinder, s.pusherFunc)
 			}
 
 		case <-s.closeCh:

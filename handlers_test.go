@@ -23,9 +23,10 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		defer cancel()
 
 		ctx := NewContext()
-		ctx.Request = elemental.NewRequestWithContext(gctx)
+		ctx.Request = elemental.NewRequest()
+		ctx.ctx = gctx
 
-		response := elemental.NewResponse(gctx)
+		response := elemental.NewResponse()
 
 		Convey("When I call runDispatcher", func() {
 
@@ -94,7 +95,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a redirect and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse(context.TODO())
+		response := elemental.NewResponse()
 
 		ctx.Redirect = "http://ici"
 
@@ -111,7 +112,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a a count and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse(context.TODO())
+		response := elemental.NewResponse()
 
 		ctx.CountTotal = 42
 
@@ -185,7 +186,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a status code set to 0 and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse(context.TODO())
+		response := elemental.NewResponse()
 		ctx.OutputData = []string{}
 		ctx.StatusCode = 0
 
@@ -239,7 +240,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with messages and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse(context.TODO())
+		response := elemental.NewResponse()
 		ctx.AddMessage("hello world")
 
 		Convey("When I call makeResponse", func() {
@@ -255,7 +256,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with unmarshalable data and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse(context.TODO())
+		response := elemental.NewResponse()
 		ctx.OutputData = testmodel.NewUnmarshalableList()
 
 		Convey("When I call makeResponse", func() {

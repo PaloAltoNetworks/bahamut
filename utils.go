@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func handleRecoveredPanic(r interface{}, response *elemental.Response, recover bool) error {
+func handleRecoveredPanic(ctx context.Context, r interface{}, response *elemental.Response, recover bool) error {
 
 	if r == nil {
 		return nil
@@ -28,7 +29,7 @@ func handleRecoveredPanic(r interface{}, response *elemental.Response, recover b
 	// Print the panic as it would have happened
 	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck
 
-	sp := opentracing.SpanFromContext(response.Context())
+	sp := opentracing.SpanFromContext(ctx)
 	if sp != nil {
 		sp.SetTag("error", true)
 		sp.SetTag("panic", true)
@@ -48,9 +49,9 @@ func handleRecoveredPanic(r interface{}, response *elemental.Response, recover b
 	return err
 }
 
-func processError(err error, response *elemental.Response) (outError elemental.Errors) {
+func processError(ctx context.Context, err error, response *elemental.Response) (outError elemental.Errors) {
 
-	span := opentracing.SpanFromContext(response.Context())
+	span := opentracing.SpanFromContext(ctx)
 
 	spanID := "unknown"
 	if stringer, ok := span.(fmt.Stringer); ok {

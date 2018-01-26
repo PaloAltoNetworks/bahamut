@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/opentracing/opentracing-go"
@@ -10,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(Config, *elemental.Request, processorFinderFunc, eventPusherFunc) *elemental.Response
+type handlerFunc func(*Context, Config, *elemental.Request, processorFinderFunc, eventPusherFunc) *elemental.Response
 
 func makeResponse(c *Context, response *elemental.Response) *elemental.Response {
 
@@ -21,7 +22,7 @@ func makeResponse(c *Context, response *elemental.Response) *elemental.Response 
 
 	var fields []log.Field
 	defer func() {
-		span := opentracing.SpanFromContext(response.Context())
+		span := opentracing.SpanFromContext(c)
 		if span != nil {
 			span.LogFields(fields...)
 		}
@@ -63,9 +64,9 @@ func makeResponse(c *Context, response *elemental.Response) *elemental.Response 
 	return response
 }
 
-func makeErrorResponse(response *elemental.Response, err error) *elemental.Response {
+func makeErrorResponse(ctx context.Context, response *elemental.Response, err error) *elemental.Response {
 
-	outError := processError(err, response)
+	outError := processError(ctx, err, response)
 
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {
@@ -75,9 +76,9 @@ func makeErrorResponse(response *elemental.Response, err error) *elemental.Respo
 	return response
 }
 
-func handleEventualPanic(response *elemental.Response, c chan error, reco bool) {
+func handleEventualPanic(ctx context.Context, response *elemental.Response, c chan error, reco bool) {
 
-	if err := handleRecoveredPanic(recover(), response, reco); err != nil {
+	if err := handleRecoveredPanic(ctx, recover(), response, reco); err != nil {
 		c <- err
 	}
 }
@@ -87,7 +88,7 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 	e := make(chan error)
 
 	go func() {
-		defer handleEventualPanic(r, e, recover)
+		defer handleEventualPanic(ctx, r, e, recover)
 		e <- d()
 	}()
 
@@ -101,16 +102,16 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 			if _, ok := err.(errMockPanicRequested); ok {
 				panic(err.Error())
 			}
-			return makeErrorResponse(r, err)
+			return makeErrorResponse(ctx, r, err)
 		}
 
 		return makeResponse(ctx, r)
 	}
 }
 
-func handleRetrieveMany(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieveMany(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -119,6 +120,7 @@ func handleRetrieveMany(config Config, request *elemental.Request, processorFind
 
 	if !elemental.IsRetrieveManyAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -128,8 +130,6 @@ func handleRetrieveMany(config Config, request *elemental.Request, processorFind
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -149,12 +149,13 @@ func handleRetrieveMany(config Config, request *elemental.Request, processorFind
 	)
 }
 
-func handleRetrieve(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieve(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	if !elemental.IsRetrieveAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -163,8 +164,6 @@ func handleRetrieve(config Config, request *elemental.Request, processorFinder p
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -184,9 +183,9 @@ func handleRetrieve(config Config, request *elemental.Request, processorFinder p
 	)
 }
 
-func handleCreate(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleCreate(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -195,6 +194,7 @@ func handleCreate(config Config, request *elemental.Request, processorFinder pro
 
 	if !elemental.IsCreateAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -203,8 +203,6 @@ func handleCreate(config Config, request *elemental.Request, processorFinder pro
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -226,12 +224,13 @@ func handleCreate(config Config, request *elemental.Request, processorFinder pro
 	)
 }
 
-func handleUpdate(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleUpdate(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	if !elemental.IsUpdateAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -240,8 +239,6 @@ func handleUpdate(config Config, request *elemental.Request, processorFinder pro
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -263,12 +260,13 @@ func handleUpdate(config Config, request *elemental.Request, processorFinder pro
 	)
 }
 
-func handleDelete(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleDelete(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	if !elemental.IsDeleteAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity) || !request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -277,8 +275,6 @@ func handleDelete(config Config, request *elemental.Request, processorFinder pro
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -300,9 +296,9 @@ func handleDelete(config Config, request *elemental.Request, processorFinder pro
 	)
 }
 
-func handleInfo(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleInfo(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -311,6 +307,7 @@ func handleInfo(config Config, request *elemental.Request, processorFinder proce
 
 	if !elemental.IsInfoAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -319,8 +316,6 @@ func handleInfo(config Config, request *elemental.Request, processorFinder proce
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,
@@ -340,9 +335,9 @@ func handleInfo(config Config, request *elemental.Request, processorFinder proce
 	)
 }
 
-func handlePatch(config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handlePatch(ctx *Context, config Config, request *elemental.Request, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(request.Context())
+	response = elemental.NewResponse()
 
 	parentIdentity := request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -351,6 +346,7 @@ func handlePatch(config Config, request *elemental.Request, processorFinder proc
 
 	if !elemental.IsPatchAllowed(config.Model.RelationshipsRegistry[request.Version], request.Identity, parentIdentity) {
 		return makeErrorResponse(
+			ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -359,8 +355,6 @@ func handlePatch(config Config, request *elemental.Request, processorFinder proc
 			),
 		)
 	}
-
-	ctx := NewContextWithRequest(request)
 
 	return runDispatcher(
 		ctx,

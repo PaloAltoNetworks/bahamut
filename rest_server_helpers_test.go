@@ -1,7 +1,6 @@
 package bahamut
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -86,7 +85,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response with a redirect", t, func() {
 
 		w := httptest.NewRecorder()
-		r := elemental.NewResponse(context.TODO())
+		r := elemental.NewResponse()
 		r.Redirect = "https://la.bas"
 
 		Convey("When I call writeHTTPResponse", func() {
@@ -102,7 +101,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response with no data", t, func() {
 
 		w := httptest.NewRecorder()
-		r := elemental.NewResponse(context.TODO())
+		r := elemental.NewResponse()
 
 		r.StatusCode = http.StatusNoContent
 
@@ -124,7 +123,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response messages", t, func() {
 
 		w := httptest.NewRecorder()
-		r := elemental.NewResponse(context.TODO())
+		r := elemental.NewResponse()
 
 		r.Messages = []string{"msg1", "msg2"}
 
@@ -141,7 +140,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response with data", t, func() {
 
 		w := httptest.NewRecorder()
-		r := elemental.NewResponse(context.TODO())
+		r := elemental.NewResponse()
 
 		l1 := testmodel.NewList()
 		l1.ID = "id"
