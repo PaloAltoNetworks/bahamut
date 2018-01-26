@@ -92,10 +92,16 @@ func (c *Context) SetClaims(claims []string) {
 }
 
 // GetClaims implements elemental.ClaimsHolder
-func (c *Context) GetClaims() []string { return c.claims }
+func (c *Context) GetClaims() []string {
+
+	return c.claims
+}
 
 // GetClaimsMap returns a list of claims as map.
-func (c *Context) GetClaimsMap() map[string]string { return c.claimsMap }
+func (c *Context) GetClaimsMap() map[string]string {
+
+	return c.claimsMap
+}
 
 // Identifier returns the unique identifier of the context.
 func (c *Context) Identifier() string {

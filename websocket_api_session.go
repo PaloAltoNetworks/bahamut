@@ -120,25 +120,25 @@ func (s *wsAPISession) listen() {
 			switch request.Operation {
 
 			case elemental.OperationRetrieveMany:
-				s.responses <- handleRetrieveMany(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleRetrieveMany(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationRetrieve:
-				s.responses <- handleRetrieve(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleRetrieve(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationCreate:
-				s.responses <- handleCreate(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleCreate(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationUpdate:
-				s.responses <- handleUpdate(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleUpdate(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationDelete:
-				s.responses <- handleDelete(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleDelete(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationInfo:
-				s.responses <- handleInfo(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handleInfo(bctx, s.config, s.processorFinder, s.pusherFunc)
 
 			case elemental.OperationPatch:
-				s.responses <- handlePatch(bctx, s.config, request, s.processorFinder, s.pusherFunc)
+				s.responses <- handlePatch(bctx, s.config, s.processorFinder, s.pusherFunc)
 			}
 			finishTracing(ctx)
 

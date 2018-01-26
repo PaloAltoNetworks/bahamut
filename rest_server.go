@@ -259,6 +259,6 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		bctx := NewContextWithRequest(request)
 		bctx.ctx = ctx
 
-		writeHTTPResponse(w, handler(bctx, a.config, request, a.processorFinder, a.pusher))
+		writeHTTPResponse(w, handler(bctx, a.config, a.processorFinder, a.pusher))
 	}
 }
