@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type wsAPISession struct {
@@ -102,7 +103,7 @@ func (s *wsAPISession) listen() {
 		select {
 		case request := <-s.requests:
 
-			ctx := traceRequest(s.context, request)
+			ctx := traceRequest(s.context, request, opentracing.GlobalTracer())
 			bctx := NewContextWithRequest(request)
 			bctx.ctx = ctx
 

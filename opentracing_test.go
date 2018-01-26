@@ -1,14 +1,71 @@
 package bahamut
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 
-	"github.com/aporeto-inc/elemental/test/model"
-
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type testSpanContext struct {
+}
+
+func (t *testSpanContext) ForeachBaggageItem(handler func(k, v string) bool) {}
+
+type testTracer struct {
+	currentSpan *testSpan
+}
+
+func (t *testTracer) StartSpan(string, ...opentracing.StartSpanOption) opentracing.Span {
+	if t.currentSpan == nil {
+		t.currentSpan = newTestSpan(t)
+	}
+	return t.currentSpan
+}
+func (t *testTracer) Inject(opentracing.SpanContext, interface{}, interface{}) error { return nil }
+func (t *testTracer) Extract(interface{}, interface{}) (opentracing.SpanContext, error) {
+	return &testSpanContext{}, nil
+}
+
+type testSpan struct {
+	finished bool
+	tracer   opentracing.Tracer
+	tags     map[string]interface{}
+	fields   []log.Field
+}
+
+func newTestSpan(tracer opentracing.Tracer) *testSpan {
+	return &testSpan{
+		tracer: tracer,
+		tags:   map[string]interface{}{},
+		fields: []log.Field{},
+	}
+}
+func (s *testSpan) Finish()                                                { s.finished = true }
+func (s *testSpan) FinishWithOptions(opts opentracing.FinishOptions)       { s.finished = true }
+func (s *testSpan) Context() opentracing.SpanContext                       { return &testSpanContext{} }
+func (s *testSpan) SetOperationName(operationName string) opentracing.Span { return s }
+func (s *testSpan) SetTag(key string, value interface{}) opentracing.Span {
+	s.tags[key] = value
+	return s
+}
+func (s *testSpan) LogFields(fields ...log.Field) {
+	s.fields = append(s.fields, fields...)
+}
+func (s *testSpan) LogKV(alternatingKeyValues ...interface{})                   {}
+func (s *testSpan) SetBaggageItem(restrictedKey, value string) opentracing.Span { return s }
+func (s *testSpan) BaggageItem(restrictedKey string) string                     { return "" }
+func (s *testSpan) Tracer() opentracing.Tracer                                  { return s.tracer }
+func (s *testSpan) LogEvent(event string)                                       {}
+func (s *testSpan) LogEventWithPayload(event string, payload interface{})       {}
+func (s *testSpan) Log(data opentracing.LogData)                                {}
 
 func TestTracing_extractClaims(t *testing.T) {
 
@@ -166,4 +223,118 @@ func TestTracing_tracingName(t *testing.T) {
 		})
 	})
 
+}
+
+func TestTracing_traceRequest(t *testing.T) {
+
+	Convey("Given I have a request", t, func() {
+
+		req := elemental.NewRequest()
+		req.Parameters = url.Values{
+			"token": {"1", "2"},
+		}
+		req.Headers = http.Header{
+			"authorization": {"3", "4"},
+		}
+		req.Version = 2
+		req.Identity = testmodel.UserIdentity
+		req.Recursive = true
+		req.Operation = elemental.OperationCreate
+		req.OverrideProtection = true
+		req.ExternalTrackingID = "wee"
+		req.ExternalTrackingType = "yeah"
+		req.Namespace = "/a"
+		req.ObjectID = "id"
+		req.ParentID = "pid"
+		req.ParentIdentity = testmodel.TaskIdentity
+		req.Page = 3
+		req.PageSize = 30
+		req.ClientIP = "127.0.0.1"
+		req.Order = []string{"a", "b"}
+		req.Data = []byte("the data")
+
+		tracer := &testTracer{}
+		ts := newTestSpan(tracer)
+
+		ctx := opentracing.ContextWithSpan(context.Background(), ts)
+
+		Convey("When I call traceRequest with no tracer", func() {
+			tctx := traceRequest(ctx, req, nil)
+
+			Convey("Then the returned context should should be the same", func() {
+				So(tctx, ShouldEqual, ctx)
+			})
+		})
+
+		Convey("When I call traceRequest", func() {
+
+			tctx := traceRequest(ctx, req, tracer)
+
+			span := opentracing.SpanFromContext(tctx).(*testSpan)
+
+			Convey("Then the new context should be spanned", func() {
+				So(span, ShouldNotBeNil)
+			})
+
+			Convey("Then the span fields should be correct", func() {
+				So(len(span.fields), ShouldEqual, 8)
+				So(span.fields[0].String(), ShouldEqual, "req.page.number:3")
+				So(span.fields[1].String(), ShouldEqual, "req.page.size:30")
+				So(span.fields[2].String(), ShouldEqual, fmt.Sprintf("req.headers:map[authorization:%s]", snipSlice))
+				So(span.fields[3].String(), ShouldEqual, "req.claims:{}")
+				So(span.fields[4].String(), ShouldEqual, "req.client_ip:127.0.0.1")
+				So(span.fields[5].String(), ShouldEqual, fmt.Sprintf("req.parameters:map[token:%s]", snipSlice))
+				So(span.fields[6].String(), ShouldEqual, "req.order_by:[a b]")
+				So(span.fields[7].String(), ShouldEqual, "req.payload:the data")
+			})
+
+			Convey("Then the span tags should be correct", func() {
+				So(len(span.tags), ShouldEqual, 12)
+				So(span.tags["req.parent.identity"], ShouldEqual, "task")
+				So(span.tags["req.id"], ShouldEqual, req.RequestID)
+				So(span.tags["req.recursive"], ShouldBeTrue)
+				So(span.tags["req.external_tracking_id"], ShouldEqual, "wee")
+				So(span.tags["req.external_tracking_type"], ShouldEqual, "yeah")
+				So(span.tags["req.namespace"], ShouldEqual, "/a")
+				So(span.tags["req.object.id"], ShouldEqual, "id")
+				So(span.tags["req.api_version"], ShouldEqual, 2)
+				So(span.tags["req.identity"], ShouldEqual, "user")
+				So(span.tags["req.operation"], ShouldEqual, "create")
+				So(span.tags["req.override_protection"], ShouldBeTrue)
+				So(span.tags["req.parent.id"], ShouldEqual, "pid")
+			})
+		})
+	})
+}
+
+func TestTracing_finishTracing(t *testing.T) {
+
+	Convey("Given I have a context with a span", t, func() {
+
+		tracer := &testTracer{}
+		ts := newTestSpan(tracer)
+
+		ctx := opentracing.ContextWithSpan(context.Background(), ts)
+
+		Convey("When I call finishTracing", func() {
+
+			finishTracing(ctx)
+
+			Convey("Then my span should be finished", func() {
+				So(ts.finished, ShouldBeTrue)
+			})
+		})
+	})
+
+	Convey("Given I have a context with no span", t, func() {
+
+		ctx := context.Background()
+
+		Convey("When I call finishTracing", func() {
+
+			Convey("Then it should not panic", func() {
+				So(func() { finishTracing(ctx) }, ShouldNotPanic)
+			})
+		})
+	})
 }

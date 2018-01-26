@@ -62,9 +62,8 @@ func tracingName(r *elemental.Request) string {
 }
 
 // StartTracing starts tracing the request.
-func traceRequest(ctx context.Context, r *elemental.Request) context.Context {
+func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.Tracer) context.Context {
 
-	tracer := opentracing.GlobalTracer()
 	if tracer == nil {
 		return ctx
 	}
@@ -75,8 +74,8 @@ func traceRequest(ctx context.Context, r *elemental.Request) context.Context {
 	} else {
 		spanContext, _ = tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(r.TrackingData))
 	}
-
-	span, trackingCtx := opentracing.StartSpanFromContext(ctx, tracingName(r), ext.RPCServerOption(spanContext))
+	span := tracer.StartSpan(tracingName(r), ext.RPCServerOption(spanContext))
+	trackingCtx := opentracing.ContextWithSpan(ctx, span)
 
 	// Remove sensitive information from parameters.
 	safeParameters := url.Values{}

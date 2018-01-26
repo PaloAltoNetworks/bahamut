@@ -12,6 +12,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
+
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 	"go.uber.org/zap"
@@ -253,7 +255,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := traceRequest(req.Context(), request)
+		ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
 		defer finishTracing(ctx)
 
 		bctx := NewContextWithRequest(request)
