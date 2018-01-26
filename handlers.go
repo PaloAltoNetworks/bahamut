@@ -350,7 +350,7 @@ func handlePatch(ctx *Context, config Config, processorFinder processorFinderFun
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Patch operation not allowed on "+ctx.Request.Identity.Name, "bahamut",
+				"Patch operation not allowed on "+ctx.Request.Identity.Category, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
