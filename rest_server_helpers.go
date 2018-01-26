@@ -89,10 +89,8 @@ func writeHTTPResponse(w http.ResponseWriter, c *Context) {
 	}
 
 	var fields []log.Field
-	span := c.Request.NewChildSpan("bahamut.result.response")
 	defer func() {
-		span.LogFields(fields...)
-		span.Finish()
+		c.Request.Span().LogFields(fields...)
 	}()
 
 	setCommonHeader(w, c.Request.Headers.Get("Origin"))

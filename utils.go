@@ -28,16 +28,16 @@ func handleRecoveredPanic(r interface{}, req *elemental.Request, recover bool) e
 	// Print the panic as it would have happened
 	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck
 
-	sp := req.NewChildSpan("bahamut.result.panic")
+	sp := req.Span()
 	sp.SetTag("error", true)
 	sp.SetTag("panic", true)
 	sp.LogFields(
 		log.String("panic", fmt.Sprintf("%v", r)),
 		log.String("stack", st),
 	)
-	sp.Finish()
 
 	if !recover {
+		sp.Finish()
 		panic(err)
 	}
 
