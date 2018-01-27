@@ -19,6 +19,16 @@ type HealthServerFunc func() error
 // A Config represents the configuration of Bahamut.
 type Config struct {
 
+	// General configuration.
+	General struct {
+
+		// Name is the general name of the service backed by bahamut.
+		Name string
+
+		// Set this to false to disable panic recovery.
+		PanicRecoveryDisabled bool
+	}
+
 	// ReSTServer contains the configuration for the ReST Server.
 	ReSTServer struct {
 
@@ -45,9 +55,6 @@ type Config struct {
 
 		// CustomRootHandlerFunc defines a custom handler func for / API.
 		CustomRootHandlerFunc http.HandlerFunc
-
-		// Set this to false to disable panic recovery.
-		PanicRecoveryDisabled bool
 	}
 
 	// WebSocketServer contains the configuration for the WebSocket Server.
@@ -72,9 +79,6 @@ type Config struct {
 
 		// PushDisabled defines if the Push system should be disabled.
 		PushDisabled bool
-
-		// Set this to false to disable panic recovery.
-		PanicRecoveryDisabled bool
 	}
 
 	MockServer struct {

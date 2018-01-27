@@ -145,7 +145,7 @@ func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFi
 				config.Security.Auditer,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -179,7 +179,7 @@ func handleRetrieve(ctx *Context, config Config, processorFinder processorFinder
 				config.Security.Auditer,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -220,7 +220,7 @@ func handleCreate(ctx *Context, config Config, processorFinder processorFinderFu
 				config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -256,7 +256,7 @@ func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFu
 				config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -292,7 +292,7 @@ func handleDelete(ctx *Context, config Config, processorFinder processorFinderFu
 				config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -331,7 +331,7 @@ func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc
 				config.Security.Auditer,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
 
@@ -372,6 +372,6 @@ func handlePatch(ctx *Context, config Config, processorFinder processorFinderFun
 				config.Model.ReadOnlyExcludedIdentities,
 			)
 		},
-		config.WebSocketServer.PanicRecoveryDisabled,
+		config.General.PanicRecoveryDisabled,
 	)
 }
