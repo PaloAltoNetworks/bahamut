@@ -30,8 +30,8 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 	}
 }
 
-// InstallSIGINTHanler installs signal handlers for graceful shutdown.
-func InstallSIGINTHanler(cancelFunc context.CancelFunc) {
+// InstallSIGINTHandler installs signal handlers for graceful shutdown.
+func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)
@@ -143,7 +143,7 @@ func (b *server) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	InstallSIGINTHanler(cancel)
+	InstallSIGINTHandler(cancel)
 	b.Run(ctx)
 }
 
