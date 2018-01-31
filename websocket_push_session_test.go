@@ -248,6 +248,8 @@ func TestWSPushSession_write(t *testing.T) {
 			})
 		})
 
+		// Not sure why but calling s.stop() causes a
+		// race condition with s.write() at line 195...
 		// Convey("When I close the session", func() {
 
 		// 	s.stop()
