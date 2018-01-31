@@ -239,6 +239,12 @@ func TestWSPushSession_write(t *testing.T) {
 
 			s.events <- elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 
+			select {
+			case <-stopper.Done():
+			case <-time.After(300 * time.Millisecond):
+				panic("closing session took too long")
+			}
+
 			Convey("Then stopped should be true", func() {
 				So(stopper.isStopped(), ShouldBeTrue)
 			})
