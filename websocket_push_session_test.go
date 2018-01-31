@@ -254,25 +254,24 @@ func TestWSPushSession_write(t *testing.T) {
 			})
 		})
 
-		// Not sure why but calling s.stop() causes a
-		// race condition with s.write() at line 195...
-		// Convey("When I close the session", func() {
+		Convey("When I close the session", func() {
 
-		// 	s.stop()
+			// Not sure why but calling s.stop() causes a race condition with s.write() at line 195...
+			close(s.closeCh)
 
-		// 	select {
-		// 	case <-stopper.Done():
-		// 	case <-time.After(300 * time.Millisecond):
-		// 		panic("closing session took too long")
-		// 	}
+			select {
+			case <-stopper.Done():
+			case <-time.After(300 * time.Millisecond):
+				panic("closing session took too long")
+			}
 
-		// 	Convey("Then stopped should be true", func() {
-		// 		So(stopper.isStopped(), ShouldBeTrue)
-		// 	})
+			Convey("Then stopped should be true", func() {
+				So(stopper.isStopped(), ShouldBeTrue)
+			})
 
-		// 	Convey("Then the session should have called unregister once", func() {
-		// 		So(calledCounter.Value(), ShouldEqual, 1)
-		// 	})
-		// })
+			// Convey("Then the session should have called unregister once", func() {
+			// 	So(calledCounter.Value(), ShouldEqual, 1)
+			// })
+		})
 	})
 }
