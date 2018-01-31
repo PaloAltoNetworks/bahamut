@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -254,7 +253,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 
 	Convey("Given I have a fake dispatcher", t, func() {
 
-		called := 0
+		calledCounter := &counter{}
 
 		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
@@ -268,7 +267,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		Convey("When I call runDispatcher", func() {
 
 			d := func() error {
-				called++
+				calledCounter.Add(1)
 				return nil
 			}
 
@@ -279,14 +278,14 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			})
 
 			Convey("Then the dispatcher should have been called once", func() {
-				So(called, ShouldEqual, 1)
+				So(calledCounter.Value(), ShouldEqual, 1)
 			})
 		})
 
 		Convey("When I call runDispatcher and it returns an error", func() {
 
 			d := func() error {
-				called++
+				calledCounter.Add(1)
 				return elemental.NewError("nop", "nope", "test", 42)
 			}
 
@@ -297,19 +296,15 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			})
 
 			Convey("Then the dispatcher should have been called once", func() {
-				So(called, ShouldEqual, 1)
+				So(calledCounter.Value(), ShouldEqual, 1)
 			})
 		})
 
 		Convey("When I call runDispatcher and cancel the context", func() {
 
-			l := &sync.Mutex{}
-
 			d := func() error {
 				time.Sleep(300 * time.Millisecond)
-				l.Lock()
-				called++
-				l.Unlock()
+				calledCounter.Add(1)
 				return nil
 			}
 
@@ -318,9 +313,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			cancel()
 
 			Convey("Then the dispatcher should have been called once", func() {
-				l.Lock()
-				So(called, ShouldEqual, 0)
-				l.Unlock()
+				So(calledCounter.Value(), ShouldEqual, 0)
 			})
 		})
 
@@ -349,9 +342,9 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -371,7 +364,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -391,7 +384,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -410,9 +403,9 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -432,7 +425,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -452,7 +445,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -471,9 +464,9 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -493,7 +486,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -513,7 +506,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -532,9 +525,9 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -554,7 +547,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -574,7 +567,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -593,9 +586,9 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -615,7 +608,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -635,7 +628,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -654,9 +647,9 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -676,7 +669,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -696,7 +689,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})
@@ -715,9 +708,9 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 		Convey("Given I a have fake processor finder that return no error", func() {
 
-			var called int
+			calledCounter := &counter{}
 			pf := func(identity elemental.Identity) (Processor, error) {
-				called++
+				calledCounter.Add(1)
 				return struct{}{}, nil
 			}
 
@@ -737,7 +730,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 1)
+					So(calledCounter.Value(), ShouldEqual, 1)
 				})
 			})
 
@@ -757,7 +750,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
-					So(called, ShouldEqual, 0)
+					So(calledCounter.Value(), ShouldEqual, 0)
 				})
 			})
 		})

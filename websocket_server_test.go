@@ -482,7 +482,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			srv := &mockPubSubServer{}
 			h := &mockSessionHandler{}
-			h.shouldPublishOK = true // we want to be sure error takes precendence
+			h.shouldPublishOK = true // we want to be sure error takes precedence
 			h.shouldPublishErr = errors.New("nop")
 
 			cfg := Config{}
