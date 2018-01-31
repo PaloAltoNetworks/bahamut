@@ -45,7 +45,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 	}
 
 	if !config.WebSocketServer.PushDisabled {
-		srv.multiplexer.Handle("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv.multiplexer.Get("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			r = r.WithContext(srv.mainContext)
 
@@ -75,7 +75,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 	}
 
 	if !config.WebSocketServer.APIDisabled {
-		srv.multiplexer.Handle("/wsapi", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv.multiplexer.Get("/wsapi", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			session := newWSAPISession(r, config, srv.unregisterSession, srv.processorFinder, srv.pushEvents)
 			if err := srv.authSession(session); err != nil {
@@ -101,6 +101,10 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 func (n *websocketServer) registerSession(session internalWSSession) {
 
 	n.sessionsLock.Lock()
+	if session.Identifier() == "" {
+		n.sessionsLock.Unlock()
+		panic("cannot register websocket session. empty identifier")
+	}
 	n.sessions[session.Identifier()] = session
 	n.sessionsLock.Unlock()
 
@@ -114,6 +118,10 @@ func (n *websocketServer) registerSession(session internalWSSession) {
 func (n *websocketServer) unregisterSession(session internalWSSession) {
 
 	n.sessionsLock.Lock()
+	if session.Identifier() == "" {
+		n.sessionsLock.Unlock()
+		panic("cannot unregister websocket session. empty identifier")
+	}
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
 
@@ -135,8 +143,13 @@ func (n *websocketServer) authSession(session internalWSSession) error {
 
 	for _, authenticator := range n.config.Security.SessionAuthenticators {
 
-		if action, err = authenticator.AuthenticateSession(session); action == AuthActionKO || err != nil {
+		action, err = authenticator.AuthenticateSession(session)
+		if err != nil {
 			return elemental.NewError("Unauthorized", err.Error(), "bahamut", http.StatusUnauthorized)
+		}
+
+		if action == AuthActionKO {
+			return elemental.NewError("Unauthorized", "You are not authorized to start a session", "bahamut", http.StatusUnauthorized)
 		}
 
 		if action == AuthActionOK {
@@ -159,7 +172,7 @@ func (n *websocketServer) initPushSession(session *wsPushSession) error {
 	}
 
 	if !ok {
-		return elemental.NewError("Forbidden", "Rejected and refused to provide a reason", "bahamut", http.StatusForbidden)
+		return elemental.NewError("Forbidden", "You are not authorized to initiate a push session", "bahamut", http.StatusForbidden)
 	}
 
 	return nil
@@ -171,36 +184,36 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 		return
 	}
 
+	var err error
+
 	for _, event := range events {
 
-		ok, err := n.config.WebSocketServer.SessionsHandler.ShouldPublish(event)
-		if err != nil {
-			zap.L().Error("Error while calling ShouldPublish. Event will not be published.", zap.Error(err))
-		}
+		if n.config.WebSocketServer.SessionsHandler != nil {
+			var ok bool
+			ok, err = n.config.WebSocketServer.SessionsHandler.ShouldPublish(event)
+			if err != nil {
+				zap.L().Error("Error while calling ShouldPublish", zap.Error(err))
+				continue
+			}
 
-		if !ok {
-			continue
+			if !ok {
+				continue
+			}
 		}
 
 		publication := NewPublication(n.config.WebSocketServer.Topic)
 		if err = publication.Encode(event); err != nil {
-			zap.L().Error("Unable to encode event. Message dropped", zap.Error(err))
+			zap.L().Error("Unable to encode event", zap.Error(err))
 			break
 		}
 
 		for i := 0; i < 3; i++ {
 			err = n.config.WebSocketServer.Service.Publish(publication)
-			if err == nil {
-				break
+			if err != nil {
+				zap.L().Warn("Unable to publish event", zap.String("topic", publication.Topic), zap.Stringer("event", event), zap.Error(err))
+				continue
 			}
-		}
-
-		if err != nil {
-			zap.L().Warn("Unable to publish. Message dropped",
-				zap.String("topic", publication.Topic),
-				zap.Stringer("event", event),
-				zap.Error(err),
-			)
+			break
 		}
 	}
 }

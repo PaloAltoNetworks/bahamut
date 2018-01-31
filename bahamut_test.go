@@ -104,12 +104,14 @@ func TestBahamut_NewBahamut(t *testing.T) {
 			So(b.(*server).restServer, ShouldNotBeNil)
 		})
 
-		Convey("Then pushServer should be nil", func() {
+		Convey("Then pushServer should not be nil", func() {
 			So(b.(*server).websocketServer, ShouldNotBeNil)
 		})
 
-		Convey("Then number of routes should be 0", func() {
-			So(len(b.(*server).multiplexer.Routes), ShouldEqual, 7)
+		Convey("Then number of routes should be 1", func() {
+			So(len(b.(*server).multiplexer.Routes), ShouldEqual, 1)
+			So(b.(*server).multiplexer.Routes["GET"][0].Path, ShouldEqual, "/events")
+			So(b.(*server).multiplexer.Routes["GET"][1].Path, ShouldEqual, "/wsapi")
 		})
 	})
 }

@@ -45,7 +45,7 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 
 func (s *wsPushSession) String() string {
 
-	return fmt.Sprintf("<pushsession id:%s parameters: %v>",
+	return fmt.Sprintf("<pushsession id:%s parameters:%v>",
 		s.id,
 		s.parameters,
 	)

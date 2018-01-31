@@ -113,7 +113,7 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 						ok2 = true
 					case <-c3:
 						ok3 = true
-					case <-time.After(300 * time.Millisecond):
+					case <-time.After(30 * time.Millisecond):
 						break LOOP
 					}
 				}

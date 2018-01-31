@@ -80,7 +80,7 @@ func TestJob_RunJob(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		j := func() error {
-			time.Sleep(2 * time.Second)
+			time.Sleep(300 * time.Millisecond)
 			l.Lock()
 			called++
 			l.Unlock()
@@ -97,7 +97,7 @@ func TestJob_RunJob(t *testing.T) {
 				interrupted, err = RunJob(ctx, j)
 				l2.Unlock()
 			}()
-			time.Sleep(300 * time.Millisecond)
+			time.Sleep(30 * time.Millisecond)
 			cancel()
 
 			Convey("Then interrupted should be false", func() {

@@ -306,7 +306,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			l := &sync.Mutex{}
 
 			d := func() error {
-				time.Sleep(2 * time.Second)
+				time.Sleep(300 * time.Millisecond)
 				l.Lock()
 				called++
 				l.Unlock()
@@ -314,7 +314,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			}
 
 			go func() { runDispatcher(ctx, nil, d, true) }()
-			time.Sleep(300 * time.Millisecond)
+			time.Sleep(30 * time.Millisecond)
 			cancel()
 
 			Convey("Then the dispatcher should have been called once", func() {
