@@ -1,234 +1,231 @@
 package bahamut
 
-// import (
-// 	. "github.com/smartystreets/goconvey/convey"
-// )
+import (
+	"context"
+	"crypto/tls"
+	"net/http"
+	"net/url"
+	"testing"
 
-// func TestWebsocketSession_newWSSession(t *testing.T) {
+	"github.com/gorilla/websocket"
+	opentracing "github.com/opentracing/opentracing-go"
+	. "github.com/smartystreets/goconvey/convey"
+)
 
-// 	Convey("Given create a new wsSession", t, func() {
+func TestWebsocketSession_newWSSession(t *testing.T) {
 
-// 		u, _ := url.Parse("http://toto.com?a=b")
-// 		conf := Config{}
-// 		req := &http.Request{
-// 			Header:     http.Header{"h1": {"a"}},
-// 			URL:        u,
-// 			TLS:        &tls.ConnectionState{},
-// 			RemoteAddr: "1.2.3.4",
-// 		}
-// 		unregister := func(i internalWSSession) {}
-// 		span := opentracing.StartSpan("test")
+	Convey("Given create a new wsSession", t, func() {
 
-// 		s := newWSSession(req, conf, unregister, span)
+		u, _ := url.Parse("http://toto.com?a=b")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
+		}
+		unregister := func(i internalWSSession) {}
 
-// 		Convey("Then s should be correctly initialized", func() {
-// 			So(s.claims, ShouldResemble, []string{})
-// 			So(s.claimsMap, ShouldResemble, map[string]string{})
-// 			So(s.config, ShouldResemble, conf)
-// 			So(s.headers, ShouldEqual, req.Header)
-// 			So(s.id, ShouldNotBeEmpty)
-// 			So(s.parameters, ShouldResemble, url.Values{"a": {"b"}})
-// 			So(s.closeCh, ShouldHaveSameTypeAs, make(chan struct{}))
-// 			So(s.unregister, ShouldEqual, unregister)
-// 			So(s.context, ShouldNotBeNil)
-// 			So(s.cancel, ShouldNotBeNil)
-// 			So(s.tlsConnectionState, ShouldEqual, req.TLS)
-// 			So(s.remoteAddr, ShouldEqual, req.RemoteAddr)
-// 		})
-// 	})
-// }
+		s := newWSSession(req, conf, unregister)
 
-// func TestWebsocketSession_accessors(t *testing.T) {
+		Convey("Then s should be correctly initialized", func() {
+			So(s.claims, ShouldResemble, []string{})
+			So(s.claimsMap, ShouldResemble, map[string]string{})
+			So(s.config, ShouldResemble, conf)
+			So(s.headers, ShouldEqual, req.Header)
+			So(s.id, ShouldNotBeEmpty)
+			So(s.parameters, ShouldResemble, url.Values{"a": {"b"}})
+			So(s.closeCh, ShouldHaveSameTypeAs, make(chan struct{}))
+			So(s.unregister, ShouldEqual, unregister)
+			So(s.context, ShouldNotBeNil)
+			So(s.cancel, ShouldNotBeNil)
+			So(s.tlsConnectionState, ShouldEqual, req.TLS)
+			So(s.remoteAddr, ShouldEqual, req.RemoteAddr)
+		})
+	})
+}
 
-// 	Convey("Given create a new wsSession", t, func() {
+func TestWebsocketSession_accessors(t *testing.T) {
 
-// 		u, _ := url.Parse("http://toto.com?a=b&token=token")
-// 		conf := Config{}
-// 		req := &http.Request{
-// 			Header:     http.Header{"h1": {"a"}},
-// 			URL:        u,
-// 			TLS:        &tls.ConnectionState{},
-// 			RemoteAddr: "1.2.3.4",
-// 		}
-// 		unregister := func(i internalWSSession) {}
-// 		span := opentracing.StartSpan("test")
+	Convey("Given create a new wsSession", t, func() {
 
-// 		s := newWSSession(req, conf, unregister, span)
+		u, _ := url.Parse("http://toto.com?a=b&token=token")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
+		}
+		span := opentracing.StartSpan("test")
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
+		req = req.WithContext(ctx)
+		unregister := func(i internalWSSession) {}
 
-// 		Convey("When I call Identifier()", func() {
+		s := newWSSession(req, conf, unregister)
 
-// 			id := s.Identifier()
+		Convey("When I call Identifier()", func() {
 
-// 			Convey("Then id should be correct", func() {
-// 				So(id, ShouldNotBeEmpty)
-// 			})
-// 		})
+			id := s.Identifier()
 
-// 		Convey("When I call SetClaims()", func() {
+			Convey("Then id should be correct", func() {
+				So(id, ShouldNotBeEmpty)
+			})
+		})
 
-// 			s.SetClaims([]string{"a=a", "b=b"})
+		Convey("When I call SetClaims()", func() {
 
-// 			Convey("Then GetClaims() should return the correct claims ", func() {
-// 				So(s.GetClaims(), ShouldResemble, []string{"a=a", "b=b"})
-// 			})
+			s.SetClaims([]string{"a=a", "b=b"})
 
-// 			Convey("Then GetClaimsMap() should return the correct claims ", func() {
-// 				m := s.GetClaimsMap()
-// 				So(len(m), ShouldEqual, 2)
-// 				So(m["a"], ShouldEqual, "a")
-// 				So(m["b"], ShouldEqual, "b")
-// 			})
-// 		})
+			Convey("Then GetClaims() should return the correct claims ", func() {
+				So(s.GetClaims(), ShouldResemble, []string{"a=a", "b=b"})
+			})
 
-// 		Convey("When I call GetToken()", func() {
+			Convey("Then GetClaimsMap() should return the correct claims ", func() {
+				m := s.GetClaimsMap()
+				So(len(m), ShouldEqual, 2)
+				So(m["a"], ShouldEqual, "a")
+				So(m["b"], ShouldEqual, "b")
+			})
+		})
 
-// 			token := s.GetToken()
+		Convey("When I call GetToken()", func() {
 
-// 			Convey("Then token should be correct", func() {
-// 				So(token, ShouldEqual, "token")
-// 			})
-// 		})
+			token := s.GetToken()
 
-// 		Convey("When I call TLSConnectionState()", func() {
+			Convey("Then token should be correct", func() {
+				So(token, ShouldEqual, "token")
+			})
+		})
 
-// 			s := s.TLSConnectionState()
+		Convey("When I call TLSConnectionState()", func() {
 
-// 			Convey("Then TLSConnectionState should be correct", func() {
-// 				So(s, ShouldEqual, req.TLS)
-// 			})
-// 		})
+			s := s.TLSConnectionState()
 
-// 		Convey("When I call SetMetadata()", func() {
+			Convey("Then TLSConnectionState should be correct", func() {
+				So(s, ShouldEqual, req.TLS)
+			})
+		})
 
-// 			s.SetMetadata("hi")
+		Convey("When I call SetMetadata()", func() {
 
-// 			Convey("Then GetMetadata() should return the correct metadata ", func() {
-// 				So(s.GetMetadata(), ShouldResemble, "hi")
-// 			})
-// 		})
+			s.SetMetadata("hi")
 
-// 		Convey("When I call GetParameter()", func() {
+			Convey("Then GetMetadata() should return the correct metadata ", func() {
+				So(s.GetMetadata(), ShouldResemble, "hi")
+			})
+		})
 
-// 			p := s.GetParameter("a")
+		Convey("When I call GetContext()", func() {
 
-// 			Convey("Then parameter should be correct", func() {
-// 				So(p, ShouldEqual, "b")
-// 			})
-// 		})
+			c := s.GetContext()
 
-// 		Convey("When I call Span()", func() {
+			Convey("Then GetContext() should return the correct context ", func() {
+				So(opentracing.SpanFromContext(c), ShouldResemble, span)
+			})
+		})
 
-// 			s := s.Span()
+		Convey("When I call GetParameter()", func() {
 
-// 			Convey("Then span should be correct", func() {
-// 				So(s, ShouldResemble, span)
-// 			})
-// 		})
+			p := s.GetParameter("a")
 
-// 		Convey("When I call NewChildSpan()", func() {
+			Convey("Then parameter should be correct", func() {
+				So(p, ShouldEqual, "b")
+			})
+		})
 
-// 			s := s.NewChildSpan("new")
+		Convey("When I call setRemoteAddress()", func() {
 
-// 			Convey("Then span should be correct", func() {
-// 				So(s, ShouldNotBeEmpty)
-// 				So(s, ShouldHaveSameTypeAs, span)
-// 			})
-// 		})
+			s.setRemoteAddress("a.b.c.d")
 
-// 		Convey("When I call setRemoteAddress()", func() {
+			Convey("Then address should be correct", func() {
+				So(s.remoteAddr, ShouldEqual, "a.b.c.d")
+			})
+		})
 
-// 			s.setRemoteAddress("a.b.c.d")
+		Convey("When I call setTLSConnectionState()", func() {
 
-// 			Convey("Then address should be correct", func() {
-// 				So(s.remoteAddr, ShouldEqual, "a.b.c.d")
-// 			})
-// 		})
+			tcs := &tls.ConnectionState{}
+			s.setTLSConnectionState(tcs)
 
-// 		Convey("When I call setTLSConnectionState()", func() {
+			Convey("Then address should be correct", func() {
+				So(s.tlsConnectionState, ShouldEqual, tcs)
+			})
+		})
 
-// 			tcs := &tls.ConnectionState{}
-// 			s.setTLSConnectionState(tcs)
+		Convey("When I call setSocket()", func() {
 
-// 			Convey("Then address should be correct", func() {
-// 				So(s.tlsConnectionState, ShouldEqual, tcs)
-// 			})
-// 		})
+			ws := &websocket.Conn{}
+			s.setConn(ws)
 
-// 		Convey("When I call setSocket()", func() {
+			Convey("Then ws should be correct", func() {
+				So(s.conn, ShouldEqual, ws)
+			})
+		})
+	})
+}
 
-// 			ws := &websocket.Conn{}
-// 			s.setConn(ws)
+func TestWebsocketSession_close(t *testing.T) {
 
-// 			Convey("Then ws should be correct", func() {
-// 				So(s.conn, ShouldEqual, ws)
-// 			})
-// 		})
-// 	})
-// }
+	Convey("Given create a new wsSession", t, func() {
 
-// func TestWebsocketSession_close(t *testing.T) {
+		u, _ := url.Parse("http://toto.com?a=b&token=token")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
+		}
+		var unregisterCalled int
+		unregister := func(i internalWSSession) { unregisterCalled++ }
 
-// 	Convey("Given create a new wsSession", t, func() {
+		s := newWSSession(req, conf, unregister)
 
-// 		u, _ := url.Parse("http://toto.com?a=b&token=token")
-// 		conf := Config{}
-// 		req := &http.Request{
-// 			Header:     http.Header{"h1": {"a"}},
-// 			URL:        u,
-// 			TLS:        &tls.ConnectionState{},
-// 			RemoteAddr: "1.2.3.4",
-// 		}
-// 		var unregisterCalled int
-// 		unregister := func(i internalWSSession) { unregisterCalled++ }
-// 		span := opentracing.StartSpan("test")
+		Convey("When I call stop", func() {
+			s.stop()
 
-// 		s := newWSSession(req, conf, unregister, span)
+			Convey("Then the session should be closed", func() {
+				So(s.closeCh, ShouldBeNil)
+				So(unregisterCalled, ShouldEqual, 1)
+			})
 
-// 		Convey("When I call stop", func() {
-// 			s.stop()
+			Convey("When I stop it again", func() {
 
-// 			Convey("Then the session should be closed", func() {
-// 				So(s.closeCh, ShouldBeNil)
-// 				So(unregisterCalled, ShouldEqual, 1)
-// 			})
+				Convey("Then it should not panic", func() {
+					So(func() { s.stop() }, ShouldNotPanic)
+					So(unregisterCalled, ShouldEqual, 1)
+				})
+			})
+		})
 
-// 			Convey("When I stop it again", func() {
+	})
+}
 
-// 				Convey("Then it should not panic", func() {
-// 					So(func() { s.stop() }, ShouldNotPanic)
-// 					So(unregisterCalled, ShouldEqual, 1)
-// 				})
-// 			})
-// 		})
+func TestWebsocketSession_listen(t *testing.T) {
 
-// 	})
-// }
+	Convey("Given create a new wsSession", t, func() {
 
-// func TestWebsocketSession_listen(t *testing.T) {
+		u, _ := url.Parse("http://toto.com?a=b&token=token")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
+		}
+		unregister := func(i internalWSSession) {}
 
-// 	Convey("Given create a new wsSession", t, func() {
+		s := newWSSession(req, conf, unregister)
 
-// 		u, _ := url.Parse("http://toto.com?a=b&token=token")
-// 		conf := Config{}
-// 		req := &http.Request{
-// 			Header:     http.Header{"h1": {"a"}},
-// 			URL:        u,
-// 			TLS:        &tls.ConnectionState{},
-// 			RemoteAddr: "1.2.3.4",
-// 		}
-// 		unregister := func(i internalWSSession) {}
-// 		span := opentracing.StartSpan("test")
+		Convey("When I call listen", func() {
 
-// 		s := newWSSession(req, conf, unregister, span)
+			s.listen()
 
-// 		Convey("When I call listen", func() {
+			Convey("Then nothing should happen", func() {
+				So(true, ShouldBeTrue)
+			})
+		})
 
-// 			s.listen()
-
-// 			Convey("Then nothing should happen", func() {
-// 				So(true, ShouldBeTrue)
-// 			})
-// 		})
-
-// 	})
-// }
+	})
+}

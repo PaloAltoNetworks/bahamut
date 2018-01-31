@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	opentracing "github.com/opentracing/opentracing-go"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -124,11 +123,6 @@ func (s *wsSession) SetMetadata(m interface{}) {
 func (s *wsSession) GetParameter(key string) string {
 
 	return s.parameters.Get(key)
-}
-
-func (s *wsSession) Span() opentracing.Span {
-
-	return opentracing.SpanFromContext(s.context)
 }
 
 // setRemoteAddress implements the internalWSSession interface.
