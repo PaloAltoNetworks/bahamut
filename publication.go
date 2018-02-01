@@ -66,7 +66,8 @@ func (p *Publication) StartTracingFromSpan(span opentracing.Span, name string) e
 	}
 
 	p.span = opentracing.StartSpan(name, opentracing.ChildOf(span.Context()))
-	p.populateSpan()
+	p.span.SetTag("topic", p.Topic)
+	p.span.SetTag("partition", p.Partition)
 
 	return tracer.Inject(p.span.Context(), opentracing.TextMap, p.TrackingData)
 }
@@ -81,51 +82,13 @@ func (p *Publication) StartTracing(tracer opentracing.Tracer, name string) {
 	wireContext, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(p.TrackingData))
 
 	p.span = opentracing.StartSpan(name, ext.RPCServerOption(wireContext))
-	p.populateSpan()
+	p.span.SetTag("topic", p.Topic)
+	p.span.SetTag("partition", p.Partition)
+
 }
 
 // Span returns the current tracking span.
 func (p *Publication) Span() opentracing.Span {
 
 	return p.span
-}
-
-// SetSpanTag sets the tag of the inner span if any.
-func (p *Publication) SetSpanTag(key string, value interface{}) {
-
-	if p.span == nil {
-		return
-	}
-
-	p.span.SetTag(key, value)
-}
-
-// SetSpanLogs sets the logs of the inner span if any.
-func (p *Publication) SetSpanLogs(fields ...log.Field) {
-
-	if p.span == nil {
-		return
-	}
-
-	p.span.LogFields(fields...)
-}
-
-// FinishTracing will finish the publication tracing.
-func (p *Publication) FinishTracing() {
-
-	if p.span == nil {
-		return
-	}
-
-	p.span.Finish()
-}
-
-func (p *Publication) populateSpan() {
-
-	if p.span == nil {
-		return
-	}
-
-	p.span.SetTag("topic", p.Topic)
-	p.span.SetTag("partition", p.Partition)
 }
