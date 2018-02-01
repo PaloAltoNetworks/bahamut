@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/aporeto-inc/elemental"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 )
 
 // A counter is a concurency safe count holder.
@@ -274,3 +276,99 @@ func (f *mockusher) Push(evt ...*elemental.Event) {
 
 	f.events = append(f.events, evt...)
 }
+
+// A mockSpanContext is a mockable opentracing.SpanContext
+type mockSpanContext struct {
+}
+
+func (t *mockSpanContext) ForeachBaggageItem(handler func(k, v string) bool) {}
+
+// A mockTracer is a mockable opentracing.Tracer
+type mockTracer struct {
+	currentSpan *mockSpan
+	injected    interface{}
+}
+
+func (t *mockTracer) StartSpan(string, ...opentracing.StartSpanOption) opentracing.Span {
+
+	if t.currentSpan == nil {
+		t.currentSpan = newMockSpan(t)
+	}
+
+	return t.currentSpan
+}
+
+func (t *mockTracer) Inject(span opentracing.SpanContext, format interface{}, carrier interface{}) error {
+	t.injected = carrier
+	return nil
+}
+
+func (t *mockTracer) Extract(interface{}, interface{}) (opentracing.SpanContext, error) {
+
+	return &mockSpanContext{}, nil
+}
+
+// A mockSpan is a mockable opentracing.Span
+type mockSpan struct {
+	finished bool
+	tracer   opentracing.Tracer
+	tags     map[string]interface{}
+	fields   []log.Field
+}
+
+func newMockSpan(tracer opentracing.Tracer) *mockSpan {
+	return &mockSpan{
+		tracer: tracer,
+		tags:   map[string]interface{}{},
+		fields: []log.Field{},
+	}
+}
+
+func (s *mockSpan) Finish() {
+
+	s.finished = true
+}
+
+func (s *mockSpan) FinishWithOptions(opts opentracing.FinishOptions) {
+	s.finished = true
+}
+
+func (s *mockSpan) Context() opentracing.SpanContext {
+	return &mockSpanContext{}
+}
+
+func (s *mockSpan) SetOperationName(operationName string) opentracing.Span {
+	return s
+}
+
+func (s *mockSpan) SetTag(key string, value interface{}) opentracing.Span {
+
+	s.tags[key] = value
+
+	return s
+}
+
+func (s *mockSpan) LogFields(fields ...log.Field) {
+
+	s.fields = append(s.fields, fields...)
+}
+
+func (s *mockSpan) LogKV(alternatingKeyValues ...interface{}) {
+
+}
+
+func (s *mockSpan) SetBaggageItem(restrictedKey, value string) opentracing.Span {
+	return s
+}
+
+func (s *mockSpan) BaggageItem(restrictedKey string) string {
+	return ""
+
+}
+func (s *mockSpan) Tracer() opentracing.Tracer {
+	return s.tracer
+}
+
+func (s *mockSpan) LogEvent(event string)                                 {}
+func (s *mockSpan) LogEventWithPayload(event string, payload interface{}) {}
+func (s *mockSpan) Log(data opentracing.LogData)                          {}

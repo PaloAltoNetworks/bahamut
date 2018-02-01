@@ -60,7 +60,7 @@ func (p *Publication) Decode(dest interface{}) error {
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.
 func (p *Publication) StartTracingFromSpan(span opentracing.Span, name string) error {
 
-	tracer := opentracing.GlobalTracer()
+	tracer := span.Tracer()
 	if tracer == nil {
 		return nil
 	}
@@ -72,9 +72,8 @@ func (p *Publication) StartTracingFromSpan(span opentracing.Span, name string) e
 }
 
 // StartTracing starts a new tracer using wired data if any.
-func (p *Publication) StartTracing(name string) {
+func (p *Publication) StartTracing(tracer opentracing.Tracer, name string) {
 
-	tracer := opentracing.GlobalTracer()
 	if tracer == nil {
 		return
 	}

@@ -9,63 +9,11 @@ import (
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/aporeto-inc/elemental/test/model"
+
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/log"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-type testSpanContext struct {
-}
-
-func (t *testSpanContext) ForeachBaggageItem(handler func(k, v string) bool) {}
-
-type testTracer struct {
-	currentSpan *testSpan
-}
-
-func (t *testTracer) StartSpan(string, ...opentracing.StartSpanOption) opentracing.Span {
-	if t.currentSpan == nil {
-		t.currentSpan = newTestSpan(t)
-	}
-	return t.currentSpan
-}
-func (t *testTracer) Inject(opentracing.SpanContext, interface{}, interface{}) error { return nil }
-func (t *testTracer) Extract(interface{}, interface{}) (opentracing.SpanContext, error) {
-	return &testSpanContext{}, nil
-}
-
-type testSpan struct {
-	finished bool
-	tracer   opentracing.Tracer
-	tags     map[string]interface{}
-	fields   []log.Field
-}
-
-func newTestSpan(tracer opentracing.Tracer) *testSpan {
-	return &testSpan{
-		tracer: tracer,
-		tags:   map[string]interface{}{},
-		fields: []log.Field{},
-	}
-}
-func (s *testSpan) Finish()                                                { s.finished = true }
-func (s *testSpan) FinishWithOptions(opts opentracing.FinishOptions)       { s.finished = true }
-func (s *testSpan) Context() opentracing.SpanContext                       { return &testSpanContext{} }
-func (s *testSpan) SetOperationName(operationName string) opentracing.Span { return s }
-func (s *testSpan) SetTag(key string, value interface{}) opentracing.Span {
-	s.tags[key] = value
-	return s
-}
-func (s *testSpan) LogFields(fields ...log.Field) {
-	s.fields = append(s.fields, fields...)
-}
-func (s *testSpan) LogKV(alternatingKeyValues ...interface{})                   {}
-func (s *testSpan) SetBaggageItem(restrictedKey, value string) opentracing.Span { return s }
-func (s *testSpan) BaggageItem(restrictedKey string) string                     { return "" }
-func (s *testSpan) Tracer() opentracing.Tracer                                  { return s.tracer }
-func (s *testSpan) LogEvent(event string)                                       {}
-func (s *testSpan) LogEventWithPayload(event string, payload interface{})       {}
-func (s *testSpan) Log(data opentracing.LogData)                                {}
 
 func TestTracing_extractClaims(t *testing.T) {
 
@@ -253,8 +201,8 @@ func TestTracing_traceRequest(t *testing.T) {
 		req.Order = []string{"a", "b"}
 		req.Data = []byte("the data")
 
-		tracer := &testTracer{}
-		ts := newTestSpan(tracer)
+		tracer := &mockTracer{}
+		ts := newMockSpan(tracer)
 
 		ctx := opentracing.ContextWithSpan(context.Background(), ts)
 
@@ -270,7 +218,7 @@ func TestTracing_traceRequest(t *testing.T) {
 
 			tctx := traceRequest(ctx, req, tracer)
 
-			span := opentracing.SpanFromContext(tctx).(*testSpan)
+			span := opentracing.SpanFromContext(tctx).(*mockSpan)
 
 			Convey("Then the new context should be spanned", func() {
 				So(span, ShouldNotBeNil)
@@ -311,8 +259,8 @@ func TestTracing_finishTracing(t *testing.T) {
 
 	Convey("Given I have a context with a span", t, func() {
 
-		tracer := &testTracer{}
-		ts := newTestSpan(tracer)
+		tracer := &mockTracer{}
+		ts := newMockSpan(tracer)
 
 		ctx := opentracing.ContextWithSpan(context.Background(), ts)
 
