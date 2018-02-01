@@ -10,7 +10,7 @@ inputs:
   path: go/src/github.com/aporeto-inc/bahamut
 
 run:
-  path: sh
+  path: bash
   args:
     - -exc
     - |
@@ -23,3 +23,6 @@ run:
       cd go/src/github.com/aporeto-inc/bahamut
       mage init || exit 1
       mage test || exit 1
+
+      export CODECOV_TOKEN=3433500e-1db7-420d-9ab8-a75d477c9e27
+      bash <(curl -s https://codecov.io/bash) || exit 0
