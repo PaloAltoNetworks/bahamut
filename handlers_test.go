@@ -18,7 +18,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a redirect and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 
 		ctx.Redirect = "http://ici"
 
@@ -35,7 +35,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a a count and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 
 		ctx.CountTotal = 42
 
@@ -109,7 +109,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with a status code set to 0 and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.OutputData = []string{}
 		ctx.StatusCode = 0
 
@@ -162,7 +162,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with messages and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.AddMessage("hello world")
 
 		Convey("When I call makeResponse", func() {
@@ -178,7 +178,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	Convey("Given I have context with unmarshalable data and a response", t, func() {
 
 		ctx := NewContext()
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.OutputData = testmodel.NewUnmarshalableList()
 
 		Convey("When I call makeResponse", func() {
@@ -194,7 +194,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 	Convey("Given I a response and an error", t, func() {
 
-		resp := elemental.NewResponse()
+		resp := elemental.NewResponse(elemental.NewRequest())
 		err := fmt.Errorf("paf")
 
 		Convey("When I call makeErrorResponse", func() {
@@ -216,7 +216,7 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 
 	Convey("Given I have a response and a channel", t, func() {
 
-		resp := elemental.NewResponse()
+		resp := elemental.NewResponse(elemental.NewRequest())
 		c := make(chan error)
 
 		Convey("When I call my function that panics with handleEventualPanic installed with recover", func() {
@@ -262,7 +262,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		ctx.Request = elemental.NewRequest()
 		ctx.ctx = gctx
 
-		response := elemental.NewResponse()
+		response := elemental.NewResponse(elemental.NewRequest())
 
 		Convey("When I call runDispatcher", func() {
 

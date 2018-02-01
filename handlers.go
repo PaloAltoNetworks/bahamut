@@ -111,7 +111,7 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 
 func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	parentIdentity := ctx.Request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -151,7 +151,7 @@ func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFi
 
 func handleRetrieve(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	if !elemental.IsRetrieveAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
@@ -185,7 +185,7 @@ func handleRetrieve(ctx *Context, config Config, processorFinder processorFinder
 
 func handleCreate(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	parentIdentity := ctx.Request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -226,7 +226,7 @@ func handleCreate(ctx *Context, config Config, processorFinder processorFinderFu
 
 func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	if !elemental.IsUpdateAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
@@ -262,7 +262,7 @@ func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFu
 
 func handleDelete(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	if !elemental.IsDeleteAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
@@ -298,7 +298,7 @@ func handleDelete(ctx *Context, config Config, processorFinder processorFinderFu
 
 func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	parentIdentity := ctx.Request.ParentIdentity
 	if parentIdentity.IsEmpty() {
@@ -337,7 +337,7 @@ func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc
 
 func handlePatch(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse()
+	response = elemental.NewResponse(ctx.Request)
 
 	parentIdentity := ctx.Request.ParentIdentity
 	if parentIdentity.IsEmpty() {

@@ -27,7 +27,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), true)
+				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(elemental.NewRequest()), true)
 				wg.Done()
 			}()
 			panic("this is a panic!")
@@ -44,7 +44,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), false) // nolint
+				handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(elemental.NewRequest()), false) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}
@@ -62,7 +62,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(), true)
+				err = handleRecoveredPanic(context.TODO(), recover(), elemental.NewResponse(elemental.NewRequest()), true)
 				wg.Done()
 			}()
 			func() {}()
@@ -81,7 +81,7 @@ func TestUtils_processError(t *testing.T) {
 	Convey("Given I have an error and response with a span", t, func() {
 
 		_, ctx := opentracing.StartSpanFromContext(context.Background(), "test")
-		resp := elemental.NewResponse()
+		resp := elemental.NewResponse(elemental.NewRequest())
 
 		Convey("When I call processError on standard error", func() {
 

@@ -52,11 +52,9 @@ func (s *wsAPISession) read() {
 				return
 			}
 
-			response := elemental.NewResponse()
-
 			s.responses <- makeErrorResponse(
 				s.context,
-				response,
+				elemental.NewResponse(request),
 				elemental.NewError(
 					"Bad Request",
 					"Invalid JSON",
@@ -97,6 +95,7 @@ func (s *wsAPISession) listen() {
 	// are switched to at least manipulate 2.x
 	s.responses <- &elemental.Response{
 		StatusCode: http.StatusOK,
+		Request:    elemental.NewRequest(),
 	}
 
 	for {
