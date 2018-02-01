@@ -1,5 +1,7 @@
 # Bahamut
 
+[![codecov](https://codecov.io/gh/aporeto-inc/bahamut/branch/master/graph/badge.svg?token=gMtfEkiWUa)](https://codecov.io/gh/aporeto-inc/bahamut)
+
 Bahamut is a Go library that provides everything you need to set up a full blown API server based on an [Elemental](https://github.com/aporeto-inc/elemental) model generated from a [Monolithe Specification](https://github.com/aporeto-inc/monolithe).
 
 The main concept of Bahamut is to only write core business logic, and letting it handle all the boring bookkeeping. You can implement various Processors interfaces, and register them when you start a Bahamut Server.
