@@ -10,7 +10,7 @@ inputs:
   path: go/src/github.com/aporeto-inc/bahamut
 
 run:
-  path: sh
+  path: bash
   args:
     - -exc
     - |
