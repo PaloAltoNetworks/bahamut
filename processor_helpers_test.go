@@ -16,7 +16,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &mockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
@@ -37,7 +37,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator", func() {
 
-			auth.authenticated = true
+			auth.action = AuthActionOK
 
 			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
 
@@ -48,7 +48,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns no", func() {
 
-			auth.authenticated = false
+			auth.action = AuthActionKO
 			auth.errored = false
 
 			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
@@ -64,12 +64,42 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		Convey("When I check the authentication with a registered authenticator that returns an error", func() {
 
-			auth.authenticated = false
+			auth.action = AuthActionKO
 			auth.errored = true
 
 			err := CheckAuthentication([]RequestAuthenticator{auth}, ctx)
 
+			Convey("Then it should not be authenticated", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("When I check the authentication with two registered authenticators, first one says ok, second errrors", func() {
+
+			auth.action = AuthActionOK
+			auth.errored = false
+
+			auth2 := &mockAuth{}
+			auth2.errored = true
+
+			err := CheckAuthentication([]RequestAuthenticator{auth, auth2}, ctx)
+
 			Convey("Then it should be authenticated", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When I check the authentication with two registered authenticators, first one continue, second errrors", func() {
+
+			auth.action = AuthActionContinue
+			auth.errored = false
+
+			auth2 := &mockAuth{}
+			auth2.errored = true
+
+			err := CheckAuthentication([]RequestAuthenticator{auth, auth2}, ctx)
+
+			Convey("Then it should not be authenticated", func() {
 				So(err, ShouldNotBeNil)
 			})
 		})
@@ -80,7 +110,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 	Convey("Given I create a new Bahamut", t, func() {
 
-		auth := &Auth{}
+		auth := &mockAuth{}
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
@@ -101,7 +131,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer", func() {
 
-			auth.authorized = true
+			auth.action = AuthActionOK
 			auth.errored = false
 
 			err := CheckAuthorization([]Authorizer{auth}, ctx)
@@ -113,7 +143,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns no", func() {
 
-			auth.authorized = false
+			auth.action = AuthActionKO
 			auth.errored = false
 
 			err := CheckAuthorization([]Authorizer{auth}, ctx)
@@ -129,7 +159,7 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		Convey("When I check the authorization with a registered authorizer that returns an error", func() {
 
-			auth.authorized = false
+			auth.action = AuthActionKO
 			auth.errored = true
 
 			err := CheckAuthorization([]Authorizer{auth}, ctx)
@@ -140,6 +170,36 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 			Convey("Then the http status should be 500", func() {
 				So(err.(elemental.Error).Code, ShouldEqual, 500)
+			})
+		})
+
+		Convey("When I check the authorization with two registered authorizers, first one says ok, second errrors", func() {
+
+			auth.action = AuthActionOK
+			auth.errored = false
+
+			auth2 := &mockAuth{}
+			auth2.errored = true
+
+			err := CheckAuthorization([]Authorizer{auth, auth2}, ctx)
+
+			Convey("Then it should be authenticated", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When I check the authorization with two registered authorizers, first one continue, second errrors", func() {
+
+			auth.action = AuthActionContinue
+			auth.errored = false
+
+			auth2 := &mockAuth{}
+			auth2.errored = true
+
+			err := CheckAuthorization([]Authorizer{auth, auth2}, ctx)
+
+			Convey("Then it should not be authenticated", func() {
+				So(err, ShouldNotBeNil)
 			})
 		})
 	})
