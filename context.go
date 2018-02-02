@@ -51,6 +51,7 @@ type Context struct {
 	customMessages     []string
 	customMessagesLock *sync.Mutex
 	events             elemental.Events
+	eventsLock         *sync.Mutex
 	id                 string
 	claims             []string
 	claimsMap          map[string]string
@@ -67,6 +68,7 @@ func NewContext() *Context {
 		id:                 uuid.Must(uuid.NewV4()).String(),
 		events:             elemental.Events{},
 		customMessagesLock: &sync.Mutex{},
+		eventsLock:         &sync.Mutex{},
 		ctx:                context.Background(),
 	}
 }
@@ -119,11 +121,17 @@ func (c *Context) Identifier() string {
 // *before* the main object related event.
 func (c *Context) EnqueueEvents(events ...*elemental.Event) {
 
+	c.eventsLock.Lock()
+	defer c.eventsLock.Unlock()
+
 	c.events = append(c.events, events...)
 }
 
 // SetEvents set the full list of Errors in the Context.
 func (c *Context) SetEvents(events elemental.Events) {
+
+	c.eventsLock.Lock()
+	defer c.eventsLock.Unlock()
 
 	c.events = events
 }
@@ -131,11 +139,17 @@ func (c *Context) SetEvents(events elemental.Events) {
 // HasEvents returns true if the context has some custom events.
 func (c *Context) HasEvents() bool {
 
+	c.eventsLock.Lock()
+	defer c.eventsLock.Unlock()
+
 	return len(c.events) > 0
 }
 
 // Events returns the current Events.
 func (c *Context) Events() elemental.Events {
+
+	c.eventsLock.Lock()
+	defer c.eventsLock.Unlock()
 
 	return c.events
 }
