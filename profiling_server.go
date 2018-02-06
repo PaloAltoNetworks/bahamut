@@ -6,10 +6,8 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/go-zoo/bone"
-	"github.com/google/gops/agent"
+	"go.uber.org/zap"
 )
 
 // an profilingServer is the structure serving the profiling.
@@ -28,10 +26,6 @@ func newProfilingServer(config Config) *profilingServer {
 
 // start starts the profilingServer.
 func (s *profilingServer) start(ctx context.Context) {
-
-	if err := agent.Listen(&agent.Options{}); err != nil {
-		zap.L().Fatal("Unable to start the gops agent", zap.Error(err))
-	}
 
 	mux := bone.New()
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
