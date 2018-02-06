@@ -4,3 +4,4 @@ testresults.xml
 
 *.cover
 coverage.txt
+*.lock
