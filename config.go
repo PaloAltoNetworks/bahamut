@@ -228,7 +228,10 @@ type Config struct {
 	// Meta contains information about the meta apis.
 	Meta struct {
 
-		// Version should contain information relative to the service version
+		// ServiceName contains the name of the service.
+		ServiceName string
+
+		// Version should contain information relative to the service version.
 		Version map[string]interface{}
 
 		DisableMetaRoute bool

@@ -185,6 +185,14 @@ func (a *restServer) installRoutes() {
 		a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 	}
 
+	if a.config.Meta.ServiceName != "" {
+		a.multiplexer.Get("/_meta/name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCommonHeader(w, r.Header.Get("Origin"))
+			w.WriteHeader(200)
+			w.Write([]byte(a.config.Meta.ServiceName)) // nolint: errcheck
+		}))
+	}
+
 	if !a.config.Meta.DisableMetaRoute {
 
 		routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry)
