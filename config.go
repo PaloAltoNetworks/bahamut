@@ -224,4 +224,13 @@ type Config struct {
 		// If ReadOnly is aset to true, this will bypass the readonly mode for the set identities.
 		ReadOnlyExcludedIdentities []elemental.Identity
 	}
+
+	// Meta contains information about the meta apis.
+	Meta struct {
+
+		// Version should contain information relative to the service version
+		Version map[string]interface{}
+
+		DisableMetaRoute bool
+	}
 }

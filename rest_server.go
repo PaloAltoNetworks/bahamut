@@ -12,8 +12,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/opentracing/opentracing-go"
@@ -23,16 +21,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
 )
-
-// A RouteInfo contains basic information about an api route.
-type RouteInfo struct {
-	URL   string   `json:"url"`
-	Verbs []string `json:"verbs,omitempty"`
-}
-
-func (r RouteInfo) String() string {
-	return fmt.Sprintf("%s -> %s ", r.URL, strings.Join(r.Verbs, ", "))
-}
 
 // an restServer is the structure serving the api routes.
 type restServer struct {
@@ -188,18 +176,6 @@ func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes() {
 
-	routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry)
-	for _, ri := range routesInfo {
-		sort.Slice(ri, func(i int, j int) bool {
-			return strings.Compare(ri[i].URL, ri[j].URL) == -1
-		})
-	}
-
-	encodedRoutesInfo, err := json.Marshal(routesInfo)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to build route info: %s", err))
-	}
-
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
 
@@ -209,11 +185,35 @@ func (a *restServer) installRoutes() {
 		a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 	}
 
-	a.multiplexer.Get("/_meta/routes", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeader(w, r.Header.Get("Origin"))
-		w.WriteHeader(200)
-		w.Write(encodedRoutesInfo) // nolint: errcheck
-	}))
+	if !a.config.Meta.DisableMetaRoute {
+
+		routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry)
+
+		encodedRoutesInfo, err := json.Marshal(routesInfo)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to build route info: %s", err))
+		}
+
+		a.multiplexer.Get("/_meta/routes", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCommonHeader(w, r.Header.Get("Origin"))
+			w.WriteHeader(200)
+			w.Write(encodedRoutesInfo) // nolint: errcheck
+		}))
+	}
+
+	if a.config.Meta.Version != nil {
+
+		encodedVersionInfo, err := json.MarshalIndent(a.config.Meta.Version, "", "    ")
+		if err != nil {
+			panic(fmt.Sprintf("Unable to build route info: %s", err))
+		}
+
+		a.multiplexer.Get("/_meta/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCommonHeader(w, r.Header.Get("Origin"))
+			w.WriteHeader(200)
+			w.Write(encodedVersionInfo) // nolint: errcheck
+		}))
+	}
 
 	// non versioned routes
 	a.multiplexer.Get("/:category/:id", a.makeHandler(handleRetrieve))
@@ -317,79 +317,4 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		writeHTTPResponse(w, handler(bctx, a.config, a.processorFinder, a.pusher))
 	}
-}
-
-func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry) map[int][]RouteInfo {
-
-	addRoute := func(routes map[string]map[string]struct{}, url string, verb string) {
-
-		verbs, ok := routes[url]
-		if !ok {
-			verbs = map[string]struct{}{}
-			routes[url] = verbs
-		}
-		verbs[verb] = struct{}{}
-	}
-
-	versionedRoutes := map[int][]RouteInfo{}
-
-	for version, relationships := range registry {
-
-		versionedRoutes[version] = []RouteInfo{}
-
-		routes := map[string]map[string]struct{}{}
-
-		for identity, relationship := range relationships {
-
-			if len(relationship.AllowsCreate) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST")
-			}
-
-			if len(relationship.AllowsRetrieve) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "GET")
-			}
-
-			if len(relationship.AllowsDelete) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "DELETE")
-			}
-
-			if len(relationship.AllowsUpdate) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "PUT")
-			}
-
-			for parent := range relationship.AllowsRetrieveMany {
-				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET")
-				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "GET")
-				}
-			}
-
-			for parent := range relationship.AllowsCreate {
-				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST")
-				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "POST")
-				}
-			}
-		}
-
-		for url, verbs := range routes {
-			var flatVerbs []string
-
-			for v := range verbs {
-				flatVerbs = append(flatVerbs, v)
-			}
-
-			versionedRoutes[version] = append(
-				versionedRoutes[version],
-				RouteInfo{
-					URL:   url,
-					Verbs: flatVerbs,
-				},
-			)
-		}
-	}
-
-	return versionedRoutes
 }
