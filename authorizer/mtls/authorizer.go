@@ -3,6 +3,10 @@ package mtls
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/aporeto-inc/bahamut"
 	"github.com/aporeto-inc/elemental"
@@ -105,12 +109,23 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 		}
 	}
 
-	if ctx.Request.TLSConnectionState == nil {
+	if ctx.Request.TLSConnectionState == nil && ctx.Request.Headers.Get("X-TLS-Client-Certificate") == "" {
 		return bahamut.AuthActionContinue, nil
 	}
 
+	var err error
+	var certs []*x509.Certificate
+	if ctx.Request.TLSConnectionState != nil && len(ctx.Request.TLSConnectionState.PeerCertificates) > 0 {
+		certs = ctx.Request.TLSConnectionState.PeerCertificates
+	} else {
+		certs, err = decodeCertHeader(ctx.Request.Headers.Get("X-TLS-Client-Certificate"))
+		if err != nil {
+			return a.authActionFailure, nil
+		}
+	}
+
 	// If we can verify, we return the success auth action.
-	for _, cert := range ctx.Request.TLSConnectionState.PeerCertificates {
+	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			return a.authActionSuccess, nil
 		}
@@ -122,22 +137,33 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 
 func (a *mtlsVerifier) AuthenticateRequest(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
-	return a.checkAction(ctx.Request.TLSConnectionState, ctx.SetClaims)
+	return a.checkAction(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get("X-TLS-Client-Certificate"), ctx.SetClaims)
 }
 
 func (a *mtlsVerifier) AuthenticateSession(session bahamut.Session) (bahamut.AuthAction, error) {
 
-	return a.checkAction(session.TLSConnectionState(), session.SetClaims)
+	return a.checkAction(session.TLSConnectionState(), "", session.SetClaims)
 }
 
-func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimSetter func([]string)) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert string, claimSetter func([]string)) (bahamut.AuthAction, error) {
 
-	if tlsState == nil {
+	if tlsState == nil && headerCert == "" {
 		return bahamut.AuthActionContinue, nil
 	}
 
+	var err error
+	var certs []*x509.Certificate
+	if tlsState != nil && len(tlsState.PeerCertificates) > 0 {
+		certs = tlsState.PeerCertificates
+	} else {
+		certs, err = decodeCertHeader(headerCert)
+		if err != nil {
+			return a.authActionFailure, nil
+		}
+	}
+
 	// If we can verify, we return the success auth action
-	for _, cert := range tlsState.PeerCertificates {
+	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			claimSetter(makeClaims(cert))
 			return a.authActionSuccess, nil
@@ -146,4 +172,35 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, claimSetter fu
 
 	// If we can't verify, we return the failure auth action.
 	return a.authActionFailure, nil
+}
+
+func decodeCertHeader(header string) ([]*x509.Certificate, error) {
+
+	if len(header) < 54 {
+		return nil, errors.New("Invalid certificate in header")
+	}
+	// TODO: support multiple of them.
+	header = fmt.Sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----", strings.Replace(header[28:len(header)-26], " ", "\n", -1))
+
+	var certs []*x509.Certificate
+	var pemBlock *pem.Block
+	rest := []byte(header)
+
+	for {
+		pemBlock, rest = pem.Decode(rest)
+		if pemBlock == nil {
+			return nil, fmt.Errorf("No valid cert in: %s", header)
+		}
+		cert, err := x509.ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, cert)
+		if len(rest) == 0 {
+			break
+		}
+	}
+
+	return certs, nil
+
 }
