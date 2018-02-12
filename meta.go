@@ -19,7 +19,7 @@ func (r RouteInfo) String() string {
 	return fmt.Sprintf("%s -> %s ", r.URL, strings.Join(r.Verbs, ", "))
 }
 
-func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry) map[int][]RouteInfo {
+func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, processorFinder processorFinderFunc) map[int][]RouteInfo {
 
 	addRoute := func(routes map[string]map[string]struct{}, url string, verb string) {
 
@@ -41,6 +41,11 @@ func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry) map[
 
 		for identity, relationship := range relationships {
 
+			// If we don't have a processor registered for the given model, we skip.
+			if _, err := processorFinder(identity); err != nil {
+				continue
+			}
+
 			if len(relationship.AllowsCreate) > 0 {
 				addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST")
 			}
@@ -58,6 +63,11 @@ func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry) map[
 			}
 
 			for parent := range relationship.AllowsRetrieveMany {
+
+				if _, err := processorFinder(elemental.MakeIdentity(parent, parent)); err != nil {
+					continue
+				}
+
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET")
 				} else {
@@ -66,6 +76,11 @@ func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry) map[
 			}
 
 			for parent := range relationship.AllowsCreate {
+
+				if _, err := processorFinder(elemental.MakeIdentity(parent, parent)); err != nil {
+					continue
+				}
+
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST")
 				} else {
