@@ -26,7 +26,7 @@ func CertificatesFromStateOrHeader(state *tls.ConnectionState, headerData string
 		return decodeCertHeader(headerData)
 	}
 
-	return
+	return nil, errors.New("no valid certificate found in tls state or header")
 }
 
 // VerifierFunc is the type of function you can pass to do custom
