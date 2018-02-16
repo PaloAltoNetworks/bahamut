@@ -12,6 +12,23 @@ import (
 	"github.com/aporeto-inc/elemental"
 )
 
+const tlsHeaderKey = "X-TLS-Client-Certificate"
+
+// CertificatesFromStateOrHeader retrieves the certificates in either from the tls connection
+// state or from the header X-TLS-Client-Certificate in that order.
+func CertificatesFromStateOrHeader(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
+
+	if state != nil && len(state.PeerCertificates) > 0 {
+		return state.PeerCertificates, nil
+	}
+
+	if headerData != "" {
+		return decodeCertHeader(headerData)
+	}
+
+	return nil, errors.New("no valid certificate found in tls state or header")
+}
+
 // VerifierFunc is the type of function you can pass to do custom
 // verification on the certificates, like checking for the DN.
 // NOTE: Not implemented yet.
@@ -109,19 +126,13 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 		}
 	}
 
-	if ctx.Request.TLSConnectionState == nil && ctx.Request.Headers.Get("X-TLS-Client-Certificate") == "" {
+	if ctx.Request.TLSConnectionState == nil && ctx.Request.Headers.Get(tlsHeaderKey) == "" {
 		return bahamut.AuthActionContinue, nil
 	}
 
-	var err error
-	var certs []*x509.Certificate
-	if ctx.Request.TLSConnectionState != nil && len(ctx.Request.TLSConnectionState.PeerCertificates) > 0 {
-		certs = ctx.Request.TLSConnectionState.PeerCertificates
-	} else {
-		certs, err = decodeCertHeader(ctx.Request.Headers.Get("X-TLS-Client-Certificate"))
-		if err != nil {
-			return a.authActionFailure, nil
-		}
+	certs, err := CertificatesFromStateOrHeader(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+	if err != nil {
+		return a.authActionFailure, nil
 	}
 
 	// If we can verify, we return the success auth action.
@@ -137,7 +148,7 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 
 func (a *mtlsVerifier) AuthenticateRequest(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
-	return a.checkAction(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get("X-TLS-Client-Certificate"), ctx.SetClaims)
+	return a.checkAction(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey), ctx.SetClaims)
 }
 
 func (a *mtlsVerifier) AuthenticateSession(session bahamut.Session) (bahamut.AuthAction, error) {
@@ -151,15 +162,9 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 		return bahamut.AuthActionContinue, nil
 	}
 
-	var err error
-	var certs []*x509.Certificate
-	if tlsState != nil && len(tlsState.PeerCertificates) > 0 {
-		certs = tlsState.PeerCertificates
-	} else {
-		certs, err = decodeCertHeader(headerCert)
-		if err != nil {
-			return a.authActionFailure, nil
-		}
+	certs, err := CertificatesFromStateOrHeader(tlsState, headerCert)
+	if err != nil {
+		return a.authActionFailure, nil
 	}
 
 	// If we can verify, we return the success auth action
@@ -202,5 +207,4 @@ func decodeCertHeader(header string) ([]*x509.Certificate, error) {
 	}
 
 	return certs, nil
-
 }
