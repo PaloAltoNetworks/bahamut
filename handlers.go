@@ -22,7 +22,7 @@ func makeResponse(ctx *Context, response *elemental.Response) *elemental.Respons
 
 	var fields []log.Field
 	defer func() {
-		span := opentracing.SpanFromContext(ctx)
+		span := opentracing.SpanFromContext(ctx.Context())
 		if span != nil {
 			span.LogFields(fields...)
 		}
@@ -88,13 +88,13 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 	e := make(chan error)
 
 	go func() {
-		defer handleEventualPanic(ctx, r, e, recover)
+		defer handleEventualPanic(ctx.Context(), r, e, recover)
 		e <- d()
 	}()
 
 	select {
 
-	case <-ctx.Done():
+	case <-ctx.Context().Done():
 		return nil
 
 	case err := <-e:
@@ -102,7 +102,7 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 			if _, ok := err.(errMockPanicRequested); ok {
 				panic(err.Error())
 			}
-			return makeErrorResponse(ctx, r, err)
+			return makeErrorResponse(ctx.Context(), r, err)
 		}
 
 		return makeResponse(ctx, r)
@@ -120,7 +120,7 @@ func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFi
 
 	if !elemental.IsRetrieveManyAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -155,7 +155,7 @@ func handleRetrieve(ctx *Context, config Config, processorFinder processorFinder
 
 	if !elemental.IsRetrieveAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -194,7 +194,7 @@ func handleCreate(ctx *Context, config Config, processorFinder processorFinderFu
 
 	if !elemental.IsCreateAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -230,7 +230,7 @@ func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFu
 
 	if !elemental.IsUpdateAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -266,7 +266,7 @@ func handleDelete(ctx *Context, config Config, processorFinder processorFinderFu
 
 	if !elemental.IsDeleteAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -307,7 +307,7 @@ func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc
 
 	if !elemental.IsInfoAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
@@ -346,7 +346,7 @@ func handlePatch(ctx *Context, config Config, processorFinder processorFinderFun
 
 	if !elemental.IsPatchAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx,
+			ctx.Context(),
 			response,
 			elemental.NewError(
 				"Not allowed",
