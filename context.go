@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/aporeto-inc/elemental"
 
@@ -69,7 +68,6 @@ func NewContext() *Context {
 		events:             elemental.Events{},
 		customMessagesLock: &sync.Mutex{},
 		eventsLock:         &sync.Mutex{},
-		ctx:                context.Background(),
 	}
 }
 
@@ -80,6 +78,32 @@ func NewContextWithRequest(req *elemental.Request) *Context {
 	ctx.Request = req
 
 	return ctx
+}
+
+// WithContext returns a shallow copy of the manipulate.Context
+// with it's internal context changed to the given context.Context.
+func (c *Context) WithContext(ctx context.Context) *Context {
+
+	if ctx == nil {
+		panic("nil context")
+	}
+
+	c2 := &Context{}
+	*c2 = *c
+	c2.ctx = ctx
+
+	return c2
+}
+
+// Context returns the internal context.Context of the
+// manipulate.Context.
+func (c *Context) Context() context.Context {
+
+	if c.ctx != nil {
+		return c.ctx
+	}
+
+	return context.Background()
 }
 
 // SetClaims implements elemental.ClaimsHolder
@@ -200,15 +224,3 @@ func (c *Context) String() string {
 		c.CountTotal,
 	)
 }
-
-// Done implements the context.Context interface.
-func (c *Context) Done() <-chan struct{} { return c.ctx.Done() }
-
-// Err implements the context.Context interface.
-func (c *Context) Err() error { return c.ctx.Err() }
-
-// Deadline implements the context.Context interface.
-func (c *Context) Deadline() (time.Time, bool) { return c.ctx.Deadline() }
-
-// Value implements the context.Context interface.
-func (c *Context) Value(key interface{}) interface{} { return c.ctx.Value(key) }
