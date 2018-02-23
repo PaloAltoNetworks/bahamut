@@ -79,6 +79,14 @@ type Config struct {
 
 		// PushDisabled defines if the Push system should be disabled.
 		PushDisabled bool
+
+		// PushPublishDisabled disables the publication of events.
+		// If PushDisabled is false, this has no incidence.
+		PushPublishDisabled bool
+
+		// PushDispatchDisabled disables the dispatching of events.
+		// If PushDisabled is false, this has no incidence.
+		PushDispatchDisabled bool
 	}
 
 	MockServer struct {

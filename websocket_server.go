@@ -44,7 +44,9 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	if !config.WebSocketServer.PushDisabled {
+	// If push is not completely disabled and dispatching of event is not disabled, we install
+	// the websocket routes.
+	if !config.WebSocketServer.PushDisabled && !config.WebSocketServer.PushDispatchDisabled {
 		srv.multiplexer.Get("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			r = r.WithContext(srv.mainContext)
@@ -180,7 +182,8 @@ func (n *websocketServer) initPushSession(session *wsPushSession) error {
 
 func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
-	if n.config.WebSocketServer.Service == nil {
+	// If we don't have a service or publication is explicitely disabled, we do nothing.
+	if n.config.WebSocketServer.Service == nil || n.config.WebSocketServer.PushPublishDisabled {
 		return
 	}
 
@@ -219,6 +222,14 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 }
 
 func (n *websocketServer) start(ctx context.Context) {
+
+	// If dispatching of events is disabled, we sit here
+	// until the context is canceled.
+	if n.config.WebSocketServer.PushDispatchDisabled {
+		<-ctx.Done()
+		zap.L().Info("Push server stopped")
+		return
+	}
 
 	n.mainContext = ctx
 	defer func() { n.mainContext = nil }()
