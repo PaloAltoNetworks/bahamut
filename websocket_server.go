@@ -182,7 +182,7 @@ func (n *websocketServer) initPushSession(session *wsPushSession) error {
 
 func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
-	// If we don't have a service or publication is explicitely disabled, we do nothing.
+	// If we don't have a service or publication is explicitly disabled, we do nothing.
 	if n.config.WebSocketServer.Service == nil || n.config.WebSocketServer.PushPublishDisabled {
 		return
 	}
