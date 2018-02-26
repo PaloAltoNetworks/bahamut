@@ -367,7 +367,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		pusher := &mockusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
@@ -397,7 +397,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, true, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, true, nil)
 
 		Convey("Then I should have a 423 error and context should be nil", func() {
 			So(err, ShouldNotBeNil)
@@ -422,7 +422,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -447,7 +447,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (elemental): Bad Request: Something went wrong in the server when reading the body of the request"
 		expectedNbCalls := 1
@@ -473,7 +473,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -501,7 +501,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 422 (elemental): Validation Error: Data 'not-good' of attribute 'status' is not in list '[DONE PROGRESS TODO]'"
 		expectedNbCalls := 1
@@ -531,7 +531,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -566,7 +566,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -610,7 +610,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchCreateOperation(ctx, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
+		err := dispatchCreateOperation(ctx, processorFinder, factory, nil, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -641,7 +641,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		pusher := &mockusher{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, pusher.Push, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
@@ -671,7 +671,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, true, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, true, nil)
 
 		Convey("Then I should have a 423 error and context should be nil", func() {
 			So(err, ShouldNotBeNil)
@@ -696,7 +696,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -721,7 +721,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (elemental): Bad Request: Something went wrong in the server when reading the body of the request"
 		expectedNbCalls := 1
@@ -747,7 +747,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -775,7 +775,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 422 (elemental): Validation Error: Data 'not-good' of attribute 'status' is not in list '[DONE PROGRESS TODO]'"
 		expectedNbCalls := 1
@@ -805,7 +805,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, nil, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -840,7 +840,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, authenticators, nil, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -884,7 +884,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := NewContextWithRequest(request)
-		err := dispatchUpdateOperation(ctx, processorFinder, factory, authenticators, authorizers, nil, auditer, false, nil)
+		err := dispatchUpdateOperation(ctx, processorFinder, factory, nil, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)

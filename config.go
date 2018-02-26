@@ -231,6 +231,12 @@ type Config struct {
 
 		// If ReadOnly is aset to true, this will bypass the readonly mode for the set identities.
 		ReadOnlyExcludedIdentities []elemental.Identity
+
+		// Unmarshallers contains a list of custom umarshaller per identity.
+		// This allows to create custom function to umarshal the payload of a request.
+		// If none is provided for a particular identity, the standard unmarshal function
+		// is used.
+		Unmarshallers map[elemental.Identity]func([]byte, interface{}) error
 	}
 
 	// Meta contains information about the meta apis.

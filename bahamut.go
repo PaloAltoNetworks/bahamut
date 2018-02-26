@@ -58,6 +58,10 @@ type server struct {
 // NewServer returns a new Bahamut Server.
 func NewServer(config Config) Server {
 
+	if config.Model.Unmarshallers == nil {
+		config.Model.Unmarshallers = map[elemental.Identity]func([]byte, interface{}) error{}
+	}
+
 	mux := bone.New()
 	srv := &server{
 		multiplexer: mux,
