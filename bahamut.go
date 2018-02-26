@@ -16,6 +16,9 @@ import (
 	"github.com/go-zoo/bone"
 )
 
+// CustomUmarshaller is the type of function use to create custom unmarshalling.
+type CustomUmarshaller func(*elemental.Request) (elemental.Identifiable, error)
+
 // RegisterProcessorOrDie will register the given Processor for the given
 // Identity and will exit in case of errors. This is just a helper for
 // Server.RegisterProcessor function.
@@ -59,7 +62,7 @@ type server struct {
 func NewServer(config Config) Server {
 
 	if config.Model.Unmarshallers == nil {
-		config.Model.Unmarshallers = map[elemental.Identity]func([]byte, interface{}) error{}
+		config.Model.Unmarshallers = map[elemental.Identity]CustomUmarshaller{}
 	}
 
 	mux := bone.New()

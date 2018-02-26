@@ -131,7 +131,7 @@ func dispatchCreateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	unmarshaller func([]byte, interface{}) error,
+	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -173,13 +173,14 @@ func dispatchCreateOperation(
 		return
 	}
 
-	obj := factory(ctx.Request.Identity.Name, ctx.Request.Version)
+	var obj elemental.Identifiable
 	if unmarshaller != nil {
-		if err = unmarshaller(ctx.Request.Data, &obj); err != nil {
+		if obj, err = unmarshaller(ctx.Request); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
 	} else {
+		obj = factory(ctx.Request.Identity.Name, ctx.Request.Version)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
@@ -219,7 +220,7 @@ func dispatchUpdateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
 	factory elemental.IdentifiableFactory,
-	unmarshaller func([]byte, interface{}) error,
+	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -260,15 +261,15 @@ func dispatchUpdateOperation(
 		audit(auditer, ctx, err)
 		return
 	}
-
-	obj := factory(ctx.Request.Identity.Name, ctx.Request.Version)
+	var obj elemental.Identifiable
 
 	if unmarshaller != nil {
-		if err = unmarshaller(ctx.Request.Data, &obj); err != nil {
+		if obj, err = unmarshaller(ctx.Request); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
 	} else {
+		obj = factory(ctx.Request.Identity.Name, ctx.Request.Version)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return

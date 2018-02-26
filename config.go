@@ -236,7 +236,7 @@ type Config struct {
 		// This allows to create custom function to umarshal the payload of a request.
 		// If none is provided for a particular identity, the standard unmarshal function
 		// is used.
-		Unmarshallers map[elemental.Identity]func([]byte, interface{}) error
+		Unmarshallers map[elemental.Identity]CustomUmarshaller
 	}
 
 	// Meta contains information about the meta apis.
