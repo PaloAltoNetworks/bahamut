@@ -68,12 +68,7 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 		return ctx
 	}
 
-	var spanContext opentracing.SpanContext
-	if r.TrackingData != nil {
-		spanContext, _ = tracer.Extract(opentracing.TextMap, opentracing.HTTPHeadersCarrier(r.Headers))
-	} else {
-		spanContext, _ = tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(r.TrackingData))
-	}
+	spanContext, _ := tracer.Extract(opentracing.TextMap, opentracing.HTTPHeadersCarrier(r.Headers))
 	span := tracer.StartSpan(tracingName(r), ext.RPCServerOption(spanContext))
 	trackingCtx := opentracing.ContextWithSpan(ctx, span)
 
