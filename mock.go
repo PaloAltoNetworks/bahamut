@@ -1,13 +1,14 @@
 package bahamut
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/robertkrimen/otto"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type mockAction int
@@ -121,7 +122,7 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 		data = map[string]interface{}{}
 	}
 
-	if err := json.Unmarshal([]byte(body), &data); err != nil {
+	if err := jsoniter.Unmarshal([]byte(body), &data); err != nil {
 		return mockActionDone, fmt.Errorf("mock: unable to decode provided data: %s", err)
 	}
 

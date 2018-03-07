@@ -2,15 +2,15 @@ package bahamut
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
-
 	"go.uber.org/zap"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var currentMocker *mocker
@@ -35,7 +35,7 @@ func newMockServer(config Config) *mockServer {
 func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request) {
 
 	mock := &Mock{}
-	if err := json.NewDecoder(req.Body).Decode(mock); err != nil {
+	if err := jsoniter.NewDecoder(req.Body).Decode(mock); err != nil {
 		http.Error(w, fmt.Sprintf("Unable to decode provided mock: %s", err), http.StatusBadRequest)
 		return
 	}

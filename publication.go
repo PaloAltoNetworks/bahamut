@@ -2,17 +2,17 @@ package bahamut
 
 import (
 	"bytes"
-	"encoding/json"
 
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 
+	jsoniter "github.com/json-iterator/go"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
-	Data         json.RawMessage            `json:"data,omitempty"`
+	Data         jsoniter.RawMessage        `json:"data,omitempty"`
 	Topic        string                     `json:"topic,omitempty"`
 	Partition    int32                      `json:"partition,omitempty"`
 	TrackingName string                     `json:"trackingName,omitempty"`
@@ -34,7 +34,7 @@ func NewPublication(topic string) *Publication {
 func (p *Publication) Encode(o interface{}) error {
 
 	buffer := &bytes.Buffer{}
-	if err := json.NewEncoder(buffer).Encode(o); err != nil {
+	if err := jsoniter.NewEncoder(buffer).Encode(o); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func (p *Publication) Decode(dest interface{}) error {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
 	}
 
-	return json.NewDecoder(bytes.NewReader(p.Data)).Decode(&dest)
+	return jsoniter.NewDecoder(bytes.NewReader(p.Data)).Decode(&dest)
 }
 
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.
