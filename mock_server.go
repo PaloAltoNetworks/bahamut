@@ -35,7 +35,7 @@ func newMockServer(config Config) *mockServer {
 func (s *mockServer) handleInstallMock(w http.ResponseWriter, req *http.Request) {
 
 	mock := &Mock{}
-	if err := jsoniter.NewDecoder(req.Body).Decode(mock); err != nil {
+	if err := jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(req.Body).Decode(mock); err != nil {
 		http.Error(w, fmt.Sprintf("Unable to decode provided mock: %s", err), http.StatusBadRequest)
 		return
 	}

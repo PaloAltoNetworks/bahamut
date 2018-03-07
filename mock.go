@@ -122,7 +122,7 @@ func (m *Mock) execute(ctx *Context) (mockAction, error) {
 		data = map[string]interface{}{}
 	}
 
-	if err := jsoniter.Unmarshal([]byte(body), &data); err != nil {
+	if err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(body), &data); err != nil {
 		return mockActionDone, fmt.Errorf("mock: unable to decode provided data: %s", err)
 	}
 

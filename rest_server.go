@@ -197,7 +197,7 @@ func (a *restServer) installRoutes() {
 
 		routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry, a.processorFinder)
 
-		encodedRoutesInfo, err := jsoniter.Marshal(routesInfo)
+		encodedRoutesInfo, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(routesInfo)
 		if err != nil {
 			panic(fmt.Sprintf("Unable to build route info: %s", err))
 		}
@@ -211,7 +211,7 @@ func (a *restServer) installRoutes() {
 
 	if a.config.Meta.Version != nil {
 
-		encodedVersionInfo, err := jsoniter.MarshalIndent(a.config.Meta.Version, "", "    ")
+		encodedVersionInfo, err := jsoniter.ConfigCompatibleWithStandardLibrary.MarshalIndent(a.config.Meta.Version, "", "    ")
 		if err != nil {
 			panic(fmt.Sprintf("Unable to build route info: %s", err))
 		}

@@ -34,7 +34,7 @@ func NewPublication(topic string) *Publication {
 func (p *Publication) Encode(o interface{}) error {
 
 	buffer := &bytes.Buffer{}
-	if err := jsoniter.NewEncoder(buffer).Encode(o); err != nil {
+	if err := jsoniter.ConfigCompatibleWithStandardLibrary.NewEncoder(buffer).Encode(o); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func (p *Publication) Decode(dest interface{}) error {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
 	}
 
-	return jsoniter.NewDecoder(bytes.NewReader(p.Data)).Decode(&dest)
+	return jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(bytes.NewReader(p.Data)).Decode(&dest)
 }
 
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.
