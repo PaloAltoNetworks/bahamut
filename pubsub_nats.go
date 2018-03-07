@@ -3,14 +3,14 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/nats-io/go-nats"
 	"github.com/nats-io/go-nats-streaming"
+	"go.uber.org/zap"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type natsPubSub struct {
@@ -53,7 +53,7 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		return fmt.Errorf("not connected to nats. messages dropped")
 	}
 
-	data, err := json.Marshal(publication)
+	data, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
@@ -95,7 +95,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 
 	handler := func(m *stan.Msg) {
 		publication := NewPublication(topic)
-		if e := json.Unmarshal(m.Data, publication); e != nil {
+		if e := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(m.Data, publication); e != nil {
 			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
 			return
 		}

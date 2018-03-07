@@ -7,19 +7,19 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
-
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 // an restServer is the structure serving the api routes.
@@ -197,7 +197,7 @@ func (a *restServer) installRoutes() {
 
 		routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry, a.processorFinder)
 
-		encodedRoutesInfo, err := json.Marshal(routesInfo)
+		encodedRoutesInfo, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(routesInfo)
 		if err != nil {
 			panic(fmt.Sprintf("Unable to build route info: %s", err))
 		}
@@ -211,7 +211,7 @@ func (a *restServer) installRoutes() {
 
 	if a.config.Meta.Version != nil {
 
-		encodedVersionInfo, err := json.MarshalIndent(a.config.Meta.Version, "", "    ")
+		encodedVersionInfo, err := jsoniter.ConfigCompatibleWithStandardLibrary.MarshalIndent(a.config.Meta.Version, "", "    ")
 		if err != nil {
 			panic(fmt.Sprintf("Unable to build route info: %s", err))
 		}

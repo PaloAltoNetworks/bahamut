@@ -150,7 +150,7 @@ func TestMock_execute(t *testing.T) {
 			})
 
 			Convey("Then err should be correct", func() {
-				So(err.Error(), ShouldEqual, "mock: unable to decode provided data: invalid character 'b' looking for beginning of object key string")
+				So(err.Error(), ShouldEqual, `mock: unable to decode provided data: ReadMapCB: expect " after }, but found b, error found in #2 byte of ...|{broken}|..., bigger context ...|{broken}|...`)
 			})
 		})
 

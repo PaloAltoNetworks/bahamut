@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/aporeto-inc/elemental"
+
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
