@@ -138,7 +138,9 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 	// If we can verify, we return the success auth action.
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-			return a.authActionSuccess, nil
+			if paliateGo110VerificationBug(a.verifyOptions, cert) {
+				return a.authActionSuccess, nil
+			}
 		}
 	}
 
@@ -170,8 +172,10 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 	// If we can verify, we return the success auth action
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-			claimSetter(makeClaims(cert))
-			return a.authActionSuccess, nil
+			if paliateGo110VerificationBug(a.verifyOptions, cert) {
+				claimSetter(makeClaims(cert))
+				return a.authActionSuccess, nil
+			}
 		}
 	}
 
@@ -207,4 +211,17 @@ func decodeCertHeader(header string) ([]*x509.Certificate, error) {
 	}
 
 	return certs, nil
+}
+
+func paliateGo110VerificationBug(opts x509.VerifyOptions, cert *x509.Certificate) bool {
+
+	for _, neededEKU := range opts.KeyUsages {
+		for _, currentEKU := range cert.ExtKeyUsage {
+			if neededEKU == currentEKU {
+				return true
+			}
+		}
+	}
+
+	return false
 }
