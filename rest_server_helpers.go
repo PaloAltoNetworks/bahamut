@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aporeto-inc/elemental"
+	"go.uber.org/zap"
 )
 
 // Various common errors
@@ -62,7 +63,7 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
 
 	if r.Data != nil {
 		if _, err := w.Write(r.Data); err != nil {
-			panic(err)
+			zap.L().Debug("Unable to send http response to client", zap.Error(err))
 		}
 	}
 }
