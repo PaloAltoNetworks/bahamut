@@ -110,7 +110,7 @@ func (n *websocketServer) registerSession(session internalWSSession) {
 	n.sessions[session.Identifier()] = session
 	n.sessionsLock.Unlock()
 
-	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+	if handler := n.config.WebSocketServer.PushDispatchHandler; handler != nil {
 		if s, ok := session.(PushSession); ok {
 			handler.OnPushSessionStart(s)
 		}
@@ -127,7 +127,7 @@ func (n *websocketServer) unregisterSession(session internalWSSession) {
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
 
-	if handler := n.config.WebSocketServer.SessionsHandler; handler != nil {
+	if handler := n.config.WebSocketServer.PushDispatchHandler; handler != nil {
 		if s, ok := session.(PushSession); ok {
 			handler.OnPushSessionStop(s)
 		}
@@ -164,11 +164,11 @@ func (n *websocketServer) authSession(session internalWSSession) error {
 
 func (n *websocketServer) initPushSession(session *wsPushSession) error {
 
-	if n.config.WebSocketServer.SessionsHandler == nil {
+	if n.config.WebSocketServer.PushDispatchHandler == nil {
 		return nil
 	}
 
-	ok, err := n.config.WebSocketServer.SessionsHandler.OnPushSessionInit(session)
+	ok, err := n.config.WebSocketServer.PushDispatchHandler.OnPushSessionInit(session)
 	if err != nil {
 		return elemental.NewError("Forbidden", err.Error(), "bahamut", http.StatusForbidden)
 	}
@@ -191,9 +191,9 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
 	for _, event := range events {
 
-		if n.config.WebSocketServer.SessionsHandler != nil {
+		if n.config.WebSocketServer.PushPublishHandler != nil {
 			var ok bool
-			ok, err = n.config.WebSocketServer.SessionsHandler.ShouldPublish(event)
+			ok, err = n.config.WebSocketServer.PushPublishHandler.ShouldPublish(event)
 			if err != nil {
 				zap.L().Error("Error while calling ShouldPublish", zap.Error(err))
 				continue
@@ -272,9 +272,9 @@ func (n *websocketServer) start(ctx context.Context) {
 
 				go func(s PushSession, evt *elemental.Event) {
 
-					if n.config.WebSocketServer.SessionsHandler != nil {
+					if n.config.WebSocketServer.PushDispatchHandler != nil {
 
-						ok, err := n.config.WebSocketServer.SessionsHandler.ShouldPush(s, evt)
+						ok, err := n.config.WebSocketServer.PushDispatchHandler.ShouldDispatch(s, evt)
 						if err != nil {
 							zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
 							return

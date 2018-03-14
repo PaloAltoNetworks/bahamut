@@ -48,9 +48,9 @@ type mockSessionHandler struct {
 	shouldPublishCalled      int
 	shouldPublishOK          bool
 	shouldPublishErr         error
-	shouldPushCalled         int
-	shouldPushOK             bool
-	shouldPushErr            error
+	shouldDispatchCalled     int
+	shouldDisptatchOK        bool
+	shouldDisptatchErr       error
 }
 
 func (h *mockSessionHandler) OnPushSessionInit(PushSession) (bool, error) {
@@ -71,9 +71,9 @@ func (h *mockSessionHandler) ShouldPublish(*elemental.Event) (bool, error) {
 	return h.shouldPublishOK, h.shouldPublishErr
 }
 
-func (h *mockSessionHandler) ShouldPush(PushSession, *elemental.Event) (bool, error) {
-	h.shouldPushCalled++
-	return h.shouldPushOK, h.shouldPushErr
+func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event) (bool, error) {
+	h.shouldDispatchCalled++
+	return h.shouldDisptatchOK, h.shouldDisptatchErr
 }
 
 func TestWebsocketServer_newWebsocketServer(t *testing.T) {
@@ -160,7 +160,7 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 		mux := bone.New()
 		cfg := Config{}
 		h := &mockSessionHandler{}
-		cfg.WebSocketServer.SessionsHandler = h
+		cfg.WebSocketServer.PushDispatchHandler = h
 
 		wss := newWebsocketServer(cfg, mux, pf)
 
@@ -353,7 +353,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitOK = true
 
 			cfg := Config{}
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushDispatchHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 
@@ -371,7 +371,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitOK = false
 
 			cfg := Config{}
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushDispatchHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 
@@ -390,7 +390,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitErr = errors.New("nope")
 
 			cfg := Config{}
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushDispatchHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 
@@ -449,7 +449,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			cfg := Config{}
 			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushPublishHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -468,7 +468,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			cfg := Config{}
 			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushPublishHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -487,7 +487,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			cfg := Config{}
 			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.SessionsHandler = h
+			cfg.WebSocketServer.PushPublishHandler = h
 
 			wss := newWebsocketServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))

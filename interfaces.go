@@ -132,14 +132,19 @@ type Authorizer interface {
 	IsAuthorized(*Context) (AuthAction, error)
 }
 
-// PushSessionsHandler is the interface that must be implemented in order to
-// to be used as the Bahamut Push Server handler.
-type PushSessionsHandler interface {
+// PushDispatchHandler is the interface that must be implemented in order to
+// to be used as the Bahamut Push Dispatch handler.
+type PushDispatchHandler interface {
 	OnPushSessionInit(PushSession) (bool, error)
 	OnPushSessionStart(PushSession)
 	OnPushSessionStop(PushSession)
+	ShouldDispatch(PushSession, *elemental.Event) (bool, error)
+}
+
+// PushPublishHandler is the interface that must be implemented in order to
+// to be used as the Bahamut Push Publish handler.
+type PushPublishHandler interface {
 	ShouldPublish(*elemental.Event) (bool, error)
-	ShouldPush(PushSession, *elemental.Event) (bool, error)
 }
 
 // Auditer is the interface an object must implement in order to handle
