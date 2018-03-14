@@ -66,9 +66,13 @@ type Config struct {
 		// Topic defines the default notification topic to use.
 		Topic string
 
-		// SessionsHandler defines the handler that will be used to
-		// manage push session lifecycle.
-		SessionsHandler PushSessionsHandler
+		// PushDisptachHandler defines the handler that will be used to
+		// decide if a push event should be disptach to push sessions.
+		PushDispatchHandler PushDispatchHandler
+
+		// PushPublishHandler defines the handler that will be used to
+		// decide if an event should be published.
+		PushPublishHandler PushPublishHandler
 
 		// Disabled defines if the the entire websocket server should be disabled.
 		// If you set this to true, other options has no effect.
