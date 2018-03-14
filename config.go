@@ -67,7 +67,7 @@ type Config struct {
 		Topic string
 
 		// PushDisptachHandler defines the handler that will be used to
-		// decide if a push event should be disptach to push sessions.
+		// decide if a push event should be dispatch to push sessions.
 		PushDispatchHandler PushDispatchHandler
 
 		// PushPublishHandler defines the handler that will be used to
