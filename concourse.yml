@@ -12,16 +12,12 @@ inputs:
 run:
   path: bash
   args:
-    - -exc
+    - -ec
     - |
-      set +x
       export PATH=$PATH:$GOPATH/bin:$PWD/go/bin
       export GOPATH=$PWD/go:$GOPATH
 
-      go get -u github.com/magefile/mage github.com/aporeto-inc/domingo/golang
-
       cd go/src/github.com/aporeto-inc/bahamut
-      mage init || exit 1
-      mage test || exit 1
-
-      bash <(curl -s https://codecov.io/bash) || exit 0
+      dep ensure -v
+      ./.test.sh
+      bash <(curl -s https://codecov.io/bash)
