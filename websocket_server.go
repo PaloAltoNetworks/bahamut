@@ -249,47 +249,51 @@ func (n *websocketServer) start(ctx context.Context) {
 	for {
 		select {
 
-		case publication := <-publications:
+		case p := <-publications:
 
-			event := &elemental.Event{}
-			if err := publication.Decode(event); err != nil {
-				zap.L().Error("Unable to decode event", zap.Error(err))
-				break
-			}
+			go func(publication *Publication) {
 
-			// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
-			n.sessionsLock.Lock()
-			var sessions []PushSession
-			for _, session := range n.sessions {
-				if s, ok := session.(PushSession); ok {
-					sessions = append(sessions, s)
+				event := &elemental.Event{}
+				if err := publication.Decode(event); err != nil {
+					zap.L().Error("Unable to decode event", zap.Error(err))
+					return
 				}
-			}
-			n.sessionsLock.Unlock()
 
-			// Dispatch the event to all sessions
-			for _, session := range sessions {
-
-				go func(s PushSession, evt *elemental.Event) {
-
-					if n.config.WebSocketServer.PushDispatchHandler != nil {
-
-						ok, err := n.config.WebSocketServer.PushDispatchHandler.ShouldDispatch(s, evt)
-						if err != nil {
-							zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
-							return
-						}
-
-						if !ok {
-							return
-						}
+				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
+				n.sessionsLock.Lock()
+				var sessions []PushSession
+				for _, session := range n.sessions {
+					if s, ok := session.(PushSession); ok {
+						sessions = append(sessions, s)
 					}
-					// we put back userInfo to nil before sending it clients.
-					evt.UserInfo = nil
-					s.DirectPush(evt)
+				}
+				n.sessionsLock.Unlock()
 
-				}(session, event.Duplicate())
-			}
+				// Dispatch the event to all sessions
+				for _, session := range sessions {
+
+					go func(s PushSession, evt *elemental.Event) {
+
+						if n.config.WebSocketServer.PushDispatchHandler != nil {
+
+							ok, err := n.config.WebSocketServer.PushDispatchHandler.ShouldDispatch(s, evt)
+							if err != nil {
+								zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
+								return
+							}
+
+							if !ok {
+								return
+							}
+						}
+
+						// we put back userInfo to nil before sending it clients.
+						evt.UserInfo = nil
+						s.DirectPush(evt)
+
+					}(session, event.Duplicate())
+				}
+			}(p)
 
 		case <-ctx.Done():
 
