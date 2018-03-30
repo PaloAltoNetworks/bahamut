@@ -34,13 +34,7 @@ func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder pr
 		processorFinder: processorFinder,
 	}
 
-	// TODO: this is also a hack for compat with
-	// golang/x/net/websocket.
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  32 << 20,
-		WriteBufferSize: 32 << 20,
-		// ReadBufferSize:  1024,
-		// WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 

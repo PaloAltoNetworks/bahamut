@@ -90,14 +90,6 @@ func (s *wsAPISession) listen() {
 	go s.read()
 	go s.write()
 
-	// TODO: this is here for backward compat.
-	// we should remvove this when all enforcers
-	// are switched to at least manipulate 2.x
-	s.responses <- &elemental.Response{
-		StatusCode: http.StatusOK,
-		Request:    elemental.NewRequest(),
-	}
-
 	for {
 		select {
 		case request := <-s.requests:
