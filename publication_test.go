@@ -84,3 +84,27 @@ func TestPublication_EncodeDecode(t *testing.T) {
 		})
 	})
 }
+
+func TestPublication_Duplicate(t *testing.T) {
+
+	Convey("Given I have a publication", t, func() {
+
+		pub := NewPublication("topic")
+		pub.Data = []byte("data")
+		pub.Partition = 12
+		pub.TrackingName = "TrackingName"
+
+		Convey("When I call duplicate", func() {
+
+			dup := pub.Duplicate()
+
+			Convey("Then the copy should be correct", func() {
+				So(dup, ShouldNotEqual, pub)
+				So(dup.Data, ShouldResemble, pub.Data)
+				So(dup.Partition, ShouldEqual, pub.Partition)
+				So(dup.TrackingName, ShouldEqual, pub.TrackingName)
+				So(dup.Topic, ShouldEqual, pub.Topic)
+			})
+		})
+	})
+}

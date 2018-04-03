@@ -114,9 +114,10 @@ func (p *localPubSub) listen() {
 			p.lock.Unlock()
 
 		case publication := <-p.publications:
+
 			p.lock.Lock()
 			for _, sub := range p.subscribers[publication.Topic] {
-				go func(c chan *Publication) { c <- publication }(sub)
+				go func(s chan *Publication, p *Publication) { s <- p.Duplicate() }(sub, publication)
 			}
 			p.lock.Unlock()
 

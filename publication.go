@@ -92,3 +92,16 @@ func (p *Publication) Span() opentracing.Span {
 
 	return p.span
 }
+
+// Duplicate returns a copy of the publication
+func (p *Publication) Duplicate() *Publication {
+
+	pub := NewPublication(p.Topic)
+	pub.Data = p.Data
+	pub.Partition = p.Partition
+	pub.TrackingName = p.TrackingName
+	pub.TrackingData = p.TrackingData
+	pub.span = p.span
+
+	return pub
+}
