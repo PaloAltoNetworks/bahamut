@@ -57,8 +57,8 @@ type Config struct {
 		CustomRootHandlerFunc http.HandlerFunc
 	}
 
-	// WebSocketServer contains the configuration for the WebSocket Server.
-	WebSocketServer struct {
+	// PushServer contains the configuration for the Push Server.
+	PushServer struct {
 
 		// Service defines the pubsub server to use.
 		Service PubSubServer
@@ -66,31 +66,25 @@ type Config struct {
 		// Topic defines the default notification topic to use.
 		Topic string
 
-		// PushDisptachHandler defines the handler that will be used to
+		// DispatchHandler defines the handler that will be used to
 		// decide if a push event should be dispatch to push sessions.
-		PushDispatchHandler PushDispatchHandler
+		DispatchHandler PushDispatchHandler
 
-		// PushPublishHandler defines the handler that will be used to
+		// PublishHandler defines the handler that will be used to
 		// decide if an event should be published.
-		PushPublishHandler PushPublishHandler
+		PublishHandler PushPublishHandler
 
 		// Disabled defines if the the entire websocket server should be disabled.
 		// If you set this to true, other options has no effect.
 		Disabled bool
 
-		// APIDisabled defines if the ReST API system should be disabled.
-		APIDisabled bool
-
-		// PushDisabled defines if the Push system should be disabled.
-		PushDisabled bool
-
-		// PushPublishDisabled disables the publication of events.
+		// PublishDisabled disables the publication of events.
 		// If PushDisabled is false, this has no incidence.
-		PushPublishDisabled bool
+		PublishDisabled bool
 
-		// PushDispatchDisabled disables the dispatching of events.
+		// DispatchDisabled disables the dispatching of events.
 		// If PushDisabled is false, this has no incidence.
-		PushDispatchDisabled bool
+		DispatchDisabled bool
 	}
 
 	MockServer struct {

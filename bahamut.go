@@ -51,7 +51,7 @@ type server struct {
 	processors  map[string]Processor
 
 	restServer      *restServer
-	websocketServer *websocketServer
+	pushServer      *pushServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
 	tracingServer   *tracingServer
@@ -75,8 +75,8 @@ func NewServer(config Config) Server {
 		srv.restServer = newRestServer(config, mux, srv.ProcessorForIdentity, srv.Push)
 	}
 
-	if !config.WebSocketServer.Disabled {
-		srv.websocketServer = newWebsocketServer(config, mux, srv.ProcessorForIdentity)
+	if !config.PushServer.Disabled {
+		srv.pushServer = newPushServer(config, mux, srv.ProcessorForIdentity)
 	}
 
 	if !config.HealthServer.Disabled {
@@ -136,11 +136,11 @@ func (b *server) ProcessorsCount() int {
 
 func (b *server) Push(events ...*elemental.Event) {
 
-	if b.websocketServer == nil {
+	if b.pushServer == nil {
 		return
 	}
 
-	b.websocketServer.pushEvents(events...)
+	b.pushServer.pushEvents(events...)
 }
 
 func (b *server) Start() {
@@ -176,8 +176,8 @@ func (b *server) Run(ctx context.Context) {
 		go b.restServer.start(ctx)
 	}
 
-	if b.websocketServer != nil {
-		go b.websocketServer.start(ctx)
+	if b.pushServer != nil {
+		go b.pushServer.start(ctx)
 	}
 
 	<-ctx.Done()
