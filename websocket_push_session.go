@@ -167,7 +167,7 @@ func (s *wsPushSession) listen() {
 
 		case err := <-s.conn.Done():
 
-			if !websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+			if !websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure, websocket.CloseNoStatusReceived) {
 				zap.L().Error("Error in push session", zap.String("id", s.id), zap.Error(err))
 			}
 
