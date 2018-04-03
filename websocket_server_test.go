@@ -522,7 +522,7 @@ func TestWebsocketServer_start(t *testing.T) {
 			pub := NewPublication("")
 			pub.Encode(evt) // nolint: errcheck
 
-			pubsub.Publish(pub)
+			pubsub.Publish(pub) // nolint: errcheck
 
 			var msg1 []byte
 			select {
@@ -552,7 +552,7 @@ func TestWebsocketServer_start(t *testing.T) {
 			pub := NewPublication("")
 			pub.Encode(evt) // nolint: errcheck
 
-			pubsub.Publish(pub)
+			pubsub.Publish(pub) // nolint: errcheck
 
 			var msg1 []byte
 			select {
@@ -585,7 +585,7 @@ func TestWebsocketServer_start(t *testing.T) {
 			pub := NewPublication("")
 			pub.Encode(evt) // nolint: errcheck
 
-			pubsub.Publish(pub)
+			pubsub.Publish(pub) // nolint: errcheck
 
 			var msg1 []byte
 			select {
@@ -619,7 +619,7 @@ func TestWebsocketServer_start(t *testing.T) {
 			evt.Entity = []byte(`{ broken`)
 			pub.Encode(evt) // nolint: errcheck
 
-			pubsub.Publish(pub)
+			pubsub.Publish(pub) // nolint: errcheck
 
 			var msg1 []byte
 			select {
@@ -728,7 +728,7 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.Unlock()
 
 			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
-			defer ws.Close(0)
+			defer ws.Close(0) // nolint: errcheck
 
 			Convey("Then err should should be nil", func() {
 				So(err, ShouldBeNil)
