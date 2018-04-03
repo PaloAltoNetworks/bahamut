@@ -728,7 +728,7 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.Unlock()
 
 			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
-			defer ws.Close(0) // nolint: errcheck
+			defer ws.Close(0) // nolint
 
 			Convey("Then err should should be nil", func() {
 				So(err, ShouldBeNil)
