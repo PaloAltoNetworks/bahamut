@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/aporeto-inc/addedeffect/wsc"
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
 
-type websocketServer struct {
-	sessions        map[string]internalWSSession
+type pushServer struct {
+	sessions        map[string]*wsPushSession
 	multiplexer     *bone.Mux
 	config          Config
 	processorFinder processorFinderFunc
@@ -24,77 +25,27 @@ type websocketServer struct {
 	mainContext     context.Context
 }
 
-func newWebsocketServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *websocketServer {
+func newPushServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
 
-	srv := &websocketServer{
-		sessions:        map[string]internalWSSession{},
+	srv := &pushServer{
+		sessions:        map[string]*wsPushSession{},
 		multiplexer:     multiplexer,
 		config:          config,
 		sessionsLock:    &sync.Mutex{},
 		processorFinder: processorFinder,
 	}
 
-	var upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
 	// If push is not completely disabled and dispatching of event is not disabled, we install
 	// the websocket routes.
-	if !config.WebSocketServer.PushDisabled && !config.WebSocketServer.PushDispatchDisabled {
-		srv.multiplexer.Get("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			r = r.WithContext(srv.mainContext)
-
-			session := newWSPushSession(r, config, srv.unregisterSession)
-			if err := srv.authSession(session); err != nil {
-				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
-				return
-			}
-
-			if err := srv.initPushSession(session); err != nil {
-				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
-				return
-			}
-
-			ws, err := upgrader.Upgrade(w, r, nil)
-			if err != nil {
-				writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
-				return
-			}
-
-			srv.registerSession(session)
-			session.setConn(ws)
-			session.listen()
-		}))
-
+	if !config.PushServer.Disabled && !config.PushServer.DispatchDisabled {
+		srv.multiplexer.Get("/events", http.HandlerFunc(srv.handleRequest))
 		zap.L().Debug("Websocket push handlers installed")
-	}
-
-	if !config.WebSocketServer.APIDisabled {
-		srv.multiplexer.Get("/wsapi", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			session := newWSAPISession(r, config, srv.unregisterSession, srv.processorFinder, srv.pushEvents)
-			if err := srv.authSession(session); err != nil {
-				return
-			}
-
-			ws, err := upgrader.Upgrade(w, r, nil)
-			if err != nil {
-				return
-			}
-
-			srv.registerSession(session)
-			session.setConn(ws)
-			session.listen()
-		}))
-
-		zap.L().Debug("Websocket api handlers installed")
 	}
 
 	return srv
 }
 
-func (n *websocketServer) registerSession(session internalWSSession) {
+func (n *pushServer) registerSession(session *wsPushSession) {
 
 	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
@@ -104,14 +55,12 @@ func (n *websocketServer) registerSession(session internalWSSession) {
 	n.sessions[session.Identifier()] = session
 	n.sessionsLock.Unlock()
 
-	if handler := n.config.WebSocketServer.PushDispatchHandler; handler != nil {
-		if s, ok := session.(PushSession); ok {
-			handler.OnPushSessionStart(s)
-		}
+	if handler := n.config.PushServer.DispatchHandler; handler != nil {
+		handler.OnPushSessionStart(session)
 	}
 }
 
-func (n *websocketServer) unregisterSession(session internalWSSession) {
+func (n *pushServer) unregisterSession(session *wsPushSession) {
 
 	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
@@ -121,14 +70,12 @@ func (n *websocketServer) unregisterSession(session internalWSSession) {
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
 
-	if handler := n.config.WebSocketServer.PushDispatchHandler; handler != nil {
-		if s, ok := session.(PushSession); ok {
-			handler.OnPushSessionStop(s)
-		}
+	if handler := n.config.PushServer.DispatchHandler; handler != nil {
+		handler.OnPushSessionStop(session)
 	}
 }
 
-func (n *websocketServer) authSession(session internalWSSession) error {
+func (n *pushServer) authSession(session *wsPushSession) error {
 
 	if len(n.config.Security.SessionAuthenticators) == 0 {
 		return nil
@@ -156,13 +103,13 @@ func (n *websocketServer) authSession(session internalWSSession) error {
 	return nil
 }
 
-func (n *websocketServer) initPushSession(session *wsPushSession) error {
+func (n *pushServer) initPushSession(session *wsPushSession) error {
 
-	if n.config.WebSocketServer.PushDispatchHandler == nil {
+	if n.config.PushServer.DispatchHandler == nil {
 		return nil
 	}
 
-	ok, err := n.config.WebSocketServer.PushDispatchHandler.OnPushSessionInit(session)
+	ok, err := n.config.PushServer.DispatchHandler.OnPushSessionInit(session)
 	if err != nil {
 		return elemental.NewError("Forbidden", err.Error(), "bahamut", http.StatusForbidden)
 	}
@@ -174,10 +121,10 @@ func (n *websocketServer) initPushSession(session *wsPushSession) error {
 	return nil
 }
 
-func (n *websocketServer) pushEvents(events ...*elemental.Event) {
+func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 	// If we don't have a service or publication is explicitly disabled, we do nothing.
-	if n.config.WebSocketServer.Service == nil || n.config.WebSocketServer.PushPublishDisabled {
+	if n.config.PushServer.Service == nil || n.config.PushServer.PublishDisabled {
 		return
 	}
 
@@ -185,9 +132,9 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 
 	for _, event := range events {
 
-		if n.config.WebSocketServer.PushPublishHandler != nil {
+		if n.config.PushServer.PublishHandler != nil {
 			var ok bool
-			ok, err = n.config.WebSocketServer.PushPublishHandler.ShouldPublish(event)
+			ok, err = n.config.PushServer.PublishHandler.ShouldPublish(event)
 			if err != nil {
 				zap.L().Error("Error while calling ShouldPublish", zap.Error(err))
 				continue
@@ -198,14 +145,14 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 			}
 		}
 
-		publication := NewPublication(n.config.WebSocketServer.Topic)
+		publication := NewPublication(n.config.PushServer.Topic)
 		if err = publication.Encode(event); err != nil {
 			zap.L().Error("Unable to encode event", zap.Error(err))
 			break
 		}
 
 		for i := 0; i < 3; i++ {
-			err = n.config.WebSocketServer.Service.Publish(publication)
+			err = n.config.PushServer.Service.Publish(publication)
 			if err != nil {
 				zap.L().Warn("Unable to publish event", zap.String("topic", publication.Topic), zap.Stringer("event", event), zap.Error(err))
 				continue
@@ -215,11 +162,47 @@ func (n *websocketServer) pushEvents(events ...*elemental.Event) {
 	}
 }
 
-func (n *websocketServer) start(ctx context.Context) {
+func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
+
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	r = r.WithContext(n.mainContext)
+
+	session := newWSPushSession(r, n.config, n.unregisterSession)
+	if err := n.authSession(session); err != nil {
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+		return
+	}
+
+	if err := n.initPushSession(session); err != nil {
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+		return
+	}
+
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+		return
+	}
+
+	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{})
+	if err != nil {
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+		return
+	}
+
+	n.registerSession(session)
+	session.setConn(conn)
+	session.listen()
+}
+
+func (n *pushServer) start(ctx context.Context) {
 
 	// If dispatching of events is disabled, we sit here
 	// until the context is canceled.
-	if n.config.WebSocketServer.PushDispatchDisabled {
+	if n.config.PushServer.DispatchDisabled {
 		<-ctx.Done()
 		zap.L().Info("Push server stopped")
 		return
@@ -229,15 +212,16 @@ func (n *websocketServer) start(ctx context.Context) {
 	defer func() { n.mainContext = nil }()
 
 	publications := make(chan *Publication)
-	if n.config.WebSocketServer.Service != nil {
+	if n.config.PushServer.Service != nil {
 		errors := make(chan error)
-		unsubscribe := n.config.WebSocketServer.Service.Subscribe(publications, errors, n.config.WebSocketServer.Topic)
+		unsubscribe := n.config.PushServer.Service.Subscribe(publications, errors, n.config.PushServer.Topic)
 		defer unsubscribe()
 	}
 
 	zap.L().Debug("Websocket server started",
-		zap.Bool("api-enabled", !n.config.WebSocketServer.APIDisabled),
-		zap.Bool("push-enabled", !n.config.WebSocketServer.PushDisabled),
+		zap.Bool("push-enabled", !n.config.PushServer.Disabled),
+		zap.Bool("push-dispatching-enabled", !n.config.PushServer.DispatchDisabled),
+		zap.Bool("push-publish-enabled", !n.config.PushServer.PublishDisabled),
 	)
 
 	for {
@@ -256,10 +240,8 @@ func (n *websocketServer) start(ctx context.Context) {
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
 				n.sessionsLock.Lock()
 				var sessions []PushSession
-				for _, session := range n.sessions {
-					if s, ok := session.(PushSession); ok {
-						sessions = append(sessions, s)
-					}
+				for _, s := range n.sessions {
+					sessions = append(sessions, s)
 				}
 				n.sessionsLock.Unlock()
 
@@ -268,9 +250,9 @@ func (n *websocketServer) start(ctx context.Context) {
 
 					go func(s PushSession, evt *elemental.Event) {
 
-						if n.config.WebSocketServer.PushDispatchHandler != nil {
+						if n.config.PushServer.DispatchHandler != nil {
 
-							ok, err := n.config.WebSocketServer.PushDispatchHandler.ShouldDispatch(s, evt)
+							ok, err := n.config.PushServer.DispatchHandler.ShouldDispatch(s, evt)
 							if err != nil {
 								zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
 								return
@@ -293,7 +275,7 @@ func (n *websocketServer) start(ctx context.Context) {
 
 			n.sessionsLock.Lock()
 			for _, session := range n.sessions {
-				session.stop()
+				session.close(websocket.CloseGoingAway)
 			}
 			n.sessionsLock.Unlock()
 

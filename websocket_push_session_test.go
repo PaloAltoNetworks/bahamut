@@ -1,16 +1,20 @@
 package bahamut
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/aporeto-inc/addedeffect/wsc"
+	"github.com/aporeto-inc/elemental"
 	"github.com/aporeto-inc/elemental/test/model"
 
-	"github.com/aporeto-inc/elemental"
-
+	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -18,15 +22,33 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 
 	Convey("Given call newWSPushSession", t, func() {
 
-		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := Config{}
-		s := newWSPushSession(req, cfg, nil)
+		u, _ := url.Parse("http://toto.com?a=b")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
+		}
+		unregister := func(i *wsPushSession) {}
+		s := newWSPushSession(req, conf, unregister)
 
 		Convey("Then it should be correctly initialized", func() {
 			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
 			So(s.filters, ShouldHaveSameTypeAs, make(chan *elemental.PushFilter))
 			So(s.currentFilterLock, ShouldNotBeNil)
-			So(s, ShouldImplement, (*internalWSSession)(nil))
+			So(s.claims, ShouldResemble, []string{})
+			So(s.claimsMap, ShouldResemble, map[string]string{})
+			So(s.config, ShouldResemble, conf)
+			So(s.headers, ShouldEqual, req.Header)
+			So(s.id, ShouldNotBeEmpty)
+			So(s.parameters, ShouldResemble, url.Values{"a": {"b"}})
+			So(s.closeCh, ShouldHaveSameTypeAs, make(chan struct{}))
+			So(s.unregister, ShouldEqual, unregister)
+			So(s.ctx, ShouldNotBeNil)
+			So(s.cancel, ShouldNotBeNil)
+			So(s.tlsConnectionState, ShouldEqual, req.TLS)
+			So(s.remoteAddr, ShouldEqual, req.RemoteAddr)
 		})
 	})
 }
@@ -107,171 +129,298 @@ func TestWSPushSession_Filtering(t *testing.T) {
 	})
 }
 
-func TestWSPushSession_read(t *testing.T) {
+func TestWSPushSession_accessors(t *testing.T) {
 
-	Convey("Given I have a push session", t, func() {
+	Convey("Given create a push session", t, func() {
 
-		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := Config{}
-
-		filter := elemental.NewPushFilter()
-		filter.FilterIdentity("list", elemental.EventCreate)
-
-		conn := newMockWebsocket()
-
-		calledCounter := &counter{}
-		unregister := func(ws internalWSSession) {
-			calledCounter.Add(1)
+		u, _ := url.Parse("http://toto.com?a=b&token=token")
+		conf := Config{}
+		req := &http.Request{
+			Header:     http.Header{"h1": {"a"}},
+			URL:        u,
+			TLS:        &tls.ConnectionState{},
+			RemoteAddr: "1.2.3.4",
 		}
+		span := opentracing.StartSpan("test")
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
+		req = req.WithContext(ctx)
+		unregister := func(i *wsPushSession) {}
 
-		s := newWSPushSession(req, cfg, unregister)
-		s.conn = conn
+		s := newWSPushSession(req, conf, unregister)
 
-		stopper := newStopper()
-		go func() {
-			s.read()
-			stopper.Stop()
-		}()
+		Convey("When I call Identifier()", func() {
 
-		Convey("When it receives a new filter", func() {
+			id := s.Identifier()
 
-			conn.setNextRead(filter)
-
-			var f *elemental.PushFilter
-			select {
-			case f = <-s.filters:
-			case <-time.After(30 * time.Millisecond):
-				panic("getting filter took too long")
-			}
-
-			Convey("Then read should not be stopped", func() {
-				So(stopper.isStopped(), ShouldBeFalse)
-			})
-
-			Convey("Then f should not be nil", func() {
-				So(f, ShouldNotBeNil)
-				So(f.Identities, ShouldResemble, map[string][]elemental.EventType{"list": {elemental.EventType("create")}})
+			Convey("Then id should be correct", func() {
+				So(id, ShouldNotBeEmpty)
 			})
 		})
 
-		Convey("When I call read then write an error", func() {
+		Convey("When I call SetClaims()", func() {
 
-			conn.setNextRead(errors.New("nooo"))
+			s.SetClaims([]string{"a=a", "b=b"})
 
-			select {
-			case <-stopper.Done():
-			case <-time.After(300 * time.Millisecond):
-				panic("closing session took too long")
-			}
-
-			Convey("Then read should be stopped", func() {
-				So(stopper.isStopped(), ShouldBeTrue)
+			Convey("Then GetClaims() should return the correct claims ", func() {
+				So(s.GetClaims(), ShouldResemble, []string{"a=a", "b=b"})
 			})
 
-			Convey("Then the session should have called unregister once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
+			Convey("Then GetClaimsMap() should return the correct claims ", func() {
+				m := s.GetClaimsMap()
+				So(len(m), ShouldEqual, 2)
+				So(m["a"], ShouldEqual, "a")
+				So(m["b"], ShouldEqual, "b")
+			})
+		})
+
+		Convey("When I call GetToken()", func() {
+
+			token := s.GetToken()
+
+			Convey("Then token should be correct", func() {
+				So(token, ShouldEqual, "token")
+			})
+		})
+
+		Convey("When I call TLSConnectionState()", func() {
+
+			s := s.TLSConnectionState()
+
+			Convey("Then TLSConnectionState should be correct", func() {
+				So(s, ShouldEqual, req.TLS)
+			})
+		})
+
+		Convey("When I call SetMetadata()", func() {
+
+			s.SetMetadata("hi")
+
+			Convey("Then GetMetadata() should return the correct metadata ", func() {
+				So(s.GetMetadata(), ShouldResemble, "hi")
+			})
+		})
+
+		Convey("When I call GetContext()", func() {
+
+			c := s.GetContext()
+
+			Convey("Then GetContext() should return the correct context ", func() {
+				So(opentracing.SpanFromContext(c), ShouldResemble, span)
+			})
+		})
+
+		Convey("When I call GetParameter()", func() {
+
+			p := s.GetParameter("a")
+
+			Convey("Then parameter should be correct", func() {
+				So(p, ShouldEqual, "b")
+			})
+		})
+
+		Convey("When I call setRemoteAddress()", func() {
+
+			s.setRemoteAddress("a.b.c.d")
+
+			Convey("Then address should be correct", func() {
+				So(s.remoteAddr, ShouldEqual, "a.b.c.d")
+			})
+		})
+
+		Convey("When I call setTLSConnectionState()", func() {
+
+			tcs := &tls.ConnectionState{}
+			s.setTLSConnectionState(tcs)
+
+			Convey("Then address should be correct", func() {
+				So(s.tlsConnectionState, ShouldEqual, tcs)
+			})
+		})
+
+		Convey("When I call setSocket()", func() {
+
+			ws := wsc.NewMockWebsocket(context.TODO())
+			s.setConn(ws)
+
+			Convey("Then ws should be correct", func() {
+				So(s.conn, ShouldEqual, ws)
 			})
 		})
 	})
 }
 
-func TestWSPushSession_write(t *testing.T) {
+func TestWSPushSession_listen(t *testing.T) {
 
-	Convey("Given I have a push session and starts the write routine", t, func() {
+	Convey("Given I have a push session", t, func() {
 
-		req, _ := http.NewRequest("GET", "bla", nil)
-		conn := newMockWebsocket()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
 
-		calledCounter := &counter{}
-		unregister := func(ws internalWSSession) {
-			calledCounter.Add(1)
-		}
+		unregistered := make(chan bool, 10)
 
-		s := newWSPushSession(req, Config{}, unregister)
-		s.conn = conn
+		s := newWSPushSession(
+			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
+			Config{},
+			func(i *wsPushSession) {
+				unregistered <- true
+			},
+		)
 
-		stopper := newStopper()
-		go func() {
-			s.write()
-			stopper.Stop()
-		}()
+		conn := wsc.NewMockWebsocket(ctx)
+		s.setConn(conn)
 
-		Convey("When I receive an event that is not filtered out", func() {
+		testEvent := elemental.NewEvent(elemental.EventUpdate, testmodel.NewList())
 
-			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
-			s.events <- evt
+		Convey("When I simulate an incoming event that is not filtered out", func() {
 
-			Convey("Then the event should have been written in the websocket conn", func() {
-				So(<-conn.getLastWrite(), ShouldEqual, evt)
-			})
+			go s.listen()
+			s.DirectPush(testEvent)
 
-			Convey("Then stopped should be false", func() {
-				So(stopper.isStopped(), ShouldBeFalse)
+			var data []byte
+			select {
+			case data = <-conn.LastWrite():
+			case <-ctx.Done():
+				panic("test: did not receive data in time")
+			}
+
+			Convey("Then the websocket should send the event", func() {
+				So(string(data), ShouldStartWith, `{"entity":{"creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","readOnly":"","slice":null,"ID":"","parentID":"","parentType":""},"identity":"list","type":"update","timestamp":"`)
 			})
 		})
 
-		Convey("When I receive an event that is filtered out ", func() {
+		Convey("When I simulate an incoming event that is manually filtered out", func() {
+
+			go s.listen()
 
 			f := elemental.NewPushFilter()
 			f.FilterIdentity("not-list")
 			s.setCurrentFilter(f)
 
-			s.events <- elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			s.DirectPush(testEvent)
 
-			var d interface{}
+			var data []byte
 			select {
-			case d = <-conn.getLastWrite():
-			case <-time.After(30 * time.Millisecond):
+			case data = <-conn.LastWrite():
+			case <-time.After(800 * time.Millisecond):
 			}
 
-			Convey("Then no event should have been written in the websocket conn", func() {
-				So(d, ShouldBeNil)
-			})
-
-			Convey("Then stopped should be false", func() {
-				So(stopper.isStopped(), ShouldBeFalse)
+			Convey("Then the websocket should not send the event", func() {
+				So(data, ShouldBeNil)
 			})
 		})
 
-		Convey("When I receive an error from the websocket", func() {
+		Convey("When I simulate an incoming event that is older than the session", func() {
 
-			conn.setWriteErr(errors.New("nnnnnnooooooo"))
+			go s.listen()
 
-			s.events <- elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			testEvent.Timestamp = time.Now().Add(-1 * time.Hour)
+			s.DirectPush(testEvent)
 
+			var data []byte
 			select {
-			case <-stopper.Done():
-			case <-time.After(300 * time.Millisecond):
-				panic("closing session took too long")
+			case data = <-conn.LastWrite():
+			case <-time.After(800 * time.Millisecond):
 			}
 
-			Convey("Then stopped should be true", func() {
-				So(stopper.isStopped(), ShouldBeTrue)
-			})
-
-			Convey("Then the session should have called unregister once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
+			Convey("Then the websocket should not send the event", func() {
+				So(data, ShouldBeNil)
 			})
 		})
 
-		Convey("When I close the session", func() {
+		Convey("When I simulate an incoming event with broken json", func() {
 
-			// Not sure why but calling s.stop() causes a race condition with s.write() at line 195...
-			close(s.closeCh)
+			go s.listen()
+			s.DirectPush(testEvent)
 
+			var data []byte
 			select {
-			case <-stopper.Done():
-			case <-time.After(300 * time.Millisecond):
-				panic("closing session took too long")
+			case data = <-conn.LastWrite():
+			case <-ctx.Done():
+				panic("test: did not receive data in time")
 			}
 
-			Convey("Then stopped should be true", func() {
-				So(stopper.isStopped(), ShouldBeTrue)
+			Convey("Then the websocket should send the event", func() {
+				So(string(data), ShouldStartWith, `{"entity":{"creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","readOnly":"","slice":null,"ID":"","parentID":"","parentType":""},"identity":"list","type":"update","timestamp":"`)
+			})
+		})
+
+		Convey("When I send a valid filter in the websocket", func() {
+
+			go s.listen()
+
+			conn.NextRead([]byte(`{"identities":{"not-list": null}}`))
+			<-time.After(300 * time.Millisecond)
+
+			Convey("Then the filter should be correctly set", func() {
+				So(s.currentFilter().String(), ShouldEqual, `<pushfilter identities:map[not-list:[]]>`)
+			})
+		})
+
+		Convey("When I send an invalid filter in the websocket", func() {
+
+			go s.listen()
+
+			conn.NextRead([]byte(`{"identities":{"not`))
+
+			var doneErr error
+			select {
+			case doneErr = <-conn.Done():
+			case <-ctx.Done():
+				panic("test: did not receive message in time")
+			}
+
+			Convey("Then the filter should be nil", func() {
+				So(s.currentFilter(), ShouldBeNil)
+				So(doneErr, ShouldNotBeNil)
+				So(doneErr.Error(), ShouldEqual, "closed")
 			})
 
-			// Convey("Then the session should have called unregister once", func() {
-			// 	So(calledCounter.Value(), ShouldEqual, 1)
-			// })
+			Convey("Then the session should be unregistered", func() {
+				var u bool
+				select {
+				case u = <-unregistered:
+				case <-ctx.Done():
+					panic("test: did not receive response in time")
+				}
+
+				So(u, ShouldBeTrue)
+			})
+		})
+
+		Convey("When the client closes the websocket", func() {
+
+			go s.listen()
+
+			conn.NextDone(errors.New("bye"))
+
+			Convey("Then the session should be unregistered", func() {
+				var u bool
+				select {
+				case u = <-unregistered:
+				case <-ctx.Done():
+					panic("test: did not receive response in time")
+				}
+
+				So(u, ShouldBeTrue)
+			})
+		})
+
+		Convey("When the server closes the websocket", func() {
+
+			go s.listen()
+
+			cancel()
+
+			Convey("Then the session should be unregistered", func() {
+				var u bool
+				select {
+				case u = <-unregistered:
+				case <-time.After(1 * time.Second):
+					panic("test: did not receive response in time")
+				}
+
+				So(u, ShouldBeTrue)
+			})
 		})
 	})
 }

@@ -1,13 +1,19 @@
 package bahamut
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/aporeto-inc/elemental/test/model"
-
+	"github.com/aporeto-inc/addedeffect/wsc"
 	"github.com/aporeto-inc/elemental"
+	"github.com/aporeto-inc/elemental/test/model"
 	"github.com/go-zoo/bone"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -49,31 +55,48 @@ type mockSessionHandler struct {
 	shouldPublishOK          bool
 	shouldPublishErr         error
 	shouldDispatchCalled     int
-	shouldDisptatchOK        bool
-	shouldDisptatchErr       error
+	shouldDispatchOK         bool
+	shouldDispatchErr        error
+
+	sync.Mutex
 }
 
 func (h *mockSessionHandler) OnPushSessionInit(PushSession) (bool, error) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.onPushSessionInitCalled++
 	return h.onPushSessionInitOK, h.onPushSessionInitErr
 }
 
 func (h *mockSessionHandler) OnPushSessionStart(PushSession) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.onPushSessionStartCalled++
 }
 
 func (h *mockSessionHandler) OnPushSessionStop(PushSession) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.onPushSessionStopCalled++
 }
 
 func (h *mockSessionHandler) ShouldPublish(*elemental.Event) (bool, error) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.shouldPublishCalled++
 	return h.shouldPublishOK, h.shouldPublishErr
 }
 
 func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event) (bool, error) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.shouldDispatchCalled++
-	return h.shouldDisptatchOK, h.shouldDisptatchErr
+	return h.shouldDispatchOK, h.shouldDispatchErr
 }
 
 func TestWebsocketServer_newWebsocketServer(t *testing.T) {
@@ -84,47 +107,18 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 			return struct{}{}, nil
 		}
 
-		Convey("When I create a new websocket server with push and wsapi", func() {
+		Convey("When I create a new websocket server with push", func() {
 
 			mux := bone.New()
 			cfg := Config{}
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
 			Convey("Then the websocket sever should be correctly initialized", func() {
-				So(wss.sessions, ShouldResemble, map[string]internalWSSession{})
+				So(wss.sessions, ShouldResemble, map[string]*wsPushSession{})
 				So(wss.multiplexer, ShouldEqual, mux)
 				So(wss.config, ShouldResemble, cfg)
 				So(wss.processorFinder, ShouldEqual, pf)
 			})
-
-			Convey("Then the handlers should be installed in the mux", func() {
-				So(len(mux.Routes), ShouldEqual, 1)
-				So(len(mux.Routes["GET"]), ShouldEqual, 2)
-				So(mux.Routes["GET"][0].Path, ShouldEqual, "/events")
-				So(mux.Routes["GET"][1].Path, ShouldEqual, "/wsapi")
-			})
-		})
-
-		Convey("When I create a new websocket server with push disabled", func() {
-
-			mux := bone.New()
-			cfg := Config{}
-			cfg.WebSocketServer.PushDisabled = true
-			_ = newWebsocketServer(cfg, mux, pf)
-
-			Convey("Then the handlers should be installed in the mux", func() {
-				So(len(mux.Routes), ShouldEqual, 1)
-				So(len(mux.Routes["GET"]), ShouldEqual, 1)
-				So(mux.Routes["GET"][0].Path, ShouldEqual, "/wsapi")
-			})
-		})
-
-		Convey("When I create a new websocket server with api disabled", func() {
-
-			mux := bone.New()
-			cfg := Config{}
-			cfg.WebSocketServer.APIDisabled = true
-			_ = newWebsocketServer(cfg, mux, pf)
 
 			Convey("Then the handlers should be installed in the mux", func() {
 				So(len(mux.Routes), ShouldEqual, 1)
@@ -137,9 +131,8 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 
 			mux := bone.New()
 			cfg := Config{}
-			cfg.WebSocketServer.PushDisabled = true
-			cfg.WebSocketServer.APIDisabled = true
-			_ = newWebsocketServer(cfg, mux, pf)
+			cfg.PushServer.Disabled = true
+			_ = newPushServer(cfg, mux, pf)
 
 			Convey("Then the handlers should be installed in the mux", func() {
 				So(len(mux.Routes), ShouldEqual, 0)
@@ -160,9 +153,9 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 		mux := bone.New()
 		cfg := Config{}
 		h := &mockSessionHandler{}
-		cfg.WebSocketServer.PushDispatchHandler = h
+		cfg.PushServer.DispatchHandler = h
 
-		wss := newWebsocketServer(cfg, mux, pf)
+		wss := newPushServer(cfg, mux, pf)
 
 		Convey("When I register a valid push session", func() {
 
@@ -192,37 +185,9 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 			})
 		})
 
-		Convey("When I register a valid session that is not a push session", func() {
-
-			s := newWSSession(req, cfg, nil)
-			wss.registerSession(s)
-
-			Convey("Then the session should correctly registered", func() {
-				So(len(wss.sessions), ShouldEqual, 1)
-				So(wss.sessions[s.Identifier()], ShouldEqual, s)
-			})
-
-			Convey("Then handler.onPushSessionStart should have been called", func() {
-				So(h.onPushSessionStartCalled, ShouldEqual, 0)
-			})
-
-			Convey("When I unregister it", func() {
-
-				wss.unregisterSession(s)
-
-				Convey("Then the session should correctly unregistered", func() {
-					So(len(wss.sessions), ShouldEqual, 0)
-				})
-
-				Convey("Then handler.onPushSessionStop should have been called", func() {
-					So(h.onPushSessionStopCalled, ShouldEqual, 0)
-				})
-			})
-		})
-
 		Convey("When I register a valid session with no id", func() {
 
-			s := &wsSession{}
+			s := &wsPushSession{}
 
 			Convey("Then it should panic", func() {
 				So(func() { wss.registerSession(s) }, ShouldPanicWith, "cannot register websocket session. empty identifier")
@@ -231,7 +196,7 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 
 		Convey("When I unregister a valid session with no id", func() {
 
-			s := &wsSession{}
+			s := &wsPushSession{}
 
 			Convey("Then it should panic", func() {
 				So(func() { wss.unregisterSession(s) }, ShouldPanicWith, "cannot unregister websocket session. empty identifier")
@@ -255,9 +220,9 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			cfg := Config{}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -273,9 +238,9 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := Config{}
 			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -291,9 +256,9 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := Config{}
 			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -310,9 +275,9 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := Config{}
 			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -337,7 +302,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			cfg := Config{}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -353,9 +318,9 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitOK = true
 
 			cfg := Config{}
-			cfg.WebSocketServer.PushDispatchHandler = h
+			cfg.PushServer.DispatchHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -371,9 +336,9 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitOK = false
 
 			cfg := Config{}
-			cfg.WebSocketServer.PushDispatchHandler = h
+			cfg.PushServer.DispatchHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -390,9 +355,9 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitErr = errors.New("nope")
 
 			cfg := Config{}
-			cfg.WebSocketServer.PushDispatchHandler = h
+			cfg.PushServer.DispatchHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -418,7 +383,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			cfg := Config{}
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(nil)
 
 			Convey("Then nothing special should happen", func() {
@@ -430,9 +395,9 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			srv := &mockPubSubServer{}
 
 			cfg := Config{}
-			cfg.WebSocketServer.Service = srv
+			cfg.PushServer.Service = srv
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -448,10 +413,10 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h.shouldPublishOK = true
 
 			cfg := Config{}
-			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.PushPublishHandler = h
+			cfg.PushServer.Service = srv
+			cfg.PushServer.PublishHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -467,10 +432,10 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h.shouldPublishOK = false
 
 			cfg := Config{}
-			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.PushPublishHandler = h
+			cfg.PushServer.Service = srv
+			cfg.PushServer.PublishHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -486,14 +451,338 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h.shouldPublishErr = errors.New("nop")
 
 			cfg := Config{}
-			cfg.WebSocketServer.Service = srv
-			cfg.WebSocketServer.PushPublishHandler = h
+			cfg.PushServer.Service = srv
+			cfg.PushServer.PublishHandler = h
 
-			wss := newWebsocketServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
 				So(len(srv.publications), ShouldEqual, 0)
+			})
+		})
+	})
+}
+
+func TestWebsocketServer_start(t *testing.T) {
+
+	pf := func(identity elemental.Identity) (Processor, error) {
+		return struct{}{}, nil
+	}
+
+	Convey("Given I have a websocket server with 2 registered sessions", t, func() {
+
+		pubsub := NewLocalPubSubServer(nil)
+		if !pubsub.Connect().Wait(1 * time.Second) {
+			panic("could not connect to local pubsub")
+		}
+
+		pushHandler := &mockSessionHandler{}
+
+		mux := bone.New()
+		cfg := Config{}
+		cfg.PushServer.Service = pubsub
+		cfg.PushServer.DispatchHandler = pushHandler
+
+		wss := newPushServer(cfg, mux, pf)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		go wss.start(ctx)
+
+		s1 := newWSPushSession(
+			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
+			Config{},
+			wss.unregisterSession,
+		)
+		conn1 := wsc.NewMockWebsocket(ctx)
+		s1.setConn(conn1)
+		s1.id = "s1"
+		go s1.listen()
+
+		s2 := newWSPushSession(
+			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
+			Config{},
+			wss.unregisterSession,
+		)
+		conn2 := wsc.NewMockWebsocket(ctx)
+		s2.setConn(conn2)
+		s2.id = "s2"
+		go s2.listen()
+
+		wss.registerSession(s1)
+		wss.registerSession(s2)
+
+		Convey("When I push an event and the handler is ok", func() {
+
+			pushHandler.shouldDispatchOK = true
+
+			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			pub := NewPublication("")
+			pub.Encode(evt) // nolint: errcheck
+
+			pubsub.Publish(pub) // nolint: errcheck
+
+			var msg1 []byte
+			select {
+			case msg1 = <-conn1.LastWrite():
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			var msg2 []byte
+			select {
+			case msg2 = <-conn2.LastWrite():
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			Convey("Then both sessions should receive the event", func() {
+				So(string(msg1), ShouldStartWith, `{"entity":{"creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","readOnly":"","slice":null,"ID":"","parentID":"","parentType":""},"identity":"list","type":"create","timestamp":"`)
+				So(string(msg2), ShouldStartWith, `{"entity":{"creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","readOnly":"","slice":null,"ID":"","parentID":"","parentType":""},"identity":"list","type":"create","timestamp":"`)
+			})
+		})
+
+		Convey("When I push an event and the handler is not ok", func() {
+
+			pushHandler.shouldDispatchOK = false
+
+			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			pub := NewPublication("")
+			pub.Encode(evt) // nolint: errcheck
+
+			pubsub.Publish(pub) // nolint: errcheck
+
+			var msg1 []byte
+			select {
+			case msg1 = <-conn1.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			var msg2 []byte
+			select {
+			case msg2 = <-conn2.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			Convey("Then both sessions should receive the event", func() {
+				So(msg1, ShouldBeNil)
+				So(msg2, ShouldBeNil)
+			})
+		})
+
+		Convey("When I push an event and the handler returns an error", func() {
+
+			pushHandler.shouldDispatchOK = true
+			pushHandler.shouldDispatchErr = errors.New("nope")
+
+			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			pub := NewPublication("")
+			pub.Encode(evt) // nolint: errcheck
+
+			pubsub.Publish(pub) // nolint: errcheck
+
+			var msg1 []byte
+			select {
+			case msg1 = <-conn1.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			var msg2 []byte
+			select {
+			case msg2 = <-conn2.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			Convey("Then both sessions should receive the event", func() {
+				So(msg1, ShouldBeNil)
+				So(msg2, ShouldBeNil)
+			})
+		})
+
+		Convey("When I push bad event", func() {
+
+			pushHandler.shouldDispatchOK = true
+			pushHandler.shouldDispatchErr = errors.New("nope")
+
+			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			pub := NewPublication("")
+			evt.Entity = []byte(`{ broken`)
+			pub.Encode(evt) // nolint: errcheck
+
+			pubsub.Publish(pub) // nolint: errcheck
+
+			var msg1 []byte
+			select {
+			case msg1 = <-conn1.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			var msg2 []byte
+			select {
+			case msg2 = <-conn2.LastWrite():
+			case <-time.After(300 * time.Millisecond):
+			case <-ctx.Done():
+				panic("test: no response in time")
+			}
+
+			Convey("Then both sessions should receive the event", func() {
+				So(msg1, ShouldBeNil)
+				So(msg2, ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given I start a websocket server with no push dispatching", t, func() {
+
+		mux := bone.New()
+		cfg := Config{}
+		cfg.PushServer.DispatchDisabled = true
+		wss := newPushServer(cfg, mux, pf)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		Convey("When I start it", func() {
+
+			out := make(chan bool)
+			go func() {
+				wss.start(ctx)
+				out <- true
+			}()
+
+			Convey("Then it be running", func() {
+				So(
+					func() {
+						select {
+						case <-out:
+							panic("test: unexpected response")
+						case <-time.After(1 * time.Second):
+						}
+					},
+					ShouldNotPanic,
+				)
+			})
+
+			Convey("When I stop it", func() {
+
+				cancel()
+
+				var exited bool
+				select {
+				case exited = <-out:
+				case <-time.After(1 * time.Second):
+					panic("test: no respons in time")
+				}
+
+				Convey("Then the server should should exit", func() {
+					So(exited, ShouldBeTrue)
+				})
+			})
+		})
+	})
+}
+
+func TestWebsocketServer_handleRequest(t *testing.T) {
+
+	Convey("Given I have a webserver", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		pf := func(identity elemental.Identity) (Processor, error) {
+			return struct{}{}, nil
+		}
+
+		pushHandler := &mockSessionHandler{}
+		authenticator := &mockSessionAuthenticator{}
+
+		mux := bone.New()
+		cfg := Config{}
+		cfg.PushServer.DispatchHandler = pushHandler
+		cfg.Security.SessionAuthenticators = []SessionAuthenticator{authenticator}
+
+		wss := newPushServer(cfg, mux, pf)
+		wss.mainContext = ctx
+
+		ts := httptest.NewServer(http.HandlerFunc(wss.handleRequest))
+		defer ts.Close()
+
+		Convey("When I connect to the server with no issue", func() {
+
+			authenticator.action = AuthActionOK
+
+			pushHandler.Lock()
+			pushHandler.onPushSessionInitOK = true
+			pushHandler.Unlock()
+
+			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
+			defer ws.Close(0) // nolint
+
+			Convey("Then err should should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then resp should should be correct", func() {
+				So(resp.Status, ShouldEqual, "101 Switching Protocols")
+			})
+		})
+
+		Convey("When I connect to the server but I am not authenticated", func() {
+
+			authenticator.action = AuthActionKO
+
+			pushHandler.Lock()
+			pushHandler.onPushSessionInitOK = true
+			pushHandler.Unlock()
+
+			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
+
+			Convey("Then ws should be nil", func() {
+				So(ws, ShouldBeNil)
+			})
+
+			Convey("Then err should should not be nil", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "websocket: bad handshake")
+			})
+
+			Convey("Then resp should should be correct", func() {
+				So(resp.Status, ShouldEqual, "401 Unauthorized")
+			})
+		})
+
+		Convey("When I connect to the server but I am not authorized", func() {
+
+			authenticator.action = AuthActionOK
+			pushHandler.Lock()
+			pushHandler.onPushSessionInitOK = false
+			pushHandler.Unlock()
+
+			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
+
+			Convey("Then ws should be nil", func() {
+				So(ws, ShouldBeNil)
+			})
+
+			Convey("Then err should should not be nil", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldEqual, "websocket: bad handshake")
+			})
+
+			Convey("Then resp should should be correct", func() {
+				So(resp.Status, ShouldEqual, "403 Forbidden")
 			})
 		})
 	})
