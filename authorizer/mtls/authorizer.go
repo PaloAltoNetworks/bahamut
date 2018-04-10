@@ -23,16 +23,17 @@ const (
 	CertificateCheckModeTLSStateOnly CertificateCheckMode = iota
 	CertificateCheckModeTLSStateThenHeader
 	CertificateCheckModeHeaderThenTLSState
+	CertificateCheckModeHeaderOnly
 )
 
-// CertificatesFromHeaderThenState retrieves the certificates in either from the header X-TLS-Client-Certificate
+// CertificatesFromHeaderThenTLSState retrieves the certificates in either from the header `X-TLS-Client-Certificate`
 // or from the tls connection state in that order.
 //
 // Note: Using this function on a service directly available on the internet is extremely dangerous as it assumes
 // the given certificate has already been validated by a third party and is just used as informative data. To
 // use this function securely, the service using an mtls authenticator prefering header must be behind a proxy
 // that does mtls authentication first.
-func CertificatesFromHeaderThenState(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
+func CertificatesFromHeaderThenTLSState(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
 
 	if headerData != "" {
 		return decodeCertHeader(headerData)
@@ -45,14 +46,14 @@ func CertificatesFromHeaderThenState(state *tls.ConnectionState, headerData stri
 	return nil, errors.New("no valid certificate found in header or tls state")
 }
 
-// CertificatesFromStateThenHeader retrieves the certificates in either from the tls connection state or
-// from the header X-TLS-Client-Certificate in that order.
+// CertificatesFromTLSStateThenHeader retrieves the certificates in either from the tls connection state or
+// from the header `X-TLS-Client-Certificate` in that order.
 //
 // Note: Using this function on a service directly available on the internet is extremely dangerous as it assumes
 // the given certificate has already been validated by a third party and is just used as informative data. To
 // use this function securely, the service using an mtls authenticator prefering header must be behind a proxy
 // that does mtls authentication first.
-func CertificatesFromStateThenHeader(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
+func CertificatesFromTLSStateThenHeader(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
 
 	if state != nil && len(state.PeerCertificates) > 0 {
 		return state.PeerCertificates, nil
@@ -65,14 +66,24 @@ func CertificatesFromStateThenHeader(state *tls.ConnectionState, headerData stri
 	return nil, errors.New("no valid certificate found in tls state or header")
 }
 
-// CertificatesFromState retrieves the certificates in either from the tls connection state.
-func CertificatesFromState(state *tls.ConnectionState) (certs []*x509.Certificate, err error) {
+// CertificatesFromTLSState retrieves the certificates from the tls connection state.
+func CertificatesFromTLSState(state *tls.ConnectionState) (certs []*x509.Certificate, err error) {
 
 	if state == nil || len(state.PeerCertificates) == 0 {
 		return nil, errors.New("no valid certificate found in tls state or header")
 	}
 
 	return state.PeerCertificates, nil
+}
+
+// CertificatesFromHeader retrieves the certificates from the http header `X-TLS-Client-Certificate`.
+func CertificatesFromHeader(headerData string) (certs []*x509.Certificate, err error) {
+
+	if headerData == "" {
+		return nil, errors.New("no valid certificate found in header")
+	}
+
+	return decodeCertHeader(headerData)
 }
 
 // VerifierFunc is the type of function you can pass to do custom
@@ -191,11 +202,13 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 
 	switch a.certificateCheckMode {
 	case CertificateCheckModeTLSStateOnly:
-		certs, err = CertificatesFromState(ctx.Request.TLSConnectionState)
+		certs, err = CertificatesFromTLSState(ctx.Request.TLSConnectionState)
 	case CertificateCheckModeTLSStateThenHeader:
-		certs, err = CertificatesFromStateThenHeader(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+		certs, err = CertificatesFromTLSStateThenHeader(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
 	case CertificateCheckModeHeaderThenTLSState:
-		certs, err = CertificatesFromHeaderThenState(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+		certs, err = CertificatesFromHeaderThenTLSState(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+	case CertificateCheckModeHeaderOnly:
+		certs, err = CertificatesFromHeader(ctx.Request.Headers.Get(tlsHeaderKey))
 	}
 
 	if err != nil {
@@ -240,11 +253,13 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 
 	switch a.certificateCheckMode {
 	case CertificateCheckModeTLSStateOnly:
-		certs, err = CertificatesFromState(tlsState)
+		certs, err = CertificatesFromTLSState(tlsState)
 	case CertificateCheckModeTLSStateThenHeader:
-		certs, err = CertificatesFromStateThenHeader(tlsState, headerCert)
+		certs, err = CertificatesFromTLSStateThenHeader(tlsState, headerCert)
 	case CertificateCheckModeHeaderThenTLSState:
-		certs, err = CertificatesFromHeaderThenState(tlsState, headerCert)
+		certs, err = CertificatesFromHeaderThenTLSState(tlsState, headerCert)
+	case CertificateCheckModeHeaderOnly:
+		certs, err = CertificatesFromHeader(headerCert)
 	}
 
 	if err != nil {

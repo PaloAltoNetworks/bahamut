@@ -97,6 +97,35 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
+		Convey("When I try check auth for user-a using chain-a but only checking for header", func() {
+
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderOnly)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
 		Convey("When I try check auth for user-a using chain-a as valid inline header", func() {
 
 			header := http.Header{}
@@ -595,6 +624,36 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			Convey("Then claims should be correctly populated", func() {
 				So(ctx.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+			})
+		})
+
+		Convey("When I try check auth for user-a using chain-a but only checking header", func() {
+
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderOnly)
+
+			action, err := auth.AuthenticateRequest(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
 			})
 		})
 
