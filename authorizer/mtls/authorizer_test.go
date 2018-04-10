@@ -55,7 +55,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -84,7 +84,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -111,7 +111,162 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
+		})
+
+		Convey("When I try check auth for user-a using chain-a as valid inline header while forbidding checking in header", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertAData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering header", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertAData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering header", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertBData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering state", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertAData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateThenHeader)
+
+			action, err := auth.IsAuthorized(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering tls state", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertBData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -138,7 +293,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -169,7 +324,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
 				return true
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -200,7 +355,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
 				return false
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -229,7 +384,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -258,7 +413,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -289,7 +444,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
 				return true
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -318,7 +473,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -349,7 +504,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, []elemental.Identity{identity}, nil)
+			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, []elemental.Identity{identity}, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -396,7 +551,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -426,7 +581,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -440,6 +595,134 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			Convey("Then claims should be correctly populated", func() {
 				So(ctx.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering header", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertAData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderThenTLSState)
+
+			action, err := auth.AuthenticateRequest(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering header", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertBData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderThenTLSState)
+
+			action, err := auth.AuthenticateRequest(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering state", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertAData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertB,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateThenHeader)
+
+			action, err := auth.AuthenticateRequest(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionKO", func() {
+				So(action, ShouldEqual, bahamut.AuthActionKO)
+			})
+		})
+
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering tls state", func() {
+
+			header := http.Header{}
+			header.Set(tlsHeaderKey, string(userCertBData))
+			ctx := &bahamut.Context{
+				Request: &elemental.Request{
+					Headers: header,
+					TLSConnectionState: &tls.ConnectionState{
+						PeerCertificates: []*x509.Certificate{
+							userCertA,
+						},
+					},
+				},
+			}
+			opts := x509.VerifyOptions{
+				Roots:     certPoolA,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			}
+
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+
+			action, err := auth.AuthenticateRequest(ctx)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then action should be bahamut.AuthActionOK", func() {
+				So(action, ShouldEqual, bahamut.AuthActionOK)
 			})
 		})
 
@@ -462,7 +745,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
 				return true
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -498,7 +781,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
 				return false
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -532,7 +815,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -564,7 +847,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
 				return true
-			})
+			}, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -594,7 +877,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -624,7 +907,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil)
+			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
