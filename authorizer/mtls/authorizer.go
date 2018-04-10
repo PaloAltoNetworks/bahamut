@@ -31,35 +31,36 @@ func CertificatesFromStateOrHeader(state *tls.ConnectionState, headerData string
 
 // VerifierFunc is the type of function you can pass to do custom
 // verification on the certificates, like checking for the DN.
-// NOTE: Not implemented yet.
-type VerifierFunc func(*x509.Certificate) (bahamut.AuthAction, error)
+type VerifierFunc func(*x509.Certificate) bool
 
 type mtlsVerifier struct {
 	verifyOptions     x509.VerifyOptions
-	ignoredIdentitied []elemental.Identity
+	ignoredIdentities []elemental.Identity
 	authActionSuccess bahamut.AuthAction
 	authActionFailure bahamut.AuthAction
-	// verifier          VerifierFunc
+	verifier          VerifierFunc
 }
 
 func newMTLSVerifier(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
 	authActionFailure bahamut.AuthAction,
-	ignoredIdentitied []elemental.Identity,
+	ignoredIdentities []elemental.Identity,
+	verifier VerifierFunc,
 ) *mtlsVerifier {
 
 	return &mtlsVerifier{
 		verifyOptions:     verifyOptions,
-		ignoredIdentitied: ignoredIdentitied,
+		ignoredIdentities: ignoredIdentities,
 		authActionSuccess: authActionSuccess,
 		authActionFailure: authActionFailure,
+		verifier:          verifier,
 	}
 }
 
 // NewMTLSAuthorizer returns a new Authorizer that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
-// The Authorizer will not enforce this for identities given by ignoredIdentitied.
+// The Authorizer will not enforce this for identities given by ignoredIdentities.
 //
 // authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
 // This lets you a chance to return either bahamut.AuthActionOK to definitely validate
@@ -72,15 +73,16 @@ func NewMTLSAuthorizer(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
 	authActionFailure bahamut.AuthAction,
-	ignoredIdentitied []elemental.Identity,
+	ignoredIdentities []elemental.Identity,
+	certVerifier VerifierFunc,
 ) bahamut.Authorizer {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, ignoredIdentitied)
+	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, ignoredIdentities, certVerifier)
 }
 
 // NewMTLSRequestAuthenticator returns a new Authenticator that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
-// The Authenticator will not enforce this for identities given by ignoredIdentitied.
+// The Authenticator will not enforce this for identities given by ignoredIdentities.
 //
 // authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
 // This lets you a chance to return either bahamut.AuthActionOK to definitely validate
@@ -93,14 +95,15 @@ func NewMTLSRequestAuthenticator(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
 	authActionFailure bahamut.AuthAction,
+	certVerifier VerifierFunc,
 ) bahamut.RequestAuthenticator {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil)
+	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil, certVerifier)
 }
 
 // NewMTLSSessionAuthenticator returns a new Authenticator that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
-// The Authenticator will not enforce this for identities given by ignoredIdentitied.
+// The Authenticator will not enforce this for identities given by ignoredIdentities.
 //
 // authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
 // This lets you a chance to return either bahamut.AuthActionOK to definitely validate
@@ -113,14 +116,15 @@ func NewMTLSSessionAuthenticator(
 	verifyOptions x509.VerifyOptions,
 	authActionSuccess bahamut.AuthAction,
 	authActionFailure bahamut.AuthAction,
+	certVerifier VerifierFunc,
 ) bahamut.SessionAuthenticator {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil)
+	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil, certVerifier)
 }
 
 func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
 
-	for _, i := range a.ignoredIdentitied {
+	for _, i := range a.ignoredIdentities {
 		if ctx.Request.Identity.IsEqual(i) {
 			return bahamut.AuthActionContinue, nil
 		}
@@ -138,7 +142,15 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 	// If we can verify, we return the success auth action.
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
+
 			if paliateGo110VerificationBug(a.verifyOptions, cert) {
+
+				if a.verifier != nil {
+					if !a.verifier(cert) {
+						return a.authActionFailure, nil
+					}
+				}
+
 				return a.authActionSuccess, nil
 			}
 		}
@@ -173,6 +185,13 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
 			if paliateGo110VerificationBug(a.verifyOptions, cert) {
+
+				if a.verifier != nil {
+					if !a.verifier(cert) {
+						return a.authActionFailure, nil
+					}
+				}
+
 				claimSetter(makeClaims(cert))
 				return a.authActionSuccess, nil
 			}
