@@ -31,7 +31,7 @@ const (
 //
 // Note: Using this function on a service directly available on the internet is extremely dangerous as it assumes
 // the given certificate has already been validated by a third party and is just used as informative data. To
-// use this function securely, the service using an mtls authenticator prefering header must be behind a proxy
+// use this function securely, the service using an mtls authenticator preferring header must be behind a proxy
 // that does mtls authentication first.
 func CertificatesFromHeaderThenTLSState(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
 
@@ -51,7 +51,7 @@ func CertificatesFromHeaderThenTLSState(state *tls.ConnectionState, headerData s
 //
 // Note: Using this function on a service directly available on the internet is extremely dangerous as it assumes
 // the given certificate has already been validated by a third party and is just used as informative data. To
-// use this function securely, the service using an mtls authenticator prefering header must be behind a proxy
+// use this function securely, the service using an mtls authenticator preferring header must be behind a proxy
 // that does mtls authentication first.
 func CertificatesFromTLSStateThenHeader(state *tls.ConnectionState, headerData string) (certs []*x509.Certificate, err error) {
 
