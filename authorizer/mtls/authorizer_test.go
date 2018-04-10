@@ -180,7 +180,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering header", func() {
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while preferring header", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
@@ -212,7 +212,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering header", func() {
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while preferring header", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
@@ -244,7 +244,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering state", func() {
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while preferring state", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
@@ -276,7 +276,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering tls state", func() {
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while preferring tls state", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
@@ -335,7 +335,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth for user-a using chain-a whith a verifier function that is ok", func() {
+		Convey("When I try check auth for user-a using chain-a with a verifier function that is ok", func() {
 
 			ctx := &bahamut.Context{
 				Request: &elemental.Request{
@@ -366,7 +366,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth for user-a using chain-a whith a verifier function that is not ok", func() {
+		Convey("When I try check auth for user-a using chain-a with a verifier function that is not ok", func() {
 
 			ctx := &bahamut.Context{
 				Request: &elemental.Request{
@@ -657,7 +657,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering header", func() {
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while preferring header", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
@@ -689,7 +689,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering header", func() {
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while preferring header", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
@@ -721,7 +721,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while prefering state", func() {
+		Convey("When I try check auth with valid inline tls header for user-a but tls state presenting user-b while preferring state", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
@@ -753,7 +753,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 		})
 
-		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while prefering tls state", func() {
+		Convey("When I try check auth with valid inline tls header for user-b but tls state presenting user-a while preferring tls state", func() {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
