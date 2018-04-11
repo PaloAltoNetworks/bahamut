@@ -10,10 +10,9 @@ import (
 	"os"
 	"os/signal"
 
-	"go.uber.org/zap"
-
 	"github.com/aporeto-inc/elemental"
 	"github.com/go-zoo/bone"
+	"go.uber.org/zap"
 )
 
 // CustomUmarshaller is the type of function use to create custom unmarshalling.
@@ -54,7 +53,6 @@ type server struct {
 	pushServer      *pushServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
-	tracingServer   *tracingServer
 	mockServer      *mockServer
 }
 
@@ -85,10 +83,6 @@ func NewServer(config Config) Server {
 
 	if config.ProfilingServer.Enabled {
 		srv.profilingServer = newProfilingServer(config)
-	}
-
-	if config.TracingServer.Enabled {
-		srv.tracingServer = newTracingServer(config)
 	}
 
 	if config.MockServer.Enabled {
@@ -160,10 +154,6 @@ func (b *server) Run(ctx context.Context) {
 		go b.profilingServer.start(ctx)
 	}
 
-	if b.tracingServer != nil {
-		go b.tracingServer.start(ctx)
-	}
-
 	if b.healthServer != nil {
 		go b.healthServer.start(ctx)
 	}
@@ -184,10 +174,6 @@ func (b *server) Run(ctx context.Context) {
 
 	if b.profilingServer != nil {
 		b.profilingServer.stop()
-	}
-
-	if b.tracingServer != nil {
-		b.tracingServer.stop()
 	}
 
 	if b.healthServer != nil {

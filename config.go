@@ -137,16 +137,6 @@ type Config struct {
 		Enabled bool
 	}
 
-	// TracingServer contains information about tracing server.
-	TracingServer struct {
-
-		// ListenAddress is the general listening address for the profiling server.
-		OutFilePath string
-
-		// Enabled defines if the profiling server should be enabled.
-		Enabled bool
-	}
-
 	// TLS contains the TLS configuration.
 	TLS struct {
 
