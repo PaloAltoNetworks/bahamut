@@ -17,7 +17,6 @@ import (
 	"github.com/aporeto-inc/addedeffect/wsc"
 	"github.com/aporeto-inc/elemental"
 	"github.com/gorilla/websocket"
-	"go.uber.org/zap"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -165,11 +164,7 @@ func (s *wsPushSession) listen() {
 
 			s.setCurrentFilter(filter)
 
-		case err := <-s.conn.Done():
-
-			if !websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure, websocket.CloseNoStatusReceived) {
-				zap.L().Error("Error in push session", zap.String("id", s.id), zap.Error(err))
-			}
+		case <-s.conn.Done():
 
 			s.unregister(s)
 
