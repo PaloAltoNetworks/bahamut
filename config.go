@@ -22,9 +22,6 @@ type Config struct {
 	// General configuration.
 	General struct {
 
-		// Name is the general name of the service backed by bahamut.
-		Name string
-
 		// Set this to false to disable panic recovery.
 		PanicRecoveryDisabled bool
 	}
