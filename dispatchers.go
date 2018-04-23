@@ -13,7 +13,7 @@ func audit(auditer Auditer, ctx *Context, err error) {
 		return
 	}
 
-	auditer.Audit(ctx, err)
+	go auditer.Audit(ctx, err)
 }
 
 func notImplementedErr(request *elemental.Request) error {

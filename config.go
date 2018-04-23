@@ -191,6 +191,8 @@ type Config struct {
 		Authorizers []Authorizer
 
 		// Auditer is the Auditer to use to audit the requests.
+		// The Audit() method will be run in a go routinel so there is no
+		// need to deal with it in the implementation.
 		Auditer Auditer
 	}
 
