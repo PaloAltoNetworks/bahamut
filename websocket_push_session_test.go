@@ -372,7 +372,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			Convey("Then the filter should be nil", func() {
 				So(s.currentFilter(), ShouldBeNil)
 				So(doneErr, ShouldNotBeNil)
-				So(doneErr.Error(), ShouldEqual, "closed")
+				So(doneErr.Error(), ShouldEqual, "1003")
 			})
 
 			Convey("Then the session should be unregistered", func() {
