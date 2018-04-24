@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/aporeto-inc/elemental"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -159,11 +160,25 @@ func (s *mockWebsocket) Close() error {
 // A mockAuditer is a mockable auditer
 type mockAuditer struct {
 	nbCalls int
+
+	sync.Mutex
 }
 
 func (p *mockAuditer) Audit(*Context, error) {
 
+	p.Lock()
 	p.nbCalls++
+	p.Unlock()
+}
+
+func (p *mockAuditer) GetCallCount() int {
+
+	<-time.After(300 * time.Millisecond) // wait for the go routine running the auditer to be done.
+
+	p.Lock()
+	defer p.Unlock()
+
+	return p.nbCalls
 }
 
 // A mockAuth is a mockable Authorizer or Authenticator.

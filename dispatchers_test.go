@@ -36,7 +36,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, "hello")
 			So(len(pusher.events), ShouldEqual, 1)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
@@ -66,7 +66,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -93,7 +93,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -128,7 +128,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -172,7 +172,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -204,7 +204,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, "hello")
 			So(len(pusher.events), ShouldEqual, 1)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
@@ -234,7 +234,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -261,7 +261,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -296,7 +296,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -340,7 +340,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -374,7 +374,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
@@ -429,7 +429,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -454,7 +454,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -480,7 +480,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -508,7 +508,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -535,7 +535,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -570,7 +570,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -614,7 +614,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -648,7 +648,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(ctx.InputData, ShouldNotBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
@@ -703,7 +703,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -728,7 +728,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -754,7 +754,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -782,7 +782,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -809,7 +809,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -844,7 +844,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -888,7 +888,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -921,7 +921,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventCreate)
@@ -976,7 +976,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1003,7 +1003,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1038,7 +1038,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1082,7 +1082,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -1115,7 +1115,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.OutputData, ShouldResemble, &elemental.Patch{Type: elemental.PatchTypeSetIfZero})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
@@ -1168,7 +1168,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1196,7 +1196,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1223,7 +1223,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1258,7 +1258,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1302,7 +1302,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
@@ -1332,7 +1332,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1361,7 +1361,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1389,7 +1389,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1425,7 +1425,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 
@@ -1470,7 +1470,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
-			So(auditer.nbCalls, ShouldEqual, expectedNbCalls)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
 }
