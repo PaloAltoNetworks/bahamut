@@ -205,7 +205,6 @@ func (n *pushServer) start(ctx context.Context) {
 	// until the context is canceled.
 	if n.config.PushServer.DispatchDisabled {
 		<-ctx.Done()
-		zap.L().Info("Push server stopped")
 		return
 	}
 
