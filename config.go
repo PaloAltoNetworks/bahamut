@@ -142,7 +142,7 @@ type Config struct {
 		GCPProjectID string
 
 		// Set this to add a prefix to your service name when reporting
-		// profile to GCP. This allows to differenciate multiple instance
+		// profile to GCP. This allows to differentiate multiple instance
 		// of an application running in the same project.
 		GCPServicePrefix string
 	}
