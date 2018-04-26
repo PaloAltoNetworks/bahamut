@@ -136,6 +136,8 @@ func (s *wsPushSession) listen() {
 
 	filter := elemental.NewPushFilter()
 
+	defer s.unregister(s)
+
 	for {
 		select {
 		case event := <-s.events:
@@ -147,7 +149,6 @@ func (s *wsPushSession) listen() {
 
 			data, err := json.Marshal(event)
 			if err != nil {
-				s.unregister(s)
 				s.close(websocket.CloseInternalServerErr)
 				return
 			}
@@ -157,7 +158,6 @@ func (s *wsPushSession) listen() {
 		case data := <-s.conn.Read():
 
 			if err := json.Unmarshal(data, filter); err != nil {
-				s.unregister(s)
 				s.close(websocket.CloseUnsupportedData)
 				return
 			}
@@ -165,14 +165,9 @@ func (s *wsPushSession) listen() {
 			s.setCurrentFilter(filter)
 
 		case <-s.conn.Done():
-
-			s.unregister(s)
-
 			return
 
 		case <-s.ctx.Done():
-
-			s.unregister(s)
 			s.close(websocket.CloseGoingAway)
 			return
 		}

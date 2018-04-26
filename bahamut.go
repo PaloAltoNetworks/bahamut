@@ -36,6 +36,7 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 
 	signalCh := make(chan os.Signal, 1)
+	signal.Reset(os.Interrupt)
 	signal.Notify(signalCh, os.Interrupt)
 	go func() {
 		<-signalCh
@@ -172,6 +173,14 @@ func (b *server) Run(ctx context.Context) {
 
 	<-ctx.Done()
 
+	if b.restServer != nil {
+		b.restServer.stop()
+	}
+
+	if b.pushServer != nil {
+		b.pushServer.stop()
+	}
+
 	if b.profilingServer != nil {
 		b.profilingServer.stop()
 	}
@@ -184,7 +193,4 @@ func (b *server) Run(ctx context.Context) {
 		b.mockServer.stop()
 	}
 
-	if b.restServer != nil {
-		b.restServer.stop()
-	}
 }

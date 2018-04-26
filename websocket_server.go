@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/aporeto-inc/addedeffect/wsc"
 	"github.com/aporeto-inc/elemental"
@@ -62,6 +63,10 @@ func (n *pushServer) registerSession(session *wsPushSession) {
 
 func (n *pushServer) unregisterSession(session *wsPushSession) {
 
+	if handler := n.config.PushServer.DispatchHandler; handler != nil {
+		handler.OnPushSessionStop(session)
+	}
+
 	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
 		n.sessionsLock.Unlock()
@@ -69,10 +74,6 @@ func (n *pushServer) unregisterSession(session *wsPushSession) {
 	}
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
-
-	if handler := n.config.PushServer.DispatchHandler; handler != nil {
-		handler.OnPushSessionStop(session)
-	}
 }
 
 func (n *pushServer) authSession(session *wsPushSession) error {
@@ -272,15 +273,25 @@ func (n *pushServer) start(ctx context.Context) {
 			}(p)
 
 		case <-ctx.Done():
-
-			n.sessionsLock.Lock()
-			for _, session := range n.sessions {
-				session.close(websocket.CloseGoingAway)
-			}
-			n.sessionsLock.Unlock()
-
-			zap.L().Info("Push server stopped")
 			return
 		}
 	}
+}
+
+func (n *pushServer) stop() {
+
+	// we wait for all session to get cleanly terminated.
+	for {
+		n.sessionsLock.Lock()
+		leftOvers := len(n.sessions)
+		n.sessionsLock.Unlock()
+
+		if leftOvers == 0 {
+			break
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	zap.L().Info("Push server stopped")
 }

@@ -252,7 +252,6 @@ func (a *restServer) installRoutes() {
 func (a *restServer) start(ctx context.Context) {
 
 	a.mainContext = ctx
-	defer func() { a.mainContext = nil }()
 
 	a.installRoutes()
 
