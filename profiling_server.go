@@ -3,6 +3,7 @@ package bahamut
 import (
 	"context"
 
+	"cloud.google.com/go/profiler"
 	"go.uber.org/zap"
 
 	gops "github.com/google/gops/agent"
@@ -24,13 +25,41 @@ func newProfilingServer(config Config) *profilingServer {
 // start starts the profilingServer.
 func (s *profilingServer) start(ctx context.Context) {
 
-	if err := gops.Listen(gops.Options{
-		Addr: s.config.ProfilingServer.ListenAddress,
-	}); err != nil {
-		zap.L().Fatal("Unable to start profile server", zap.Error(err))
-	}
+	if s.config.ProfilingServer.Mode == "gcp" {
 
-	zap.L().Info("Profile server started", zap.String("address", s.config.ProfilingServer.ListenAddress))
+		name := s.config.Meta.ServiceName
+		if prfx := s.config.ProfilingServer.GCPServicePrefix; prfx != "" {
+			name = prfx + "-" + name
+		}
+
+		if err := profiler.Start(profiler.Config{
+			Service:        name,
+			ServiceVersion: s.config.Meta.ServiceVersion,
+			ProjectID:      s.config.ProfilingServer.GCPProjectID,
+		}); err != nil {
+			zap.L().Fatal("Unable to start gcp profile server", zap.Error(err))
+		}
+
+		projectID := s.config.ProfilingServer.GCPProjectID
+		if projectID == "" {
+			projectID = "auto"
+		}
+
+		zap.L().Info("GCP profiler started",
+			zap.String("service", name),
+			zap.String("project-id", projectID),
+		)
+
+	} else {
+
+		if err := gops.Listen(gops.Options{
+			Addr: s.config.ProfilingServer.ListenAddress,
+		}); err != nil {
+			zap.L().Fatal("Unable to start gops profile server", zap.Error(err))
+		}
+
+		zap.L().Info("GOPS profiler started", zap.String("address", s.config.ProfilingServer.ListenAddress))
+	}
 
 	<-ctx.Done()
 }

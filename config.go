@@ -98,7 +98,7 @@ type Config struct {
 		// WriteTimeout defines the idle http timeout.
 		IdleTimeout time.Duration
 
-		// Enabled defines if the profiling server should be enabled.
+		// Enabled defines if the mock server should be enabled.
 		Enabled bool
 	}
 
@@ -128,10 +128,23 @@ type Config struct {
 	ProfilingServer struct {
 
 		// ListenAddress is the general listening address for the profiling server.
+		// Only matters when mode is "gops".
 		ListenAddress string
 
 		// Enabled defines if the profiling server should be enabled.
 		Enabled bool
+
+		// Mode represents the mode of the profiling server to run.
+		// If can be "gops" or "gcp"
+		Mode string
+
+		// Name of the project to report when Mode is set to "gcp".
+		GCPProjectID string
+
+		// Set this to add a prefix to your service name when reporting
+		// profile to GCP. This allows to differenciate multiple instance
+		// of an application running in the same project.
+		GCPServicePrefix string
 	}
 
 	// TLS contains the TLS configuration.
@@ -232,7 +245,11 @@ type Config struct {
 		// ServiceName contains the name of the service.
 		ServiceName string
 
+		// ServiceVersion contains the version of the service itself.
+		ServiceVersion string
+
 		// Version should contain information relative to the service version.
+		// like all it's libraries and things like that.
 		Version map[string]interface{}
 
 		DisableMetaRoute bool
