@@ -48,7 +48,7 @@ type wsPushSession struct {
 
 func newWSPushSession(request *http.Request, config Config, unregister unregisterFunc) *wsPushSession {
 
-	id := uuid.Must(uuid.NewV4()).String()
+	id := uuid.NewV4().String()
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{

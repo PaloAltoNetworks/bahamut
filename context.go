@@ -64,7 +64,7 @@ func NewContext() *Context {
 		Metadata:           map[string]interface{}{},
 		claims:             []string{},
 		claimsMap:          map[string]string{},
-		id:                 uuid.Must(uuid.NewV4()).String(),
+		id:                 uuid.NewV4().String(),
 		events:             elemental.Events{},
 		customMessagesLock: &sync.Mutex{},
 		eventsLock:         &sync.Mutex{},
