@@ -91,9 +91,9 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 			c2 := make(chan *Publication)
 			c3 := make(chan *Publication)
 
-			u1 := ps.Subscribe(c1, nil, "topic")
-			u2 := ps.Subscribe(c2, nil, "topic")
-			u3 := ps.Subscribe(c3, nil, "nottopic")
+			u1 := ps.Subscribe(c1, nil, "topic", "")
+			u2 := ps.Subscribe(c2, nil, "topic", "")
+			u3 := ps.Subscribe(c3, nil, "nottopic", "")
 			time.Sleep(30 * time.Millisecond)
 
 			Convey("When Publish somthing", func() {

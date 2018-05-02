@@ -7,16 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/nats-io/go-nats"
-	"github.com/nats-io/go-nats-streaming"
+	"go.uber.org/zap"
 )
 
 type natsPubSub struct {
 	natsURL        string
-	nc             *nats.Conn
-	client         stan.Conn
+	client         *nats.Conn
 	retryInterval  time.Duration
 	publishTimeout time.Duration
 	retryNumber    int
@@ -70,7 +67,6 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
 
 	var queueGroup string
-	options := []stan.SubscriptionOption{}
 
 	for i, arg := range args {
 		if i == 0 {
@@ -81,19 +77,12 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 			}
 			continue
 		}
-
-		if opt, ok := arg.(stan.SubscriptionOption); ok {
-			options = append(options, opt)
-		} else {
-			panic("Subsequent arguments must be of type stan.SubscriptionOption")
-		}
-
 	}
 
-	var sub stan.Subscription
+	var sub *nats.Subscription
 	var err error
 
-	handler := func(m *stan.Msg) {
+	handler := func(m *nats.Msg) {
 		publication := NewPublication(topic)
 		if e := json.Unmarshal(m.Data, publication); e != nil {
 			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
@@ -103,9 +92,9 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	}
 
 	if queueGroup == "" {
-		sub, err = p.client.Subscribe(topic, handler, options...)
+		sub, err = p.client.Subscribe(topic, handler)
 	} else {
-		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler, options...)
+		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler)
 	}
 
 	if err != nil {
@@ -124,7 +113,7 @@ func (p *natsPubSub) Connect() Waiter {
 	go func() {
 
 		// First, we create a connection to the nats cluster.
-		for p.nc == nil {
+		for p.client == nil {
 
 			var err error
 
@@ -135,9 +124,9 @@ func (p *natsPubSub) Connect() Waiter {
 			}
 
 			if p.username != "" || p.password != "" {
-				p.nc, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(tlsConfig))
+				p.client, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(tlsConfig))
 			} else {
-				p.nc, err = nats.Connect(p.natsURL, nats.Secure(tlsConfig))
+				p.client, err = nats.Connect(p.natsURL, nats.Secure(tlsConfig))
 			}
 
 			if err == nil {
@@ -157,46 +146,6 @@ func (p *natsPubSub) Connect() Waiter {
 				return
 			}
 		}
-
-		// Then, we open a nats streaming session using the nats connection.
-		for p.client == nil {
-
-			var err error
-			var client stan.Conn
-
-			if p.nc.IsConnected() {
-
-				optionsHandler := func(o *stan.Options) error {
-					o.NatsConn = p.nc
-					o.ConnectTimeout = p.publishTimeout
-					o.AckTimeout = p.publishTimeout
-					return nil
-				}
-
-				client, err = stan.Connect(p.clusterID, p.clientID, optionsHandler)
-
-				if err == nil && client != nil {
-					p.client = client
-					break
-				}
-			}
-
-			zap.L().Warn("Unable to connect to nats streaming server. Retrying",
-				zap.String("url", p.natsURL),
-				zap.String("clusterID", p.clusterID),
-				zap.String("clientID", p.clientID),
-				zap.Duration("retry", p.retryInterval),
-				zap.Error(err),
-			)
-
-			select {
-			case <-time.After(p.retryInterval):
-			case <-abort:
-				connected <- false
-				return
-			}
-		}
-
 		connected <- true
 	}()
 
@@ -208,7 +157,8 @@ func (p *natsPubSub) Connect() Waiter {
 
 func (p *natsPubSub) Disconnect() error {
 
-	return p.client.Close()
+	p.client.Close()
+	return nil
 }
 
 func (p *natsPubSub) Ping(timeout time.Duration) error {
@@ -216,9 +166,9 @@ func (p *natsPubSub) Ping(timeout time.Duration) error {
 	errChannel := make(chan error)
 
 	go func() {
-		if p.nc.IsConnected() {
+		if p.client.IsConnected() {
 			errChannel <- nil
-		} else if p.nc.IsReconnecting() {
+		} else if p.client.IsReconnecting() {
 			errChannel <- fmt.Errorf("reconnecting")
 		} else {
 			errChannel <- fmt.Errorf("connection closed")
