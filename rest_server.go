@@ -29,7 +29,6 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
-	mainContext     context.Context
 }
 
 // newRestServer returns a new apiServer.
@@ -138,8 +137,6 @@ func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, err
 // ServeHTTP is the http handler that will be used if an only if a.config.RateLimiting.RateLimiter
 // is configured. Otherwise, the main http handler will be directly the multiplexer.
 func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-	req = req.WithContext(a.mainContext)
 
 	if a.config.RateLimiting.RateLimiter != nil {
 		limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
@@ -250,8 +247,6 @@ func (a *restServer) installRoutes() {
 }
 
 func (a *restServer) start(ctx context.Context) {
-
-	a.mainContext = ctx
 
 	a.installRoutes()
 
