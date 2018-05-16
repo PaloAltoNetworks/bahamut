@@ -139,10 +139,7 @@ func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, err
 // is configured. Otherwise, the main http handler will be directly the multiplexer.
 func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	ctx, cancel := context.WithTimeout(a.mainContext, 5*time.Second)
-	defer cancel()
-
-	req = req.WithContext(ctx)
+	req = req.WithContext(a.mainContext)
 
 	if a.config.RateLimiting.RateLimiter != nil {
 		limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
