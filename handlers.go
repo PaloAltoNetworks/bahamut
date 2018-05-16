@@ -4,9 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/opentracing/opentracing-go"
-
 	"github.com/aporeto-inc/elemental"
+	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"
 )
@@ -95,7 +94,7 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 	select {
 
 	case <-ctx.Context().Done():
-		return nil
+		return makeErrorResponse(ctx.Context(), r, ctx.Context().Err())
 
 	case err := <-e:
 		if err != nil {

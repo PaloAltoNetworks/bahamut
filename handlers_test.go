@@ -308,7 +308,8 @@ func TestHandlers_runDispatcher(t *testing.T) {
 				return nil
 			}
 
-			go func() { runDispatcher(ctx, nil, d, true) }()
+			r := elemental.NewResponse(elemental.NewRequest())
+			go func() { runDispatcher(ctx, r, d, true) }()
 			time.Sleep(30 * time.Millisecond)
 			cancel()
 
