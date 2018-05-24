@@ -57,6 +57,18 @@ type server struct {
 	mockServer      *mockServer
 }
 
+// New returns a new bahamut Server configured with
+// the given options.
+func New(options ...Option) Server {
+	c := createBaseConfig()
+
+	for _, opt := range options {
+		opt(&c)
+	}
+
+	return NewServer(c)
+}
+
 // NewServer returns a new Bahamut Server.
 func NewServer(config Config) Server {
 

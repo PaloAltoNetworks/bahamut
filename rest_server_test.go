@@ -51,11 +51,10 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without all valid tls info", t, func() {
 
-		syscapool, clientcapool, servercerts := loadFixtureCertificates()
+		_, clientcapool, servercerts := loadFixtureCertificates()
 
 		cfg := Config{}
 		cfg.ReSTServer.ListenAddress = "address:80"
-		cfg.TLS.RootCAPool = syscapool
 		cfg.TLS.ClientCAPool = clientcapool
 		cfg.TLS.ServerCertificates = servercerts
 		cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
@@ -175,11 +174,10 @@ func TestServer_Start(t *testing.T) {
 
 			// h := func(w http.ResponseWriter, req *http.Request) { w.Write([]byte("hello")) }
 
-			syscapool, clientcapool, servercerts := loadFixtureCertificates()
+			_, clientcapool, servercerts := loadFixtureCertificates()
 
 			cfg := Config{}
 			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
-			cfg.TLS.RootCAPool = syscapool
 			cfg.TLS.ClientCAPool = clientcapool
 			cfg.TLS.ServerCertificates = servercerts
 			cfg.TLS.AuthType = tls.RequireAndVerifyClientCert

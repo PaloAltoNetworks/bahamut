@@ -50,7 +50,6 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 	tlsConfig := &tls.Config{
 		ClientAuth:               a.config.TLS.AuthType,
 		ClientCAs:                a.config.TLS.ClientCAPool,
-		RootCAs:                  a.config.TLS.RootCAPool,
 		MinVersion:               tls.VersionTLS12,
 		SessionTicketsDisabled:   true,
 		PreferServerCipherSuites: true,
