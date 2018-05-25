@@ -21,7 +21,7 @@ func createBaseConfig() Config {
 	c.ReSTServer.Disabled = true
 	c.PushServer.Disabled = true
 	c.PushServer.PublishDisabled = true
-	c.PushServer.PublishDisabled = true
+	c.PushServer.DispatchDisabled = true
 	c.HealthServer.Disabled = true
 
 	return c
