@@ -78,21 +78,33 @@ func OptCustomRootHandler(handler http.HandlerFunc) Option {
 // decide if a push event should be dispatch to push sessions.
 // PublishHandler defines the handler that will be used to
 // decide if an event should be published.
-func OptPushServer(service PubSubServer, topic string, dispatchHandler PushDispatchHandler, publishHandler PushPublishHandler) Option {
+func OptPushServer(service PubSubServer, topic string) Option {
 	return func(c *Config) {
 		c.PushServer.Disabled = false
 		c.PushServer.Service = service
 		c.PushServer.Topic = topic
+	}
+}
 
-		if dispatchHandler != nil {
-			c.PushServer.DispatchDisabled = false
-			c.PushServer.DispatchHandler = dispatchHandler
-		}
+// OptPushDispatchHandler configures the push dispatcher.
+//
+// DispatchHandler defines the handler that will be used to
+// decide if a push event should be dispatch to push sessions.
+func OptPushDispatchHandler(dispatchHandler PushDispatchHandler) Option {
+	return func(c *Config) {
+		c.PushServer.DispatchDisabled = false
+		c.PushServer.DispatchHandler = dispatchHandler
+	}
+}
 
-		if publishHandler != nil {
-			c.PushServer.PublishDisabled = false
-			c.PushServer.PublishHandler = publishHandler
-		}
+// OptPushPublishHandler configures the push publisher.
+//
+// PublishHandler defines the handler that will be used to
+// decide if an event should be published.
+func OptPushPublishHandler(publishHandler PushPublishHandler) Option {
+	return func(c *Config) {
+		c.PushServer.PublishDisabled = false
+		c.PushServer.PublishHandler = publishHandler
 	}
 }
 
@@ -211,11 +223,11 @@ func OptAuthorizers(authorizers []Authorizer) Option {
 	}
 }
 
-// OptAuditers configures the auditor to use to audit the requests.
+// OptAuditer configures the auditor to use to audit the requests.
 //
 // The Audit() method will be run in a go routine so there is no
 // need to deal with it in your implementation.
-func OptAuditers(auditer Auditer) Option {
+func OptAuditer(auditer Auditer) Option {
 	return func(c *Config) {
 		c.Security.Auditer = auditer
 	}
