@@ -1,10 +1,6 @@
 // Package bahamut contains everything needed to build a fast and secure API server
-// based on a set of Monolithe Specifications.
+// based on a set of Regolithe Specifications.
 //
-// Bahamut uses a Monolithe plugins to transform a set of Monolithe Specifications
-// into the necessary routes and handlers. You will just need to write various processors
-// to handle the business logic and storage.
-//
-// Bahamut works with an Elemental generated model, and you can use any storage engine you like.
-// It works best with Manipulate.
+// Bahamut uses an Elemental model generated from a set of Regolithe Specifications
+// You will just need to write various processors to handle the business logic and storage.
 package bahamut

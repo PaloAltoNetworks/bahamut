@@ -79,7 +79,7 @@ func (p *Publication) StartTracing(tracer opentracing.Tracer, name string) {
 		return
 	}
 
-	wireContext, _ := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(p.TrackingData))
+	wireContext, _ := tracer.Extract(opentracing.TextMap, p.TrackingData)
 
 	p.span = opentracing.StartSpan(name, ext.RPCServerOption(wireContext))
 	p.span.SetTag("topic", p.Topic)

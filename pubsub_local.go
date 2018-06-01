@@ -129,10 +129,3 @@ func (p *localPubSub) listen() {
 		}
 	}
 }
-
-func (p *localPubSub) chansForTopic(topic string) []chan *Publication {
-
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	return p.subscribers[topic]
-}
