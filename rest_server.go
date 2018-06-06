@@ -24,7 +24,7 @@ import (
 
 // an restServer is the structure serving the api routes.
 type restServer struct {
-	config          Config
+	cfg             config
 	multiplexer     *bone.Mux
 	server          *http.Server
 	processorFinder processorFinderFunc
@@ -32,10 +32,10 @@ type restServer struct {
 }
 
 // newRestServer returns a new apiServer.
-func newRestServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
+func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
 
 	return &restServer{
-		config:          config,
+		cfg:             cfg,
 		multiplexer:     multiplexer,
 		processorFinder: processorFinder,
 		pusher:          pusher,
@@ -48,8 +48,8 @@ func newRestServer(config Config, multiplexer *bone.Mux, processorFinder process
 func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error) {
 
 	tlsConfig := &tls.Config{
-		ClientAuth:               a.config.TLS.AuthType,
-		ClientCAs:                a.config.TLS.ClientCAPool,
+		ClientAuth:               a.cfg.tls.authType,
+		ClientCAs:                a.cfg.tls.clientCAPool,
 		MinVersion:               tls.VersionTLS12,
 		SessionTicketsDisabled:   true,
 		PreferServerCipherSuites: true,
@@ -62,20 +62,20 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 		},
 	}
 
-	if !a.config.TLS.EnableLetsEncrypt {
+	if !a.cfg.tls.enableLetsEncrypt {
 
 		// If letsencrypt is not enabled we simply set the given list of
 		// certificates or the ServerCertificatesRetrieverFunc in the TLS option.
 
-		if a.config.TLS.ServerCertificatesRetrieverFunc != nil {
-			tlsConfig.GetCertificate = a.config.TLS.ServerCertificatesRetrieverFunc
+		if a.cfg.tls.serverCertificatesRetrieverFunc != nil {
+			tlsConfig.GetCertificate = a.cfg.tls.serverCertificatesRetrieverFunc
 		} else {
-			tlsConfig.Certificates = a.config.TLS.ServerCertificates
+			tlsConfig.Certificates = a.cfg.tls.serverCertificates
 		}
 
 	} else {
 
-		cachePath := a.config.TLS.LetsEncryptCertificateCacheFolder
+		cachePath := a.cfg.tls.letsEncryptCertificateCacheFolder
 		if cachePath == "" {
 			cachePath = os.TempDir()
 		}
@@ -83,13 +83,13 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 		// Otherwise, we create an autocert manager
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(a.config.TLS.LetsEncryptDomainWhiteList...),
+			HostPolicy: autocert.HostWhitelist(a.cfg.tls.letsEncryptDomainWhiteList...),
 			Cache:      autocert.DirCache(cachePath),
 		}
 
 		// Then we build a custom GetCertificate function to first use the certificate passed
 		// by the config, then eventually try to get a certificate from letsencrypt.
-		localCertMap := buildNameAndIPsToCertificate(a.config.TLS.ServerCertificates)
+		localCertMap := buildNameAndIPsToCertificate(a.cfg.tls.serverCertificates)
 		tlsConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if hello.ServerName != "" {
 				if c, ok := localCertMap[hello.ServerName]; ok {
@@ -113,12 +113,12 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 	server := &http.Server{
 		Addr:         address,
 		TLSConfig:    tlsConfig,
-		ReadTimeout:  a.config.ReSTServer.ReadTimeout,
-		WriteTimeout: a.config.ReSTServer.WriteTimeout,
-		IdleTimeout:  a.config.ReSTServer.IdleTimeout,
+		ReadTimeout:  a.cfg.restServer.readTimeout,
+		WriteTimeout: a.cfg.restServer.writeTimeout,
+		IdleTimeout:  a.cfg.restServer.idleTimeout,
 	}
 
-	server.SetKeepAlivesEnabled(!a.config.ReSTServer.DisableKeepalive)
+	server.SetKeepAlivesEnabled(!a.cfg.restServer.disableKeepalive)
 
 	return server, nil
 }
@@ -137,8 +137,8 @@ func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, err
 // is configured. Otherwise, the main http handler will be directly the multiplexer.
 func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	if a.config.RateLimiting.RateLimiter != nil {
-		limited, err := a.config.RateLimiting.RateLimiter.RateLimit(req)
+	if a.cfg.rateLimiting.rateLimiter != nil {
+		limited, err := a.cfg.rateLimiting.rateLimiter.RateLimit(req)
 		if err != nil {
 			writeHTTPResponse(
 				w,
@@ -175,23 +175,23 @@ func (a *restServer) installRoutes() {
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
 
-	if a.config.ReSTServer.CustomRootHandlerFunc != nil {
-		a.multiplexer.Handle("/", a.config.ReSTServer.CustomRootHandlerFunc)
+	if a.cfg.restServer.customRootHandlerFunc != nil {
+		a.multiplexer.Handle("/", a.cfg.restServer.customRootHandlerFunc)
 	} else {
 		a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
 	}
 
-	if a.config.Meta.ServiceName != "" {
+	if a.cfg.meta.serviceName != "" {
 		a.multiplexer.Get("/_meta/name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			setCommonHeader(w, r.Header.Get("Origin"))
 			w.WriteHeader(200)
-			w.Write([]byte(a.config.Meta.ServiceName)) // nolint: errcheck
+			w.Write([]byte(a.cfg.meta.serviceName)) // nolint: errcheck
 		}))
 	}
 
-	if !a.config.Meta.DisableMetaRoute {
+	if !a.cfg.meta.disableMetaRoute {
 
-		routesInfo := buildVersionedRoutes(a.config.Model.RelationshipsRegistry, a.processorFinder)
+		routesInfo := buildVersionedRoutes(a.cfg.model.relationshipsRegistry, a.processorFinder)
 
 		encodedRoutesInfo, err := json.Marshal(routesInfo)
 		if err != nil {
@@ -205,9 +205,9 @@ func (a *restServer) installRoutes() {
 		}))
 	}
 
-	if a.config.Meta.Version != nil {
+	if a.cfg.meta.version != nil {
 
-		encodedVersionInfo, err := json.MarshalIndent(a.config.Meta.Version, "", "    ")
+		encodedVersionInfo, err := json.MarshalIndent(a.cfg.meta.version, "", "    ")
 		if err != nil {
 			panic(fmt.Sprintf("Unable to build route info: %s", err))
 		}
@@ -250,10 +250,10 @@ func (a *restServer) start(ctx context.Context) {
 	a.installRoutes()
 
 	var err error
-	if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
-		a.server, err = a.createSecureHTTPServer(a.config.ReSTServer.ListenAddress)
+	if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
+		a.server, err = a.createSecureHTTPServer(a.cfg.restServer.listenAddress)
 	} else {
-		a.server, err = a.createUnsecureHTTPServer(a.config.ReSTServer.ListenAddress)
+		a.server, err = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
 	}
 	if err != nil {
 		zap.L().Fatal("Unable to create api server", zap.Error(err))
@@ -262,7 +262,7 @@ func (a *restServer) start(ctx context.Context) {
 	a.server.Handler = a
 
 	go func() {
-		if a.config.TLS.ServerCertificates != nil || a.config.TLS.ServerCertificatesRetrieverFunc != nil {
+		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
 			err = a.server.ListenAndServeTLS("", "")
 		} else {
 			err = a.server.ListenAndServe()
@@ -276,7 +276,7 @@ func (a *restServer) start(ctx context.Context) {
 		}
 	}()
 
-	zap.L().Info("API server started", zap.String("address", a.config.ReSTServer.ListenAddress))
+	zap.L().Info("API server started", zap.String("address", a.cfg.restServer.listenAddress))
 
 	<-ctx.Done()
 }
@@ -316,6 +316,6 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		bctx := NewContextWithRequest(request)
 		bctx.ctx = ctx
 
-		writeHTTPResponse(w, handler(bctx, a.config, a.processorFinder, a.pusher))
+		writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
 	}
 }

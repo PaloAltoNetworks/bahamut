@@ -30,7 +30,7 @@ type wsPushSession struct {
 	currentFilterLock  *sync.Mutex
 	claims             []string
 	claimsMap          map[string]string
-	config             Config
+	cfg                config
 	headers            http.Header
 	id                 string
 	metadata           interface{}
@@ -46,7 +46,7 @@ type wsPushSession struct {
 	closeLock          *sync.Mutex
 }
 
-func newWSPushSession(request *http.Request, config Config, unregister unregisterFunc) *wsPushSession {
+func newWSPushSession(request *http.Request, cfg config, unregister unregisterFunc) *wsPushSession {
 
 	id := uuid.NewV4().String()
 	ctx, cancel := context.WithCancel(request.Context())
@@ -58,7 +58,7 @@ func newWSPushSession(request *http.Request, config Config, unregister unregiste
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
-		config:             config,
+		cfg:                cfg,
 		headers:            request.Header,
 		parameters:         request.URL.Query(),
 		startTime:          time.Now(),

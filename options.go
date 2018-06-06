@@ -10,27 +10,12 @@ import (
 )
 
 // An Option represents a configuration option.
-type Option func(*Config)
-
-func createBaseConfig() Config {
-
-	c := Config{}
-
-	// TODO: Basculate to Enabled everywhere when migration
-	// is complete, then remove this function
-	c.ReSTServer.Disabled = true
-	c.PushServer.Disabled = true
-	c.PushServer.PublishDisabled = true
-	c.PushServer.DispatchDisabled = true
-	c.HealthServer.Disabled = true
-
-	return c
-}
+type Option func(*config)
 
 // OptDisablePanicRecovery disables panic recovery.
 func OptDisablePanicRecovery() Option {
-	return func(c *Config) {
-		c.General.PanicRecoveryDisabled = true
+	return func(c *config) {
+		c.general.panicRecoveryDisabled = true
 	}
 }
 
@@ -38,18 +23,18 @@ func OptDisablePanicRecovery() Option {
 //
 // listen is the general listening address for the API server as
 func OptRestServer(listen string) Option {
-	return func(c *Config) {
-		c.ReSTServer.Disabled = false
-		c.ReSTServer.ListenAddress = listen
+	return func(c *config) {
+		c.restServer.enabled = true
+		c.restServer.listenAddress = listen
 	}
 }
 
 // OptTimeouts configures the timeouts of the server.
 func OptTimeouts(read, write, idle time.Duration) Option {
-	return func(c *Config) {
-		c.ReSTServer.ReadTimeout = read
-		c.ReSTServer.WriteTimeout = write
-		c.ReSTServer.IdleTimeout = idle
+	return func(c *config) {
+		c.restServer.readTimeout = read
+		c.restServer.writeTimeout = write
+		c.restServer.idleTimeout = idle
 	}
 }
 
@@ -58,15 +43,15 @@ func OptTimeouts(read, write, idle time.Duration) Option {
 // There is a bug in Go <= 1.7 which makes the server eats all available
 // fds. Use this option if you are using these versions.
 func OptDisableKeepAlive() Option {
-	return func(c *Config) {
-		c.ReSTServer.DisableKeepalive = true
+	return func(c *config) {
+		c.restServer.disableKeepalive = true
 	}
 }
 
 // OptCustomRootHandler configures the custom root (/) handler.
 func OptCustomRootHandler(handler http.HandlerFunc) Option {
-	return func(c *Config) {
-		c.ReSTServer.CustomRootHandlerFunc = handler
+	return func(c *config) {
+		c.restServer.customRootHandlerFunc = handler
 	}
 }
 
@@ -79,10 +64,10 @@ func OptCustomRootHandler(handler http.HandlerFunc) Option {
 // PublishHandler defines the handler that will be used to
 // decide if an event should be published.
 func OptPushServer(service PubSubServer, topic string) Option {
-	return func(c *Config) {
-		c.PushServer.Disabled = false
-		c.PushServer.Service = service
-		c.PushServer.Topic = topic
+	return func(c *config) {
+		c.pushServer.enabled = true
+		c.pushServer.service = service
+		c.pushServer.topic = topic
 	}
 }
 
@@ -91,9 +76,9 @@ func OptPushServer(service PubSubServer, topic string) Option {
 // DispatchHandler defines the handler that will be used to
 // decide if a push event should be dispatch to push sessions.
 func OptPushDispatchHandler(dispatchHandler PushDispatchHandler) Option {
-	return func(c *Config) {
-		c.PushServer.DispatchDisabled = false
-		c.PushServer.DispatchHandler = dispatchHandler
+	return func(c *config) {
+		c.pushServer.dispatchEnabled = true
+		c.pushServer.dispatchHandler = dispatchHandler
 	}
 }
 
@@ -102,9 +87,9 @@ func OptPushDispatchHandler(dispatchHandler PushDispatchHandler) Option {
 // PublishHandler defines the handler that will be used to
 // decide if an event should be published.
 func OptPushPublishHandler(publishHandler PushPublishHandler) Option {
-	return func(c *Config) {
-		c.PushServer.PublishDisabled = false
-		c.PushServer.PublishHandler = publishHandler
+	return func(c *config) {
+		c.pushServer.publishEnabled = true
+		c.pushServer.publishHandler = publishHandler
 	}
 }
 
@@ -113,28 +98,28 @@ func OptPushPublishHandler(publishHandler PushPublishHandler) Option {
 // ListenAddress is the general listening address for the health server.
 // HealthHandler is the type of the function to run to determine the health of the server.
 func OptHealthServer(listen string, handler HealthServerFunc) Option {
-	return func(c *Config) {
-		c.HealthServer.Disabled = false
-		c.HealthServer.ListenAddress = listen
-		c.HealthServer.HealthHandler = handler
+	return func(c *config) {
+		c.healthServer.enabled = true
+		c.healthServer.listenAddress = listen
+		c.healthServer.healthHandler = handler
 	}
 }
 
 // OptHealthServerTimeouts configures the health server timeouts.
 func OptHealthServerTimeouts(read, write, idle time.Duration) Option {
-	return func(c *Config) {
-		c.HealthServer.ReadTimeout = read
-		c.HealthServer.WriteTimeout = write
-		c.HealthServer.IdleTimeout = idle
+	return func(c *config) {
+		c.healthServer.readTimeout = read
+		c.healthServer.writeTimeout = write
+		c.healthServer.idleTimeout = idle
 	}
 }
 
 // OptProfilingLocal configure local goops profiling.
 func OptProfilingLocal(listen string) Option {
-	return func(c *Config) {
-		c.ProfilingServer.Enabled = true
-		c.ProfilingServer.Mode = "gops"
-		c.ProfilingServer.ListenAddress = listen
+	return func(c *config) {
+		c.profilingServer.enabled = true
+		c.profilingServer.mode = "gops"
+		c.profilingServer.listenAddress = listen
 	}
 }
 
@@ -145,11 +130,11 @@ func OptProfilingLocal(listen string) Option {
 // profile to GCP. This allows to differentiate multiple instance
 // of an application running in the same project.
 func OptProfilingGCP(projectID string, servicePrefix string) Option {
-	return func(c *Config) {
-		c.ProfilingServer.Enabled = true
-		c.ProfilingServer.Mode = "gcp"
-		c.ProfilingServer.GCPProjectID = projectID
-		c.ProfilingServer.GCPServicePrefix = servicePrefix
+	return func(c *config) {
+		c.profilingServer.enabled = true
+		c.profilingServer.mode = "gcp"
+		c.profilingServer.gcpProjectID = projectID
+		c.profilingServer.gcpServicePrefix = servicePrefix
 	}
 }
 
@@ -162,9 +147,9 @@ func OptProfilingGCP(projectID string, servicePrefix string) Option {
 // - If you set this, the value of ServerCertificates will be ignored.
 // - If EnableLetsEncrypt is set, this will be ignored
 func OptTLS(certs []tls.Certificate, certRetriever func(*tls.ClientHelloInfo) (*tls.Certificate, error)) Option {
-	return func(c *Config) {
-		c.TLS.ServerCertificates = certs
-		c.TLS.ServerCertificatesRetrieverFunc = certRetriever
+	return func(c *config) {
+		c.tls.serverCertificates = certs
+		c.tls.serverCertificatesRetrieverFunc = certRetriever
 	}
 }
 
@@ -173,9 +158,9 @@ func OptTLS(certs []tls.Certificate, certRetriever func(*tls.ClientHelloInfo) (*
 // ClientCAPool is the *x509.CertPool to use for the authentifying client.
 // AuthType defines the tls authentication mode to use for a secure server.
 func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
-	return func(c *Config) {
-		c.TLS.ClientCAPool = caPool
-		c.TLS.AuthType = authType
+	return func(c *config) {
+		c.tls.clientCAPool = caPool
+		c.tls.authType = authType
 	}
 }
 
@@ -186,10 +171,10 @@ func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
 // cache gives the path where to store certificate cache.
 // If empty, the default temp folder of the machine will be used.
 func OptLetsEncrypt(domains []string, cache string) Option {
-	return func(c *Config) {
-		c.TLS.EnableLetsEncrypt = true
-		c.TLS.LetsEncryptDomainWhiteList = domains
-		c.TLS.LetsEncryptCertificateCacheFolder = cache
+	return func(c *config) {
+		c.tls.enableLetsEncrypt = true
+		c.tls.letsEncryptDomainWhiteList = domains
+		c.tls.letsEncryptCertificateCacheFolder = cache
 	}
 }
 
@@ -205,9 +190,9 @@ func OptLetsEncrypt(domains []string, cache string) Option {
 // the current session authenticator grants, denies or let the chain continue. If an error is returned, the
 // chain fails immediately.
 func OptAuthenticators(requestAuthenticators []RequestAuthenticator, sessionAuthenticators []SessionAuthenticator) Option {
-	return func(c *Config) {
-		c.Security.RequestAuthenticators = requestAuthenticators
-		c.Security.SessionAuthenticators = sessionAuthenticators
+	return func(c *config) {
+		c.security.requestAuthenticators = requestAuthenticators
+		c.security.sessionAuthenticators = sessionAuthenticators
 	}
 }
 
@@ -218,8 +203,8 @@ func OptAuthenticators(requestAuthenticators []RequestAuthenticator, sessionAuth
 // the current authorizer grants, denies or let the chain continue. If an error is returned, the
 // chain fails immediately.
 func OptAuthorizers(authorizers []Authorizer) Option {
-	return func(c *Config) {
-		c.Security.Authorizers = authorizers
+	return func(c *config) {
+		c.security.authorizers = authorizers
 	}
 }
 
@@ -228,15 +213,15 @@ func OptAuthorizers(authorizers []Authorizer) Option {
 // The Audit() method will be run in a go routine so there is no
 // need to deal with it in your implementation.
 func OptAuditer(auditer Auditer) Option {
-	return func(c *Config) {
-		c.Security.Auditer = auditer
+	return func(c *config) {
+		c.security.auditer = auditer
 	}
 }
 
 // OptRateLimiting configures the rate limiting.
 func OptRateLimiting(limiter RateLimiter) Option {
-	return func(c *Config) {
-		c.RateLimiting.RateLimiter = limiter
+	return func(c *config) {
+		c.rateLimiting.rateLimiter = limiter
 	}
 }
 
@@ -246,9 +231,9 @@ func OptRateLimiting(limiter RateLimiter) Option {
 // according to its identity.
 // registry contains each elemental model RelationshipsRegistry for each version.
 func OptModel(factory elemental.IdentifiableFactory, registry map[int]elemental.RelationshipsRegistry) Option {
-	return func(c *Config) {
-		c.Model.IdentifiablesFactory = factory
-		c.Model.RelationshipsRegistry = registry
+	return func(c *config) {
+		c.model.identifiablesFactory = factory
+		c.model.relationshipsRegistry = registry
 	}
 }
 
@@ -259,9 +244,9 @@ func OptModel(factory elemental.IdentifiableFactory, registry map[int]elemental.
 // Excluded defines a list of elemental.Identity that will not be affected
 // by the read only mode.
 func OptReadOnly(excluded []elemental.Identity) Option {
-	return func(c *Config) {
-		c.Model.ReadOnly = true
-		c.Model.ReadOnlyExcludedIdentities = excluded
+	return func(c *config) {
+		c.model.readOnly = true
+		c.model.readOnlyExcludedIdentities = excluded
 	}
 }
 
@@ -272,25 +257,25 @@ func OptReadOnly(excluded []elemental.Identity) Option {
 // If none is provided for a particular identity, the standard unmarshal function
 // is used.
 func OptUnmarshallers(unmarshallers map[elemental.Identity]CustomUmarshaller) Option {
-	return func(c *Config) {
-		c.Model.Unmarshallers = unmarshallers
+	return func(c *config) {
+		c.model.unmarshallers = unmarshallers
 	}
 }
 
 // OptMockServer enables and configures the mock server.
 func OptMockServer(listen string) Option {
-	return func(c *Config) {
-		c.MockServer.Enabled = true
-		c.MockServer.ListenAddress = listen
+	return func(c *config) {
+		c.mockServer.enabled = true
+		c.mockServer.listenAddress = listen
 	}
 }
 
 // OptMockServerTimeouts configures the mock server timeouts.
 func OptMockServerTimeouts(read, write, idle time.Duration) Option {
-	return func(c *Config) {
-		c.MockServer.ReadTimeout = read
-		c.MockServer.WriteTimeout = write
-		c.MockServer.IdleTimeout = idle
+	return func(c *config) {
+		c.mockServer.readTimeout = read
+		c.mockServer.writeTimeout = write
+		c.mockServer.idleTimeout = idle
 	}
 }
 
@@ -301,16 +286,16 @@ func OptMockServerTimeouts(read, write, idle time.Duration) Option {
 // Version should contain information relative to the service version.
 // like all it's libraries and things like that.
 func OptServiceInfo(name string, version string, subversions map[string]interface{}) Option {
-	return func(c *Config) {
-		c.Meta.ServiceName = name
-		c.Meta.ServiceVersion = version
-		c.Meta.Version = subversions
+	return func(c *config) {
+		c.meta.serviceName = name
+		c.meta.serviceVersion = version
+		c.meta.version = subversions
 	}
 }
 
 // OptDisableMetaRoutes disables the meta routing.
 func OptDisableMetaRoutes() Option {
-	return func(c *Config) {
-		c.Meta.DisableMetaRoute = true
+	return func(c *config) {
+		c.meta.disableMetaRoute = true
 	}
 }

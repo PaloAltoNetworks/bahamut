@@ -11,36 +11,36 @@ import (
 
 // an profilingServer is the structure serving the profiling.
 type profilingServer struct {
-	config Config
+	cfg config
 }
 
 // newProfilingServer returns a new profilingServer.
-func newProfilingServer(config Config) *profilingServer {
+func newProfilingServer(cfg config) *profilingServer {
 
 	return &profilingServer{
-		config: config,
+		cfg: cfg,
 	}
 }
 
 // start starts the profilingServer.
 func (s *profilingServer) start(ctx context.Context) {
 
-	if s.config.ProfilingServer.Mode == "gcp" {
+	if s.cfg.profilingServer.mode == "gcp" {
 
-		name := s.config.Meta.ServiceName
-		if prfx := s.config.ProfilingServer.GCPServicePrefix; prfx != "" {
+		name := s.cfg.meta.serviceName
+		if prfx := s.cfg.profilingServer.gcpServicePrefix; prfx != "" {
 			name = prfx + "-" + name
 		}
 
 		if err := profiler.Start(profiler.Config{
 			Service:        name,
-			ServiceVersion: s.config.Meta.ServiceVersion,
-			ProjectID:      s.config.ProfilingServer.GCPProjectID,
+			ServiceVersion: s.cfg.meta.serviceVersion,
+			ProjectID:      s.cfg.profilingServer.gcpProjectID,
 		}); err != nil {
 			zap.L().Fatal("Unable to start gcp profile server", zap.Error(err))
 		}
 
-		projectID := s.config.ProfilingServer.GCPProjectID
+		projectID := s.cfg.profilingServer.gcpProjectID
 		if projectID == "" {
 			projectID = "auto"
 		}
@@ -53,12 +53,12 @@ func (s *profilingServer) start(ctx context.Context) {
 	} else {
 
 		if err := gops.Listen(gops.Options{
-			Addr: s.config.ProfilingServer.ListenAddress,
+			Addr: s.cfg.profilingServer.listenAddress,
 		}); err != nil {
 			zap.L().Fatal("Unable to start gops profile server", zap.Error(err))
 		}
 
-		zap.L().Info("GOPS profiler started", zap.String("address", s.config.ProfilingServer.ListenAddress))
+		zap.L().Info("GOPS profiler started", zap.String("address", s.cfg.profilingServer.listenAddress))
 	}
 
 	<-ctx.Done()

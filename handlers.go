@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(*Context, Config, processorFinderFunc, eventPusherFunc) *elemental.Response
+type handlerFunc func(*Context, config, processorFinderFunc, eventPusherFunc) *elemental.Response
 
 func makeResponse(ctx *Context, response *elemental.Response) *elemental.Response {
 
@@ -108,7 +108,7 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 	}
 }
 
-func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieveMany(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
@@ -117,7 +117,7 @@ func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFi
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -137,22 +137,22 @@ func handleRetrieveMany(ctx *Context, config Config, processorFinder processorFi
 			return dispatchRetrieveManyOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
+				cfg.security.auditer,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handleRetrieve(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieve(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsRetrieveAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsRetrieveAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -171,18 +171,18 @@ func handleRetrieve(ctx *Context, config Config, processorFinder processorFinder
 			return dispatchRetrieveOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
+				cfg.security.auditer,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handleCreate(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
@@ -191,7 +191,7 @@ func handleCreate(ctx *Context, config Config, processorFinder processorFinderFu
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -210,25 +210,25 @@ func handleCreate(ctx *Context, config Config, processorFinder processorFinderFu
 			return dispatchCreateOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Model.Unmarshallers[ctx.Request.Identity],
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.model.unmarshallers[ctx.Request.Identity],
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
-				config.Model.ReadOnly,
-				config.Model.ReadOnlyExcludedIdentities,
+				cfg.security.auditer,
+				cfg.model.readOnly,
+				cfg.model.readOnlyExcludedIdentities,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsUpdateAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsUpdateAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -247,25 +247,25 @@ func handleUpdate(ctx *Context, config Config, processorFinder processorFinderFu
 			return dispatchUpdateOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Model.Unmarshallers[ctx.Request.Identity],
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.model.unmarshallers[ctx.Request.Identity],
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
-				config.Model.ReadOnly,
-				config.Model.ReadOnlyExcludedIdentities,
+				cfg.security.auditer,
+				cfg.model.readOnly,
+				cfg.model.readOnlyExcludedIdentities,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handleDelete(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleDelete(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsDeleteAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsDeleteAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -284,20 +284,20 @@ func handleDelete(ctx *Context, config Config, processorFinder processorFinderFu
 			return dispatchDeleteOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
-				config.Model.ReadOnly,
-				config.Model.ReadOnlyExcludedIdentities,
+				cfg.security.auditer,
+				cfg.model.readOnly,
+				cfg.model.readOnlyExcludedIdentities,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleInfo(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
@@ -306,7 +306,7 @@ func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -325,18 +325,18 @@ func handleInfo(ctx *Context, config Config, processorFinder processorFinderFunc
 			return dispatchInfoOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
+				cfg.security.auditer,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }
 
-func handlePatch(ctx *Context, config Config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handlePatch(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
 	response = elemental.NewResponse(ctx.Request)
 
@@ -345,7 +345,7 @@ func handlePatch(ctx *Context, config Config, processorFinder processorFinderFun
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(config.Model.RelationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -364,15 +364,15 @@ func handlePatch(ctx *Context, config Config, processorFinder processorFinderFun
 			return dispatchPatchOperation(
 				ctx,
 				processorFinder,
-				config.Model.IdentifiablesFactory,
-				config.Security.RequestAuthenticators,
-				config.Security.Authorizers,
+				cfg.model.identifiablesFactory,
+				cfg.security.requestAuthenticators,
+				cfg.security.authorizers,
 				pusherFunc,
-				config.Security.Auditer,
-				config.Model.ReadOnly,
-				config.Model.ReadOnlyExcludedIdentities,
+				cfg.security.auditer,
+				cfg.model.readOnly,
+				cfg.model.readOnlyExcludedIdentities,
 			)
 		},
-		config.General.PanicRecoveryDisabled,
+		cfg.general.panicRecoveryDisabled,
 	)
 }

@@ -335,8 +335,8 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -396,8 +396,8 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -457,8 +457,8 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -518,8 +518,8 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -579,8 +579,8 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -640,8 +640,8 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}
@@ -701,8 +701,8 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 	Convey("Given I have a config", t, func() {
 
-		cfg := Config{}
-		cfg.Model.RelationshipsRegistry = map[int]elemental.RelationshipsRegistry{
+		cfg := config{}
+		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
 			0: testmodel.Relationships(),
 			1: testmodel.Relationships(),
 		}

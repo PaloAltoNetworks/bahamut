@@ -16,92 +16,90 @@ import (
 // HealthServerFunc is the type used by the Health Server to check the health of the server
 type HealthServerFunc func() error
 
-// A Config represents the configuration of Bahamut.
-type Config struct {
-	General struct {
-		PanicRecoveryDisabled bool
+// A config represents the configuration of Bahamut.
+type config struct {
+	general struct {
+		panicRecoveryDisabled bool
 	}
 
-	ReSTServer struct {
-		ListenAddress         string
-		ReadTimeout           time.Duration
-		WriteTimeout          time.Duration
-		IdleTimeout           time.Duration
-		DisableKeepalive      bool
-		Disabled              bool
-		CustomRootHandlerFunc http.HandlerFunc
+	restServer struct {
+		listenAddress         string
+		readTimeout           time.Duration
+		writeTimeout          time.Duration
+		idleTimeout           time.Duration
+		disableKeepalive      bool
+		enabled               bool
+		customRootHandlerFunc http.HandlerFunc
 	}
 
-	PushServer struct {
-		Service          PubSubServer
-		Topic            string
-		DispatchHandler  PushDispatchHandler
-		PublishHandler   PushPublishHandler
-		Disabled         bool
-		PublishDisabled  bool
-		DispatchDisabled bool
+	pushServer struct {
+		service         PubSubServer
+		topic           string
+		dispatchHandler PushDispatchHandler
+		publishHandler  PushPublishHandler
+		enabled         bool
+		publishEnabled  bool
+		dispatchEnabled bool
 	}
 
-	HealthServer struct {
-		ListenAddress string
-		HealthHandler HealthServerFunc
-		ReadTimeout   time.Duration
-		WriteTimeout  time.Duration
-		IdleTimeout   time.Duration
-		Disabled      bool
+	healthServer struct {
+		listenAddress string
+		healthHandler HealthServerFunc
+		readTimeout   time.Duration
+		writeTimeout  time.Duration
+		idleTimeout   time.Duration
+		enabled       bool
 	}
 
-	ProfilingServer struct {
-		ListenAddress    string
-		Enabled          bool
-		Mode             string
-		GCPProjectID     string
-		GCPServicePrefix string
+	profilingServer struct {
+		listenAddress    string
+		enabled          bool
+		mode             string
+		gcpProjectID     string
+		gcpServicePrefix string
 	}
 
-	TLS struct {
-		ClientCAPool                      *x509.CertPool
-		AuthType                          tls.ClientAuthType
-		ServerCertificates                []tls.Certificate
-		ServerCertificatesRetrieverFunc   func(*tls.ClientHelloInfo) (*tls.Certificate, error)
-		EnableLetsEncrypt                 bool
-		LetsEncryptDomainWhiteList        []string
-		LetsEncryptCertificateCacheFolder string
-
-		RootCAPool *x509.CertPool // REMOVE ME
+	tls struct {
+		clientCAPool                      *x509.CertPool
+		authType                          tls.ClientAuthType
+		serverCertificates                []tls.Certificate
+		serverCertificatesRetrieverFunc   func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+		enableLetsEncrypt                 bool
+		letsEncryptDomainWhiteList        []string
+		letsEncryptCertificateCacheFolder string
 	}
 
-	Security struct {
-		RequestAuthenticators []RequestAuthenticator
-		SessionAuthenticators []SessionAuthenticator
-		Authorizers           []Authorizer
-		Auditer               Auditer
+	security struct {
+		requestAuthenticators []RequestAuthenticator
+		sessionAuthenticators []SessionAuthenticator
+		authorizers           []Authorizer
+		auditer               Auditer
 	}
 
-	RateLimiting struct {
-		RateLimiter RateLimiter
+	rateLimiting struct {
+		rateLimiter RateLimiter
 	}
 
-	Model struct {
-		IdentifiablesFactory       elemental.IdentifiableFactory
-		RelationshipsRegistry      map[int]elemental.RelationshipsRegistry
-		ReadOnly                   bool
-		ReadOnlyExcludedIdentities []elemental.Identity
-		Unmarshallers              map[elemental.Identity]CustomUmarshaller
+	model struct {
+		identifiablesFactory       elemental.IdentifiableFactory
+		relationshipsRegistry      map[int]elemental.RelationshipsRegistry
+		readOnly                   bool
+		readOnlyExcludedIdentities []elemental.Identity
+		unmarshallers              map[elemental.Identity]CustomUmarshaller
 	}
 
-	MockServer struct {
-		ListenAddress string
-		ReadTimeout   time.Duration
-		WriteTimeout  time.Duration
-		IdleTimeout   time.Duration
-		Enabled       bool
+	mockServer struct {
+		listenAddress string
+		readTimeout   time.Duration
+		writeTimeout  time.Duration
+		idleTimeout   time.Duration
+		enabled       bool
 	}
 
-	Meta struct {
-		ServiceName      string
-		ServiceVersion   string
-		Version          map[string]interface{}
-		DisableMetaRoute bool
+	meta struct {
+		serviceName      string
+		serviceVersion   string
+		version          map[string]interface{}
+		disableMetaRoute bool
 	}
 }

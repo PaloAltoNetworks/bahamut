@@ -110,13 +110,17 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 		Convey("When I create a new websocket server with push", func() {
 
 			mux := bone.New()
-			cfg := Config{}
+			cfg := config{}
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
+
 			wss := newPushServer(cfg, mux, pf)
 
 			Convey("Then the websocket sever should be correctly initialized", func() {
 				So(wss.sessions, ShouldResemble, map[string]*wsPushSession{})
 				So(wss.multiplexer, ShouldEqual, mux)
-				So(wss.config, ShouldResemble, cfg)
+				So(wss.cfg, ShouldResemble, cfg)
 				So(wss.processorFinder, ShouldEqual, pf)
 			})
 
@@ -130,8 +134,8 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 		Convey("When I create a new websocket server with everything disabled", func() {
 
 			mux := bone.New()
-			cfg := Config{}
-			cfg.PushServer.Disabled = true
+			cfg := config{}
+
 			_ = newPushServer(cfg, mux, pf)
 
 			Convey("Then the handlers should be installed in the mux", func() {
@@ -151,9 +155,9 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		mux := bone.New()
-		cfg := Config{}
+		cfg := config{}
 		h := &mockSessionHandler{}
-		cfg.PushServer.DispatchHandler = h
+		cfg.pushServer.dispatchHandler = h
 
 		wss := newPushServer(cfg, mux, pf)
 
@@ -218,7 +222,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 		Convey("When I call authSession on when there is no authenticator configured", func() {
 
-			cfg := Config{}
+			cfg := config{}
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -235,8 +239,8 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			a := &mockSessionAuthenticator{}
 			a.action = AuthActionOK
 
-			cfg := Config{}
-			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
+			cfg := config{}
+			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -253,8 +257,8 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			a := &mockSessionAuthenticator{}
 			a.action = AuthActionKO
 
-			cfg := Config{}
-			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
+			cfg := config{}
+			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -272,8 +276,8 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			a.action = AuthActionOK // we wan't to check that error takes precedence
 			a.err = errors.New("nope")
 
-			cfg := Config{}
-			cfg.Security.SessionAuthenticators = []SessionAuthenticator{a}
+			cfg := config{}
+			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -300,7 +304,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 		Convey("When I call initSession on when there is no session handler configured", func() {
 
-			cfg := Config{}
+			cfg := config{}
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -317,8 +321,8 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h := &mockSessionHandler{}
 			h.onPushSessionInitOK = true
 
-			cfg := Config{}
-			cfg.PushServer.DispatchHandler = h
+			cfg := config{}
+			cfg.pushServer.dispatchHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -335,8 +339,8 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h := &mockSessionHandler{}
 			h.onPushSessionInitOK = false
 
-			cfg := Config{}
-			cfg.PushServer.DispatchHandler = h
+			cfg := config{}
+			cfg.pushServer.dispatchHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -354,8 +358,8 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			h.onPushSessionInitOK = true // we wan't to check that error takes precedence
 			h.onPushSessionInitErr = errors.New("nope")
 
-			cfg := Config{}
-			cfg.PushServer.DispatchHandler = h
+			cfg := config{}
+			cfg.pushServer.dispatchHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 
@@ -381,7 +385,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 		Convey("When I call pushEvents when no service is configured", func() {
 
-			cfg := Config{}
+			cfg := config{}
 
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(nil)
@@ -394,8 +398,11 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			srv := &mockPubSubServer{}
 
-			cfg := Config{}
-			cfg.PushServer.Service = srv
+			cfg := config{}
+			cfg.pushServer.service = srv
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
 
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -412,9 +419,12 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h := &mockSessionHandler{}
 			h.shouldPublishOK = true
 
-			cfg := Config{}
-			cfg.PushServer.Service = srv
-			cfg.PushServer.PublishHandler = h
+			cfg := config{}
+			cfg.pushServer.service = srv
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
+			cfg.pushServer.publishHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -431,9 +441,12 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h := &mockSessionHandler{}
 			h.shouldPublishOK = false
 
-			cfg := Config{}
-			cfg.PushServer.Service = srv
-			cfg.PushServer.PublishHandler = h
+			cfg := config{}
+			cfg.pushServer.service = srv
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
+			cfg.pushServer.publishHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -450,9 +463,12 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			h.shouldPublishOK = true // we want to be sure error takes precedence
 			h.shouldPublishErr = errors.New("nop")
 
-			cfg := Config{}
-			cfg.PushServer.Service = srv
-			cfg.PushServer.PublishHandler = h
+			cfg := config{}
+			cfg.pushServer.service = srv
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
+			cfg.pushServer.publishHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
@@ -480,9 +496,12 @@ func TestWebsocketServer_start(t *testing.T) {
 		pushHandler := &mockSessionHandler{}
 
 		mux := bone.New()
-		cfg := Config{}
-		cfg.PushServer.Service = pubsub
-		cfg.PushServer.DispatchHandler = pushHandler
+		cfg := config{}
+		cfg.pushServer.service = pubsub
+		cfg.pushServer.enabled = true
+		cfg.pushServer.publishEnabled = true
+		cfg.pushServer.dispatchEnabled = true
+		cfg.pushServer.dispatchHandler = pushHandler
 
 		wss := newPushServer(cfg, mux, pf)
 
@@ -493,7 +512,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		s1 := newWSPushSession(
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
-			Config{},
+			config{},
 			wss.unregisterSession,
 		)
 		conn1 := wsc.NewMockWebsocket(ctx)
@@ -503,7 +522,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		s2 := newWSPushSession(
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
-			Config{},
+			config{},
 			wss.unregisterSession,
 		)
 		conn2 := wsc.NewMockWebsocket(ctx)
@@ -647,8 +666,8 @@ func TestWebsocketServer_start(t *testing.T) {
 	Convey("Given I start a websocket server with no push dispatching", t, func() {
 
 		mux := bone.New()
-		cfg := Config{}
-		cfg.PushServer.DispatchDisabled = true
+		cfg := config{}
+
 		wss := newPushServer(cfg, mux, pf)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -709,9 +728,12 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 		authenticator := &mockSessionAuthenticator{}
 
 		mux := bone.New()
-		cfg := Config{}
-		cfg.PushServer.DispatchHandler = pushHandler
-		cfg.Security.SessionAuthenticators = []SessionAuthenticator{authenticator}
+		cfg := config{}
+		cfg.pushServer.dispatchHandler = pushHandler
+		cfg.pushServer.enabled = true
+		cfg.pushServer.publishEnabled = true
+		cfg.pushServer.dispatchEnabled = true
+		cfg.security.sessionAuthenticators = []SessionAuthenticator{authenticator}
 
 		wss := newPushServer(cfg, mux, pf)
 		wss.mainContext = ctx

@@ -23,7 +23,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 	Convey("Given call newWSPushSession", t, func() {
 
 		u, _ := url.Parse("http://toto.com?a=b")
-		conf := Config{}
+		conf := config{}
 		req := &http.Request{
 			Header:     http.Header{"h1": {"a"}},
 			URL:        u,
@@ -39,7 +39,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 			So(s.currentFilterLock, ShouldNotBeNil)
 			So(s.claims, ShouldResemble, []string{})
 			So(s.claimsMap, ShouldResemble, map[string]string{})
-			So(s.config, ShouldResemble, conf)
+			So(s.cfg, ShouldResemble, conf)
 			So(s.headers, ShouldEqual, req.Header)
 			So(s.id, ShouldNotBeEmpty)
 			So(s.parameters, ShouldResemble, url.Values{"a": {"b"}})
@@ -58,7 +58,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 	Convey("Given I have a session and an event", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := Config{}
+		cfg := config{}
 		s := newWSPushSession(req, cfg, nil)
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
@@ -84,7 +84,7 @@ func TestWSPushSession_String(t *testing.T) {
 	Convey("Given I have a session", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := Config{}
+		cfg := config{}
 		s := newWSPushSession(req, cfg, nil)
 
 		Convey("When I call String", func() {
@@ -103,7 +103,7 @@ func TestWSPushSession_Filtering(t *testing.T) {
 	Convey("Given I have a session and a filter", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := Config{}
+		cfg := config{}
 		s := newWSPushSession(req, cfg, nil)
 
 		f := elemental.NewPushFilter()
@@ -134,7 +134,7 @@ func TestWSPushSession_accessors(t *testing.T) {
 	Convey("Given create a push session", t, func() {
 
 		u, _ := url.Parse("http://toto.com?a=b&token=token")
-		conf := Config{}
+		conf := config{}
 		req := &http.Request{
 			Header:     http.Header{"h1": {"a"}},
 			URL:        u,
@@ -260,7 +260,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 		s := newWSPushSession(
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
-			Config{},
+			config{},
 			func(i *wsPushSession) {
 				unregistered <- true
 			},

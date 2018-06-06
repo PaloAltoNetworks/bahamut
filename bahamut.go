@@ -60,8 +60,8 @@ type server struct {
 // New returns a new bahamut Server configured with
 // the given options.
 func New(options ...Option) Server {
-	c := createBaseConfig()
 
+	c := config{}
 	for _, opt := range options {
 		opt(&c)
 	}
@@ -70,10 +70,10 @@ func New(options ...Option) Server {
 }
 
 // NewServer returns a new Bahamut Server.
-func NewServer(config Config) Server {
+func NewServer(cfg config) Server {
 
-	if config.Model.Unmarshallers == nil {
-		config.Model.Unmarshallers = map[elemental.Identity]CustomUmarshaller{}
+	if cfg.model.unmarshallers == nil {
+		cfg.model.unmarshallers = map[elemental.Identity]CustomUmarshaller{}
 	}
 
 	mux := bone.New()
@@ -82,24 +82,24 @@ func NewServer(config Config) Server {
 		processors:  make(map[string]Processor),
 	}
 
-	if !config.ReSTServer.Disabled {
-		srv.restServer = newRestServer(config, mux, srv.ProcessorForIdentity, srv.Push)
+	if cfg.restServer.enabled {
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push)
 	}
 
-	if !config.PushServer.Disabled {
-		srv.pushServer = newPushServer(config, mux, srv.ProcessorForIdentity)
+	if cfg.pushServer.enabled {
+		srv.pushServer = newPushServer(cfg, mux, srv.ProcessorForIdentity)
 	}
 
-	if !config.HealthServer.Disabled {
-		srv.healthServer = newHealthServer(config)
+	if cfg.healthServer.enabled {
+		srv.healthServer = newHealthServer(cfg)
 	}
 
-	if config.ProfilingServer.Enabled {
-		srv.profilingServer = newProfilingServer(config)
+	if cfg.profilingServer.enabled {
+		srv.profilingServer = newProfilingServer(cfg)
 	}
 
-	if config.MockServer.Enabled {
-		srv.mockServer = newMockServer(config)
+	if cfg.mockServer.enabled {
+		srv.mockServer = newMockServer(cfg)
 	}
 
 	return srv

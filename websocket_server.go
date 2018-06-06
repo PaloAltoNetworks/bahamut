@@ -20,25 +20,25 @@ import (
 type pushServer struct {
 	sessions        map[string]*wsPushSession
 	multiplexer     *bone.Mux
-	config          Config
+	cfg             config
 	processorFinder processorFinderFunc
 	sessionsLock    *sync.Mutex
 	mainContext     context.Context
 }
 
-func newPushServer(config Config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
+func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
 
 	srv := &pushServer{
 		sessions:        map[string]*wsPushSession{},
 		multiplexer:     multiplexer,
-		config:          config,
+		cfg:             cfg,
 		sessionsLock:    &sync.Mutex{},
 		processorFinder: processorFinder,
 	}
 
 	// If push is not completely disabled and dispatching of event is not disabled, we install
 	// the websocket routes.
-	if !config.PushServer.Disabled && !config.PushServer.DispatchDisabled {
+	if cfg.pushServer.enabled && cfg.pushServer.dispatchEnabled {
 		srv.multiplexer.Get("/events", http.HandlerFunc(srv.handleRequest))
 		zap.L().Debug("Websocket push handlers installed")
 	}
@@ -56,14 +56,14 @@ func (n *pushServer) registerSession(session *wsPushSession) {
 	n.sessions[session.Identifier()] = session
 	n.sessionsLock.Unlock()
 
-	if handler := n.config.PushServer.DispatchHandler; handler != nil {
+	if handler := n.cfg.pushServer.dispatchHandler; handler != nil {
 		handler.OnPushSessionStart(session)
 	}
 }
 
 func (n *pushServer) unregisterSession(session *wsPushSession) {
 
-	if handler := n.config.PushServer.DispatchHandler; handler != nil {
+	if handler := n.cfg.pushServer.dispatchHandler; handler != nil {
 		handler.OnPushSessionStop(session)
 	}
 
@@ -78,14 +78,14 @@ func (n *pushServer) unregisterSession(session *wsPushSession) {
 
 func (n *pushServer) authSession(session *wsPushSession) error {
 
-	if len(n.config.Security.SessionAuthenticators) == 0 {
+	if len(n.cfg.security.sessionAuthenticators) == 0 {
 		return nil
 	}
 
 	var action AuthAction
 	var err error
 
-	for _, authenticator := range n.config.Security.SessionAuthenticators {
+	for _, authenticator := range n.cfg.security.sessionAuthenticators {
 
 		action, err = authenticator.AuthenticateSession(session)
 		if err != nil {
@@ -106,11 +106,11 @@ func (n *pushServer) authSession(session *wsPushSession) error {
 
 func (n *pushServer) initPushSession(session *wsPushSession) error {
 
-	if n.config.PushServer.DispatchHandler == nil {
+	if n.cfg.pushServer.dispatchHandler == nil {
 		return nil
 	}
 
-	ok, err := n.config.PushServer.DispatchHandler.OnPushSessionInit(session)
+	ok, err := n.cfg.pushServer.dispatchHandler.OnPushSessionInit(session)
 	if err != nil {
 		return elemental.NewError("Forbidden", err.Error(), "bahamut", http.StatusForbidden)
 	}
@@ -125,7 +125,7 @@ func (n *pushServer) initPushSession(session *wsPushSession) error {
 func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 	// If we don't have a service or publication is explicitly disabled, we do nothing.
-	if n.config.PushServer.Service == nil || n.config.PushServer.PublishDisabled {
+	if n.cfg.pushServer.service == nil || !n.cfg.pushServer.enabled {
 		return
 	}
 
@@ -133,9 +133,9 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 
 	for _, event := range events {
 
-		if n.config.PushServer.PublishHandler != nil {
+		if n.cfg.pushServer.publishHandler != nil {
 			var ok bool
-			ok, err = n.config.PushServer.PublishHandler.ShouldPublish(event)
+			ok, err = n.cfg.pushServer.publishHandler.ShouldPublish(event)
 			if err != nil {
 				zap.L().Error("Error while calling ShouldPublish", zap.Error(err))
 				continue
@@ -146,14 +146,14 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 			}
 		}
 
-		publication := NewPublication(n.config.PushServer.Topic)
+		publication := NewPublication(n.cfg.pushServer.topic)
 		if err = publication.Encode(event); err != nil {
 			zap.L().Error("Unable to encode event", zap.Error(err))
 			break
 		}
 
 		for i := 0; i < 3; i++ {
-			err = n.config.PushServer.Service.Publish(publication)
+			err = n.cfg.pushServer.service.Publish(publication)
 			if err != nil {
 				zap.L().Warn("Unable to publish event", zap.String("topic", publication.Topic), zap.Stringer("event", event), zap.Error(err))
 				continue
@@ -171,7 +171,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(n.mainContext)
 
-	session := newWSPushSession(r, n.config, n.unregisterSession)
+	session := newWSPushSession(r, n.cfg, n.unregisterSession)
 
 	if err := n.authSession(session); err != nil {
 		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
@@ -208,7 +208,7 @@ func (n *pushServer) start(ctx context.Context) {
 
 	// If dispatching of events is disabled, we sit here
 	// until the context is canceled.
-	if n.config.PushServer.DispatchDisabled {
+	if !n.cfg.pushServer.enabled {
 		<-ctx.Done()
 		return
 	}
@@ -217,16 +217,16 @@ func (n *pushServer) start(ctx context.Context) {
 	defer func() { n.mainContext = nil }()
 
 	publications := make(chan *Publication)
-	if n.config.PushServer.Service != nil {
+	if n.cfg.pushServer.service != nil {
 		errors := make(chan error)
-		unsubscribe := n.config.PushServer.Service.Subscribe(publications, errors, n.config.PushServer.Topic)
+		unsubscribe := n.cfg.pushServer.service.Subscribe(publications, errors, n.cfg.pushServer.topic)
 		defer unsubscribe()
 	}
 
 	zap.L().Debug("Websocket server started",
-		zap.Bool("push-enabled", !n.config.PushServer.Disabled),
-		zap.Bool("push-dispatching-enabled", !n.config.PushServer.DispatchDisabled),
-		zap.Bool("push-publish-enabled", !n.config.PushServer.PublishDisabled),
+		zap.Bool("push-enabled", n.cfg.pushServer.enabled),
+		zap.Bool("push-dispatching-enabled", n.cfg.pushServer.dispatchEnabled),
+		zap.Bool("push-publish-enabled", n.cfg.pushServer.publishEnabled),
 	)
 
 	for {
@@ -255,9 +255,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 					go func(s PushSession, evt *elemental.Event) {
 
-						if n.config.PushServer.DispatchHandler != nil {
+						if n.cfg.pushServer.dispatchHandler != nil {
 
-							ok, err := n.config.PushServer.DispatchHandler.ShouldDispatch(s, evt)
+							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, evt)
 							if err != nil {
 								zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
 								return

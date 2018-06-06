@@ -35,14 +35,14 @@ func TestServer_Initialization(t *testing.T) {
 
 	Convey("Given I create a new api server", t, func() {
 
-		cfg := Config{}
-		cfg.ReSTServer.ListenAddress = "address:80"
+		cfg := config{}
+		cfg.restServer.listenAddress = "address:80"
 
 		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("Then it should be correctly initialized", func() {
 			So(len(c.multiplexer.Routes), ShouldEqual, 0)
-			So(c.config, ShouldResemble, cfg)
+			So(c.cfg, ShouldResemble, cfg)
 		})
 	})
 }
@@ -53,16 +53,16 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 
 		_, clientcapool, servercerts := loadFixtureCertificates()
 
-		cfg := Config{}
-		cfg.ReSTServer.ListenAddress = "address:80"
-		cfg.TLS.ClientCAPool = clientcapool
-		cfg.TLS.ServerCertificates = servercerts
-		cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
+		cfg := config{}
+		cfg.restServer.listenAddress = "address:80"
+		cfg.tls.clientCAPool = clientcapool
+		cfg.tls.serverCertificates = servercerts
+		cfg.tls.authType = tls.RequireAndVerifyClientCert
 
 		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer(cfg.ReSTServer.ListenAddress)
+			srv, err := c.createSecureHTTPServer(cfg.restServer.listenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -79,13 +79,13 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 
 	Convey("Given I create a new api server without any tls info", t, func() {
 
-		cfg := Config{}
-		cfg.ReSTServer.ListenAddress = "address:80"
+		cfg := config{}
+		cfg.restServer.listenAddress = "address:80"
 
 		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make an unsecure server", func() {
-			srv, err := c.createUnsecureHTTPServer(cfg.ReSTServer.ListenAddress)
+			srv, err := c.createUnsecureHTTPServer(cfg.restServer.listenAddress)
 
 			Convey("Then error should be nil", func() {
 				So(err, ShouldBeNil)
@@ -149,8 +149,8 @@ func TestServer_Start(t *testing.T) {
 
 			port1 := strconv.Itoa(rand.Intn(10000) + 20000)
 
-			cfg := Config{}
-			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
+			cfg := config{}
+			cfg.restServer.listenAddress = "127.0.0.1:" + port1
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
 
@@ -176,11 +176,11 @@ func TestServer_Start(t *testing.T) {
 
 			_, clientcapool, servercerts := loadFixtureCertificates()
 
-			cfg := Config{}
-			cfg.ReSTServer.ListenAddress = "127.0.0.1:" + port1
-			cfg.TLS.ClientCAPool = clientcapool
-			cfg.TLS.ServerCertificates = servercerts
-			cfg.TLS.AuthType = tls.RequireAndVerifyClientCert
+			cfg := config{}
+			cfg.restServer.listenAddress = "127.0.0.1:" + port1
+			cfg.tls.clientCAPool = clientcapool
+			cfg.tls.serverCertificates = servercerts
+			cfg.tls.authType = tls.RequireAndVerifyClientCert
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
 

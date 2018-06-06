@@ -16,9 +16,7 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with no server", t, func() {
 
-		cfg := Config{}
-		cfg.ReSTServer.Disabled = true
-		cfg.PushServer.Disabled = true
+		cfg := config{}
 
 		b := NewServer(cfg)
 
@@ -41,7 +39,10 @@ func TestBahamut_NewBahamut(t *testing.T) {
 
 	Convey("Given I create a new Bahamut with all servers", t, func() {
 
-		cfg := Config{}
+		cfg := config{}
+		cfg.pushServer.enabled = true
+		cfg.pushServer.dispatchEnabled = true
+		cfg.restServer.enabled = true
 
 		b := NewServer(cfg)
 
@@ -66,7 +67,7 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 		p := &mockEmptyProcessor{}
 		ident := elemental.MakeIdentity("identity", "random")
-		b := NewServer(Config{})
+		b := NewServer(config{})
 
 		Convey("When I register it for an identity", func() {
 

@@ -17,18 +17,18 @@ var currentMocker *mocker
 
 // an mockServer is the structure serving the health check endpoint.
 type mockServer struct {
-	config Config
+	cfg    config
 	server *http.Server
 }
 
 // newMockServer returns a new mockServer.
-func newMockServer(config Config) *mockServer {
+func newMockServer(cfg config) *mockServer {
 
 	// Install the shared mocker.
 	currentMocker = newMocker()
 
 	return &mockServer{
-		config: config,
+		cfg: cfg,
 	}
 }
 
@@ -78,7 +78,7 @@ func (s *mockServer) handleUninstallMock(w http.ResponseWriter, req *http.Reques
 
 func (s *mockServer) start(ctx context.Context) {
 
-	s.server = &http.Server{Addr: s.config.MockServer.ListenAddress}
+	s.server = &http.Server{Addr: s.cfg.mockServer.listenAddress}
 
 	mux := bone.New()
 	mux.Post("/mock/install", http.HandlerFunc(s.handleInstallMock))
@@ -95,7 +95,7 @@ func (s *mockServer) start(ctx context.Context) {
 		}
 	}()
 
-	zap.L().Warn("Mock server started", zap.String("listen", s.config.MockServer.ListenAddress))
+	zap.L().Warn("Mock server started", zap.String("listen", s.cfg.mockServer.listenAddress))
 
 	<-ctx.Done()
 }

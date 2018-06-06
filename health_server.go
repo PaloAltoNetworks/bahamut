@@ -10,26 +10,26 @@ import (
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
-	config Config
+	cfg    config
 	server *http.Server
 }
 
 // newHealthServer returns a new healthServer.
-func newHealthServer(config Config) *healthServer {
+func newHealthServer(cfg config) *healthServer {
 
 	return &healthServer{
-		config: config,
+		cfg: cfg,
 	}
 }
 
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	if s.config.HealthServer.HealthHandler == nil {
+	if s.cfg.healthServer.healthHandler == nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	if err := s.config.HealthServer.HealthHandler(); err != nil {
+	if err := s.cfg.healthServer.healthHandler(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -39,11 +39,11 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *healthServer) start(ctx context.Context) {
 
-	s.server = &http.Server{Addr: s.config.HealthServer.ListenAddress}
+	s.server = &http.Server{Addr: s.cfg.healthServer.listenAddress}
 	s.server.Handler = s
 	s.server.SetKeepAlivesEnabled(true)
 
-	zap.L().Debug("Health server enabled", zap.String("listen", s.config.HealthServer.ListenAddress))
+	zap.L().Debug("Health server enabled", zap.String("listen", s.cfg.healthServer.listenAddress))
 
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil {
@@ -54,7 +54,7 @@ func (s *healthServer) start(ctx context.Context) {
 		}
 	}()
 
-	zap.L().Info("Health server started", zap.String("address", s.config.HealthServer.ListenAddress))
+	zap.L().Info("Health server started", zap.String("address", s.cfg.healthServer.listenAddress))
 
 	<-ctx.Done()
 }
