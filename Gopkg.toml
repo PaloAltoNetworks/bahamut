@@ -2,10 +2,6 @@
   name = "github.com/satori/go.uuid"
   version = "v1.2.0"
 
-[[constraint]]
-   name = "golang.org/x/crypto"
-   revision = "df8d4716b3472e4a531c33cedbe537dae921a1a9"
-
 [prune]
   go-tests = true
   unused-packages = true
