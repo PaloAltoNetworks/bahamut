@@ -10,10 +10,10 @@ func TestPubsub_NewServer(t *testing.T) {
 
 	Convey("Given I create a new localPubSubServer", t, func() {
 
-		ps := NewLocalPubSubServer(nil)
+		ps := NewLocalPubSubClient(nil)
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
-			So(ps, ShouldImplement, (*PubSubServer)(nil))
+			So(ps, ShouldImplement, (*PubSubClient)(nil))
 		})
 	})
 }

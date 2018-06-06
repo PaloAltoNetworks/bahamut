@@ -63,7 +63,7 @@ func OptCustomRootHandler(handler http.HandlerFunc) Option {
 // decide if a push event should be dispatch to push sessions.
 // PublishHandler defines the handler that will be used to
 // decide if an event should be published.
-func OptPushServer(service PubSubServer, topic string) Option {
+func OptPushServer(service PubSubClient, topic string) Option {
 	return func(c *config) {
 		c.pushServer.enabled = true
 		c.pushServer.service = service

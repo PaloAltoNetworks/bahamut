@@ -7,7 +7,7 @@ type registration struct {
 	ch    chan *Publication
 }
 
-// localPubSub implements a PubSubServer using local channels
+// localPubSub implements a PubSubClient using local channels
 type localPubSub struct {
 	subscribers  map[string][]chan *Publication
 	register     chan *registration
@@ -54,7 +54,7 @@ func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic st
 	return func() { close(unsubscribe) }
 }
 
-// Connect connects the PubSubServer to the remote service.
+// Connect connects the PubSubClient to the remote service.
 func (p *localPubSub) Connect() Waiter {
 
 	abort := make(chan struct{})
@@ -71,7 +71,7 @@ func (p *localPubSub) Connect() Waiter {
 	}
 }
 
-// Disconnect disconnects the PubSubServer from the remote service..
+// Disconnect disconnects the PubSubClient from the remote service..
 func (p *localPubSub) Disconnect() error {
 
 	close(p.stop)

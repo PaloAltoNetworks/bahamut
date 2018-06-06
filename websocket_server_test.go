@@ -488,7 +488,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 	Convey("Given I have a websocket server with 2 registered sessions", t, func() {
 
-		pubsub := NewLocalPubSubServer(nil)
+		pubsub := NewLocalPubSubClient(nil)
 		if !pubsub.Connect().Wait(1 * time.Second) {
 			panic("could not connect to local pubsub")
 		}

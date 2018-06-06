@@ -54,7 +54,7 @@ type Server interface {
 	ProcessorsCount() int
 
 	// Push pushes the given events to all active sessions.
-	// It will use the PubSubServer configured in the pushConfig.
+	// It will use the PubSubClient configured in the pushConfig.
 	Push(...*elemental.Event)
 
 	// Run runs the server using the given context.Context.

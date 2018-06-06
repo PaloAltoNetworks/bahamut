@@ -33,7 +33,7 @@ type config struct {
 	}
 
 	pushServer struct {
-		service         PubSubServer
+		service         PubSubClient
 		topic           string
 		dispatchHandler PushDispatchHandler
 		publishHandler  PushPublishHandler

@@ -8,22 +8,22 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// A PubSubServer is a structure that provides a publish/subscribe mechanism.
-type PubSubServer interface {
+// A PubSubClient is a structure that provides a publish/subscribe mechanism.
+type PubSubClient interface {
 	Publish(publication *Publication) error
 	Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func()
 	Connect() Waiter
 	Disconnect() error
 }
 
-// NewNATSPubSubServer returns a PubSubServer backed by NATS.
-func NewNATSPubSubServer(natsURL string, clusterID string, clientID string) PubSubServer {
+// NewNATSPubSubClient returns a PubSubClient backed by NATS.
+func NewNATSPubSubClient(natsURL string, clusterID string, clientID string) PubSubClient {
 
-	return NewNATSPubSubServerWithAuth(natsURL, clusterID, clientID, "", "")
+	return NewNATSPubSubClientWithAuth(natsURL, clusterID, clientID, "", "")
 }
 
-// NewNATSPubSubServerWithAuth returns a PubSubServer backed by NATS using authentication.
-func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID string, username string, password string) PubSubServer {
+// NewNATSPubSubClientWithAuth returns a PubSubClient backed by NATS using authentication.
+func NewNATSPubSubClientWithAuth(natsURL string, clusterID string, clientID string, username string, password string) PubSubClient {
 
 	if clientID == "" {
 		clientID = uuid.NewV4().String()
@@ -36,8 +36,8 @@ func NewNATSPubSubServerWithAuth(natsURL string, clusterID string, clientID stri
 	return newNatsPubSub(natsURL, clusterID, clientID, username, password, nil, nil, nil)
 }
 
-// NewNATSPubSubServerWithTLSAuth returns a PubSubServer backed by NATS using TLS authentication.
-func NewNATSPubSubServerWithTLSAuth(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) PubSubServer {
+// NewNATSPubSubClientWithTLSAuth returns a PubSubClient backed by NATS using TLS authentication.
+func NewNATSPubSubClientWithTLSAuth(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) PubSubClient {
 
 	if clientID == "" {
 		clientID = uuid.NewV4().String()
@@ -50,8 +50,8 @@ func NewNATSPubSubServerWithTLSAuth(natsURL string, clusterID string, clientID s
 	return newNatsPubSub(natsURL, clusterID, clientID, username, password, rootCAPool, clientCAPool, clientCerts)
 }
 
-// NewLocalPubSubServer returns a PubSubServer backed by local channels.
-func NewLocalPubSubServer(services []string) PubSubServer {
+// NewLocalPubSubClient returns a PubSubClient backed by local channels.
+func NewLocalPubSubClient(services []string) PubSubClient {
 
 	return newlocalPubSub(nil)
 }
