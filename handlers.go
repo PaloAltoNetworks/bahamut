@@ -117,7 +117,7 @@ func handleRetrieveMany(ctx *Context, cfg config, processorFinder processorFinde
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -151,7 +151,7 @@ func handleRetrieve(ctx *Context, cfg config, processorFinder processorFinderFun
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsRetrieveAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsRetrieveAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -189,7 +189,7 @@ func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -226,7 +226,7 @@ func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsUpdateAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsUpdateAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -263,7 +263,7 @@ func handleDelete(ctx *Context, cfg config, processorFinder processorFinderFunc,
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsDeleteAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsDeleteAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -303,7 +303,7 @@ func handleInfo(ctx *Context, cfg config, processorFinder processorFinderFunc, p
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -341,7 +341,7 @@ func handlePatch(ctx *Context, cfg config, processorFinder processorFinderFunc, 
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(cfg.model.relationshipsRegistry[ctx.Request.Version], ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,

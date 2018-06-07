@@ -24,7 +24,7 @@ type routeBuilder struct {
 	private bool
 }
 
-func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, factory elemental.IdentifiableFactory, processorFinder processorFinderFunc) map[int][]RouteInfo {
+func buildVersionedRoutes(factories map[int]elemental.IdentifiableFactory, processorFinder processorFinderFunc) map[int][]RouteInfo {
 
 	addRoute := func(routes map[string]routeBuilder, url string, verb string, private bool) {
 
@@ -41,13 +41,13 @@ func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, fact
 
 	versionedRoutes := map[int][]RouteInfo{}
 
-	for version, relationships := range registry {
+	for version, factory := range factories {
 
 		versionedRoutes[version] = []RouteInfo{}
 
 		routes := map[string]routeBuilder{}
 
-		for identity, relationship := range relationships {
+		for identity, relationship := range factory.Relationships() {
 
 			// If we don't have a processor registered for the given model, we skip.
 			if _, err := processorFinder(identity); err != nil {

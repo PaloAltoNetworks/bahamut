@@ -191,7 +191,7 @@ func (a *restServer) installRoutes() {
 
 	if !a.cfg.meta.disableMetaRoute {
 
-		routesInfo := buildVersionedRoutes(a.cfg.model.relationshipsRegistry, a.cfg.model.identifiableFactories[0], a.processorFinder)
+		routesInfo := buildVersionedRoutes(a.cfg.model.identifiableFactories, a.processorFinder)
 
 		encodedRoutesInfo, err := json.Marshal(routesInfo)
 		if err != nil {
