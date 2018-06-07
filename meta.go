@@ -24,7 +24,7 @@ type routeBuilder struct {
 	private bool
 }
 
-func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, processorFinder processorFinderFunc) map[int][]RouteInfo {
+func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, factory elemental.IdentifiableFactory, processorFinder processorFinderFunc) map[int][]RouteInfo {
 
 	addRoute := func(routes map[string]routeBuilder, url string, verb string, private bool) {
 
@@ -73,7 +73,7 @@ func buildVersionedRoutes(registry map[int]elemental.RelationshipsRegistry, proc
 			for parent := range relationship.AllowsRetrieveMany {
 
 				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", elemental.IdentityFromName(parent).Private)
+					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", factory.IdentityFromName(parent).Private)
 				} else {
 					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "GET", identity.Private)
 				}

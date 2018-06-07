@@ -81,7 +81,7 @@ type config struct {
 	}
 
 	model struct {
-		identifiablesFactory       elemental.IdentifiableFactory
+		identifiableFactories      map[int]elemental.IdentifiableFactory
 		relationshipsRegistry      map[int]elemental.RelationshipsRegistry
 		readOnly                   bool
 		readOnlyExcludedIdentities []elemental.Identity
