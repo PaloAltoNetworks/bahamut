@@ -191,7 +191,7 @@ func (a *restServer) installRoutes() {
 
 	if !a.cfg.meta.disableMetaRoute {
 
-		routesInfo := buildVersionedRoutes(a.cfg.model.identifiableFactories, a.processorFinder)
+		routesInfo := buildVersionedRoutes(a.cfg.model.modelManagers, a.processorFinder)
 
 		encodedRoutesInfo, err := json.Marshal(routesInfo)
 		if err != nil {
@@ -297,7 +297,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
 
-		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.identifiableFactories[0])
+		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 		if err != nil {
 			writeHTTPResponse(
 				w,

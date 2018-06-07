@@ -81,7 +81,7 @@ type config struct {
 	}
 
 	model struct {
-		identifiableFactories      map[int]elemental.IdentifiableFactory
+		modelManagers              map[int]elemental.ModelManager
 		readOnly                   bool
 		readOnlyExcludedIdentities []elemental.Identity
 		unmarshallers              map[elemental.Identity]CustomUmarshaller

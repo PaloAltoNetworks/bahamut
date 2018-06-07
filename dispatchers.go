@@ -128,7 +128,7 @@ func dispatchRetrieveOperation(
 func dispatchCreateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
+	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -178,7 +178,7 @@ func dispatchCreateOperation(
 			return
 		}
 	} else {
-		obj = factory.Identifiable(ctx.Request.Identity)
+		obj = modelManager.Identifiable(ctx.Request.Identity)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
@@ -217,7 +217,7 @@ func dispatchCreateOperation(
 func dispatchUpdateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
+	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -267,7 +267,7 @@ func dispatchUpdateOperation(
 			return
 		}
 	} else {
-		obj = factory.Identifiable(ctx.Request.Identity)
+		obj = modelManager.Identifiable(ctx.Request.Identity)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return

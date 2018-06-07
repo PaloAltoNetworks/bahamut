@@ -117,7 +117,7 @@ func handleRetrieveMany(ctx *Context, cfg config, processorFinder processorFinde
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -151,7 +151,7 @@ func handleRetrieve(ctx *Context, cfg config, processorFinder processorFinderFun
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsRetrieveAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsRetrieveAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -189,7 +189,7 @@ func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -208,7 +208,7 @@ func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 			return dispatchCreateOperation(
 				ctx,
 				processorFinder,
-				cfg.model.identifiableFactories[ctx.Request.Version],
+				cfg.model.modelManagers[ctx.Request.Version],
 				cfg.model.unmarshallers[ctx.Request.Identity],
 				cfg.security.requestAuthenticators,
 				cfg.security.authorizers,
@@ -226,7 +226,7 @@ func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsUpdateAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsUpdateAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -245,7 +245,7 @@ func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 			return dispatchUpdateOperation(
 				ctx,
 				processorFinder,
-				cfg.model.identifiableFactories[ctx.Request.Version],
+				cfg.model.modelManagers[ctx.Request.Version],
 				cfg.model.unmarshallers[ctx.Request.Identity],
 				cfg.security.requestAuthenticators,
 				cfg.security.authorizers,
@@ -263,7 +263,7 @@ func handleDelete(ctx *Context, cfg config, processorFinder processorFinderFunc,
 
 	response = elemental.NewResponse(ctx.Request)
 
-	if !elemental.IsDeleteAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsDeleteAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -303,7 +303,7 @@ func handleInfo(ctx *Context, cfg config, processorFinder processorFinderFunc, p
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,
@@ -341,7 +341,7 @@ func handlePatch(ctx *Context, cfg config, processorFinder processorFinderFunc, 
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(cfg.model.identifiableFactories[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
 		return makeErrorResponse(
 			ctx.Context(),
 			response,

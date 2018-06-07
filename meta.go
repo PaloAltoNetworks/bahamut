@@ -24,7 +24,7 @@ type routeBuilder struct {
 	private bool
 }
 
-func buildVersionedRoutes(factories map[int]elemental.IdentifiableFactory, processorFinder processorFinderFunc) map[int][]RouteInfo {
+func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processorFinder processorFinderFunc) map[int][]RouteInfo {
 
 	addRoute := func(routes map[string]routeBuilder, url string, verb string, private bool) {
 
@@ -41,13 +41,13 @@ func buildVersionedRoutes(factories map[int]elemental.IdentifiableFactory, proce
 
 	versionedRoutes := map[int][]RouteInfo{}
 
-	for version, factory := range factories {
+	for version, modelManager := range modelManagers {
 
 		versionedRoutes[version] = []RouteInfo{}
 
 		routes := map[string]routeBuilder{}
 
-		for identity, relationship := range factory.Relationships() {
+		for identity, relationship := range modelManager.Relationships() {
 
 			// If we don't have a processor registered for the given model, we skip.
 			if _, err := processorFinder(identity); err != nil {
@@ -73,7 +73,7 @@ func buildVersionedRoutes(factories map[int]elemental.IdentifiableFactory, proce
 			for parent := range relationship.AllowsRetrieveMany {
 
 				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", factory.IdentityFromName(parent).Private)
+					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", modelManager.IdentityFromName(parent).Private)
 				} else {
 					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "GET", identity.Private)
 				}

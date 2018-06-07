@@ -25,7 +25,7 @@ func TestContext_MakeContext(t *testing.T) {
 			URL:    url,
 			Method: http.MethodGet,
 		}
-		request, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Factory())
+		request, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
 
 		c := NewContextWithRequest(request)
 
