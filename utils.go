@@ -8,8 +8,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/aporeto-inc/addedeffect/tagutils"
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/addedeffect/tagutils"
+	"go.aporeto.io/elemental"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"

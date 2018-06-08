@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aporeto-inc/bahamut"
+	"go.aporeto.io/bahamut"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

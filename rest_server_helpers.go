@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 

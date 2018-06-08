@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 
 	uuid "github.com/satori/go.uuid"
 )

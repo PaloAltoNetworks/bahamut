@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 // HealthServerFunc is the type used by the Health Server to check the health of the server

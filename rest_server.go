@@ -16,7 +16,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	"github.com/go-zoo/bone"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"

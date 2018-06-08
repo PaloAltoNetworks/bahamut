@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"

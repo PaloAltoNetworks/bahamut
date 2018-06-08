@@ -1,7 +1,7 @@
 package simple
 
 import (
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 // CustomShouldPublishFunc is the type of function that can be used

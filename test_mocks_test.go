@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 )

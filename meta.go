@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 // A RouteInfo contains basic information about an api route.

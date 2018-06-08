@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aporeto-inc/bahamut"
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/bahamut"
+	"go.aporeto.io/elemental"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

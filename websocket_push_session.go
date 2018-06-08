@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aporeto-inc/addedeffect/wsc"
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/addedeffect/wsc"
+	"go.aporeto.io/elemental"
 	"github.com/gorilla/websocket"
 
 	uuid "github.com/satori/go.uuid"

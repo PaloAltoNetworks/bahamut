@@ -1,7 +1,7 @@
 package simple
 
 import (
-	"github.com/aporeto-inc/bahamut"
+	"go.aporeto.io/bahamut"
 )
 
 // CustomAuthRequestFunc is the type of functions that can be used to

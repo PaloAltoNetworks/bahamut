@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aporeto-inc/addedeffect/wsc"
-	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/elemental/test/model"
+	"go.aporeto.io/addedeffect/wsc"
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"

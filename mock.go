@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	"github.com/robertkrimen/otto"
 )
 

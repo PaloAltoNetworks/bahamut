@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aporeto-inc/elemental/test/model"
+	"go.aporeto.io/elemental/test/model"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -9,7 +9,7 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 type processorFinderFunc func(identity elemental.Identity) (Processor, error)

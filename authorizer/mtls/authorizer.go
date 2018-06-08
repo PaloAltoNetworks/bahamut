@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aporeto-inc/bahamut"
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/bahamut"
+	"go.aporeto.io/elemental"
 )
 
 const tlsHeaderKey = "X-TLS-Client-Certificate"

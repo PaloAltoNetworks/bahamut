@@ -6,7 +6,7 @@ import (
 
 	"github.com/robertkrimen/otto"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 type registryContent map[elemental.Operation]map[string]*Mock

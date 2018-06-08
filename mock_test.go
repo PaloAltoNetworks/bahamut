@@ -3,7 +3,7 @@ package bahamut
 import (
 	"testing"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

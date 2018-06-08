@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 // An Option represents a configuration option.

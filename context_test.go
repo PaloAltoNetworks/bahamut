@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/elemental/test/model"
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

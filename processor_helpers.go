@@ -7,7 +7,7 @@ package bahamut
 import (
 	"net/http"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 )
 
 // CheckAuthentication checks if the current context has been authenticated if there is any authenticator registered.

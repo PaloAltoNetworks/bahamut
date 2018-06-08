@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/elemental/test/model"
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
 
 	opentracing "github.com/opentracing/opentracing-go"
 

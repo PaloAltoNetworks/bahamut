@@ -7,12 +7,10 @@ package bahamut
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
-	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
-
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )

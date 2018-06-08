@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
+	"go.aporeto.io/elemental"
 	"github.com/go-zoo/bone"
 
 	"go.uber.org/zap"
