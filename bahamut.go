@@ -66,6 +66,18 @@ func New(options ...Option) Server {
 		opt(&c)
 	}
 
+	if !c.restServer.enabled && !c.pushServer.enabled {
+		zap.L().Warn("No rest server or push server configured. Use bahamut.OptRestServer() and/or bahamaut.OptPushServer()")
+	}
+
+	if c.pushServer.enabled && !c.pushServer.dispatchEnabled && !c.pushServer.publishEnabled {
+		zap.L().Warn("Push server is enabled but neither dispatching or publishing is. Use bahamut.OptPushPublishHandler() and/or bahamut.OptPushDispatchHandler()")
+	}
+
+	if len(c.model.modelManagers) == 0 {
+		zap.L().Warn("No elemental.ModelManager is defined. Use bahamut.OptModel()")
+	}
+
 	return NewServer(c)
 }
 

@@ -227,13 +227,11 @@ func OptRateLimiting(limiter RateLimiter) Option {
 
 // OptModel configures the elemental Model for the server.
 //
-// Factory is a function that returns a instance of a model
+// modelManagers is a map of version to elemental.ModelManager.
 // according to its identity.
-// registry contains each elemental model RelationshipsRegistry for each version.
-func OptModel(factory elemental.IdentifiableFactory, registry map[int]elemental.RelationshipsRegistry) Option {
+func OptModel(modelManagers map[int]elemental.ModelManager) Option {
 	return func(c *config) {
-		c.model.identifiablesFactory = factory
-		c.model.relationshipsRegistry = registry
+		c.model.modelManagers = modelManagers
 	}
 }
 

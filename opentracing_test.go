@@ -40,7 +40,7 @@ func TestTracing_extractClaims(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "http://server/lists/xx/tasks?p=v", nil)
 		req.Header.Add("X-Namespace", "ns")
 		req.Header.Add("Authorization", "Bearer "+token)
-		r, _ := elemental.NewRequestFromHTTPRequest(req)
+		r, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
 
 		Convey("When I extract the claims", func() {
 

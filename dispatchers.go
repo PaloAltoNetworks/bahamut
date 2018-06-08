@@ -28,7 +28,6 @@ func notImplementedErr(request *elemental.Request) error {
 func dispatchRetrieveManyOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -79,7 +78,6 @@ func dispatchRetrieveManyOperation(
 func dispatchRetrieveOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -130,7 +128,7 @@ func dispatchRetrieveOperation(
 func dispatchCreateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
+	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -180,7 +178,7 @@ func dispatchCreateOperation(
 			return
 		}
 	} else {
-		obj = factory(ctx.Request.Identity.Name, ctx.Request.Version)
+		obj = modelManager.Identifiable(ctx.Request.Identity)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
@@ -219,7 +217,7 @@ func dispatchCreateOperation(
 func dispatchUpdateOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
+	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -269,7 +267,7 @@ func dispatchUpdateOperation(
 			return
 		}
 	} else {
-		obj = factory(ctx.Request.Identity.Name, ctx.Request.Version)
+		obj = modelManager.Identifiable(ctx.Request.Identity)
 		if err = ctx.Request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
@@ -308,7 +306,6 @@ func dispatchUpdateOperation(
 func dispatchDeleteOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -373,7 +370,6 @@ func dispatchDeleteOperation(
 func dispatchPatchOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -446,7 +442,6 @@ func dispatchPatchOperation(
 func dispatchInfoOperation(
 	ctx *Context,
 	processorFinder processorFinderFunc,
-	factory elemental.IdentifiableFactory,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,

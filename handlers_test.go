@@ -336,9 +336,9 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -397,9 +397,9 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -458,9 +458,9 @@ func TestHandlers_handleCreate(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -519,9 +519,9 @@ func TestHandlers_handleUpdate(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -580,9 +580,9 @@ func TestHandlers_handleDelete(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -641,9 +641,9 @@ func TestHandlers_handleInfo(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
@@ -702,9 +702,9 @@ func TestHandlers_handlePatch(t *testing.T) {
 	Convey("Given I have a config", t, func() {
 
 		cfg := config{}
-		cfg.model.relationshipsRegistry = map[int]elemental.RelationshipsRegistry{
-			0: testmodel.Relationships(),
-			1: testmodel.Relationships(),
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
 		Convey("Given I a have fake processor finder that return no error", func() {
