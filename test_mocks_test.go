@@ -278,13 +278,13 @@ func (p *mockProcessor) ProcessInfo(ctx *Context) error {
 	return p.err
 }
 
-// A mockusher is a mockable implementation of a Pusher.
-type mockusher struct {
+// A mockPusher is a mockable implementation of a Pusher.
+type mockPusher struct {
 	events []*elemental.Event
 	sync.Mutex
 }
 
-func (f *mockusher) Push(evt ...*elemental.Event) {
+func (f *mockPusher) Push(evt ...*elemental.Event) {
 
 	f.Lock()
 	defer f.Unlock()

@@ -23,7 +23,7 @@ func TestDispatchers_dispatchRetrieveManyOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchRetrieveManyOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer)
@@ -171,7 +171,7 @@ func TestDispatchers_dispatchRetrieveOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchRetrieveOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer)
@@ -321,7 +321,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
@@ -562,7 +562,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
@@ -803,7 +803,7 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchDeleteOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer, false, nil)
@@ -973,7 +973,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer, false, nil)
@@ -1162,7 +1162,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchInfoOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer)
@@ -1186,7 +1186,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		ctx := NewContextWithRequest(request)
 		err := dispatchInfoOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer)
@@ -1210,7 +1210,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		expectedError := "error 501 (bahamut): Not implemented: No handler for operation retrieve-many on Fake"
 		expectedNbCalls := 1
@@ -1242,7 +1242,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		expectedError := "error 500 (bahamut-test): Error: Authenticator does not authenticate."
 		expectedNbCalls := 1
@@ -1283,7 +1283,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		}
 
 		auditer := &mockAuditer{}
-		pusher := &mockusher{}
+		pusher := &mockPusher{}
 
 		expectedError := "error 500 (bahamut-test): Error: Authorizer does not authorize."
 		expectedNbCalls := 1
