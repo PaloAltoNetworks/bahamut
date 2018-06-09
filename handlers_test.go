@@ -9,8 +9,8 @@ import (
 
 	"go.aporeto.io/elemental/test/model"
 
-	"go.aporeto.io/elemental"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 )
 
 func TestHandlers_makeResponse(t *testing.T) {
@@ -315,17 +315,6 @@ func TestHandlers_runDispatcher(t *testing.T) {
 
 			Convey("Then the dispatcher should have been called once", func() {
 				So(calledCounter.Value(), ShouldEqual, 0)
-			})
-		})
-
-		Convey("When I call runDispatcher with a dispatcher that returns a errMockPanicRequested", func() {
-
-			d := func() error {
-				return errMockPanicRequested{}
-			}
-
-			Convey("Then it should panic", func() {
-				So(func() { runDispatcher(ctx, response, d, true) }, ShouldPanicWith, "Panic requested by mock")
 			})
 		})
 	})

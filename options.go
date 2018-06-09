@@ -246,23 +246,6 @@ func OptUnmarshallers(unmarshallers map[elemental.Identity]CustomUmarshaller) Op
 	}
 }
 
-// OptMockServer enables and configures the mock server.
-func OptMockServer(listen string) Option {
-	return func(c *config) {
-		c.mockServer.enabled = true
-		c.mockServer.listenAddress = listen
-	}
-}
-
-// OptMockServerTimeouts configures the mock server timeouts.
-func OptMockServerTimeouts(read, write, idle time.Duration) Option {
-	return func(c *config) {
-		c.mockServer.readTimeout = read
-		c.mockServer.writeTimeout = write
-		c.mockServer.idleTimeout = idle
-	}
-}
-
 // OptServiceInfo configures the service basic information.
 //
 // ServiceName contains the name of the service.

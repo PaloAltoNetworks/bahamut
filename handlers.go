@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"go.aporeto.io/elemental"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 
@@ -98,9 +98,6 @@ func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover 
 
 	case err := <-e:
 		if err != nil {
-			if _, ok := err.(errMockPanicRequested); ok {
-				panic(err.Error())
-			}
 			return makeErrorResponse(ctx.Context(), r, err)
 		}
 

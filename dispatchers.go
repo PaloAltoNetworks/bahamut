@@ -34,15 +34,6 @@ func dispatchRetrieveManyOperation(
 	auditer Auditer,
 ) (err error) {
 
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
-
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
@@ -83,15 +74,6 @@ func dispatchRetrieveOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 ) (err error) {
-
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -137,15 +119,6 @@ func dispatchCreateOperation(
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
 ) (err error) {
-
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -227,15 +200,6 @@ func dispatchUpdateOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (err error) {
 
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
-
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
@@ -314,15 +278,6 @@ func dispatchDeleteOperation(
 	readOnlyExclusion []elemental.Identity,
 ) (err error) {
 
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
-
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
@@ -377,15 +332,6 @@ func dispatchPatchOperation(
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
 ) (err error) {
-
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
@@ -447,15 +393,6 @@ func dispatchInfoOperation(
 	pusher eventPusherFunc,
 	auditer Auditer,
 ) (err error) {
-
-	if currentMocker != nil {
-		if mock := currentMocker.get(ctx.Request.Operation, ctx.Request.Identity.Name); mock != nil {
-			a, merr := mock.execute(ctx)
-			if err != nil || a == mockActionDone {
-				return merr
-			}
-		}
-	}
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)

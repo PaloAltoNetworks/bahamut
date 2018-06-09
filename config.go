@@ -84,14 +84,6 @@ type config struct {
 		unmarshallers              map[elemental.Identity]CustomUmarshaller
 	}
 
-	mockServer struct {
-		listenAddress string
-		readTimeout   time.Duration
-		writeTimeout  time.Duration
-		idleTimeout   time.Duration
-		enabled       bool
-	}
-
 	meta struct {
 		serviceName      string
 		serviceVersion   string

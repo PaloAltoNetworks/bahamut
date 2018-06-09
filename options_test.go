@@ -160,19 +160,6 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.model.unmarshallers, ShouldResemble, u)
 	})
 
-	Convey("Calling OptMockServer should work", t, func() {
-		OptMockServer("a")(&c)
-		So(c.mockServer.enabled, ShouldEqual, true)
-		So(c.mockServer.listenAddress, ShouldEqual, "a")
-	})
-
-	Convey("Calling OptMockServerTimeouts should work", t, func() {
-		OptMockServerTimeouts(1*time.Second, 2*time.Second, 3*time.Second)(&c)
-		So(c.mockServer.readTimeout, ShouldEqual, 1*time.Second)
-		So(c.mockServer.writeTimeout, ShouldEqual, 2*time.Second)
-		So(c.mockServer.idleTimeout, ShouldEqual, 3*time.Second)
-	})
-
 	Convey("Calling OptServiceInfo should work", t, func() {
 		sb := map[string]interface{}{}
 		OptServiceInfo("n", "v", sb)(&c)

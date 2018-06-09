@@ -10,8 +10,8 @@ import (
 	"os"
 	"os/signal"
 
-	"go.aporeto.io/elemental"
 	"github.com/go-zoo/bone"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 
@@ -54,7 +54,6 @@ type server struct {
 	pushServer      *pushServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
-	mockServer      *mockServer
 }
 
 // New returns a new bahamut Server configured with
@@ -108,10 +107,6 @@ func NewServer(cfg config) Server {
 
 	if cfg.profilingServer.enabled {
 		srv.profilingServer = newProfilingServer(cfg)
-	}
-
-	if cfg.mockServer.enabled {
-		srv.mockServer = newMockServer(cfg)
 	}
 
 	return srv
@@ -183,10 +178,6 @@ func (b *server) Run(ctx context.Context) {
 		go b.healthServer.start(ctx)
 	}
 
-	if b.mockServer != nil {
-		go b.mockServer.start(ctx)
-	}
-
 	if b.restServer != nil {
 		go b.restServer.start(ctx)
 	}
@@ -212,9 +203,4 @@ func (b *server) Run(ctx context.Context) {
 	if b.healthServer != nil {
 		b.healthServer.stop()
 	}
-
-	if b.mockServer != nil {
-		b.mockServer.stop()
-	}
-
 }
