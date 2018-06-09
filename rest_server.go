@@ -14,10 +14,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
-
-	"go.aporeto.io/elemental"
 	"github.com/go-zoo/bone"
+	"github.com/opentracing/opentracing-go"
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/tg/tglib"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -89,19 +89,23 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 
 		// Then we build a custom GetCertificate function to first use the certificate passed
 		// by the config, then eventually try to get a certificate from letsencrypt.
-		localCertMap := buildNameAndIPsToCertificate(a.cfg.tls.serverCertificates)
+		localHostsCertMap, localIPsCertMap, err := tglib.BuildCertificatesMaps(a.cfg.tls.serverCertificates)
+		if err != nil {
+			return nil, err
+		}
+
 		tlsConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if hello.ServerName != "" {
-				if c, ok := localCertMap[hello.ServerName]; ok {
-					return c, nil
+				if c, ok := localHostsCertMap[hello.ServerName]; ok {
+					return &c, nil
 				}
 			} else {
 				host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
 				if err != nil {
 					return nil, err
 				}
-				if c, ok := localCertMap[host]; ok {
-					return c, nil
+				if c, ok := localIPsCertMap[host]; ok {
+					return &c, nil
 				}
 			}
 			return m.GetCertificate(hello)

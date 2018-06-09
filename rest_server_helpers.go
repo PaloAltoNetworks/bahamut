@@ -1,8 +1,6 @@
 package bahamut
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"net/http"
 	"strconv"
 	"strings"
@@ -66,30 +64,4 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
 			zap.L().Debug("Unable to send http response to client", zap.Error(err))
 		}
 	}
-}
-
-func buildNameAndIPsToCertificate(certs []tls.Certificate) map[string]*tls.Certificate {
-
-	out := map[string]*tls.Certificate{}
-
-	for _, cert := range certs {
-
-		x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			continue
-		}
-		if len(x509Cert.Subject.CommonName) > 0 {
-			out[x509Cert.Subject.CommonName] = &cert
-		}
-
-		for _, san := range x509Cert.DNSNames {
-			out[san] = &cert
-		}
-
-		for _, ipsan := range x509Cert.IPAddresses {
-			out[ipsan.String()] = &cert
-		}
-	}
-
-	return out
 }
