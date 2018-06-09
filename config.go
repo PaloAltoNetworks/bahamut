@@ -60,13 +60,10 @@ type config struct {
 	}
 
 	tls struct {
-		clientCAPool                      *x509.CertPool
-		authType                          tls.ClientAuthType
-		serverCertificates                []tls.Certificate
-		serverCertificatesRetrieverFunc   func(*tls.ClientHelloInfo) (*tls.Certificate, error)
-		enableLetsEncrypt                 bool
-		letsEncryptDomainWhiteList        []string
-		letsEncryptCertificateCacheFolder string
+		clientCAPool                    *x509.CertPool
+		authType                        tls.ClientAuthType
+		serverCertificates              []tls.Certificate
+		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 	}
 
 	security struct {

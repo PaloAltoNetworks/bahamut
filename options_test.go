@@ -115,15 +115,6 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.tls.authType, ShouldEqual, authType)
 	})
 
-	Convey("Calling OptLetsEncrypt should work", t, func() {
-		domains := []string{"a", "b"}
-		cache := "/cache"
-		OptLetsEncrypt(domains, cache)(&c)
-		So(c.tls.enableLetsEncrypt, ShouldEqual, true)
-		So(c.tls.letsEncryptDomainWhiteList, ShouldResemble, domains)
-		So(c.tls.letsEncryptCertificateCacheFolder, ShouldEqual, cache)
-	})
-
 	Convey("Calling OptAuthenticators should work", t, func() {
 		ra := []RequestAuthenticator{&mockAuth{}}
 		rs := []SessionAuthenticator{&mockSessionAuthenticator{}}

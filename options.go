@@ -164,20 +164,6 @@ func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
 	}
 }
 
-// OptLetsEncrypt enables and configures the auto letsencrypt certification.
-//
-// Domains contains the list of white listed domain name to use for
-// issuing certificates.
-// cache gives the path where to store certificate cache.
-// If empty, the default temp folder of the machine will be used.
-func OptLetsEncrypt(domains []string, cache string) Option {
-	return func(c *config) {
-		c.tls.enableLetsEncrypt = true
-		c.tls.letsEncryptDomainWhiteList = domains
-		c.tls.letsEncryptCertificateCacheFolder = cache
-	}
-}
-
 // OptAuthenticators configures the authenticators.
 //
 // RequestAuthenticators defines the list the RequestAuthenticator to use to authenticate the requests.

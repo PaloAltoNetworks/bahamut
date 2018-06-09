@@ -9,17 +9,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/tg/tglib"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 // an restServer is the structure serving the api routes.
@@ -62,54 +58,10 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 		},
 	}
 
-	if !a.cfg.tls.enableLetsEncrypt {
-
-		// If letsencrypt is not enabled we simply set the given list of
-		// certificates or the ServerCertificatesRetrieverFunc in the TLS option.
-
-		if a.cfg.tls.serverCertificatesRetrieverFunc != nil {
-			tlsConfig.GetCertificate = a.cfg.tls.serverCertificatesRetrieverFunc
-		} else {
-			tlsConfig.Certificates = a.cfg.tls.serverCertificates
-		}
-
+	if a.cfg.tls.serverCertificatesRetrieverFunc != nil {
+		tlsConfig.GetCertificate = a.cfg.tls.serverCertificatesRetrieverFunc
 	} else {
-
-		cachePath := a.cfg.tls.letsEncryptCertificateCacheFolder
-		if cachePath == "" {
-			cachePath = os.TempDir()
-		}
-
-		// Otherwise, we create an autocert manager
-		m := autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(a.cfg.tls.letsEncryptDomainWhiteList...),
-			Cache:      autocert.DirCache(cachePath),
-		}
-
-		// Then we build a custom GetCertificate function to first use the certificate passed
-		// by the config, then eventually try to get a certificate from letsencrypt.
-		localHostsCertMap, localIPsCertMap, err := tglib.BuildCertificatesMaps(a.cfg.tls.serverCertificates)
-		if err != nil {
-			return nil, err
-		}
-
-		tlsConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			if hello.ServerName != "" {
-				if c, ok := localHostsCertMap[hello.ServerName]; ok {
-					return &c, nil
-				}
-			} else {
-				host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
-				if err != nil {
-					return nil, err
-				}
-				if c, ok := localIPsCertMap[host]; ok {
-					return &c, nil
-				}
-			}
-			return m.GetCertificate(hello)
-		}
+		tlsConfig.Certificates = a.cfg.tls.serverCertificates
 	}
 
 	tlsConfig.BuildNameToCertificate()
