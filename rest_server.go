@@ -237,16 +237,20 @@ func (a *restServer) start(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (a *restServer) stop() {
+func (a *restServer) stop() context.Context {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-	if err := a.server.Shutdown(ctx); err != nil {
-		zap.L().Error("Could not gracefully stop API server", zap.Error(err))
-	}
+	go func() {
+		defer cancel()
+		if err := a.server.Shutdown(ctx); err != nil {
+			zap.L().Error("Could not gracefully stop API server", zap.Error(err))
+		} else {
+			zap.L().Debug("API server stopped")
+		}
+	}()
 
-	zap.L().Debug("API server stopped")
+	return ctx
 }
 
 func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {

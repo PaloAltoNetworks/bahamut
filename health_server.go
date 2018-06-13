@@ -59,14 +59,18 @@ func (s *healthServer) start(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (s *healthServer) stop() {
+func (s *healthServer) stop() context.Context {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-	if err := s.server.Shutdown(ctx); err != nil {
-		zap.L().Error("Could not gracefully stop health server", zap.Error(err))
-	}
+	go func() {
+		defer cancel()
+		if err := s.server.Shutdown(ctx); err != nil {
+			zap.L().Error("Could not gracefully stop health server", zap.Error(err))
+		} else {
+			zap.L().Debug("Health server stopped")
+		}
+	}()
 
-	zap.L().Debug("Health server stopped")
+	return ctx
 }

@@ -174,10 +174,6 @@ func (b *server) Run(ctx context.Context) {
 		go b.profilingServer.start(ctx)
 	}
 
-	if b.healthServer != nil {
-		go b.healthServer.start(ctx)
-	}
-
 	if b.restServer != nil {
 		go b.restServer.start(ctx)
 	}
@@ -186,21 +182,29 @@ func (b *server) Run(ctx context.Context) {
 		go b.pushServer.start(ctx)
 	}
 
-	<-ctx.Done()
-
-	if b.restServer != nil {
-		b.restServer.stop()
+	if b.healthServer != nil {
+		go b.healthServer.start(ctx)
 	}
 
+	<-ctx.Done()
+
+	// Stop the health server first so we become unhealthy.
+	if b.healthServer != nil {
+		<-b.healthServer.stop().Done()
+	}
+
+	// Stop the push server to disconnect everybody.
 	if b.pushServer != nil {
 		b.pushServer.stop()
 	}
 
-	if b.profilingServer != nil {
-		b.profilingServer.stop()
+	// Stop the restserver and wait for current requests to complete.
+	if b.restServer != nil {
+		<-b.restServer.stop().Done()
 	}
 
-	if b.healthServer != nil {
-		b.healthServer.stop()
+	// Stop the profiling server.
+	if b.profilingServer != nil {
+		b.profilingServer.stop()
 	}
 }
