@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	"go.aporeto.io/elemental"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
+	"go.aporeto.io/elemental"
 
 	opentracing "github.com/opentracing/opentracing-go"
 )

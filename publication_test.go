@@ -3,8 +3,8 @@ package bahamut
 import (
 	"testing"
 
-	"go.aporeto.io/elemental/test/model"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental/test/model"
 )
 
 func TestPublication_NewPublication(t *testing.T) {

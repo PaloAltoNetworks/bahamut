@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/opentracing/opentracing-go"
-
 	"go.aporeto.io/elemental"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 

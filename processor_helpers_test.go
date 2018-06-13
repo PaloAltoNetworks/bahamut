@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"go.aporeto.io/elemental"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 )
 
 func TestProcessorHelpers_checkAuthenticated(t *testing.T) {

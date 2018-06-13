@@ -6,6 +6,7 @@ import (
 
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"go.aporeto.io/bahamut"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 

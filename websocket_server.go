@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"go.aporeto.io/addedeffect/wsc"
-	"go.aporeto.io/elemental"
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
+	"go.aporeto.io/addedeffect/wsc"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 
