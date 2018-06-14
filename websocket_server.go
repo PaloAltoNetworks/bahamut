@@ -214,7 +214,6 @@ func (n *pushServer) start(ctx context.Context) {
 	}
 
 	n.mainContext = ctx
-	defer func() { n.mainContext = nil }()
 
 	publications := make(chan *Publication)
 	if n.cfg.pushServer.service != nil {
