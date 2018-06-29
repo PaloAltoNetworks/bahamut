@@ -157,17 +157,6 @@ func (b *server) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
-func (b *server) Start() {
-
-	zap.L().Warn("Bahamut: deprecated: Server.Start is deprecated. Use Server.Run")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	InstallSIGINTHandler(cancel)
-	b.Run(ctx)
-}
-
 func (b *server) Run(ctx context.Context) {
 
 	if b.profilingServer != nil {

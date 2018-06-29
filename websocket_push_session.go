@@ -100,14 +100,14 @@ func (s *wsPushSession) SetClaims(claims []string) {
 }
 
 func (s *wsPushSession) Identifier() string                            { return s.id }
-func (s *wsPushSession) GetClaims() []string                           { return s.claims }
-func (s *wsPushSession) GetClaimsMap() map[string]string               { return s.claimsMap }
-func (s *wsPushSession) GetToken() string                              { return s.parameters.Get("token") }
-func (s *wsPushSession) GetContext() context.Context                   { return s.ctx }
+func (s *wsPushSession) Claims() []string                              { return s.claims }
+func (s *wsPushSession) ClaimsMap() map[string]string                  { return s.claimsMap }
+func (s *wsPushSession) Token() string                                 { return s.parameters.Get("token") }
+func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
-func (s *wsPushSession) GetMetadata() interface{}                      { return s.metadata }
+func (s *wsPushSession) Metadata() interface{}                         { return s.metadata }
 func (s *wsPushSession) SetMetadata(m interface{})                     { s.metadata = m }
-func (s *wsPushSession) GetParameter(key string) string                { return s.parameters.Get(key) }
+func (s *wsPushSession) Parameter(key string) string                   { return s.parameters.Get(key) }
 func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remoteAddr = addr }
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }

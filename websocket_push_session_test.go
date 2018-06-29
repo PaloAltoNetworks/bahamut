@@ -161,21 +161,21 @@ func TestWSPushSession_accessors(t *testing.T) {
 
 			s.SetClaims([]string{"a=a", "b=b"})
 
-			Convey("Then GetClaims() should return the correct claims ", func() {
-				So(s.GetClaims(), ShouldResemble, []string{"a=a", "b=b"})
+			Convey("Then Claims() should return the correct claims ", func() {
+				So(s.Claims(), ShouldResemble, []string{"a=a", "b=b"})
 			})
 
-			Convey("Then GetClaimsMap() should return the correct claims ", func() {
-				m := s.GetClaimsMap()
+			Convey("Then ClaimsMap() should return the correct claims ", func() {
+				m := s.ClaimsMap()
 				So(len(m), ShouldEqual, 2)
 				So(m["a"], ShouldEqual, "a")
 				So(m["b"], ShouldEqual, "b")
 			})
 		})
 
-		Convey("When I call GetToken()", func() {
+		Convey("When I call Token()", func() {
 
-			token := s.GetToken()
+			token := s.Token()
 
 			Convey("Then token should be correct", func() {
 				So(token, ShouldEqual, "token")
@@ -195,23 +195,23 @@ func TestWSPushSession_accessors(t *testing.T) {
 
 			s.SetMetadata("hi")
 
-			Convey("Then GetMetadata() should return the correct metadata ", func() {
-				So(s.GetMetadata(), ShouldResemble, "hi")
+			Convey("Then Metadata() should return the correct metadata ", func() {
+				So(s.Metadata(), ShouldResemble, "hi")
 			})
 		})
 
-		Convey("When I call GetContext()", func() {
+		Convey("When I call Context()", func() {
 
-			c := s.GetContext()
+			c := s.Context()
 
-			Convey("Then GetContext() should return the correct context ", func() {
+			Convey("Then Context() should return the correct context ", func() {
 				So(opentracing.SpanFromContext(c), ShouldResemble, span)
 			})
 		})
 
-		Convey("When I call GetParameter()", func() {
+		Convey("When I call Parameter()", func() {
 
-			p := s.GetParameter("a")
+			p := s.Parameter("a")
 
 			Convey("Then parameter should be correct", func() {
 				So(p, ShouldEqual, "b")

@@ -185,15 +185,17 @@ func NewMTLSSessionAuthenticator(
 	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil, certVerifier, certificateCheckMode)
 }
 
-func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) IsAuthorized(ctx bahamut.Context) (bahamut.AuthAction, error) {
+
+	req := ctx.Request()
 
 	for _, i := range a.ignoredIdentities {
-		if ctx.Request.Identity.IsEqual(i) {
+		if req.Identity.IsEqual(i) {
 			return bahamut.AuthActionContinue, nil
 		}
 	}
 
-	if ctx.Request.TLSConnectionState == nil && ctx.Request.Headers.Get(tlsHeaderKey) == "" {
+	if req.TLSConnectionState == nil && req.Headers.Get(tlsHeaderKey) == "" {
 		return bahamut.AuthActionContinue, nil
 	}
 
@@ -202,13 +204,13 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 
 	switch a.certificateCheckMode {
 	case CertificateCheckModeTLSStateOnly:
-		certs, err = CertificatesFromTLSState(ctx.Request.TLSConnectionState)
+		certs, err = CertificatesFromTLSState(req.TLSConnectionState)
 	case CertificateCheckModeTLSStateThenHeader:
-		certs, err = CertificatesFromTLSStateThenHeader(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+		certs, err = CertificatesFromTLSStateThenHeader(req.TLSConnectionState, req.Headers.Get(tlsHeaderKey))
 	case CertificateCheckModeHeaderThenTLSState:
-		certs, err = CertificatesFromHeaderThenTLSState(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey))
+		certs, err = CertificatesFromHeaderThenTLSState(req.TLSConnectionState, req.Headers.Get(tlsHeaderKey))
 	case CertificateCheckModeHeaderOnly:
-		certs, err = CertificatesFromHeader(ctx.Request.Headers.Get(tlsHeaderKey))
+		certs, err = CertificatesFromHeader(req.Headers.Get(tlsHeaderKey))
 	}
 
 	if err != nil {
@@ -232,9 +234,9 @@ func (a *mtlsVerifier) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, e
 	return a.authActionFailure, nil
 }
 
-func (a *mtlsVerifier) AuthenticateRequest(ctx *bahamut.Context) (bahamut.AuthAction, error) {
+func (a *mtlsVerifier) AuthenticateRequest(ctx bahamut.Context) (bahamut.AuthAction, error) {
 
-	return a.checkAction(ctx.Request.TLSConnectionState, ctx.Request.Headers.Get(tlsHeaderKey), ctx.SetClaims)
+	return a.checkAction(ctx.Request().TLSConnectionState, ctx.Request().Headers.Get(tlsHeaderKey), ctx.SetClaims)
 }
 
 func (a *mtlsVerifier) AuthenticateSession(session bahamut.Session) (bahamut.AuthAction, error) {

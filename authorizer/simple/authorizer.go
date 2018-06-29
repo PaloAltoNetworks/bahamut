@@ -19,7 +19,7 @@ func NewAuthorizer(customAuthFunc CustomAuthRequestFunc) *Authorizer {
 // IsAuthorized authorizer the given context.
 // It will return true if the authentication is a success, false in case of failure
 // and an eventual error in case of error.
-func (a *Authorizer) IsAuthorized(ctx *bahamut.Context) (bahamut.AuthAction, error) {
+func (a *Authorizer) IsAuthorized(ctx bahamut.Context) (bahamut.AuthAction, error) {
 
 	if a.customAuthFunc == nil {
 		return bahamut.AuthActionContinue, nil

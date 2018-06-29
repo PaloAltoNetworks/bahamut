@@ -6,7 +6,7 @@ import (
 
 // CustomAuthRequestFunc is the type of functions that can be used to
 // decide custom authentication operations for requests. It returns a bahamut.AuthAction.
-type CustomAuthRequestFunc func(*bahamut.Context) (bahamut.AuthAction, error)
+type CustomAuthRequestFunc func(bahamut.Context) (bahamut.AuthAction, error)
 
 // CustomAuthSessionFunc is the type of functions that can be used to
 // decide custom authentication operations sessions. It returns a bahamut.AuthAction.
@@ -48,7 +48,7 @@ func (a *Authenticator) AuthenticateSession(session bahamut.Session) (bahamut.Au
 // AuthenticateRequest authenticates the request from the given bahamut.Context.
 // It will return true if the authentication is a success, false in case of failure
 // and an eventual error in case of error.
-func (a *Authenticator) AuthenticateRequest(ctx *bahamut.Context) (bahamut.AuthAction, error) {
+func (a *Authenticator) AuthenticateRequest(ctx bahamut.Context) (bahamut.AuthAction, error) {
 
 	if a.customAuthRequestFunc == nil {
 		return bahamut.AuthActionContinue, nil

@@ -5,6 +5,7 @@
 package bahamut
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -20,11 +21,7 @@ func TestProcessorHelpers_checkAuthenticated(t *testing.T) {
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
-		ctx := &Context{
-			Request: &elemental.Request{
-				Headers: h,
-			},
-		}
+		ctx := newContext(context.TODO(), &elemental.Request{Headers: h})
 
 		Convey("When I check authentication with no registered authenticator", func() {
 
@@ -114,11 +111,8 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 
 		h := http.Header{}
 		h.Add("Origin", "http://origin.com")
-		ctx := &Context{
-			Request: &elemental.Request{
-				Headers: h,
-			},
-		}
+
+		ctx := newContext(context.TODO(), &elemental.Request{Headers: h})
 
 		Convey("When I check authorization with no registered authorizer", func() {
 
