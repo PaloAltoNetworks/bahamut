@@ -61,21 +61,9 @@ type Server interface {
 	// Run runs the server using the given context.Context.
 	// You can stop the server by canceling the context.
 	Run(context.Context)
-
-	// Start starts the Bahamut server.
-	// This will install signal handler to handle
-	// graceful interruption.
-	//
-	// Deprecated: Start is deprecation. use Run.
-	Start()
 }
 
 // A Context contains all information about a current operation.
-//
-// It contains various Info like the Headers, the current parent identity and ID
-// (if any) for a given ReST call, the children identity, and other things like that.
-// It also contains information about Pagination, as well as elemental.Idenfiable (or list Idenfiables)
-// the user sent through the request.
 type Context interface {
 
 	// Identifier returns the internal unique identifier of the context.
@@ -84,11 +72,14 @@ type Context interface {
 	// Context returns the underlying context.Context.
 	Context() context.Context
 
-	// Request returns the underlying elemental.Request.
+	// Request returns the underlying *elemental.Request.
 	Request() *elemental.Request
 
 	// InputData returns the data sent by the client
 	InputData() interface{}
+
+	// SetInputData replaces the current input data.
+	SetInputData(interface{})
 
 	// OutputData returns the current output data.
 	OutputData() interface{}
@@ -128,9 +119,6 @@ type Context interface {
 
 	// Duplicate creates a copy of the Context.
 	Duplicate() Context
-
-	// WithInputData creates a copy of the context using the given input data.
-	WithInputData(data interface{}) Context
 
 	// EnqueueEvents enqueues the given event to the Context.
 	//

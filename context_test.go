@@ -93,7 +93,7 @@ func TestContext_String(t *testing.T) {
 
 		ctx := newContext(context.TODO(), elemental.NewRequest())
 		ctx.request = req
-		ctx.countTotal = 10
+		ctx.count = 10
 
 		Convey("When I call the String method", func() {
 
@@ -122,7 +122,7 @@ func TestContext_Duplicate(t *testing.T) {
 
 		ctx := newContext(context.TODO(), elemental.NewRequest())
 		ctx.request = req
-		ctx.countTotal = 10
+		ctx.count = 10
 		ctx.inputData = "input"
 		ctx.outputData = "output"
 		ctx.statusCode = 42
@@ -136,7 +136,7 @@ func TestContext_Duplicate(t *testing.T) {
 			ctx2 := ctx.Duplicate()
 
 			Convey("Then the duplicated context should be correct", func() {
-				So(ctx.countTotal, ShouldEqual, ctx2.(*bcontext).countTotal)
+				So(ctx.count, ShouldEqual, ctx2.(*bcontext).count)
 				So(ctx.Metadata("hello").(string), ShouldEqual, "world")
 				So(ctx.inputData, ShouldEqual, ctx2.InputData())
 				So(ctx.outputData, ShouldEqual, ctx2.(*bcontext).outputData)

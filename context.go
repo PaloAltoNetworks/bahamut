@@ -17,7 +17,7 @@ import (
 type bcontext struct {
 	claims       []string
 	claimsMap    map[string]string
-	countTotal   int
+	count        int
 	ctx          context.Context
 	events       elemental.Events
 	eventsLock   *sync.Mutex
@@ -54,53 +54,62 @@ func newContext(ctx context.Context, request *elemental.Request) *bcontext {
 	}
 }
 
+func (c *bcontext) Identifier() string {
+
+	return c.id
+}
+
+func (c *bcontext) Context() context.Context {
+
+	if c.ctx != nil {
+		return c.ctx
+	}
+
+	return context.Background()
+}
+
 func (c *bcontext) Request() *elemental.Request {
 	return c.request
 }
 
 func (c *bcontext) Count() int {
-	return c.countTotal
+	return c.count
 }
 
 func (c *bcontext) SetCount(count int) {
-	c.countTotal = count
+	c.count = count
 }
 
 func (c *bcontext) InputData() interface{} {
 	return c.inputData
 }
 
-func (c *bcontext) SetOutputData(data interface{}) {
-	c.outputData = data
+func (c *bcontext) SetInputData(data interface{}) {
+	c.inputData = data
 }
 
 func (c *bcontext) OutputData() interface{} {
 	return c.outputData
 }
 
-func (c *bcontext) SetStatusCode(code int) {
-	c.statusCode = code
+func (c *bcontext) SetOutputData(data interface{}) {
+	c.outputData = data
 }
 
 func (c *bcontext) StatusCode() int {
 	return c.statusCode
 }
 
-func (c *bcontext) SetRedirect(url string) {
-	c.redirect = url
+func (c *bcontext) SetStatusCode(code int) {
+	c.statusCode = code
 }
 
 func (c *bcontext) Redirect() string {
 	return c.redirect
 }
 
-func (c *bcontext) SetMetadata(key, value interface{}) {
-
-	if c.metadata == nil {
-		c.metadata = map[interface{}]interface{}{}
-	}
-
-	c.metadata[key] = value
+func (c *bcontext) SetRedirect(url string) {
+	c.redirect = url
 }
 
 func (c *bcontext) Metadata(key interface{}) interface{} {
@@ -112,13 +121,13 @@ func (c *bcontext) Metadata(key interface{}) interface{} {
 	return c.metadata[key]
 }
 
-func (c *bcontext) Context() context.Context {
+func (c *bcontext) SetMetadata(key, value interface{}) {
 
-	if c.ctx != nil {
-		return c.ctx
+	if c.metadata == nil {
+		c.metadata = map[interface{}]interface{}{}
 	}
 
-	return context.Background()
+	c.metadata[key] = value
 }
 
 func (c *bcontext) SetClaims(claims []string) {
@@ -141,11 +150,6 @@ func (c *bcontext) ClaimsMap() map[string]string {
 	return c.claimsMap
 }
 
-func (c *bcontext) Identifier() string {
-
-	return c.id
-}
-
 func (c *bcontext) EnqueueEvents(events ...*elemental.Event) {
 
 	c.eventsLock.Lock()
@@ -161,37 +165,28 @@ func (c *bcontext) AddMessage(msg string) {
 }
 
 func (c *bcontext) Duplicate() Context {
-	return c.WithInputData(nil)
-}
 
-func (c *bcontext) WithInputData(data interface{}) Context {
+	c2 := newContext(c.ctx, c.request.Duplicate())
 
-	ctx := newContext(c.ctx, c.request.Duplicate())
-
-	if data != nil {
-		ctx.inputData = data
-	} else {
-		ctx.inputData = c.inputData
-	}
-
-	ctx.countTotal = c.countTotal
-	ctx.statusCode = c.statusCode
-	ctx.outputData = c.outputData
-	ctx.claims = append(ctx.claims, c.claims...)
-	ctx.messages = append(ctx.messages, c.messages...)
+	c2.inputData = c.inputData
+	c2.count = c.count
+	c2.statusCode = c.statusCode
+	c2.outputData = c.outputData
+	c2.claims = append(c2.claims, c.claims...)
+	c2.messages = append(c2.messages, c.messages...)
 
 	for k, v := range c.claimsMap {
-		ctx.claimsMap[k] = v
+		c2.claimsMap[k] = v
 	}
 
 	if c.metadata != nil {
-		ctx.metadata = map[interface{}]interface{}{}
+		c2.metadata = map[interface{}]interface{}{}
 		for k, v := range c.metadata {
-			ctx.metadata[k] = v
+			c2.metadata[k] = v
 		}
 	}
 
-	return ctx
+	return c2
 }
 
 func (c *bcontext) String() string {
@@ -199,6 +194,6 @@ func (c *bcontext) String() string {
 	return fmt.Sprintf("<context id:%s request:%s totalcount:%d>",
 		c.Identifier(),
 		c.request,
-		c.countTotal,
+		c.count,
 	)
 }

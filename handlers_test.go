@@ -37,7 +37,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 
-		ctx.countTotal = 42
+		ctx.count = 42
 
 		Convey("When I call makeResponse on a retrieveMany operation", func() {
 

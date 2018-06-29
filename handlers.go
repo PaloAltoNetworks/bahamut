@@ -40,8 +40,8 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 	}
 
 	if ctx.request.Operation == elemental.OperationRetrieveMany || ctx.request.Operation == elemental.OperationInfo {
-		response.Total = ctx.countTotal
-		fields = append(fields, (log.Int("count-total", ctx.countTotal)))
+		response.Total = ctx.count
+		fields = append(fields, (log.Int("count-total", ctx.count)))
 	}
 
 	if msgs := ctx.messages; len(msgs) > 0 {
