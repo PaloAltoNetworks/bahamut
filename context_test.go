@@ -42,7 +42,7 @@ func TestContext_NewContext(t *testing.T) {
 	Convey("Given I call newContext with a nil context", t, func() {
 
 		Convey("Then it should panic", func() {
-			So(func() { newContext(nil, nil) }, ShouldPanicWith, "nil context")
+			So(func() { newContext(nil, nil) }, ShouldPanicWith, "nil context") // nolint
 		})
 	})
 
