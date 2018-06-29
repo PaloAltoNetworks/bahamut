@@ -1,6 +1,7 @@
 package mtls
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -47,9 +48,8 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth with no certificate provided", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{},
-			}
+			ctx := bahamut.NewContext(context.TODO(), elemental.NewRequest())
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -70,15 +70,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -99,15 +98,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a but only checking for header", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -130,11 +128,9 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-				},
-			}
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -157,11 +153,11 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-				},
-			}
+
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+			})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -184,16 +180,15 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -216,16 +211,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -248,16 +241,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -280,16 +271,15 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			},
+			)
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -312,11 +302,9 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, "not-good")
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-				},
-			}
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -337,15 +325,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a with a verifier function that is ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -368,15 +355,13 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a with a verifier function that is not ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -399,15 +384,13 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for server-a using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							serverCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						serverCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -428,15 +411,13 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-ext using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertExt,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertExt,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -457,15 +438,13 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-ext using chain-a with a verifier func that is ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertExt,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertExt,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -488,15 +467,13 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 		Convey("When I try check auth for user-b using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -518,16 +495,14 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 		Convey("When I try check auth for server-a using chain-a but using an ignored identity", func() {
 
 			identity := elemental.MakeIdentity("thing", "things")
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Identity: identity,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							serverCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Identity: identity,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						serverCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -574,7 +549,8 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth with no certificate provided", func() {
 
-			ctx := &bahamut.Context{Request: &elemental.Request{}}
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{})
+
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -595,15 +571,13 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -623,21 +597,19 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ctx.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+				So(ctx.Claims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
 			})
 		})
 
 		Convey("When I try check auth for user-a using chain-a but only checking header", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -661,16 +633,14 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -693,16 +663,14 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -725,16 +693,14 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertAData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -757,16 +723,14 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 			header := http.Header{}
 			header.Set(tlsHeaderKey, string(userCertBData))
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					Headers: header,
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				Headers: header,
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -787,15 +751,13 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-a using chain-a with a verifier func that is ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -817,21 +779,19 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ctx.GetClaims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
+				So(ctx.Claims(), ShouldResemble, []string{"@auth:realm=certificate", "@auth:mode=internal", "@auth:serialnumber=23486181163925715704694891313232533542", "@auth:commonname=user-a"})
 			})
 		})
 
 		Convey("When I try check auth for user-a using chain-a with a verifier func that is not ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertA,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -853,21 +813,19 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ctx.GetClaims(), ShouldBeNil)
+				So(ctx.Claims(), ShouldBeNil)
 			})
 		})
 
 		Convey("When I try check auth for server-a using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							serverCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						serverCertA,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -889,16 +847,13 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for server-a using chain-a with a verifier func that is ok", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							serverCertA,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						serverCertA,
 					},
 				},
-			}
-
+			})
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
@@ -921,15 +876,13 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-ext using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertExt,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertExt,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,
@@ -951,15 +904,13 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 		Convey("When I try check auth for user-b using chain-a", func() {
 
-			ctx := &bahamut.Context{
-				Request: &elemental.Request{
-					TLSConnectionState: &tls.ConnectionState{
-						PeerCertificates: []*x509.Certificate{
-							userCertB,
-						},
+			ctx := bahamut.NewContext(context.TODO(), &elemental.Request{
+				TLSConnectionState: &tls.ConnectionState{
+					PeerCertificates: []*x509.Certificate{
+						userCertB,
 					},
 				},
-			}
+			})
 
 			opts := x509.VerifyOptions{
 				Roots:     certPoolA,

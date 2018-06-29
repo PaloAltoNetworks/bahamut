@@ -7,7 +7,7 @@ import (
 	"go.aporeto.io/elemental"
 )
 
-func audit(auditer Auditer, ctx *Context, err error) {
+func audit(auditer Auditer, ctx *bcontext, err error) {
 
 	if auditer == nil {
 		return
@@ -26,7 +26,7 @@ func notImplementedErr(request *elemental.Request) error {
 }
 
 func dispatchRetrieveManyOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -44,10 +44,10 @@ func dispatchRetrieveManyOperation(
 		return
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(RetrieveManyProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
@@ -57,8 +57,8 @@ func dispatchRetrieveManyOperation(
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
 	audit(auditer, ctx, nil)
@@ -67,7 +67,7 @@ func dispatchRetrieveManyOperation(
 }
 
 func dispatchRetrieveOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -85,10 +85,10 @@ func dispatchRetrieveOperation(
 		return
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(RetrieveProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
@@ -98,8 +98,8 @@ func dispatchRetrieveOperation(
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
 	audit(auditer, ctx, nil)
@@ -108,7 +108,7 @@ func dispatchRetrieveOperation(
 }
 
 func dispatchCreateOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
@@ -131,28 +131,28 @@ func dispatchCreateOperation(
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
 			return
 		}
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(CreateProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
 
 	var obj elemental.Identifiable
 	if unmarshaller != nil {
-		if obj, err = unmarshaller(ctx.Request); err != nil {
+		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
 	} else {
-		obj = modelManager.Identifiable(ctx.Request.Identity)
-		if err = ctx.Request.Decode(&obj); err != nil {
+		obj = modelManager.Identifiable(ctx.request.Identity)
+		if err = ctx.request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
@@ -165,19 +165,19 @@ func dispatchCreateOperation(
 		}
 	}
 
-	ctx.InputData = obj
+	ctx.inputData = obj
 
 	if err = proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
-	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventCreate, ctx.OutputData.(elemental.Identifiable))
+	if ctx.outputData != nil {
+		evt := elemental.NewEvent(elemental.EventCreate, ctx.outputData.(elemental.Identifiable))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}
@@ -188,7 +188,7 @@ func dispatchCreateOperation(
 }
 
 func dispatchUpdateOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	modelManager elemental.ModelManager,
 	unmarshaller CustomUmarshaller,
@@ -211,28 +211,28 @@ func dispatchUpdateOperation(
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
 			return
 		}
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(UpdateProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
 	var obj elemental.Identifiable
 
 	if unmarshaller != nil {
-		if obj, err = unmarshaller(ctx.Request); err != nil {
+		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
 	} else {
-		obj = modelManager.Identifiable(ctx.Request.Identity)
-		if err = ctx.Request.Decode(&obj); err != nil {
+		obj = modelManager.Identifiable(ctx.request.Identity)
+		if err = ctx.request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
 			return
 		}
@@ -245,19 +245,19 @@ func dispatchUpdateOperation(
 		}
 	}
 
-	ctx.InputData = obj
+	ctx.inputData = obj
 
 	if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
-	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable))
+	if ctx.outputData != nil {
+		evt := elemental.NewEvent(elemental.EventUpdate, ctx.outputData.(elemental.Identifiable))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}
@@ -268,7 +268,7 @@ func dispatchUpdateOperation(
 }
 
 func dispatchDeleteOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -289,15 +289,15 @@ func dispatchDeleteOperation(
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
 			return
 		}
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(DeleteProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
@@ -307,12 +307,12 @@ func dispatchDeleteOperation(
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
-	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventDelete, ctx.OutputData.(elemental.Identifiable))
+	if ctx.outputData != nil {
+		evt := elemental.NewEvent(elemental.EventDelete, ctx.outputData.(elemental.Identifiable))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}
@@ -323,7 +323,7 @@ func dispatchDeleteOperation(
 }
 
 func dispatchPatchOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -344,38 +344,38 @@ func dispatchPatchOperation(
 	}
 
 	if readOnlyMode {
-		if err = makeReadOnlyError(ctx.Request.Identity, readOnlyExclusion); err != nil {
+		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
 			return
 		}
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(PatchProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}
 
 	var patch *elemental.Patch
-	if err = ctx.Request.Decode(&patch); err != nil {
+	if err = ctx.request.Decode(&patch); err != nil {
 		audit(auditer, ctx, err)
 		return
 	}
 
-	ctx.InputData = patch
+	ctx.inputData = patch
 
 	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)
 		return
 	}
 
-	if ctx.HasEvents() {
-		pusher(ctx.Events()...)
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
 	}
 
-	if ctx.OutputData != nil {
-		evt := elemental.NewEvent(elemental.EventUpdate, ctx.OutputData.(elemental.Identifiable))
+	if ctx.outputData != nil {
+		evt := elemental.NewEvent(elemental.EventUpdate, ctx.outputData.(elemental.Identifiable))
 		evt.UserInfo = ctx.Metadata
 		pusher(evt)
 	}
@@ -386,7 +386,7 @@ func dispatchPatchOperation(
 }
 
 func dispatchInfoOperation(
-	ctx *Context,
+	ctx *bcontext,
 	processorFinder processorFinderFunc,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
@@ -404,10 +404,10 @@ func dispatchInfoOperation(
 		return
 	}
 
-	proc, _ := processorFinder(ctx.Request.Identity)
+	proc, _ := processorFinder(ctx.request.Identity)
 
 	if _, ok := proc.(InfoProcessor); !ok {
-		err = notImplementedErr(ctx.Request)
+		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
 		return
 	}

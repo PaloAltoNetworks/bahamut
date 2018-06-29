@@ -13,7 +13,7 @@ func TestAuththenticator_NewAuthenticator(t *testing.T) {
 
 	Convey("Given I call NewAuthenticator with two funcs", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
 		f2 := func(bahamut.Session) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
 
 		auth := NewAuthenticator(f1, f2)
@@ -29,7 +29,7 @@ func TestAuththenticator_AuthenticateRequest(t *testing.T) {
 
 	Convey("Given I call NewAuthenticator and a func that says ok", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
 
 		auth := NewAuthenticator(f1, nil)
 
@@ -67,7 +67,7 @@ func TestAuththenticator_AuthenticateRequest(t *testing.T) {
 
 	Convey("Given I call NewAuthenticator and a func that returns an error", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, fmt.Errorf("paf") }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, fmt.Errorf("paf") }
 
 		auth := NewAuthenticator(f1, nil)
 

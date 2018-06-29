@@ -273,8 +273,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
 		defer finishTracing(ctx)
 
-		bctx := NewContextWithRequest(request)
-		bctx.ctx = ctx
+		bctx := newContext(ctx, request)
 
 		writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
 	}

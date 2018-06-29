@@ -7,6 +7,7 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
 	"go.aporeto.io/elemental"
@@ -69,55 +70,136 @@ type Server interface {
 	Start()
 }
 
+// A Context contains all information about a current operation.
+//
+// It contains various Info like the Headers, the current parent identity and ID
+// (if any) for a given ReST call, the children identity, and other things like that.
+// It also contains information about Pagination, as well as elemental.Idenfiable (or list Idenfiables)
+// the user sent through the request.
+type Context interface {
+
+	// Identifier returns the internal unique identifier of the context.
+	Identifier() string
+
+	// Context returns the underlying context.Context.
+	Context() context.Context
+
+	// Request returns the underlying elemental.Request.
+	Request() *elemental.Request
+
+	// InputData returns the data sent by the client
+	InputData() interface{}
+
+	// OutputData returns the current output data.
+	OutputData() interface{}
+
+	// SetOutputData sets the data that will be returned to the client.
+	SetOutputData(interface{})
+
+	// Set count sets the count.
+	SetCount(int)
+
+	// Count returns the current count.
+	Count() int
+
+	// SetRedirect sets the redirect URL.
+	SetRedirect(string)
+
+	// Redirect returns the current value for redirection
+	Redirect() string
+
+	// SetStatusCode sets the status code that will be returned to the client.
+	SetStatusCode(int)
+
+	// StatusCode returns the current status code.
+	StatusCode() int
+
+	// AddMessage adds a custom message that will be sent as repponse header.
+	AddMessage(string)
+
+	// SetClaims sets the claims.
+	SetClaims(claims []string)
+
+	// Claims returns the list of claims.
+	Claims() []string
+
+	// Claims returns claims in a map.
+	ClaimsMap() map[string]string
+
+	// Duplicate creates a copy of the Context.
+	Duplicate() Context
+
+	// WithInputData creates a copy of the context using the given input data.
+	WithInputData(data interface{}) Context
+
+	// EnqueueEvents enqueues the given event to the Context.
+	//
+	// Bahamut will automatically generate events on the currently processed object.
+	// But if your processor creates other objects alongside with the main one and you want to
+	// send a push to the user, then you can use this method.
+	//
+	// The events you enqueue using EnqueueEvents will be sent in order to the enqueueing, and
+	// *before* the main object related event.
+	EnqueueEvents(...*elemental.Event)
+
+	// SetMetadata sets opaque metadata that can be reteieved by Metadata().
+	SetMetadata(key, value interface{})
+
+	// Metadata returns the opaque data set by using SetMetadata().
+	Metadata(key interface{}) interface{}
+
+	fmt.Stringer
+}
+
 // Processor is the interface for a Processor Unit
 type Processor interface{}
 
 // RetrieveManyProcessor is the interface a processor must implement
 // in order to be able to manage OperationRetrieveMany.
 type RetrieveManyProcessor interface {
-	ProcessRetrieveMany(*Context) error
+	ProcessRetrieveMany(Context) error
 }
 
 // RetrieveProcessor is the interface a processor must implement
 // in order to be able to manage OperationRetrieve.
 type RetrieveProcessor interface {
-	ProcessRetrieve(*Context) error
+	ProcessRetrieve(Context) error
 }
 
 // CreateProcessor is the interface a processor must implement
 // in order to be able to manage OperationCreate.
 type CreateProcessor interface {
-	ProcessCreate(*Context) error
+	ProcessCreate(Context) error
 }
 
 // UpdateProcessor is the interface a processor must implement
 // in order to be able to manage OperationUpdate.
 type UpdateProcessor interface {
-	ProcessUpdate(*Context) error
+	ProcessUpdate(Context) error
 }
 
 // DeleteProcessor is the interface a processor must implement
 // in order to be able to manage OperationDelete.
 type DeleteProcessor interface {
-	ProcessDelete(*Context) error
+	ProcessDelete(Context) error
 }
 
 // PatchProcessor is the interface a processor must implement
 // in order to be able to manage OperationPatch.
 type PatchProcessor interface {
-	ProcessPatch(*Context) error
+	ProcessPatch(Context) error
 }
 
 // InfoProcessor is the interface a processor must implement
 // in order to be able to manage OperationInfo.
 type InfoProcessor interface {
-	ProcessInfo(*Context) error
+	ProcessInfo(Context) error
 }
 
 // RequestAuthenticator is the interface that must be implemented in order to
 // to be used as the Bahamut Authenticator.
 type RequestAuthenticator interface {
-	AuthenticateRequest(*Context) (AuthAction, error)
+	AuthenticateRequest(Context) (AuthAction, error)
 }
 
 // SessionAuthenticator is the interface that must be implemented in order to
@@ -129,7 +211,7 @@ type SessionAuthenticator interface {
 // Authorizer is the interface that must be implemented in order to
 // to be used as the Bahamut Authorizer.
 type Authorizer interface {
-	IsAuthorized(*Context) (AuthAction, error)
+	IsAuthorized(Context) (AuthAction, error)
 }
 
 // PushDispatchHandler is the interface that must be implemented in order to
@@ -150,7 +232,7 @@ type PushPublishHandler interface {
 // Auditer is the interface an object must implement in order to handle
 // audit traces.
 type Auditer interface {
-	Audit(*Context, error)
+	Audit(Context, error)
 }
 
 // A RateLimiter is the interface an object must implement in order to
@@ -162,15 +244,15 @@ type RateLimiter interface {
 // Session is the interface of a generic websocket session.
 type Session interface {
 	Identifier() string
-	GetParameter(string) string
+	Parameter(string) string
 	SetClaims([]string)
-	GetClaims() []string
-	GetClaimsMap() map[string]string
-	GetToken() string
+	Claims() []string
+	ClaimsMap() map[string]string
+	Token() string
 	TLSConnectionState() *tls.ConnectionState
-	GetMetadata() interface{}
+	Metadata() interface{}
 	SetMetadata(interface{})
-	GetContext() context.Context
+	Context() context.Context
 }
 
 // PushSession is a Push Session

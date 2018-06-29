@@ -10,26 +10,26 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(*Context, config, processorFinderFunc, eventPusherFunc) *elemental.Response
+type handlerFunc func(*bcontext, config, processorFinderFunc, eventPusherFunc) *elemental.Response
 
-func makeResponse(ctx *Context, response *elemental.Response) *elemental.Response {
+func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Response {
 
-	if ctx.Redirect != "" {
-		response.Redirect = ctx.Redirect
+	if ctx.redirect != "" {
+		response.Redirect = ctx.redirect
 		return response
 	}
 
 	var fields []log.Field
 	defer func() {
-		span := opentracing.SpanFromContext(ctx.Context())
+		span := opentracing.SpanFromContext(ctx.ctx)
 		if span != nil {
 			span.LogFields(fields...)
 		}
 	}()
 
-	response.StatusCode = ctx.StatusCode
+	response.StatusCode = ctx.statusCode
 	if response.StatusCode == 0 {
-		switch ctx.Request.Operation {
+		switch ctx.request.Operation {
 		case elemental.OperationCreate:
 			response.StatusCode = http.StatusCreated
 		case elemental.OperationInfo:
@@ -39,18 +39,18 @@ func makeResponse(ctx *Context, response *elemental.Response) *elemental.Respons
 		}
 	}
 
-	if ctx.Request.Operation == elemental.OperationRetrieveMany || ctx.Request.Operation == elemental.OperationInfo {
-		response.Total = ctx.CountTotal
-		fields = append(fields, (log.Int("count-total", ctx.CountTotal)))
+	if ctx.request.Operation == elemental.OperationRetrieveMany || ctx.request.Operation == elemental.OperationInfo {
+		response.Total = ctx.countTotal
+		fields = append(fields, (log.Int("count-total", ctx.countTotal)))
 	}
 
-	if msgs := ctx.messages(); len(msgs) > 0 {
+	if msgs := ctx.messages; len(msgs) > 0 {
 		response.Messages = msgs
 		fields = append(fields, (log.Object("messages", msgs)))
 	}
 
-	if ctx.OutputData != nil {
-		if err := response.Encode(ctx.OutputData); err != nil {
+	if ctx.outputData != nil {
+		if err := response.Encode(ctx.outputData); err != nil {
 			zap.L().Panic("Unable to encode output data", zap.Error(err))
 		}
 		fields = append(fields, (log.Object("response", string(response.Data))))
@@ -82,45 +82,45 @@ func handleEventualPanic(ctx context.Context, response *elemental.Response, c ch
 	}
 }
 
-func runDispatcher(ctx *Context, r *elemental.Response, d func() error, recover bool) *elemental.Response {
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, recover bool) *elemental.Response {
 
 	e := make(chan error)
 
 	go func() {
-		defer handleEventualPanic(ctx.Context(), r, e, recover)
+		defer handleEventualPanic(ctx.ctx, r, e, recover)
 		e <- d()
 	}()
 
 	select {
 
-	case <-ctx.Context().Done():
-		return makeErrorResponse(ctx.Context(), r, ctx.Context().Err())
+	case <-ctx.ctx.Done():
+		return makeErrorResponse(ctx.ctx, r, ctx.ctx.Err())
 
 	case err := <-e:
 		if err != nil {
-			return makeErrorResponse(ctx.Context(), r, err)
+			return makeErrorResponse(ctx.ctx, r, err)
 		}
 
 		return makeResponse(ctx, r)
 	}
 }
 
-func handleRetrieveMany(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.Request.ParentIdentity
+	parentIdentity := ctx.request.ParentIdentity
 	if parentIdentity.IsEmpty() {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsRetrieveManyAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsRetrieveManyAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"RetrieveMany operation not allowed on "+ctx.Request.Identity.Category,
+				"RetrieveMany operation not allowed on "+ctx.request.Identity.Category,
 				"bahamut",
 				http.StatusMethodNotAllowed,
 			),
@@ -144,17 +144,17 @@ func handleRetrieveMany(ctx *Context, cfg config, processorFinder processorFinde
 	)
 }
 
-func handleRetrieve(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsRetrieveAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsRetrieveAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity) || !ctx.request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Retrieve operation not allowed on "+ctx.Request.Identity.Name, "bahamut",
+				"Retrieve operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
@@ -177,22 +177,22 @@ func handleRetrieve(ctx *Context, cfg config, processorFinder processorFinderFun
 	)
 }
 
-func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.Request.ParentIdentity
+	parentIdentity := ctx.request.ParentIdentity
 	if parentIdentity.IsEmpty() {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsCreateAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsCreateAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Create operation not allowed on "+ctx.Request.Identity.Name, "bahamut",
+				"Create operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
@@ -205,8 +205,8 @@ func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 			return dispatchCreateOperation(
 				ctx,
 				processorFinder,
-				cfg.model.modelManagers[ctx.Request.Version],
-				cfg.model.unmarshallers[ctx.Request.Identity],
+				cfg.model.modelManagers[ctx.request.Version],
+				cfg.model.unmarshallers[ctx.request.Identity],
 				cfg.security.requestAuthenticators,
 				cfg.security.authorizers,
 				pusherFunc,
@@ -219,17 +219,17 @@ func handleCreate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 	)
 }
 
-func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsUpdateAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsUpdateAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity) || !ctx.request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Update operation not allowed on "+ctx.Request.Identity.Name, "bahamut",
+				"Update operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
@@ -242,8 +242,8 @@ func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 			return dispatchUpdateOperation(
 				ctx,
 				processorFinder,
-				cfg.model.modelManagers[ctx.Request.Version],
-				cfg.model.unmarshallers[ctx.Request.Identity],
+				cfg.model.modelManagers[ctx.request.Version],
+				cfg.model.unmarshallers[ctx.request.Identity],
 				cfg.security.requestAuthenticators,
 				cfg.security.authorizers,
 				pusherFunc,
@@ -256,17 +256,17 @@ func handleUpdate(ctx *Context, cfg config, processorFinder processorFinderFunc,
 	)
 }
 
-func handleDelete(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsDeleteAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity) || !ctx.Request.ParentIdentity.IsEmpty() {
+	if !elemental.IsDeleteAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity) || !ctx.request.ParentIdentity.IsEmpty() {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Delete operation not allowed on "+ctx.Request.Identity.Name, "bahamut",
+				"Delete operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
@@ -291,22 +291,22 @@ func handleDelete(ctx *Context, cfg config, processorFinder processorFinderFunc,
 	)
 }
 
-func handleInfo(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.Request.ParentIdentity
+	parentIdentity := ctx.request.ParentIdentity
 	if parentIdentity.IsEmpty() {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsInfoAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsInfoAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Info operation not allowed on "+ctx.Request.Identity.Category, "bahamut",
+				"Info operation not allowed on "+ctx.request.Identity.Category, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)
@@ -329,22 +329,22 @@ func handleInfo(ctx *Context, cfg config, processorFinder processorFinderFunc, p
 	)
 }
 
-func handlePatch(ctx *Context, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
+func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
 
-	response = elemental.NewResponse(ctx.Request)
+	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.Request.ParentIdentity
+	parentIdentity := ctx.request.ParentIdentity
 	if parentIdentity.IsEmpty() {
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsPatchAllowed(cfg.model.modelManagers[ctx.Request.Version].Relationships(), ctx.Request.Identity, parentIdentity) {
+	if !elemental.IsPatchAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity) {
 		return makeErrorResponse(
-			ctx.Context(),
+			ctx.ctx,
 			response,
 			elemental.NewError(
 				"Not allowed",
-				"Patch operation not allowed on "+ctx.Request.Identity.Category, "bahamut",
+				"Patch operation not allowed on "+ctx.request.Identity.Category, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
 		)

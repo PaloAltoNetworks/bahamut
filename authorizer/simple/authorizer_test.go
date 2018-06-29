@@ -13,7 +13,7 @@ func TestAuthorizer_NewAuthorizer(t *testing.T) {
 
 	Convey("Given I call NewAuthorizer with one funcs", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
 
 		auth := NewAuthorizer(f1)
 
@@ -28,7 +28,7 @@ func TestAuthorizer_IsAuthorized(t *testing.T) {
 
 	Convey("Given I call NewAuthorizer and a func that says ok", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, nil }
 
 		auth := NewAuthorizer(f1)
 
@@ -66,7 +66,7 @@ func TestAuthorizer_IsAuthorized(t *testing.T) {
 
 	Convey("Given I call NewAuthorizer and a func that returns an error", t, func() {
 
-		f1 := func(*bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, fmt.Errorf("paf") }
+		f1 := func(bahamut.Context) (bahamut.AuthAction, error) { return bahamut.AuthActionOK, fmt.Errorf("paf") }
 
 		auth := NewAuthorizer(f1)
 

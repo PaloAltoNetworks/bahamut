@@ -165,7 +165,7 @@ type mockAuditer struct {
 	sync.Mutex
 }
 
-func (p *mockAuditer) Audit(*Context, error) {
+func (p *mockAuditer) Audit(Context, error) {
 
 	p.Lock()
 	p.nbCalls++
@@ -189,7 +189,7 @@ type mockAuth struct {
 	err     error
 }
 
-func (a *mockAuth) AuthenticateRequest(ctx *Context) (AuthAction, error) {
+func (a *mockAuth) AuthenticateRequest(ctx Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
@@ -201,7 +201,7 @@ func (a *mockAuth) AuthenticateRequest(ctx *Context) (AuthAction, error) {
 	return a.action, nil
 }
 
-func (a *mockAuth) IsAuthorized(ctx *Context) (AuthAction, error) {
+func (a *mockAuth) IsAuthorized(ctx Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
@@ -223,57 +223,57 @@ type mockProcessor struct {
 	events []*elemental.Event
 }
 
-func (p *mockProcessor) ProcessRetrieveMany(ctx *Context) error {
+func (p *mockProcessor) ProcessRetrieveMany(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessRetrieve(ctx *Context) error {
+func (p *mockProcessor) ProcessRetrieve(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessCreate(ctx *Context) error {
+func (p *mockProcessor) ProcessCreate(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessUpdate(ctx *Context) error {
+func (p *mockProcessor) ProcessUpdate(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessDelete(ctx *Context) error {
+func (p *mockProcessor) ProcessDelete(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessPatch(ctx *Context) error {
+func (p *mockProcessor) ProcessPatch(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err
 }
 
-func (p *mockProcessor) ProcessInfo(ctx *Context) error {
+func (p *mockProcessor) ProcessInfo(ctx Context) error {
 
-	ctx.OutputData = p.output
+	ctx.SetOutputData(p.output)
 	ctx.EnqueueEvents(p.events...)
 
 	return p.err

@@ -17,10 +17,10 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a redirect and a response", t, func() {
 
-		ctx := NewContext()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 
-		ctx.Redirect = "http://ici"
+		ctx.redirect = "http://ici"
 
 		Convey("When I call makeResponse", func() {
 
@@ -34,14 +34,14 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a a count and a response", t, func() {
 
-		ctx := NewContext()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 
-		ctx.CountTotal = 42
+		ctx.countTotal = 42
 
 		Convey("When I call makeResponse on a retrieveMany operation", func() {
 
-			ctx.Request.Operation = elemental.OperationRetrieveMany
+			ctx.request.Operation = elemental.OperationRetrieveMany
 
 			makeResponse(ctx, response)
 
@@ -52,7 +52,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse on a info operation", func() {
 
-			ctx.Request.Operation = elemental.OperationInfo
+			ctx.request.Operation = elemental.OperationInfo
 
 			makeResponse(ctx, response)
 
@@ -63,7 +63,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse on a create operation", func() {
 
-			ctx.Request.Operation = elemental.OperationCreate
+			ctx.request.Operation = elemental.OperationCreate
 
 			makeResponse(ctx, response)
 
@@ -74,7 +74,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse on a create update", func() {
 
-			ctx.Request.Operation = elemental.OperationUpdate
+			ctx.request.Operation = elemental.OperationUpdate
 
 			makeResponse(ctx, response)
 
@@ -85,7 +85,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse on a create delete", func() {
 
-			ctx.Request.Operation = elemental.OperationDelete
+			ctx.request.Operation = elemental.OperationDelete
 
 			makeResponse(ctx, response)
 
@@ -96,7 +96,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse on a create patch", func() {
 
-			ctx.Request.Operation = elemental.OperationPatch
+			ctx.request.Operation = elemental.OperationPatch
 
 			makeResponse(ctx, response)
 
@@ -108,14 +108,14 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a status code set to 0 and a response", t, func() {
 
-		ctx := NewContext()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
-		ctx.OutputData = []string{}
-		ctx.StatusCode = 0
+		ctx.outputData = []string{}
+		ctx.statusCode = 0
 
 		Convey("When I set the operation to Create and I call makeResponse", func() {
 
-			ctx.Request.Operation = elemental.OperationCreate
+			ctx.request.Operation = elemental.OperationCreate
 
 			makeResponse(ctx, response)
 
@@ -126,7 +126,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I set the operation to Info and I call makeResponse", func() {
 
-			ctx.Request.Operation = elemental.OperationInfo
+			ctx.request.Operation = elemental.OperationInfo
 
 			makeResponse(ctx, response)
 
@@ -137,7 +137,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I set the operation to Retrieve and I call makeResponse", func() {
 
-			ctx.Request.Operation = elemental.OperationRetrieve
+			ctx.request.Operation = elemental.OperationRetrieve
 
 			makeResponse(ctx, response)
 
@@ -148,9 +148,9 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I set the operation to Create, status code created, but no data, and I call makeResponse", func() {
 
-			ctx.Request.Operation = elemental.OperationCreate
-			ctx.StatusCode = http.StatusCreated
-			ctx.OutputData = nil
+			ctx.request.Operation = elemental.OperationCreate
+			ctx.statusCode = http.StatusCreated
+			ctx.outputData = nil
 
 			makeResponse(ctx, response)
 
@@ -161,7 +161,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 	})
 	Convey("Given I have context with messages and a response", t, func() {
 
-		ctx := NewContext()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.AddMessage("hello world")
 
@@ -177,9 +177,9 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with unmarshalable data and a response", t, func() {
 
-		ctx := NewContext()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
-		ctx.OutputData = testmodel.NewUnmarshalableList()
+		ctx.outputData = testmodel.NewUnmarshalableList()
 
 		Convey("When I call makeResponse", func() {
 
@@ -258,8 +258,8 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
 
-		ctx := NewContext()
-		ctx.Request = elemental.NewRequest()
+		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
 		ctx.ctx = gctx
 
 		response := elemental.NewResponse(elemental.NewRequest())
@@ -340,11 +340,11 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 			Convey("When I call handleRetrieveMany on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationRetrieveMany
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationRetrieveMany
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleRetrieveMany(ctx, cfg, pf, nil)
 
@@ -360,11 +360,11 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 			Convey("When I call handleRetrieveMany on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationRetrieveMany
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationRetrieveMany
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleRetrieveMany(ctx, cfg, pf, nil)
 
@@ -401,11 +401,11 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 			Convey("When I call handleRetrieve on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationRetrieve
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationRetrieve
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleRetrieve(ctx, cfg, pf, nil)
 
@@ -421,11 +421,11 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 			Convey("When I call handleRetrieve on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationRetrieve
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationRetrieve
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleRetrieve(ctx, cfg, pf, nil)
 
@@ -462,11 +462,11 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 			Convey("When I call handleCreate on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationCreate
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationCreate
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleCreate(ctx, cfg, pf, nil)
 
@@ -482,11 +482,11 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 			Convey("When I call handleCreate on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationCreate
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationCreate
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleCreate(ctx, cfg, pf, nil)
 
@@ -523,11 +523,11 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 			Convey("When I call handleUpdate on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationUpdate
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationUpdate
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleUpdate(ctx, cfg, pf, nil)
 
@@ -543,11 +543,11 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 			Convey("When I call handleUpdate on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationUpdate
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationUpdate
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleUpdate(ctx, cfg, pf, nil)
 
@@ -584,11 +584,11 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 			Convey("When I call handleDelete on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationDelete
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationDelete
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleDelete(ctx, cfg, pf, nil)
 
@@ -604,11 +604,11 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 			Convey("When I call handleDelete on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationDelete
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationDelete
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleDelete(ctx, cfg, pf, nil)
 
@@ -645,11 +645,11 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 			Convey("When I call handleInfo on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationInfo
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationInfo
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handleInfo(ctx, cfg, pf, nil)
 
@@ -665,11 +665,11 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 			Convey("When I call handleInfo on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationInfo
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationInfo
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handleInfo(ctx, cfg, pf, nil)
 
@@ -706,11 +706,11 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 			Convey("When I call handlePatch on valid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationPatch
-				ctx.StatusCode = http.StatusAccepted
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationPatch
+				ctx.statusCode = http.StatusAccepted
 
 				resp := handlePatch(ctx, cfg, pf, nil)
 
@@ -726,11 +726,11 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 			Convey("When I call handlePatch on invalid api call", func() {
 
-				ctx := NewContext()
-				ctx.Request = elemental.NewRequest()
-				ctx.Request.Identity = testmodel.UserIdentity
-				ctx.Request.Operation = elemental.OperationPatch
-				ctx.Request.ParentIdentity = testmodel.UserIdentity
+				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx.request = elemental.NewRequest()
+				ctx.request.Identity = testmodel.UserIdentity
+				ctx.request.Operation = elemental.OperationPatch
+				ctx.request.ParentIdentity = testmodel.UserIdentity
 
 				resp := handlePatch(ctx, cfg, pf, nil)
 
