@@ -7,7 +7,6 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/http"
 
 	"go.aporeto.io/elemental"
@@ -135,8 +134,6 @@ type Context interface {
 
 	// Metadata returns the opaque data set by using SetMetadata().
 	Metadata(key interface{}) interface{}
-
-	fmt.Stringer
 }
 
 // Processor is the interface for a Processor Unit

@@ -6,19 +6,19 @@ package bahamut
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestContext_MakeContext(t *testing.T) {
+func TestContext_NewContext(t *testing.T) {
 
-	Convey("Given I create Context from a request with pagination info", t, func() {
+	Convey("Given I call newContext", t, func() {
 
 		url, _ := url.Parse("http://link.com/path?page=1&per_page=10")
 		req := &http.Request{
@@ -34,6 +34,36 @@ func TestContext_MakeContext(t *testing.T) {
 
 			So(c.request.Parameters.Get("page"), ShouldEqual, "1")
 			So(c.request.Parameters.Get("per_page"), ShouldEqual, "10")
+			So(c.ctx, ShouldEqual, context.TODO())
+			So(c, ShouldImplement, (*Context)(nil))
+		})
+	})
+
+	Convey("Given I call newContext with a nil context", t, func() {
+
+		Convey("Then it should panic", func() {
+			So(func() { newContext(nil, nil) }, ShouldPanicWith, "nil context")
+		})
+	})
+
+	Convey("Given I call NewContext", t, func() {
+
+		url, _ := url.Parse("http://link.com/path?page=1&per_page=10")
+		req := &http.Request{
+			Host:   "link.com",
+			URL:    url,
+			Method: http.MethodGet,
+		}
+		request, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
+
+		c := NewContext(context.TODO(), request)
+
+		Convey("Then it should be correctly initialized", func() {
+
+			So(c.Request().Parameters.Get("page"), ShouldEqual, "1")
+			So(c.Request().Parameters.Get("per_page"), ShouldEqual, "10")
+			So(c.Context(), ShouldEqual, context.TODO())
+			So(c.Metadata("hello"), ShouldBeNil)
 		})
 	})
 }
@@ -76,36 +106,6 @@ func TestContext_Events(t *testing.T) {
 	})
 }
 
-func TestContext_String(t *testing.T) {
-
-	Convey("Given I have a Context, Info, Count, and Page", t, func() {
-
-		req := &elemental.Request{
-			Namespace:      "/thens",
-			Parameters:     url.Values{"hello": []string{"world"}},
-			Headers:        http.Header{"header": []string{"h1"}},
-			Identity:       elemental.EmptyIdentity,
-			ParentID:       "xxxx",
-			ParentIdentity: elemental.EmptyIdentity,
-			Operation:      elemental.OperationCreate,
-			Version:        12,
-		}
-
-		ctx := newContext(context.TODO(), elemental.NewRequest())
-		ctx.request = req
-		ctx.count = 10
-
-		Convey("When I call the String method", func() {
-
-			s := ctx.String()
-
-			Convey("Then the string should be correct", func() {
-				So(s, ShouldEqual, fmt.Sprintf("<context id:%s request:<request id: operation:create namespace:/thens recursive:false identity:<Identity |> objectid: parentidentity:<Identity |> parentid:xxxx version:12> totalcount:10>", ctx.Identifier()))
-			})
-		})
-	})
-}
-
 func TestContext_Duplicate(t *testing.T) {
 
 	Convey("Given I have a Context, Info, Count, and Page", t, func() {
@@ -120,13 +120,13 @@ func TestContext_Duplicate(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
-		ctx.request = req
-		ctx.count = 10
-		ctx.inputData = "input"
-		ctx.outputData = "output"
-		ctx.statusCode = 42
+		ctx := newContext(context.TODO(), req)
+		ctx.SetCount(10)
+		ctx.SetInputData("input")
+		ctx.SetInputData("output")
+		ctx.SetStatusCode(42)
 		ctx.AddMessage("a")
+		ctx.SetRedirect("laba")
 		ctx.AddMessage("b")
 		ctx.SetMetadata("hello", "world")
 		ctx.SetClaims([]string{"ouais=yes"})
@@ -136,15 +136,16 @@ func TestContext_Duplicate(t *testing.T) {
 			ctx2 := ctx.Duplicate()
 
 			Convey("Then the duplicated context should be correct", func() {
-				So(ctx.count, ShouldEqual, ctx2.(*bcontext).count)
+				So(ctx.count, ShouldEqual, ctx2.Count())
 				So(ctx.Metadata("hello").(string), ShouldEqual, "world")
 				So(ctx.inputData, ShouldEqual, ctx2.InputData())
-				So(ctx.outputData, ShouldEqual, ctx2.(*bcontext).outputData)
+				So(ctx.outputData, ShouldEqual, ctx2.OutputData())
 				So(ctx.request.Namespace, ShouldEqual, ctx2.Request().Namespace)
 				So(ctx.request.ParentID, ShouldEqual, ctx2.Request().ParentID)
-				So(ctx.statusCode, ShouldEqual, ctx2.(*bcontext).statusCode)
+				So(ctx.statusCode, ShouldEqual, ctx2.StatusCode())
 				So(ctx.claims, ShouldResemble, ctx2.Claims())
 				So(ctx.claimsMap, ShouldResemble, ctx2.ClaimsMap())
+				So(ctx.redirect, ShouldResemble, ctx2.Redirect())
 				So(ctx.messages, ShouldResemble, ctx2.(*bcontext).messages)
 			})
 		})

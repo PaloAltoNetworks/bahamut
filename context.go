@@ -6,7 +6,6 @@ package bahamut
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"go.aporeto.io/elemental"
@@ -187,13 +186,4 @@ func (c *bcontext) Duplicate() Context {
 	}
 
 	return c2
-}
-
-func (c *bcontext) String() string {
-
-	return fmt.Sprintf("<context id:%s request:%s totalcount:%d>",
-		c.Identifier(),
-		c.request,
-		c.count,
-	)
 }
