@@ -172,6 +172,7 @@ func (c *bcontext) Duplicate() Context {
 	c2.statusCode = c.statusCode
 	c2.outputData = c.outputData
 	c2.claims = append(c2.claims, c.claims...)
+	c2.redirect = c.redirect
 	c2.messages = append(c2.messages, c.messages...)
 
 	for k, v := range c.claimsMap {
