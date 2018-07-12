@@ -5,7 +5,7 @@ PROJECT_SHA ?= $(shell git rev-parse HEAD)
 PROJECT_VERSION ?= $(lastword $(shell git tag --sort version:refname --merged $(shell git rev-parse --abbrev-ref HEAD)))
 PROJECT_RELEASE ?= dev
 
-ci: init lint test
+ci: init lint test codecov
 
 init:
 	dep ensure -v
@@ -33,3 +33,6 @@ test:
 		go test -race -coverprofile=profile.out -covermode=atomic "$$d"; \
 		if [ -f profile.out ]; then cat profile.out >> coverage.txt; rm -f profile.out; fi; \
 	done;
+
+codecov:
+	bash <(curl -s https://codecov.io/bash)

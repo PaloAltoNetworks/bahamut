@@ -18,7 +18,4 @@ run:
       export GOPATH=$PWD/go:$GOPATH
 
       cd go/src/go.aporeto.io/bahamut
-      dep ensure -v
-      make lint
-      make test
-      bash <(curl -s https://codecov.io/bash)
+      make ci
