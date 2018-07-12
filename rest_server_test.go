@@ -62,11 +62,7 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make a secure server", func() {
-			srv, err := c.createSecureHTTPServer(cfg.restServer.listenAddress)
-
-			Convey("Then error should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			srv := c.createSecureHTTPServer(cfg.restServer.listenAddress)
 
 			Convey("Then the server should be correctly initialized", func() {
 				So(srv, ShouldNotBeNil)
@@ -85,11 +81,7 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 		c := newRestServer(cfg, bone.New(), nil, nil)
 
 		Convey("When I make an unsecure server", func() {
-			srv, err := c.createUnsecureHTTPServer(cfg.restServer.listenAddress)
-
-			Convey("Then error should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+			srv := c.createUnsecureHTTPServer(cfg.restServer.listenAddress)
 
 			Convey("Then the server should be correctly initialized", func() {
 				So(srv, ShouldNotBeNil)

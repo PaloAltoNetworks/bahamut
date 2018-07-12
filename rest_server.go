@@ -41,7 +41,7 @@ func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 // createSecureHTTPServer returns the main HTTP Server.
 //
 // It will return an error if any.
-func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error) {
+func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 
 	tlsConfig := &tls.Config{
 		ClientAuth:               a.cfg.tls.authType,
@@ -76,17 +76,17 @@ func (a *restServer) createSecureHTTPServer(address string) (*http.Server, error
 
 	server.SetKeepAlivesEnabled(!a.cfg.restServer.disableKeepalive)
 
-	return server, nil
+	return server
 }
 
 // createUnsecureHTTPServer returns a insecure HTTP Server.
 //
 // It will return an error if any.
-func (a *restServer) createUnsecureHTTPServer(address string) (*http.Server, error) {
+func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 
 	return &http.Server{
 		Addr: address,
-	}, nil
+	}
 }
 
 // ServeHTTP is the http handler that will be used if an only if a.config.RateLimiting.RateLimiter
@@ -207,12 +207,9 @@ func (a *restServer) start(ctx context.Context) {
 
 	var err error
 	if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
-		a.server, err = a.createSecureHTTPServer(a.cfg.restServer.listenAddress)
+		a.server = a.createSecureHTTPServer(a.cfg.restServer.listenAddress)
 	} else {
-		a.server, err = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
-	}
-	if err != nil {
-		zap.L().Fatal("Unable to create api server", zap.Error(err))
+		a.server = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
 	}
 
 	a.server.Handler = a

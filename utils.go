@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func handleRecoveredPanic(ctx context.Context, r interface{}, response *elemental.Response, recover bool) error {
+func handleRecoveredPanic(ctx context.Context, r interface{}, recover bool) error {
 
 	if r == nil {
 		return nil
@@ -49,7 +49,7 @@ func handleRecoveredPanic(ctx context.Context, r interface{}, response *elementa
 	return err
 }
 
-func processError(ctx context.Context, err error, response *elemental.Response) (outError elemental.Errors) {
+func processError(ctx context.Context, err error) (outError elemental.Errors) {
 
 	span := opentracing.SpanFromContext(ctx)
 

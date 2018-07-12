@@ -65,7 +65,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 
 func makeErrorResponse(ctx context.Context, response *elemental.Response, err error) *elemental.Response {
 
-	outError := processError(ctx, err, response)
+	outError := processError(ctx, err)
 
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {
@@ -75,9 +75,9 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	return response
 }
 
-func handleEventualPanic(ctx context.Context, response *elemental.Response, c chan error, reco bool) {
+func handleEventualPanic(ctx context.Context, c chan error, reco bool) {
 
-	if err := handleRecoveredPanic(ctx, recover(), response, reco); err != nil {
+	if err := handleRecoveredPanic(ctx, recover(), reco); err != nil {
 		c <- err
 	}
 }
@@ -87,7 +87,7 @@ func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, recover
 	e := make(chan error)
 
 	go func() {
-		defer handleEventualPanic(ctx.ctx, r, e, recover)
+		defer handleEventualPanic(ctx.ctx, e, recover)
 		e <- d()
 	}()
 

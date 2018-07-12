@@ -413,6 +413,10 @@ func dispatchInfoOperation(
 		return
 	}
 
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
+	}
+
 	audit(auditer, ctx, nil)
 
 	return

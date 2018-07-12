@@ -11,7 +11,7 @@ func TestLocalPubSub_NewPubSubServer(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := newlocalPubSub(nil)
+		ps := newlocalPubSub()
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
 			So(ps.subscribers, ShouldHaveSameTypeAs, map[string][]chan *Publication{})
@@ -23,7 +23,7 @@ func TestLocalPubSub_ConnectDisconnect(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := newlocalPubSub(nil)
+		ps := newlocalPubSub()
 
 		Convey("When I connect", func() {
 
@@ -44,7 +44,7 @@ func TestLocalPubSub_RegisterUnregister(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := newlocalPubSub(nil)
+		ps := newlocalPubSub()
 		ps.Connect()
 		defer func() { _ = ps.Disconnect() }()
 
@@ -85,7 +85,7 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer", t, func() {
 
-		ps := newlocalPubSub(nil)
+		ps := newlocalPubSub()
 		ps.Connect()
 		defer func() { _ = ps.Disconnect() }()
 

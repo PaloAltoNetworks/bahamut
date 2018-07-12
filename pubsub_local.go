@@ -19,7 +19,7 @@ type localPubSub struct {
 }
 
 // newlocalPubSub returns a new localPubSub.
-func newlocalPubSub(services []string) *localPubSub {
+func newlocalPubSub() *localPubSub {
 
 	return &localPubSub{
 		subscribers:  map[string][]chan *Publication{},

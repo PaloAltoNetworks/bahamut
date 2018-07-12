@@ -51,9 +51,9 @@ func NewNATSPubSubClientWithTLSAuth(natsURL string, clusterID string, clientID s
 }
 
 // NewLocalPubSubClient returns a PubSubClient backed by local channels.
-func NewLocalPubSubClient(services []string) PubSubClient {
+func NewLocalPubSubClient() PubSubClient {
 
-	return newlocalPubSub(nil)
+	return newlocalPubSub()
 }
 
 // A Waiter is the interface returned by Server.Connect

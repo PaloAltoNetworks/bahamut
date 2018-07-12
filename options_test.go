@@ -47,7 +47,7 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptPushServer should work", t, func() {
-		srv := NewLocalPubSubClient(nil)
+		srv := NewLocalPubSubClient()
 		t := "topic"
 		OptPushServer(srv, t)(&c)
 		So(c.pushServer.enabled, ShouldEqual, true)

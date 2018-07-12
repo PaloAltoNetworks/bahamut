@@ -37,7 +37,7 @@ func TestBahamut_New(t *testing.T) {
 		zc, obs := observer.New(zapcore.WarnLevel)
 		zap.ReplaceGlobals(zap.New(zc))
 
-		New(OptRestServer(":123"), OptPushServer(NewLocalPubSubClient(nil), "coucou"), OptModel(map[int]elemental.ModelManager{0: testmodel.Manager()}))
+		New(OptRestServer(":123"), OptPushServer(NewLocalPubSubClient(), "coucou"), OptModel(map[int]elemental.ModelManager{0: testmodel.Manager()}))
 
 		Convey("Then some warnings should be printed", func() {
 			logs := obs.AllUntimed()
