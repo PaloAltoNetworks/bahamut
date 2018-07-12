@@ -5,7 +5,10 @@ PROJECT_SHA ?= $(shell git rev-parse HEAD)
 PROJECT_VERSION ?= $(lastword $(shell git tag --sort version:refname --merged $(shell git rev-parse --abbrev-ref HEAD)))
 PROJECT_RELEASE ?= dev
 
-ci: lint test
+ci: init lint test
+
+init:
+	dep ensure -v
 
 lint:
 	golangci-lint run \
