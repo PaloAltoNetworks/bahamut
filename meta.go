@@ -73,7 +73,7 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 			for parent := range relationship.AllowsRetrieveMany {
 
 				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", modelManager.IdentityFromName(parent).Private)
+					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", identity.Private)
 				} else {
 					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "GET", identity.Private)
 				}
