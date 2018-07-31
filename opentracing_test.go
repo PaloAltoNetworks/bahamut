@@ -1,10 +1,10 @@
 package bahamut
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"go.aporeto.io/elemental"
@@ -177,29 +177,24 @@ func TestTracing_traceRequest(t *testing.T) {
 
 	Convey("Given I have a request", t, func() {
 
-		req := elemental.NewRequest()
-		req.Parameters = url.Values{
-			"token": {"1", "2"},
+		buf := bytes.NewBuffer([]byte("the data"))
+		hreq, err := http.NewRequest("POST", "https://toto.com/v/2/tasks/pid/users?recursive=true&override=true&page=3&pagesize=30&order=a&order=b&token=1&token=2", buf)
+		if err != nil {
+			panic(err)
 		}
-		req.Headers = http.Header{
-			"authorization": {"3", "4"},
+		hreq.Header.Add("Authorization", "secretA")
+		hreq.Header.Add("Authorization", "secretB")
+
+		req, err := elemental.NewRequestFromHTTPRequest(hreq, testmodel.Manager())
+		if err != nil {
+			panic(err)
 		}
-		req.Version = 2
-		req.Identity = testmodel.UserIdentity
-		req.Recursive = true
-		req.Operation = elemental.OperationCreate
-		req.OverrideProtection = true
 		req.ExternalTrackingID = "wee"
 		req.ExternalTrackingType = "yeah"
-		req.Namespace = "/a"
-		req.ObjectID = "id"
-		req.ParentID = "pid"
-		req.ParentIdentity = testmodel.TaskIdentity
-		req.Page = 3
-		req.PageSize = 30
 		req.ClientIP = "127.0.0.1"
-		req.Order = []string{"a", "b"}
-		req.Data = []byte("the data")
+		req.Namespace = "/a"
+		// req.Data =
+		// req.Order = []string{"a", "b"}
 
 		tracer := &mockTracer{}
 		ts := newMockSpan(tracer)
@@ -228,23 +223,24 @@ func TestTracing_traceRequest(t *testing.T) {
 				So(len(span.fields), ShouldEqual, 8)
 				So(span.fields[0].String(), ShouldEqual, "req.page.number:3")
 				So(span.fields[1].String(), ShouldEqual, "req.page.size:30")
-				So(span.fields[2].String(), ShouldEqual, fmt.Sprintf("req.headers:map[authorization:%s]", snipSlice))
+				So(span.fields[2].String(), ShouldEqual, fmt.Sprintf("req.headers:map[Authorization:%s]", snipSlice))
 				So(span.fields[3].String(), ShouldEqual, "req.claims:{}")
 				So(span.fields[4].String(), ShouldEqual, "req.client_ip:127.0.0.1")
-				So(span.fields[5].String(), ShouldEqual, fmt.Sprintf("req.parameters:map[token:%s]", snipSlice))
+				So(span.fields[5].String(), ShouldNotContainSubstring, "secretA")
+				So(span.fields[5].String(), ShouldNotContainSubstring, "secretB")
+				So(span.fields[5].String(), ShouldContainSubstring, "[[snip]]")
 				So(span.fields[6].String(), ShouldEqual, "req.order_by:[a b]")
 				So(span.fields[7].String(), ShouldEqual, "req.payload:the data")
 			})
 
 			Convey("Then the span tags should be correct", func() {
-				So(len(span.tags), ShouldEqual, 12)
+				So(len(span.tags), ShouldEqual, 11)
 				So(span.tags["req.parent.identity"], ShouldEqual, "task")
 				So(span.tags["req.id"], ShouldEqual, req.RequestID)
 				So(span.tags["req.recursive"], ShouldBeTrue)
 				So(span.tags["req.external_tracking_id"], ShouldEqual, "wee")
 				So(span.tags["req.external_tracking_type"], ShouldEqual, "yeah")
 				So(span.tags["req.namespace"], ShouldEqual, "/a")
-				So(span.tags["req.object.id"], ShouldEqual, "id")
 				So(span.tags["req.api_version"], ShouldEqual, 2)
 				So(span.tags["req.identity"], ShouldEqual, "user")
 				So(span.tags["req.operation"], ShouldEqual, "create")

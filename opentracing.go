@@ -74,7 +74,7 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 
 	// Remove sensitive information from parameters.
 	safeParameters := url.Values{}
-	for k, v := range r.Parameters {
+	for k, v := range r.HTTPRequest().URL.Query() {
 		lk := strings.ToLower(k)
 		if lk == "token" || lk == "password" {
 			safeParameters[k] = snipSlice
