@@ -261,7 +261,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				makeErrorResponse(
 					req.Context(),
 					elemental.NewResponse(elemental.NewRequest()),
-					elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest),
+					err,
 				),
 			)
 			return
