@@ -114,7 +114,12 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity, elemental.OperationRetrieveMany) {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		parentIdentity,
+		elemental.OperationRetrieveMany,
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -148,7 +153,12 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 
 	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, elemental.RootIdentity, elemental.OperationRetrieve) || !ctx.request.ParentIdentity.IsEmpty() {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		elemental.RootIdentity,
+		elemental.OperationRetrieve,
+	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -186,7 +196,12 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity, elemental.OperationCreate) {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		parentIdentity,
+		elemental.OperationCreate,
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -223,7 +238,12 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 
 	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, elemental.RootIdentity, elemental.OperationUpdate) || !ctx.request.ParentIdentity.IsEmpty() {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		elemental.RootIdentity,
+		elemental.OperationUpdate,
+	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -260,7 +280,12 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 
 	response = elemental.NewResponse(ctx.request)
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, elemental.RootIdentity, elemental.OperationDelete) || !ctx.request.ParentIdentity.IsEmpty() {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		elemental.RootIdentity,
+		elemental.OperationDelete,
+	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -300,7 +325,12 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity, elemental.OperationInfo) {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		parentIdentity,
+		elemental.OperationInfo,
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -338,7 +368,12 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 		parentIdentity = elemental.RootIdentity
 	}
 
-	if !elemental.IsOperationAllowed(cfg.model.modelManagers[ctx.request.Version].Relationships(), ctx.request.Identity, parentIdentity, elemental.OperationPatch) {
+	if !elemental.IsOperationAllowed(
+		cfg.model.modelManagers[ctx.request.Version].Relationships(),
+		ctx.request.Identity,
+		parentIdentity,
+		elemental.OperationPatch,
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
