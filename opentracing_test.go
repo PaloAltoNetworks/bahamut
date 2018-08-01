@@ -37,7 +37,7 @@ func TestTracing_extractClaims(t *testing.T) {
 
 	Convey("Given create a request from an http request", t, func() {
 
-		req, _ := http.NewRequest(http.MethodGet, "http://server/lists/xx/tasks?p=v", nil)
+		req, _ := http.NewRequest(http.MethodGet, "http://server/lists/xx/tasks", nil)
 		req.Header.Add("X-Namespace", "ns")
 		req.Header.Add("Authorization", "Bearer "+token)
 		r, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
@@ -178,7 +178,7 @@ func TestTracing_traceRequest(t *testing.T) {
 	Convey("Given I have a request", t, func() {
 
 		buf := bytes.NewBuffer([]byte("the data"))
-		hreq, err := http.NewRequest("POST", "https://toto.com/v/2/tasks/pid/users?recursive=true&override=true&page=3&pagesize=30&order=a&order=b&token=1&token=2", buf)
+		hreq, err := http.NewRequest("POST", "https://toto.com/v/2/tasks/pid/users?recursive=true&override=true&page=3&pagesize=30&order=a&order=b", buf)
 		if err != nil {
 			panic(err)
 		}
@@ -193,8 +193,8 @@ func TestTracing_traceRequest(t *testing.T) {
 		req.ExternalTrackingType = "yeah"
 		req.ClientIP = "127.0.0.1"
 		req.Namespace = "/a"
-		// req.Data =
-		// req.Order = []string{"a", "b"}
+		// Add the param after calling NewRequestFromHTTPRequest as this is not valid params from specs.
+		req.Parameters["token"] = elemental.NewParameter(elemental.ParameterTypeString, "1", "2")
 
 		tracer := &mockTracer{}
 		ts := newMockSpan(tracer)

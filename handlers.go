@@ -109,15 +109,10 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 
 	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		parentIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationRetrieveMany,
 	) {
 		return makeErrorResponse(
@@ -156,9 +151,9 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		elemental.RootIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationRetrieve,
-	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -191,15 +186,10 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 
 	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		parentIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationCreate,
 	) {
 		return makeErrorResponse(
@@ -241,9 +231,9 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		elemental.RootIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationUpdate,
-	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -283,9 +273,9 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		elemental.RootIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationDelete,
-	) || !ctx.request.ParentIdentity.IsEqual(elemental.RootIdentity) {
+	) {
 		return makeErrorResponse(
 			ctx.ctx,
 			response,
@@ -320,15 +310,10 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 
 	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		parentIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationInfo,
 	) {
 		return makeErrorResponse(
@@ -363,15 +348,10 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 
 	response = elemental.NewResponse(ctx.request)
 
-	parentIdentity := ctx.request.ParentIdentity
-	if parentIdentity.IsEmpty() {
-		parentIdentity = elemental.RootIdentity
-	}
-
 	if !elemental.IsOperationAllowed(
 		cfg.model.modelManagers[ctx.request.Version].Relationships(),
 		ctx.request.Identity,
-		parentIdentity,
+		ctx.request.ParentIdentity,
 		elemental.OperationPatch,
 	) {
 		return makeErrorResponse(

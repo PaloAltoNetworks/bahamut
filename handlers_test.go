@@ -341,6 +341,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 				ctx := newContext(context.TODO(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
+				ctx.request.ParentIdentity = elemental.RootIdentity
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationRetrieveMany
 				ctx.statusCode = http.StatusAccepted
@@ -405,6 +406,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationRetrieve
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handleRetrieve(ctx, cfg, pf, nil)
 
@@ -466,6 +468,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationCreate
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handleCreate(ctx, cfg, pf, nil)
 
@@ -527,6 +530,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationUpdate
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handleUpdate(ctx, cfg, pf, nil)
 
@@ -588,6 +592,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationDelete
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handleDelete(ctx, cfg, pf, nil)
 
@@ -649,6 +654,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationInfo
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handleInfo(ctx, cfg, pf, nil)
 
@@ -710,6 +716,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationPatch
 				ctx.statusCode = http.StatusAccepted
+				ctx.request.ParentIdentity = elemental.RootIdentity
 
 				resp := handlePatch(ctx, cfg, pf, nil)
 
