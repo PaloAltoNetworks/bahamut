@@ -54,23 +54,23 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 				continue
 			}
 
-			if len(relationship.AllowsCreate) > 0 {
+			if len(relationship.Create) > 0 {
 				addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
 			}
 
-			if len(relationship.AllowsRetrieve) > 0 {
+			if len(relationship.Retrieve) > 0 {
 				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "GET", identity.Private)
 			}
 
-			if len(relationship.AllowsDelete) > 0 {
+			if len(relationship.Delete) > 0 {
 				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "DELETE", identity.Private)
 			}
 
-			if len(relationship.AllowsUpdate) > 0 {
+			if len(relationship.Update) > 0 {
 				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "PUT", identity.Private)
 			}
 
-			for parent := range relationship.AllowsRetrieveMany {
+			for parent := range relationship.RetrieveMany {
 
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", identity.Private)
@@ -79,7 +79,7 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 				}
 			}
 
-			for parent := range relationship.AllowsCreate {
+			for parent := range relationship.Create {
 
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)

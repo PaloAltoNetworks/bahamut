@@ -20,7 +20,7 @@ func TestContext_NewContext(t *testing.T) {
 
 	Convey("Given I call newContext", t, func() {
 
-		url, _ := url.Parse("http://link.com/path?page=1&per_page=10")
+		url, _ := url.Parse("http://link.com/path?page=1&pagesize=10")
 		req := &http.Request{
 			Host:   "link.com",
 			URL:    url,
@@ -32,8 +32,8 @@ func TestContext_NewContext(t *testing.T) {
 
 		Convey("Then it should be correctly initialized", func() {
 
-			So(c.request.Parameters.Get("page"), ShouldEqual, "1")
-			So(c.request.Parameters.Get("per_page"), ShouldEqual, "10")
+			So(c.request.Page, ShouldEqual, 1)
+			So(c.request.PageSize, ShouldEqual, 10)
 			So(c.ctx, ShouldEqual, context.TODO())
 			So(c, ShouldImplement, (*Context)(nil))
 		})
@@ -48,7 +48,7 @@ func TestContext_NewContext(t *testing.T) {
 
 	Convey("Given I call NewContext", t, func() {
 
-		url, _ := url.Parse("http://link.com/path?page=1&per_page=10")
+		url, _ := url.Parse("http://link.com/path?page=1&pagesize=10")
 		req := &http.Request{
 			Host:   "link.com",
 			URL:    url,
@@ -60,8 +60,8 @@ func TestContext_NewContext(t *testing.T) {
 
 		Convey("Then it should be correctly initialized", func() {
 
-			So(c.Request().Parameters.Get("page"), ShouldEqual, "1")
-			So(c.Request().Parameters.Get("per_page"), ShouldEqual, "10")
+			So(c.Request().Page, ShouldEqual, 1)
+			So(c.Request().PageSize, ShouldEqual, 10)
 			So(c.Context(), ShouldEqual, context.TODO())
 			So(c.Metadata("hello"), ShouldBeNil)
 		})
@@ -112,7 +112,6 @@ func TestContext_Duplicate(t *testing.T) {
 
 		req := &elemental.Request{
 			Namespace:      "/thens",
-			Parameters:     url.Values{"hello": []string{"world"}},
 			Headers:        http.Header{"header": []string{"h1"}},
 			Identity:       elemental.EmptyIdentity,
 			ParentID:       "xxxx",

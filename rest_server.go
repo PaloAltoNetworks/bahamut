@@ -254,6 +254,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
 
+		// TODO: find a way to support tracing in case of bad request here.
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 		if err != nil {
 			writeHTTPResponse(
@@ -261,7 +262,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				makeErrorResponse(
 					req.Context(),
 					elemental.NewResponse(elemental.NewRequest()),
-					elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest),
+					err,
 				),
 			)
 			return
