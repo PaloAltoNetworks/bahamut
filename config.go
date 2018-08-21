@@ -13,8 +13,11 @@ import (
 	"go.aporeto.io/elemental"
 )
 
-// HealthServerFunc is the type used by the Health Server to check the health of the server
+// HealthServerFunc is the type used by the Health Server to check the health of the server.
 type HealthServerFunc func() error
+
+// HealthStatFunc is the type used by the Health Server to return additional custom health info.
+type HealthStatFunc func(http.ResponseWriter, *http.Request)
 
 // A config represents the configuration of Bahamut.
 type config struct {
@@ -49,6 +52,7 @@ type config struct {
 		writeTimeout  time.Duration
 		idleTimeout   time.Duration
 		enabled       bool
+		customStats   map[string]HealthStatFunc
 	}
 
 	profilingServer struct {

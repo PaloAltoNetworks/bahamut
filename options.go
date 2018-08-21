@@ -3,7 +3,9 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"go.aporeto.io/elemental"
@@ -102,6 +104,39 @@ func OptHealthServer(listen string, handler HealthServerFunc) Option {
 		c.healthServer.enabled = true
 		c.healthServer.listenAddress = listen
 		c.healthServer.healthHandler = handler
+	}
+}
+
+// OptHealthCustomStat configures additional stats handler.
+//
+// The healt server must be enabled using OptHealthServer or this option
+// will have no effect. Parameter handlers is a map where the key
+// will be used as the path in the health server. They must not start
+// with an `_`, contain any `/`, be empty or the function will panic. If key
+// contains a nil function, it will also panic.
+func OptHealthCustomStat(handlers map[string]HealthStatFunc) Option {
+
+	for k, f := range handlers {
+
+		if k == "" {
+			panic("key must not be empty")
+		}
+
+		if strings.HasPrefix(k, "_") {
+			panic(fmt.Sprintf("key '%s' must not start with an '_'", k))
+		}
+
+		if strings.Contains(k, "/") {
+			panic(fmt.Sprintf("key '%s' must not contain with any '/'", k))
+		}
+
+		if f == nil {
+			panic(fmt.Sprintf("stat function for key '%s' must not be nil", k))
+		}
+	}
+
+	return func(c *config) {
+		c.healthServer.customStats = handlers
 	}
 }
 

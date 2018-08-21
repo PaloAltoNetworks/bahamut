@@ -84,6 +84,33 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.healthServer.idleTimeout, ShouldEqual, 3*time.Second)
 	})
 
+	Convey("Calling OptHealthCustomStat should work", t, func() {
+		h := func(w http.ResponseWriter, r *http.Request) {}
+		OptHealthCustomStat(map[string]HealthStatFunc{
+			"a": h,
+		})(&c)
+		So(c.healthServer.customStats["a"], ShouldEqual, h)
+	})
+
+	Convey("Calling OptHealthCustomStat with empty key should panic", t, func() {
+		h := func(w http.ResponseWriter, r *http.Request) {}
+		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"": h})(&c) }, ShouldPanicWith, "key must not be empty")
+	})
+
+	Convey("Calling OptHealthCustomStat with key starting with _ should panic", t, func() {
+		h := func(w http.ResponseWriter, r *http.Request) {}
+		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"_a": h})(&c) }, ShouldPanicWith, "key '_a' must not start with an '_'")
+	})
+
+	Convey("Calling OptHealthCustomStat with key containing a / should panic", t, func() {
+		h := func(w http.ResponseWriter, r *http.Request) {}
+		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"a/b": h})(&c) }, ShouldPanicWith, "key 'a/b' must not contain with any '/'")
+	})
+
+	Convey("Calling OptHealthCustomStat with nil func should panic", t, func() {
+		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"a": nil})(&c) }, ShouldPanicWith, "stat function for key 'a' must not be nil")
+	})
+
 	Convey("Calling OptProfilingLocal should work", t, func() {
 		OptProfilingLocal("1.2.3.4:123")(&c)
 		So(c.profilingServer.enabled, ShouldEqual, true)
