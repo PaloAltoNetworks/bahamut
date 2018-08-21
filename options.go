@@ -107,14 +107,14 @@ func OptHealthServer(listen string, handler HealthServerFunc) Option {
 	}
 }
 
-// OptHealthCustomStat configures additional stats handler.
+// OptHealthCustomStats configures additional stats handler.
 //
 // The healt server must be enabled using OptHealthServer or this option
 // will have no effect. Parameter handlers is a map where the key
 // will be used as the path in the health server. They must not start
 // with an `_`, contain any `/`, be empty or the function will panic. If key
 // contains a nil function, it will also panic.
-func OptHealthCustomStat(handlers map[string]HealthStatFunc) Option {
+func OptHealthCustomStats(handlers map[string]HealthStatFunc) Option {
 
 	for k, f := range handlers {
 

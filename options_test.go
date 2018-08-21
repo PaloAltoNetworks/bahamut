@@ -86,7 +86,7 @@ func TestBahamut_Options(t *testing.T) {
 
 	Convey("Calling OptHealthCustomStat should work", t, func() {
 		h := func(w http.ResponseWriter, r *http.Request) {}
-		OptHealthCustomStat(map[string]HealthStatFunc{
+		OptHealthCustomStats(map[string]HealthStatFunc{
 			"a": h,
 		})(&c)
 		So(c.healthServer.customStats["a"], ShouldEqual, h)
@@ -94,21 +94,21 @@ func TestBahamut_Options(t *testing.T) {
 
 	Convey("Calling OptHealthCustomStat with empty key should panic", t, func() {
 		h := func(w http.ResponseWriter, r *http.Request) {}
-		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"": h})(&c) }, ShouldPanicWith, "key must not be empty")
+		So(func() { OptHealthCustomStats(map[string]HealthStatFunc{"": h})(&c) }, ShouldPanicWith, "key must not be empty")
 	})
 
 	Convey("Calling OptHealthCustomStat with key starting with _ should panic", t, func() {
 		h := func(w http.ResponseWriter, r *http.Request) {}
-		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"_a": h})(&c) }, ShouldPanicWith, "key '_a' must not start with an '_'")
+		So(func() { OptHealthCustomStats(map[string]HealthStatFunc{"_a": h})(&c) }, ShouldPanicWith, "key '_a' must not start with an '_'")
 	})
 
 	Convey("Calling OptHealthCustomStat with key containing a / should panic", t, func() {
 		h := func(w http.ResponseWriter, r *http.Request) {}
-		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"a/b": h})(&c) }, ShouldPanicWith, "key 'a/b' must not contain with any '/'")
+		So(func() { OptHealthCustomStats(map[string]HealthStatFunc{"a/b": h})(&c) }, ShouldPanicWith, "key 'a/b' must not contain with any '/'")
 	})
 
 	Convey("Calling OptHealthCustomStat with nil func should panic", t, func() {
-		So(func() { OptHealthCustomStat(map[string]HealthStatFunc{"a": nil})(&c) }, ShouldPanicWith, "stat function for key 'a' must not be nil")
+		So(func() { OptHealthCustomStats(map[string]HealthStatFunc{"a": nil})(&c) }, ShouldPanicWith, "stat function for key 'a' must not be nil")
 	})
 
 	Convey("Calling OptProfilingLocal should work", t, func() {
