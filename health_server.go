@@ -2,11 +2,24 @@ package bahamut
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"runtime"
+	"runtime/debug"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
+
+type runtimeStats struct {
+	NumGoroutine int
+	NumCgoCall   int64
+	NumCPU       int
+	MemStats     runtime.MemStats
+	GCStats      debug.GCStats
+}
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
@@ -24,17 +37,60 @@ func newHealthServer(cfg config) *healthServer {
 
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	if s.cfg.healthServer.healthHandler == nil {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	switch r.URL.Path {
+
+	case "/":
+
+		if s.cfg.healthServer.healthHandler == nil {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		if err := s.cfg.healthServer.healthHandler(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusNoContent)
-		return
-	}
 
-	if err := s.cfg.healthServer.healthHandler(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	case "/_rstats":
 
-	w.WriteHeader(http.StatusNoContent)
+		stats := runtimeStats{
+			NumGoroutine: runtime.NumGoroutine(),
+			NumCgoCall:   runtime.NumCgoCall(),
+			NumCPU:       runtime.NumCPU(),
+		}
+
+		debug.ReadGCStats(&stats.GCStats)
+		runtime.ReadMemStats(&stats.MemStats)
+
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+
+		if err := enc.Encode(stats); err != nil {
+			http.Error(w, fmt.Sprintf("Unable to encode runtime stats: %s", err), http.StatusInternalServerError)
+		}
+
+	default:
+
+		if s.cfg.healthServer.customStats == nil {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+
+		f := s.cfg.healthServer.customStats[strings.TrimPrefix(r.URL.Path, "/")]
+		if f == nil {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+
+		f(w, r)
+	}
 }
 
 func (s *healthServer) start(ctx context.Context) {
