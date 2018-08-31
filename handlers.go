@@ -21,8 +21,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 
 	var fields []log.Field
 	defer func() {
-		span := opentracing.SpanFromContext(ctx.ctx)
-		if span != nil {
+		if span := opentracing.SpanFromContext(ctx.ctx); span != nil {
 			span.LogFields(fields...)
 			span.SetTag("status.code", response.StatusCode)
 		}
