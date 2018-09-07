@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
 	"go.aporeto.io/elemental"
@@ -252,27 +253,33 @@ func (a *restServer) stop() context.Context {
 
 func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
-	return func(w http.ResponseWriter, req *http.Request) {
+	h := gziphandler.GzipHandler(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, req *http.Request) {
 
-		// TODO: find a way to support tracing in case of bad request here.
-		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
-		if err != nil {
-			writeHTTPResponse(
-				w,
-				makeErrorResponse(
-					req.Context(),
-					elemental.NewResponse(elemental.NewRequest()),
-					err,
-				),
-			)
-			return
-		}
+				// TODO: find a way to support tracing in case of bad request here.
+				request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
+				if err != nil {
+					writeHTTPResponse(
+						w,
+						makeErrorResponse(
+							req.Context(),
+							elemental.NewResponse(elemental.NewRequest()),
+							err,
+						),
+					)
+					return
+				}
 
-		ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
-		defer finishTracing(ctx)
+				ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
+				defer finishTracing(ctx)
 
-		bctx := newContext(ctx, request)
+				bctx := newContext(ctx, request)
 
-		writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
-	}
+				writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
+			},
+		),
+	)
+
+	return h.(http.HandlerFunc)
 }

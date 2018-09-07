@@ -28,7 +28,7 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
@@ -60,6 +60,7 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
 	w.WriteHeader(r.StatusCode)
 
 	if r.Data != nil {
+
 		if _, err := w.Write(r.Data); err != nil {
 			zap.L().Debug("Unable to send http response to client", zap.Error(err))
 		}
