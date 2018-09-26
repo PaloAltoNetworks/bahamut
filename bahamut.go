@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/go-zoo/bone"
 	"go.aporeto.io/elemental"
@@ -36,8 +37,8 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 
 	signalCh := make(chan os.Signal, 1)
-	signal.Reset(os.Interrupt)
-	signal.Notify(signalCh, os.Interrupt)
+	signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-signalCh
 		cancelFunc()
