@@ -90,42 +90,6 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 	}
 }
 
-// ServeHTTP is the http handler that will be used if an only if a.config.RateLimiting.RateLimiter
-// is configured. Otherwise, the main http handler will be directly the multiplexer.
-func (a *restServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-	if a.cfg.rateLimiting.rateLimiter != nil {
-		limited, err := a.cfg.rateLimiting.rateLimiter.RateLimit(req)
-		if err != nil {
-			writeHTTPResponse(
-				w,
-				makeErrorResponse(
-					req.Context(),
-					elemental.NewResponse(elemental.NewRequest()),
-					elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError),
-				),
-			)
-			return
-		}
-
-		if limited {
-			writeHTTPResponse(
-				w,
-				makeErrorResponse(
-					req.Context(),
-					elemental.NewResponse(elemental.NewRequest()),
-					ErrRateLimit,
-				),
-			)
-			return
-		}
-	}
-
-	setCommonHeader(w, req.Header.Get("Origin"))
-
-	a.multiplexer.ServeHTTP(w, req)
-}
-
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes() {
 
@@ -213,7 +177,7 @@ func (a *restServer) start(ctx context.Context) {
 		a.server = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
 	}
 
-	a.server.Handler = a
+	a.server.Handler = a.multiplexer
 
 	go func() {
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
@@ -253,7 +217,7 @@ func (a *restServer) stop() context.Context {
 
 func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
-	h := gziphandler.GzipHandler(
+	return gziphandler.GzipHandler(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
 
@@ -274,12 +238,17 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
 				defer finishTracing(ctx)
 
-				bctx := newContext(ctx, request)
+				if a.cfg.rateLimiting.rateLimiter != nil {
 
-				writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
+					if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
+						writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(elemental.NewRequest()), ErrRateLimit))
+						return
+					}
+				}
+
+				setCommonHeader(w, req.Header.Get("Origin"))
+				writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
 			},
 		),
-	)
-
-	return h.(http.HandlerFunc)
+	).(http.HandlerFunc)
 }

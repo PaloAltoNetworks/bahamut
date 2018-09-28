@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.aporeto.io/elemental"
+	"golang.org/x/time/rate"
 )
 
 // HealthServerFunc is the type used by the Health Server to check the health of the server.
@@ -78,7 +79,7 @@ type config struct {
 	}
 
 	rateLimiting struct {
-		rateLimiter RateLimiter
+		rateLimiter *rate.Limiter
 	}
 
 	model struct {

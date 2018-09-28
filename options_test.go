@@ -9,6 +9,7 @@ import (
 
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
+	"golang.org/x/time/rate"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -163,9 +164,9 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptRateLimiting should work", t, func() {
-		rlm := NewRateLimiter(1)
-		OptRateLimiting(rlm)(&c)
-		So(c.rateLimiting.rateLimiter, ShouldEqual, rlm)
+		rlm := rate.NewLimiter(rate.Limit(10), 20)
+		OptRateLimiting(10, 20)(&c)
+		So(c.rateLimiting.rateLimiter, ShouldResemble, rlm)
 	})
 
 	Convey("Calling OptModel should work", t, func() {

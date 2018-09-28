@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.aporeto.io/elemental"
+	"golang.org/x/time/rate"
 )
 
 // An Option represents a configuration option.
@@ -240,9 +241,9 @@ func OptAuditer(auditer Auditer) Option {
 }
 
 // OptRateLimiting configures the rate limiting.
-func OptRateLimiting(limiter RateLimiter) Option {
+func OptRateLimiting(limit float64, burst int) Option {
 	return func(c *config) {
-		c.rateLimiting.rateLimiter = limiter
+		c.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(limit), burst)
 	}
 }
 
