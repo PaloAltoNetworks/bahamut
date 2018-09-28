@@ -55,6 +55,8 @@ type server struct {
 	pushServer      *pushServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
+	reqCounter      uint64
+	wsConnCounter   uint64
 }
 
 // New returns a new bahamut Server configured with
@@ -95,15 +97,15 @@ func NewServer(cfg config) Server {
 	}
 
 	if cfg.restServer.enabled {
-		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push)
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push, &srv.reqCounter)
 	}
 
 	if cfg.pushServer.enabled {
-		srv.pushServer = newPushServer(cfg, mux, srv.ProcessorForIdentity)
+		srv.pushServer = newPushServer(cfg, mux, srv.ProcessorForIdentity, &srv.wsConnCounter)
 	}
 
 	if cfg.healthServer.enabled {
-		srv.healthServer = newHealthServer(cfg)
+		srv.healthServer = newHealthServer(cfg, &srv.reqCounter, &srv.wsConnCounter)
 	}
 
 	if cfg.profilingServer.enabled {

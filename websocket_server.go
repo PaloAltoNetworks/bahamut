@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-zoo/bone"
@@ -24,9 +25,10 @@ type pushServer struct {
 	processorFinder processorFinderFunc
 	sessionsLock    *sync.Mutex
 	mainContext     context.Context
+	wsConnCounter   *uint64
 }
 
-func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
+func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, wsConnCounter *uint64) *pushServer {
 
 	srv := &pushServer{
 		sessions:        map[string]*wsPushSession{},
@@ -34,6 +36,7 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		cfg:             cfg,
 		sessionsLock:    &sync.Mutex{},
 		processorFinder: processorFinder,
+		wsConnCounter:   wsConnCounter,
 	}
 
 	// If push is not completely disabled and dispatching of event is not disabled, we install
@@ -47,6 +50,8 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 }
 
 func (n *pushServer) registerSession(session *wsPushSession) {
+
+	atomic.AddUint64(n.wsConnCounter, 1)
 
 	n.sessionsLock.Lock()
 	if session.Identifier() == "" {

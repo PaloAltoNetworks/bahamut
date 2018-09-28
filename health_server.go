@@ -8,30 +8,37 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 type runtimeStats struct {
-	NumGoroutine int
-	NumCgoCall   int64
-	NumCPU       int
-	MemStats     runtime.MemStats
-	GCStats      debug.GCStats
+	NumGoroutine     int
+	NumCgoCall       int64
+	NumCPU           int
+	NumRequests      uint64
+	NumWSConnections uint64
+	MemStats         runtime.MemStats
+	GCStats          debug.GCStats
 }
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
-	cfg    config
-	server *http.Server
+	cfg           config
+	server        *http.Server
+	reqCounter    *uint64
+	wsConnCounter *uint64
 }
 
 // newHealthServer returns a new healthServer.
-func newHealthServer(cfg config) *healthServer {
+func newHealthServer(cfg config, reqCounter *uint64, wsConnCounter *uint64) *healthServer {
 
 	return &healthServer{
-		cfg: cfg,
+		cfg:           cfg,
+		reqCounter:    reqCounter,
+		wsConnCounter: wsConnCounter,
 	}
 }
 
@@ -61,9 +68,11 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/_rstats":
 
 		stats := runtimeStats{
-			NumGoroutine: runtime.NumGoroutine(),
-			NumCgoCall:   runtime.NumCgoCall(),
-			NumCPU:       runtime.NumCPU(),
+			NumGoroutine:     runtime.NumGoroutine(),
+			NumCgoCall:       runtime.NumCgoCall(),
+			NumCPU:           runtime.NumCPU(),
+			NumRequests:      atomic.LoadUint64(s.reqCounter),
+			NumWSConnections: atomic.LoadUint64(s.wsConnCounter),
 		}
 
 		debug.ReadGCStats(&stats.GCStats)

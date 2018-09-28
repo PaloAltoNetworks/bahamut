@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
@@ -26,16 +27,18 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
+	reqCounter      *uint64
 }
 
 // newRestServer returns a new apiServer.
-func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
+func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc, reqCounter *uint64) *restServer {
 
 	return &restServer{
 		cfg:             cfg,
 		multiplexer:     multiplexer,
 		processorFinder: processorFinder,
 		pusher:          pusher,
+		reqCounter:      reqCounter,
 	}
 }
 
@@ -218,37 +221,28 @@ func (a *restServer) stop() context.Context {
 func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 	return gziphandler.GzipHandler(
-		http.HandlerFunc(
-			func(w http.ResponseWriter, req *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-				// TODO: find a way to support tracing in case of bad request here.
-				request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
-				if err != nil {
-					writeHTTPResponse(
-						w,
-						makeErrorResponse(
-							req.Context(),
-							elemental.NewResponse(elemental.NewRequest()),
-							err,
-						),
-					)
+			// TODO: find a way to support tracing in case of bad request here.
+			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
+			if err != nil {
+				writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+				return
+			}
+
+			ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
+			defer finishTracing(ctx)
+
+			if a.cfg.rateLimiting.rateLimiter != nil {
+				if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
+					writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(elemental.NewRequest()), ErrRateLimit))
 					return
 				}
+			}
 
-				ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
-				defer finishTracing(ctx)
-
-				if a.cfg.rateLimiting.rateLimiter != nil {
-
-					if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
-						writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(elemental.NewRequest()), ErrRateLimit))
-						return
-					}
-				}
-
-				setCommonHeader(w, req.Header.Get("Origin"))
-				writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
-			},
-		),
+			atomic.AddUint64(a.reqCounter, 1)
+			setCommonHeader(w, req.Header.Get("Origin"))
+			writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+		}),
 	).(http.HandlerFunc)
 }

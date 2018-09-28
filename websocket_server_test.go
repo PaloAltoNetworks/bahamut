@@ -19,6 +19,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var wsConnCounter uint64
+
 type mockPubSubServer struct {
 	publications []*Publication
 	PublishErr   error
@@ -115,7 +117,7 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 			cfg.pushServer.publishEnabled = true
 			cfg.pushServer.dispatchEnabled = true
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			Convey("Then the websocket sever should be correctly initialized", func() {
 				So(wss.sessions, ShouldResemble, map[string]*wsPushSession{})
@@ -136,7 +138,7 @@ func TestWebsocketServer_newWebsocketServer(t *testing.T) {
 			mux := bone.New()
 			cfg := config{}
 
-			_ = newPushServer(cfg, mux, pf)
+			_ = newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			Convey("Then the handlers should be installed in the mux", func() {
 				So(len(mux.Routes), ShouldEqual, 0)
@@ -159,7 +161,7 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 		h := &mockSessionHandler{}
 		cfg.pushServer.dispatchHandler = h
 
-		wss := newPushServer(cfg, mux, pf)
+		wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 		Convey("When I register a valid push session", func() {
 
@@ -224,7 +226,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			cfg := config{}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
@@ -242,7 +244,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := config{}
 			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
@@ -260,7 +262,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := config{}
 			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
@@ -279,7 +281,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 			cfg := config{}
 			cfg.security.sessionAuthenticators = []SessionAuthenticator{a}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.authSession(s)
@@ -306,7 +308,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			cfg := config{}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -324,7 +326,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			cfg := config{}
 			cfg.pushServer.dispatchHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -342,7 +344,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			cfg := config{}
 			cfg.pushServer.dispatchHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -361,7 +363,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 			cfg := config{}
 			cfg.pushServer.dispatchHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 			s := newWSPushSession(req, cfg, nil)
 			err := wss.initPushSession(s)
@@ -387,7 +389,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			cfg := config{}
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 			wss.pushEvents(nil)
 
 			Convey("Then nothing special should happen", func() {
@@ -404,7 +406,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.publishEnabled = true
 			cfg.pushServer.dispatchEnabled = true
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -426,7 +428,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.dispatchEnabled = true
 			cfg.pushServer.publishHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -448,7 +450,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.dispatchEnabled = true
 			cfg.pushServer.publishHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -470,7 +472,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.dispatchEnabled = true
 			cfg.pushServer.publishHandler = h
 
-			wss := newPushServer(cfg, mux, pf)
+			wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
 
 			Convey("Then I should find one publication", func() {
@@ -503,7 +505,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		cfg.pushServer.dispatchEnabled = true
 		cfg.pushServer.dispatchHandler = pushHandler
 
-		wss := newPushServer(cfg, mux, pf)
+		wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
@@ -668,7 +670,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		mux := bone.New()
 		cfg := config{}
 
-		wss := newPushServer(cfg, mux, pf)
+		wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
@@ -735,7 +737,7 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 		cfg.pushServer.dispatchEnabled = true
 		cfg.security.sessionAuthenticators = []SessionAuthenticator{authenticator}
 
-		wss := newPushServer(cfg, mux, pf)
+		wss := newPushServer(cfg, mux, pf, &wsConnCounter)
 		wss.mainContext = ctx
 
 		ts := httptest.NewServer(http.HandlerFunc(wss.handleRequest))
