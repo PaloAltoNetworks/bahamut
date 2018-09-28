@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
@@ -27,18 +26,18 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
-	reqCounter      *uint64
+	statsCounter    *statsCounter
 }
 
 // newRestServer returns a new apiServer.
-func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc, reqCounter *uint64) *restServer {
+func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc, statsCounter *statsCounter) *restServer {
 
 	return &restServer{
 		cfg:             cfg,
 		multiplexer:     multiplexer,
 		processorFinder: processorFinder,
 		pusher:          pusher,
-		reqCounter:      reqCounter,
+		statsCounter:    statsCounter,
 	}
 }
 
@@ -240,7 +239,9 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				}
 			}
 
-			atomic.AddUint64(a.reqCounter, 1)
+			a.statsCounter.rps.Incr(1)
+			a.statsCounter.r.Incr(1)
+
 			setCommonHeader(w, req.Header.Get("Origin"))
 			writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
 		}),

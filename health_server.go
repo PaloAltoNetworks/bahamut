@@ -8,37 +8,50 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
-	"sync/atomic"
 	"time"
+
+	"github.com/paulbellamy/ratecounter"
 
 	"go.uber.org/zap"
 )
+
+type statsCounter struct {
+	rps  *ratecounter.RateCounter
+	wsps *ratecounter.RateCounter
+	r    ratecounter.Counter
+	ws   ratecounter.Counter
+}
+
+func newStatsCounter() *statsCounter {
+	return &statsCounter{
+		rps:  ratecounter.NewRateCounter(1 * time.Second),
+		wsps: ratecounter.NewRateCounter(1 * time.Second),
+	}
+}
 
 type runtimeStats struct {
 	NumGoroutine     int
 	NumCgoCall       int64
 	NumCPU           int
-	NumRequests      uint64
-	NumWSConnections uint64
+	NumRequests      int64
+	NumWSConnections int64
 	MemStats         runtime.MemStats
 	GCStats          debug.GCStats
 }
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
-	cfg           config
-	server        *http.Server
-	reqCounter    *uint64
-	wsConnCounter *uint64
+	cfg          config
+	server       *http.Server
+	statsCounter *statsCounter
 }
 
 // newHealthServer returns a new healthServer.
-func newHealthServer(cfg config, reqCounter *uint64, wsConnCounter *uint64) *healthServer {
+func newHealthServer(cfg config, statsCounter *statsCounter) *healthServer {
 
 	return &healthServer{
-		cfg:           cfg,
-		reqCounter:    reqCounter,
-		wsConnCounter: wsConnCounter,
+		cfg:          cfg,
+		statsCounter: statsCounter,
 	}
 }
 
@@ -71,8 +84,8 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			NumGoroutine:     runtime.NumGoroutine(),
 			NumCgoCall:       runtime.NumCgoCall(),
 			NumCPU:           runtime.NumCPU(),
-			NumRequests:      atomic.LoadUint64(s.reqCounter),
-			NumWSConnections: atomic.LoadUint64(s.wsConnCounter),
+			NumRequests:      s.statsCounter.r.Value(),
+			NumWSConnections: s.statsCounter.ws.Value(),
 		}
 
 		debug.ReadGCStats(&stats.GCStats)
@@ -84,6 +97,16 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err := enc.Encode(stats); err != nil {
 			http.Error(w, fmt.Sprintf("Unable to encode runtime stats: %s", err), http.StatusInternalServerError)
 		}
+
+	case "/metrics":
+
+		w.Header().Set("content-type", "text/plain;")
+		w.WriteHeader(http.StatusOK)
+
+		var ms runtime.MemStats
+		runtime.ReadMemStats(&ms)
+
+		fmt.Fprintf(w, "rps %d\nmem %d\n", s.statsCounter.rps.Rate(), ms.HeapInuse)
 
 	default:
 
