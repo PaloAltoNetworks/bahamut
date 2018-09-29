@@ -33,12 +33,12 @@ func setCommonHeader(w http.ResponseWriter, origin string) {
 }
 
 func corsHandler(w http.ResponseWriter, r *http.Request) {
-
+	setCommonHeader(w, r.Header.Get("Origin"))
 	w.WriteHeader(http.StatusOK)
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-
+	setCommonHeader(w, r.Header.Get("Origin"))
 	writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound))
 }
 

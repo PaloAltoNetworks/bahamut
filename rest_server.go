@@ -222,6 +222,8 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 	return gziphandler.GzipHandler(
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
+			setCommonHeader(w, req.Header.Get("Origin"))
+
 			// TODO: find a way to support tracing in case of bad request here.
 			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 			if err != nil {
@@ -242,7 +244,6 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			a.statsCounter.rps.Incr(1)
 			a.statsCounter.r.Incr(1)
 
-			setCommonHeader(w, req.Header.Get("Origin"))
 			writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
 		}),
 	).(http.HandlerFunc)

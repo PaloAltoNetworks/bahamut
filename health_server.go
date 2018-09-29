@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/paulbellamy/ratecounter"
-
 	"go.uber.org/zap"
 )
 
@@ -103,10 +102,53 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "text/plain;")
 		w.WriteHeader(http.StatusOK)
 
-		var ms runtime.MemStats
-		runtime.ReadMemStats(&ms)
+		var memStats runtime.MemStats
+		runtime.ReadMemStats(&memStats)
 
-		fmt.Fprintf(w, "rps %d\nmem %d\n", s.statsCounter.rps.Rate(), ms.HeapInuse)
+		ts := time.Now().Unix() * 1000
+		fmt.Fprintln(w, "# HELP http_requests_per_second The current number of requests per second.")
+		fmt.Fprintln(w, "# TYPE http_requests_per_second gauge")
+		fmt.Fprintf(w, "http_requests_per_second %d %d\n\n", s.statsCounter.rps.Rate(), ts)
+
+		fmt.Fprintln(w, "# HELP http_requests_total The total number of requests.")
+		fmt.Fprintln(w, "# TYPE http_requests_total counter")
+		fmt.Fprintf(w, "http_requests_total %d %d\n\n", s.statsCounter.r.Value(), ts)
+
+		fmt.Fprintln(w, "# HELP http_ws_connections_per_second The current number of ws connection per second.")
+		fmt.Fprintln(w, "# TYPE http_ws_connections_per_second gauge")
+		fmt.Fprintf(w, "http_ws_connections_per_second %d %d\n\n", s.statsCounter.wsps.Rate(), ts)
+
+		fmt.Fprintln(w, "# HELP http_ws_connections_total The total number of websocket connections.")
+		fmt.Fprintln(w, "# TYPE http_ws_connections_total counter")
+		fmt.Fprintf(w, "http_ws_connections_total %d %d\n\n", s.statsCounter.ws.Value(), ts)
+
+		fmt.Fprintln(w, "# HELP mem_sys The total bytes of memory obtained from the OS.")
+		fmt.Fprintln(w, "# TYPE mem_sys gauge")
+		fmt.Fprintf(w, "mem_sys %d %d\n\n", memStats.Sys, ts)
+
+		fmt.Fprintln(w, "# HELP mem_heap_sys The number of bytes of heap memory obtained from the OS.")
+		fmt.Fprintln(w, "# TYPE mem_heap_sys gauge")
+		fmt.Fprintf(w, "mem_heap_sys %d %d\n\n", memStats.HeapSys, ts)
+
+		fmt.Fprintln(w, "# HELP mem_heap_alloc The number of bytes of bytes of allocated heap objects.")
+		fmt.Fprintln(w, "# TYPE mem_heap_alloc gauge")
+		fmt.Fprintf(w, "mem_heap_alloc %d %d\n\n", memStats.HeapAlloc, ts)
+
+		fmt.Fprintln(w, "# HELP mem_heap_idle The number of bytes in idle (unused) spans.")
+		fmt.Fprintln(w, "# TYPE mem_heap_idle gauge")
+		fmt.Fprintf(w, "mem_heap_idle %d %d\n\n", memStats.HeapIdle, ts)
+
+		fmt.Fprintln(w, "# HELP mem_stack_sys The number of bytes of stack memory obtained from the OS.")
+		fmt.Fprintln(w, "# TYPE mem_stack_sys gauge")
+		fmt.Fprintf(w, "mem_stack_sys %d %d\n\n", memStats.StackSys, ts)
+
+		fmt.Fprintln(w, "# HELP mem_stack_in_user The number of bytes in stack spans.")
+		fmt.Fprintln(w, "# TYPE mem_stack_in_user gauge")
+		fmt.Fprintf(w, "mem_stack_in_user %d %d\n\n", memStats.StackInuse, ts)
+
+		fmt.Fprintln(w, "# HELP num_go_routines The current number of go routines.")
+		fmt.Fprintln(w, "# TYPE num_go_routines gauge")
+		fmt.Fprintf(w, "num_go_routines %d %d\n\n", runtime.NumGoroutine(), ts)
 
 	default:
 
