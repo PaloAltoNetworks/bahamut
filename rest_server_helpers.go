@@ -43,12 +43,12 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // writeHTTPResponse writes the response into the given http.ResponseWriter.
-func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
+func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)
 		w.WriteHeader(http.StatusFound)
-		return
+		return http.StatusFound
 	}
 
 	w.Header().Set("X-Count-Total", strconv.Itoa(r.Total))
@@ -65,4 +65,6 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) {
 			zap.L().Debug("Unable to send http response to client", zap.Error(err))
 		}
 	}
+
+	return r.StatusCode
 }

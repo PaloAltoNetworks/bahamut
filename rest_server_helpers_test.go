@@ -3,6 +3,7 @@ package bahamut
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"go.aporeto.io/elemental/test/model"
@@ -56,7 +57,7 @@ func TestRestServerHelper_corsHandler(t *testing.T) {
 		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		corsHandler(w, &http.Request{Header: h})
+		corsHandler(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusOK)
@@ -72,7 +73,7 @@ func TestRestServerHelper_notFoundHandler(t *testing.T) {
 		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		notFoundHandler(w, &http.Request{Header: h})
+		notFoundHandler(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusNotFound)

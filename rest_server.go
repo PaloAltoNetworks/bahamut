@@ -26,18 +26,16 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
-	statsCounter    *statsCounter
 }
 
 // newRestServer returns a new apiServer.
-func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc, statsCounter *statsCounter) *restServer {
+func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
 
 	return &restServer{
 		cfg:             cfg,
 		multiplexer:     multiplexer,
 		processorFinder: processorFinder,
 		pusher:          pusher,
-		statsCounter:    statsCounter,
 	}
 }
 
@@ -222,7 +220,11 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 	return gziphandler.GzipHandler(
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-			setCommonHeader(w, req.Header.Get("Origin"))
+			var code int
+
+			if a.cfg.healthServer.metricsManager != nil {
+				defer a.cfg.healthServer.metricsManager.MeasureRequest(&code, req.Method)()
+			}
 
 			// TODO: find a way to support tracing in case of bad request here.
 			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
@@ -231,20 +233,19 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				return
 			}
 
+			setCommonHeader(w, req.Header.Get("Origin"))
+
 			ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
 			defer finishTracing(ctx)
 
 			if a.cfg.rateLimiting.rateLimiter != nil {
 				if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
-					writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(elemental.NewRequest()), ErrRateLimit))
+					writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
 					return
 				}
 			}
 
-			a.statsCounter.rps.Incr(1)
-			a.statsCounter.r.Incr(1)
-
-			writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+			code = writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
 		}),
 	).(http.HandlerFunc)
 }

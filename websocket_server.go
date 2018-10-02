@@ -24,10 +24,9 @@ type pushServer struct {
 	processorFinder processorFinderFunc
 	sessionsLock    *sync.Mutex
 	mainContext     context.Context
-	statsCounter    *statsCounter
 }
 
-func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, statsCounter *statsCounter) *pushServer {
+func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
 
 	srv := &pushServer{
 		sessions:        map[string]*wsPushSession{},
@@ -35,7 +34,6 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		cfg:             cfg,
 		sessionsLock:    &sync.Mutex{},
 		processorFinder: processorFinder,
-		statsCounter:    statsCounter,
 	}
 
 	// If push is not completely disabled and dispatching of event is not disabled, we install
@@ -50,8 +48,9 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 
 func (n *pushServer) registerSession(session *wsPushSession) {
 
-	n.statsCounter.ws.Incr(1)
-	n.statsCounter.wsps.Incr(1)
+	if n.cfg.healthServer.metricsManager != nil {
+		n.cfg.healthServer.metricsManager.RegisterWSConnection()
+	}
 
 	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
@@ -79,6 +78,10 @@ func (n *pushServer) unregisterSession(session *wsPushSession) {
 	}
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
+
+	if n.cfg.healthServer.metricsManager != nil {
+		n.cfg.healthServer.metricsManager.UnregisterWSConnection()
+	}
 }
 
 func (n *pushServer) authSession(session *wsPushSession) error {

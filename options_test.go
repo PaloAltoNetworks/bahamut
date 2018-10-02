@@ -76,6 +76,13 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.healthServer.enabled, ShouldEqual, true)
 		So(c.healthServer.listenAddress, ShouldEqual, "1.2.3.4:123")
 		So(c.healthServer.healthHandler, ShouldEqual, h)
+
+	})
+
+	Convey("Calling OptHealthServerMetricsManager should work", t, func() {
+		pmm := NewPrometheusMetricsManager()
+		OptHealthServerMetricsManager(pmm)(&c)
+		So(c.healthServer.metricsManager, ShouldEqual, pmm)
 	})
 
 	Convey("Calling OptHealthServerTimeouts should work", t, func() {

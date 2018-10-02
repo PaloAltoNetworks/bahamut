@@ -108,6 +108,15 @@ func OptHealthServer(listen string, handler HealthServerFunc) Option {
 	}
 }
 
+// OptHealthServerMetricsManager sets the MetricManager in the health server.
+//
+// This option has no effect if the health server is not enabled.
+func OptHealthServerMetricsManager(manager MetricsManager) Option {
+	return func(c *config) {
+		c.healthServer.metricsManager = manager
+	}
+}
+
 // OptHealthCustomStats configures additional stats handler.
 //
 // The healt server must be enabled using OptHealthServer or this option

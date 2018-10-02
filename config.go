@@ -47,13 +47,14 @@ type config struct {
 	}
 
 	healthServer struct {
-		listenAddress string
-		healthHandler HealthServerFunc
-		readTimeout   time.Duration
-		writeTimeout  time.Duration
-		idleTimeout   time.Duration
-		enabled       bool
-		customStats   map[string]HealthStatFunc
+		listenAddress  string
+		healthHandler  HealthServerFunc
+		readTimeout    time.Duration
+		writeTimeout   time.Duration
+		idleTimeout    time.Duration
+		enabled        bool
+		customStats    map[string]HealthStatFunc
+		metricsManager MetricsManager
 	}
 
 	profilingServer struct {

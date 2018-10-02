@@ -10,23 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/paulbellamy/ratecounter"
 	"go.uber.org/zap"
 )
-
-type statsCounter struct {
-	rps  *ratecounter.RateCounter
-	wsps *ratecounter.RateCounter
-	r    ratecounter.Counter
-	ws   ratecounter.Counter
-}
-
-func newStatsCounter() *statsCounter {
-	return &statsCounter{
-		rps:  ratecounter.NewRateCounter(1 * time.Second),
-		wsps: ratecounter.NewRateCounter(1 * time.Second),
-	}
-}
 
 type runtimeStats struct {
 	NumGoroutine     int
@@ -40,17 +25,15 @@ type runtimeStats struct {
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
-	cfg          config
-	server       *http.Server
-	statsCounter *statsCounter
+	cfg    config
+	server *http.Server
 }
 
 // newHealthServer returns a new healthServer.
-func newHealthServer(cfg config, statsCounter *statsCounter) *healthServer {
+func newHealthServer(cfg config) *healthServer {
 
 	return &healthServer{
-		cfg:          cfg,
-		statsCounter: statsCounter,
+		cfg: cfg,
 	}
 }
 
@@ -77,14 +60,21 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusNoContent)
 
+	case "/metrics":
+		if s.cfg.healthServer.metricsManager == nil {
+			w.WriteHeader(http.StatusNotImplemented)
+			return
+		}
+
+		s.cfg.healthServer.metricsManager.Write(w, r)
+
 	case "/_rstats":
+		// this is deprecated
 
 		stats := runtimeStats{
-			NumGoroutine:     runtime.NumGoroutine(),
-			NumCgoCall:       runtime.NumCgoCall(),
-			NumCPU:           runtime.NumCPU(),
-			NumRequests:      s.statsCounter.r.Value(),
-			NumWSConnections: s.statsCounter.ws.Value(),
+			NumGoroutine: runtime.NumGoroutine(),
+			NumCgoCall:   runtime.NumCgoCall(),
+			NumCPU:       runtime.NumCPU(),
 		}
 
 		debug.ReadGCStats(&stats.GCStats)
@@ -96,59 +86,6 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err := enc.Encode(stats); err != nil {
 			http.Error(w, fmt.Sprintf("Unable to encode runtime stats: %s", err), http.StatusInternalServerError)
 		}
-
-	case "/metrics":
-
-		w.Header().Set("content-type", "text/plain;")
-		w.WriteHeader(http.StatusOK)
-
-		var memStats runtime.MemStats
-		runtime.ReadMemStats(&memStats)
-
-		ts := time.Now().Unix() * 1000
-		fmt.Fprintln(w, "# HELP http_requests_per_second The current number of requests per second.")
-		fmt.Fprintln(w, "# TYPE http_requests_per_second gauge")
-		fmt.Fprintf(w, "http_requests_per_second %d %d\n\n", s.statsCounter.rps.Rate(), ts)
-
-		fmt.Fprintln(w, "# HELP http_requests_total The total number of requests.")
-		fmt.Fprintln(w, "# TYPE http_requests_total counter")
-		fmt.Fprintf(w, "http_requests_total %d %d\n\n", s.statsCounter.r.Value(), ts)
-
-		fmt.Fprintln(w, "# HELP http_ws_connections_per_second The current number of ws connection per second.")
-		fmt.Fprintln(w, "# TYPE http_ws_connections_per_second gauge")
-		fmt.Fprintf(w, "http_ws_connections_per_second %d %d\n\n", s.statsCounter.wsps.Rate(), ts)
-
-		fmt.Fprintln(w, "# HELP http_ws_connections_total The total number of websocket connections.")
-		fmt.Fprintln(w, "# TYPE http_ws_connections_total counter")
-		fmt.Fprintf(w, "http_ws_connections_total %d %d\n\n", s.statsCounter.ws.Value(), ts)
-
-		fmt.Fprintln(w, "# HELP mem_sys The total bytes of memory obtained from the OS.")
-		fmt.Fprintln(w, "# TYPE mem_sys gauge")
-		fmt.Fprintf(w, "mem_sys %d %d\n\n", memStats.Sys, ts)
-
-		fmt.Fprintln(w, "# HELP mem_heap_sys The number of bytes of heap memory obtained from the OS.")
-		fmt.Fprintln(w, "# TYPE mem_heap_sys gauge")
-		fmt.Fprintf(w, "mem_heap_sys %d %d\n\n", memStats.HeapSys, ts)
-
-		fmt.Fprintln(w, "# HELP mem_heap_alloc The number of bytes of bytes of allocated heap objects.")
-		fmt.Fprintln(w, "# TYPE mem_heap_alloc gauge")
-		fmt.Fprintf(w, "mem_heap_alloc %d %d\n\n", memStats.HeapAlloc, ts)
-
-		fmt.Fprintln(w, "# HELP mem_heap_idle The number of bytes in idle (unused) spans.")
-		fmt.Fprintln(w, "# TYPE mem_heap_idle gauge")
-		fmt.Fprintf(w, "mem_heap_idle %d %d\n\n", memStats.HeapIdle, ts)
-
-		fmt.Fprintln(w, "# HELP mem_stack_sys The number of bytes of stack memory obtained from the OS.")
-		fmt.Fprintln(w, "# TYPE mem_stack_sys gauge")
-		fmt.Fprintf(w, "mem_stack_sys %d %d\n\n", memStats.StackSys, ts)
-
-		fmt.Fprintln(w, "# HELP mem_stack_in_user The number of bytes in stack spans.")
-		fmt.Fprintln(w, "# TYPE mem_stack_in_user gauge")
-		fmt.Fprintf(w, "mem_stack_in_user %d %d\n\n", memStats.StackInuse, ts)
-
-		fmt.Fprintln(w, "# HELP num_go_routines The current number of go routines.")
-		fmt.Fprintln(w, "# TYPE num_go_routines gauge")
-		fmt.Fprintf(w, "num_go_routines %d %d\n\n", runtime.NumGoroutine(), ts)
 
 	default:
 
@@ -191,7 +128,7 @@ func (s *healthServer) start(ctx context.Context) {
 
 func (s *healthServer) stop() context.Context {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 
 	go func() {
 		defer cancel()

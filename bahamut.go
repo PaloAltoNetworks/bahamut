@@ -55,7 +55,6 @@ type server struct {
 	pushServer      *pushServer
 	healthServer    *healthServer
 	profilingServer *profilingServer
-	statsCounter    *statsCounter
 }
 
 // New returns a new bahamut Server configured with
@@ -91,21 +90,20 @@ func NewServer(cfg config) Server {
 
 	mux := bone.New()
 	srv := &server{
-		multiplexer:  mux,
-		processors:   make(map[string]Processor),
-		statsCounter: newStatsCounter(),
+		multiplexer: mux,
+		processors:  make(map[string]Processor),
 	}
 
 	if cfg.restServer.enabled {
-		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push, srv.statsCounter)
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push)
 	}
 
 	if cfg.pushServer.enabled {
-		srv.pushServer = newPushServer(cfg, mux, srv.ProcessorForIdentity, srv.statsCounter)
+		srv.pushServer = newPushServer(cfg, mux, srv.ProcessorForIdentity)
 	}
 
 	if cfg.healthServer.enabled {
-		srv.healthServer = newHealthServer(cfg, srv.statsCounter)
+		srv.healthServer = newHealthServer(cfg)
 	}
 
 	if cfg.profilingServer.enabled {

@@ -65,6 +65,10 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 
 	outError := processError(ctx, err)
 
+	if response == nil {
+		response = elemental.NewResponse(nil)
+	}
+
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {
 		zap.L().Panic("Unable to encode error", zap.Error(err))
