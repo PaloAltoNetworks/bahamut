@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
+
 	"go.aporeto.io/elemental"
 	"golang.org/x/time/rate"
 )
@@ -309,5 +311,22 @@ func OptServiceInfo(name string, version string, subversions map[string]interfac
 func OptDisableMetaRoutes() Option {
 	return func(c *config) {
 		c.meta.disableMetaRoute = true
+	}
+}
+
+// OptOpentracingTracer sets the opentracing.Tracer to use.
+func OptOpentracingTracer(tracer opentracing.Tracer) Option {
+	return func(c *config) {
+		c.opentracing.tracer = tracer
+	}
+}
+
+// OptOpentracingExcludedIdentities excludes the given identity from being traced.
+func OptOpentracingExcludedIdentities(identities []elemental.Identity) Option {
+	return func(c *config) {
+		c.opentracing.excludedIdentities = map[string]struct{}{}
+		for _, i := range identities {
+			c.opentracing.excludedIdentities[i.Name] = struct{}{}
+		}
 	}
 }

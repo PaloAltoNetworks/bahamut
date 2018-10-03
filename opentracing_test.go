@@ -202,7 +202,15 @@ func TestTracing_traceRequest(t *testing.T) {
 		ctx := opentracing.ContextWithSpan(context.Background(), ts)
 
 		Convey("When I call traceRequest with no tracer", func() {
-			tctx := traceRequest(ctx, req, nil)
+			tctx := traceRequest(ctx, req, nil, nil)
+
+			Convey("Then the returned context should should be the same", func() {
+				So(tctx, ShouldEqual, ctx)
+			})
+		})
+
+		Convey("When I call traceRequest on excluded identities", func() {
+			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"user": struct{}{}})
 
 			Convey("Then the returned context should should be the same", func() {
 				So(tctx, ShouldEqual, ctx)
@@ -211,7 +219,7 @@ func TestTracing_traceRequest(t *testing.T) {
 
 		Convey("When I call traceRequest", func() {
 
-			tctx := traceRequest(ctx, req, tracer)
+			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"not-user": struct{}{}})
 
 			span := opentracing.SpanFromContext(tctx).(*mockSpan)
 

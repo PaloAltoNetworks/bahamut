@@ -207,4 +207,15 @@ func TestBahamut_Options(t *testing.T) {
 		OptDisableMetaRoutes()(&c)
 		So(c.meta.disableMetaRoute, ShouldEqual, true)
 	})
+
+	Convey("Calling OptOpentracingTracer should work", t, func() {
+		tracer := &mockTracer{}
+		OptOpentracingTracer(tracer)(&c)
+		So(c.opentracing.tracer, ShouldEqual, tracer)
+	})
+
+	Convey("Calling OptOpentracingTracer should work", t, func() {
+		OptOpentracingExcludedIdentities([]elemental.Identity{testmodel.UserIdentity, testmodel.ListIdentity})(&c)
+		So(c.opentracing.excludedIdentities, ShouldResemble, map[string]struct{}{"user": struct{}{}, "list": struct{}{}})
+	})
 }

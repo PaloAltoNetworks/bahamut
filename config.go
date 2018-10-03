@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
+
 	"go.aporeto.io/elemental"
 	"golang.org/x/time/rate"
 )
@@ -95,5 +97,10 @@ type config struct {
 		serviceVersion   string
 		version          map[string]interface{}
 		disableMetaRoute bool
+	}
+
+	opentracing struct {
+		tracer             opentracing.Tracer
+		excludedIdentities map[string]struct{}
 	}
 }
