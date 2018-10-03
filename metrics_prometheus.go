@@ -12,7 +12,7 @@ type prometheusMetricsManager struct {
 	reqDurationMetric   *prometheus.SummaryVec
 	reqTotalMetric      *prometheus.CounterVec
 	wsConnTotalMetric   prometheus.Counter
-	wsConnCurrentMetric prometheus.Counter
+	wsConnCurrentMetric prometheus.Gauge
 
 	handler http.Handler
 }
@@ -41,8 +41,8 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Help: "The total number of ws connection.",
 			},
 		),
-		wsConnCurrentMetric: prometheus.NewCounter(
-			prometheus.CounterOpts{
+		wsConnCurrentMetric: prometheus.NewGauge(
+			prometheus.GaugeOpts{
 				Name: "http_ws_connections_current",
 				Help: "The current number of ws connection.",
 			},
