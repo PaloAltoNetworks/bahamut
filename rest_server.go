@@ -229,7 +229,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			// TODO: find a way to support tracing in case of bad request here.
 			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 			if err != nil {
-				writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+				code = writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
 				return
 			}
 
@@ -240,7 +240,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 			if a.cfg.rateLimiting.rateLimiter != nil {
 				if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
-					writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
+					code = writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
 					return
 				}
 			}

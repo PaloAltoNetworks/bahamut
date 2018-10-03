@@ -26,7 +26,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Name: "http_requests_total",
 				Help: "The total number of requests.",
 			},
-			[]string{"code", "method"},
+			[]string{"method"},
 		),
 		reqDurationMetric: prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
@@ -59,6 +59,10 @@ func NewPrometheusMetricsManager() MetricsManager {
 
 func (c *prometheusMetricsManager) MeasureRequest(code *int, method string) func() {
 
+	c.reqTotalMetric.With(prometheus.Labels{
+		"method": method,
+	}).Inc()
+
 	timer := prometheus.NewTimer(
 		prometheus.ObserverFunc(
 			func(v float64) {
@@ -72,13 +76,7 @@ func (c *prometheusMetricsManager) MeasureRequest(code *int, method string) func
 		),
 	)
 
-	return func() {
-		c.reqTotalMetric.With(prometheus.Labels{
-			"code":   strconv.Itoa(*code),
-			"method": method,
-		}).Inc()
-		timer.ObserveDuration()
-	}
+	return func() { timer.ObserveDuration() }
 }
 
 func (c *prometheusMetricsManager) RegisterWSConnection() {
