@@ -83,6 +83,10 @@ func (s *profilingServer) start(ctx context.Context) {
 // stop stops the profilingServer.
 func (s *profilingServer) stop() {
 
+	if s.server == nil {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 
 	go func() {
