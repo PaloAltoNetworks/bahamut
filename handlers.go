@@ -63,6 +63,10 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 
 func makeErrorResponse(ctx context.Context, response *elemental.Response, err error) *elemental.Response {
 
+	if err == context.Canceled {
+		return nil
+	}
+
 	outError := processError(ctx, err)
 
 	if response == nil {

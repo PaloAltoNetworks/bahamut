@@ -2,16 +2,18 @@ package bahamut
 
 import (
 	"context"
+	"net/http"
+	"net/http/pprof"
+	"time"
 
 	"cloud.google.com/go/profiler"
 	"go.uber.org/zap"
-
-	gops "github.com/google/gops/agent"
 )
 
 // an profilingServer is the structure serving the profiling.
 type profilingServer struct {
-	cfg config
+	cfg    config
+	server *http.Server
 }
 
 // newProfilingServer returns a new profilingServer.
@@ -52,13 +54,27 @@ func (s *profilingServer) start(ctx context.Context) {
 
 	} else {
 
-		if err := gops.Listen(gops.Options{
-			Addr: s.cfg.profilingServer.listenAddress,
-		}); err != nil {
-			zap.L().Fatal("Unable to start gops profile server", zap.Error(err))
+		mux := http.NewServeMux()
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+		s.server = &http.Server{
+			Addr:    s.cfg.profilingServer.listenAddress,
+			Handler: mux,
 		}
 
-		zap.L().Info("GOPS profiler started", zap.String("address", s.cfg.profilingServer.listenAddress))
+		go func() {
+			if err := s.server.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				zap.L().Fatal("Unable to start profiling server", zap.Error(err))
+			}
+		}()
+
+		zap.L().Info("Profiler profiler started", zap.String("address", s.cfg.profilingServer.listenAddress))
 	}
 
 	<-ctx.Done()
@@ -67,6 +83,20 @@ func (s *profilingServer) start(ctx context.Context) {
 // stop stops the profilingServer.
 func (s *profilingServer) stop() {
 
-	gops.Close()
+	if s.server == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+	go func() {
+		defer cancel()
+		if err := s.server.Shutdown(ctx); err != nil {
+			zap.L().Error("Could not gracefully stop profiling server", zap.Error(err))
+		} else {
+			zap.L().Debug("Profiling server stopped")
+		}
+	}()
+
 	zap.L().Debug("Profile server stopped")
 }

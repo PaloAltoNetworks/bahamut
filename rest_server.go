@@ -14,7 +14,6 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/go-zoo/bone"
-	"github.com/opentracing/opentracing-go"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
@@ -235,11 +234,13 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 			setCommonHeader(w, req.Header.Get("Origin"))
 
-			ctx := traceRequest(req.Context(), request, opentracing.GlobalTracer())
+			ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities)
 			defer finishTracing(ctx)
 
 			if a.cfg.rateLimiting.rateLimiter != nil {
-				if err = a.cfg.rateLimiting.rateLimiter.Wait(ctx); err != nil {
+				rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
+				defer cancel()
+				if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
 					code = writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
 					return
 				}

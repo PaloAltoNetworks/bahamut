@@ -85,7 +85,7 @@ func (c *prometheusMetricsManager) RegisterWSConnection() {
 }
 
 func (c *prometheusMetricsManager) UnregisterWSConnection() {
-	c.wsConnCurrentMetric.Add(-1.0)
+	c.wsConnCurrentMetric.Dec()
 }
 
 func (c *prometheusMetricsManager) Write(w http.ResponseWriter, r *http.Request) {

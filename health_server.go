@@ -108,7 +108,6 @@ func (s *healthServer) start(ctx context.Context) {
 
 	s.server = &http.Server{Addr: s.cfg.healthServer.listenAddress}
 	s.server.Handler = s
-	s.server.SetKeepAlivesEnabled(true)
 
 	zap.L().Debug("Health server enabled", zap.String("listen", s.cfg.healthServer.listenAddress))
 

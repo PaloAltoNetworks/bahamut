@@ -62,9 +62,13 @@ func tracingName(r *elemental.Request) string {
 }
 
 // StartTracing starts tracing the request.
-func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.Tracer) context.Context {
+func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.Tracer, exludedIdentities map[string]struct{}) context.Context {
 
 	if tracer == nil {
+		return ctx
+	}
+
+	if _, ok := exludedIdentities[r.Identity.Name]; ok {
 		return ctx
 	}
 
