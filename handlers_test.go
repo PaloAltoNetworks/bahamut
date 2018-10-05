@@ -210,6 +210,20 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given I a response and an context canceled error", t, func() {
+
+		err := context.Canceled
+
+		Convey("When I call makeErrorResponse", func() {
+
+			r := makeErrorResponse(context.Background(), nil, err)
+
+			Convey("Then the returned response should be the same", func() {
+				So(r, ShouldEqual, nil)
+			})
+		})
+	})
 }
 
 func TestHandlers_handleEventualPanic(t *testing.T) {

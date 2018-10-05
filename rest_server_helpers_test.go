@@ -83,6 +83,20 @@ func TestRestServerHelper_notFoundHandler(t *testing.T) {
 
 func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
+	Convey("Given I have a response with a nil response", t, func() {
+
+		w := httptest.NewRecorder()
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			code := writeHTTPResponse(w, nil)
+
+			Convey("Then the code should be 0", func() {
+				So(code, ShouldEqual, 0)
+			})
+		})
+	})
+
 	Convey("Given I have a response with a redirect", t, func() {
 
 		w := httptest.NewRecorder()
@@ -91,10 +105,14 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			writeHTTPResponse(w, r)
+			code := writeHTTPResponse(w, r)
 
 			Convey("Then the should header Location should be set", func() {
 				So(w.Header().Get("location"), ShouldEqual, "https://la.bas")
+			})
+
+			Convey("Then the code should be 302", func() {
+				So(code, ShouldEqual, 302)
 			})
 		})
 	})
@@ -108,7 +126,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			writeHTTPResponse(w, r)
+			code := writeHTTPResponse(w, r)
 
 			Convey("Then the should headers should be correct", func() {
 				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
@@ -117,6 +135,10 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 			Convey("Then the code should correct", func() {
 				So(w.Code, ShouldEqual, http.StatusNoContent)
+			})
+
+			Convey("Then the code should be http.StatusNoContent", func() {
+				So(code, ShouldEqual, http.StatusNoContent)
 			})
 		})
 	})
@@ -127,13 +149,18 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		r := elemental.NewResponse(elemental.NewRequest())
 
 		r.Messages = []string{"msg1", "msg2"}
+		r.StatusCode = 200
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			writeHTTPResponse(w, r)
+			code := writeHTTPResponse(w, r)
 
 			Convey("Then the should header message should be set", func() {
 				So(w.Header().Get("X-Messages"), ShouldEqual, "msg1;msg2")
+			})
+
+			Convey("Then the code should be http.StatusNoContent", func() {
+				So(code, ShouldEqual, http.StatusOK)
 			})
 		})
 	})
@@ -146,17 +173,22 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		l1 := testmodel.NewList()
 		l1.ID = "id"
 		l1.Name = "toto"
+		r.StatusCode = http.StatusCreated
 
 		_ = r.Encode(l1)
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			writeHTTPResponse(w, r)
+			code := writeHTTPResponse(w, r)
 
 			Convey("Then the body should be correct", func() {
 				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
 				So(w.Header().Get("X-Messages"), ShouldEqual, "")
 				So(w.Body.String(), ShouldEqual, string(r.Data))
+			})
+
+			Convey("Then the code should be http.StatusNoContent", func() {
+				So(code, ShouldEqual, http.StatusCreated)
 			})
 		})
 	})

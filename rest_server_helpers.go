@@ -45,6 +45,13 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 // writeHTTPResponse writes the response into the given http.ResponseWriter.
 func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 
+	// If r is nil, we simply stop.
+	// It mostly means the client closed the connection and
+	// no response is needed.
+	if r == nil {
+		return 0
+	}
+
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)
 		w.WriteHeader(http.StatusFound)
