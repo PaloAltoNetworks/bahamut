@@ -54,6 +54,12 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.pushServer.enabled, ShouldEqual, true)
 		So(c.pushServer.service, ShouldEqual, srv)
 		So(c.pushServer.topic, ShouldEqual, t)
+		So(c.pushServer.endpoint, ShouldEqual, "")
+	})
+
+	Convey("Calling OptPushEndpoint should work", t, func() {
+		OptPushEndpoint("/hello/world")(&c)
+		So(c.pushServer.endpoint, ShouldEqual, "/hello/world")
 	})
 
 	Convey("Calling OptPushDispatchHandler should work", t, func() {
@@ -218,6 +224,7 @@ func TestBahamut_Options(t *testing.T) {
 		OptOpentracingExcludedIdentities([]elemental.Identity{testmodel.UserIdentity, testmodel.ListIdentity})(&c)
 		So(c.opentracing.excludedIdentities, ShouldResemble, map[string]struct{}{"user": struct{}{}, "list": struct{}{}})
 	})
+
 	Convey("Calling OptPostStartHook should work", t, func() {
 		f := func(Server) error { return nil }
 		OptPostStartHook(f)(&c)
@@ -229,4 +236,5 @@ func TestBahamut_Options(t *testing.T) {
 		OptPreStopHook(f)(&c)
 		So(c.hooks.preStop, ShouldEqual, f)
 	})
+
 }

@@ -159,6 +159,29 @@ func (b *server) Push(events ...*elemental.Event) {
 	b.pushServer.pushEvents(events...)
 }
 
+func (b *server) RoutesInfo() map[int][]RouteInfo {
+
+	return buildVersionedRoutes(b.cfg.model.modelManagers, b.ProcessorForIdentity)
+}
+
+func (b *server) VersionsInfo() map[string]interface{} {
+
+	return b.cfg.meta.version
+}
+
+func (b *server) PushEndpoint() string {
+
+	if !b.cfg.pushServer.enabled || !b.cfg.pushServer.dispatchEnabled {
+		return ""
+	}
+
+	if b.cfg.pushServer.endpoint == "" {
+		return "/events"
+	}
+
+	return b.cfg.pushServer.endpoint
+}
+
 func (b *server) Run(ctx context.Context) {
 
 	if b.profilingServer != nil {
@@ -166,7 +189,7 @@ func (b *server) Run(ctx context.Context) {
 	}
 
 	if b.restServer != nil {
-		go b.restServer.start(ctx)
+		go b.restServer.start(ctx, b.RoutesInfo())
 	}
 
 	if b.pushServer != nil {
@@ -180,11 +203,13 @@ func (b *server) Run(ctx context.Context) {
 	if hook := b.cfg.hooks.postStart; hook != nil {
 		hook(b) // nolint
 	}
+
 	<-ctx.Done()
 
 	if hook := b.cfg.hooks.preStop; hook != nil {
 		hook(b) // nolint
 	}
+
 	// Stop the health server first so we become unhealthy.
 	if b.healthServer != nil {
 		<-b.healthServer.stop().Done()

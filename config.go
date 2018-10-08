@@ -41,6 +41,7 @@ type config struct {
 	pushServer struct {
 		service         PubSubClient
 		topic           string
+		endpoint        string
 		dispatchHandler PushDispatchHandler
 		publishHandler  PushPublishHandler
 		enabled         bool
@@ -103,6 +104,7 @@ type config struct {
 		tracer             opentracing.Tracer
 		excludedIdentities map[string]struct{}
 	}
+
 	hooks struct {
 		postStart func(Server) error
 		preStop   func(Server) error
