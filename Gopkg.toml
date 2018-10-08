@@ -1,10 +1,11 @@
-[[constraint]]
-  name = "github.com/satori/go.uuid"
-  version = "v1.2.0"
 
 [[constraint]]
-  name = "github.com/prometheus/client_golang"
   branch = "master"
+  name = "github.com/prometheus/client_golang"
+
+[[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "1.2.0"
 
 [prune]
   go-tests = true
