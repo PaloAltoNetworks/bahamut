@@ -330,3 +330,16 @@ func OptOpentracingExcludedIdentities(identities []elemental.Identity) Option {
 		}
 	}
 }
+
+func OptPostStartHook(hook func(Server) error) Option {
+	return func(c *config) {
+		c.hooks.postStart = hook
+	}
+}
+
+// OptPreStopHook registers a function that will be executed just bbefore the server is stopped.
+func OptPreStopHook(hook func(Server) error) Option {
+	return func(c *config) {
+		c.hooks.preStop = hook
+	}
+}

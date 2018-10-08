@@ -103,4 +103,8 @@ type config struct {
 		tracer             opentracing.Tracer
 		excludedIdentities map[string]struct{}
 	}
+	hooks struct {
+		postStart func(Server) error
+		preStop   func(Server) error
+	}
 }

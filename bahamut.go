@@ -48,9 +48,9 @@ func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 }
 
 type server struct {
-	multiplexer *bone.Mux
-	processors  map[string]Processor
-
+	multiplexer     *bone.Mux
+	processors      map[string]Processor
+	cfg             config
 	restServer      *restServer
 	pushServer      *pushServer
 	healthServer    *healthServer
@@ -92,6 +92,7 @@ func NewServer(cfg config) Server {
 	srv := &server{
 		multiplexer: mux,
 		processors:  make(map[string]Processor),
+		cfg:         cfg,
 	}
 
 	if cfg.restServer.enabled {
@@ -176,8 +177,14 @@ func (b *server) Run(ctx context.Context) {
 		go b.healthServer.start(ctx)
 	}
 
+	if hook := b.cfg.hooks.postStart; hook != nil {
+		hook(b) // nolint
+	}
 	<-ctx.Done()
 
+	if hook := b.cfg.hooks.preStop; hook != nil {
+		hook(b) // nolint
+	}
 	// Stop the health server first so we become unhealthy.
 	if b.healthServer != nil {
 		<-b.healthServer.stop().Done()
