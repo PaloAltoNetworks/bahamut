@@ -29,10 +29,10 @@ func TestNats_NewPubSubServer(t *testing.T) {
 
 		ps := NewNATSPubSubClient(
 			"nats://localhost:4222",
-			NATSOptionClusterID("cid"),
-			NATSOptionClientID("id"),
-			NATSOptionCredentials("username", "password"),
-			NATSOptionTLS(tlsconfig),
+			NATSOptClusterID("cid"),
+			NATSOptClientID("id"),
+			NATSOptCredentials("username", "password"),
+			NATSOptTLS(tlsconfig),
 		).(*natsPubSub)
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
