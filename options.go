@@ -76,6 +76,16 @@ func OptPushServer(service PubSubClient, topic string) Option {
 	}
 }
 
+// OptPushEndpoint sets the endpoint to use for websocket channel.
+//
+// If unset, it fallsback to the default which is /events. This option
+// has not effect if OptPushServer is not set.
+func OptPushEndpoint(endpoint string) Option {
+	return func(c *config) {
+		c.pushServer.endpoint = endpoint
+	}
+}
+
 // OptPushDispatchHandler configures the push dispatcher.
 //
 // DispatchHandler defines the handler that will be used to
@@ -328,5 +338,19 @@ func OptOpentracingExcludedIdentities(identities []elemental.Identity) Option {
 		for _, i := range identities {
 			c.opentracing.excludedIdentities[i.Name] = struct{}{}
 		}
+	}
+}
+
+// OptPostStartHook registers a function that will be executed right after the server is started.
+func OptPostStartHook(hook func(Server) error) Option {
+	return func(c *config) {
+		c.hooks.postStart = hook
+	}
+}
+
+// OptPreStopHook registers a function that will be executed just bbefore the server is stopped.
+func OptPreStopHook(hook func(Server) error) Option {
+	return func(c *config) {
+		c.hooks.preStop = hook
 	}
 }

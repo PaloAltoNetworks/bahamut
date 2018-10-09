@@ -57,6 +57,17 @@ type Server interface {
 	// It will use the PubSubClient configured in the pushConfig.
 	Push(...*elemental.Event)
 
+	// RoutesInfo returns the routing information of the server.
+	RoutesInfo() map[int][]RouteInfo
+
+	// VersionsInfo returns additional versioning info.
+	VersionsInfo() map[string]interface{}
+
+	// PushEndpoint returns the configured push endpoints.
+	// If the push server is not active, it will return an
+	// empty string.
+	PushEndpoint() string
+
 	// Run runs the server using the given context.Context.
 	// You can stop the server by canceling the context.
 	Run(context.Context)

@@ -90,7 +90,7 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 }
 
 // installRoutes installs all the routes declared in the APIServerConfig.
-func (a *restServer) installRoutes() {
+func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
 	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
 	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
@@ -110,8 +110,6 @@ func (a *restServer) installRoutes() {
 	}
 
 	if !a.cfg.meta.disableMetaRoute {
-
-		routesInfo := buildVersionedRoutes(a.cfg.model.modelManagers, a.processorFinder)
 
 		encodedRoutesInfo, err := json.Marshal(routesInfo)
 		if err != nil {
@@ -165,9 +163,9 @@ func (a *restServer) installRoutes() {
 
 }
 
-func (a *restServer) start(ctx context.Context) {
+func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) {
 
-	a.installRoutes()
+	a.installRoutes(routesInfo)
 
 	var err error
 	if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
