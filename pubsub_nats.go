@@ -151,7 +151,12 @@ func (p *natsPubSub) Connect() Waiter {
 
 func (p *natsPubSub) Disconnect() error {
 
+	if err := p.client.Flush(); err != nil {
+		return err
+	}
+
 	p.client.Close()
+
 	return nil
 }
 
