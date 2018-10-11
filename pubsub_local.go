@@ -18,6 +18,12 @@ type localPubSub struct {
 	lock *sync.Mutex
 }
 
+// NewLocalPubSubClient returns a PubSubClient backed by local channels.
+func NewLocalPubSubClient() PubSubClient {
+
+	return newlocalPubSub()
+}
+
 // newlocalPubSub returns a new localPubSub.
 func newlocalPubSub() *localPubSub {
 

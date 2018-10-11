@@ -2,13 +2,14 @@ package bahamut
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/nats-io/go-nats"
 	"go.uber.org/zap"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 type natsPubSub struct {
@@ -21,27 +22,26 @@ type natsPubSub struct {
 	clusterID      string
 	password       string
 	username       string
-	clientCerts    []tls.Certificate
-	rootCAPool     *x509.CertPool
-	clientCAPool   *x509.CertPool
+	tlsConfig      *tls.Config
 }
 
-// newNatsPubSub Initializes the pubsub server.
-func newNatsPubSub(natsURL string, clusterID string, clientID string, username string, password string, rootCAPool *x509.CertPool, clientCAPool *x509.CertPool, clientCerts []tls.Certificate) *natsPubSub {
+// NewNATSPubSubClient returns a new PubSubClient backend by Nats.
+func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 
-	return &natsPubSub{
+	n := &natsPubSub{
 		natsURL:        natsURL,
 		retryInterval:  5 * time.Second,
 		publishTimeout: 8 * time.Second,
 		retryNumber:    5,
-		clientID:       clientID,
-		clusterID:      clusterID,
-		username:       username,
-		password:       password,
-		clientCerts:    clientCerts,
-		rootCAPool:     rootCAPool,
-		clientCAPool:   clientCAPool,
+		clientID:       uuid.NewV4().String(),
+		clusterID:      "test-cluster",
 	}
+
+	for _, opt := range options {
+		opt(n)
+	}
+
+	return n
 }
 
 func (p *natsPubSub) Publish(publication *Publication) error {
@@ -117,16 +117,10 @@ func (p *natsPubSub) Connect() Waiter {
 
 			var err error
 
-			tlsConfig := &tls.Config{
-				Certificates: p.clientCerts,
-				RootCAs:      p.rootCAPool,
-				ClientCAs:    p.clientCAPool,
-			}
-
 			if p.username != "" || p.password != "" {
-				p.client, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(tlsConfig))
+				p.client, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(p.tlsConfig))
 			} else {
-				p.client, err = nats.Connect(p.natsURL, nats.Secure(tlsConfig))
+				p.client, err = nats.Connect(p.natsURL, nats.Secure(p.tlsConfig))
 			}
 
 			if err == nil {
@@ -157,7 +151,12 @@ func (p *natsPubSub) Connect() Waiter {
 
 func (p *natsPubSub) Disconnect() error {
 
+	if err := p.client.Flush(); err != nil {
+		return err
+	}
+
 	p.client.Close()
+
 	return nil
 }
 

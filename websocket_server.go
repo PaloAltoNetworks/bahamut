@@ -36,10 +36,15 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		processorFinder: processorFinder,
 	}
 
+	endpoint := cfg.pushServer.endpoint
+	if endpoint == "" {
+		endpoint = "/events"
+	}
+
 	// If push is not completely disabled and dispatching of event is not disabled, we install
 	// the websocket routes.
 	if cfg.pushServer.enabled && cfg.pushServer.dispatchEnabled {
-		srv.multiplexer.Get("/events", http.HandlerFunc(srv.handleRequest))
+		srv.multiplexer.Get(endpoint, http.HandlerFunc(srv.handleRequest))
 		zap.L().Debug("Websocket push handlers installed")
 	}
 
