@@ -44,7 +44,12 @@ func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 	return n
 }
 
-func (p *natsPubSub) Publish(publication *Publication) error {
+func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
+
+	config := natsPublishConfig{}
+	for _, opt := range opts {
+		opt(&config)
+	}
 
 	if p.client == nil {
 		return fmt.Errorf("not connected to nats. messages dropped")
@@ -61,22 +66,27 @@ func (p *natsPubSub) Publish(publication *Publication) error {
 		zap.ByteString("data", publication.Data),
 	)
 
-	return p.client.Publish(publication.Topic, data)
+	if config.replyValidator == nil {
+		return p.client.Publish(publication.Topic, data)
+	}
+
+	msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
+	if err != nil {
+		return err
+	}
+
+	if err := config.replyValidator(msg.Data); err != nil {
+		return fmt.Errorf("reply validation error: %s", err)
+	}
+
+	return nil
 }
 
-func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
+func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
-	var queueGroup string
-
-	for i, arg := range args {
-		if i == 0 {
-			if q, ok := arg.(string); ok {
-				queueGroup = q
-			} else {
-				panic("You must provide a string as queue group name")
-			}
-			continue
-		}
+	config := natsSubscribeConfig{}
+	for _, opt := range opts {
+		opt(&config)
 	}
 
 	var sub *nats.Subscription
@@ -88,13 +98,27 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
 			return
 		}
+
+		if m.Reply != "" {
+
+			resp := ackMessage
+			if config.replier != nil {
+				resp = config.replier(m.Data)
+			}
+
+			if err := p.client.Publish(m.Reply, resp); err != nil {
+				zap.L().Error("Unable to send reply", zap.Error(err))
+				return
+			}
+		}
+
 		pubs <- publication
 	}
 
-	if queueGroup == "" {
+	if config.queueGroup == "" {
 		sub, err = p.client.Subscribe(topic, handler)
 	} else {
-		sub, err = p.client.QueueSubscribe(topic, queueGroup, handler)
+		sub, err = p.client.QueueSubscribe(topic, config.queueGroup, handler)
 	}
 
 	if err != nil {
