@@ -27,12 +27,12 @@ type mockPubSubServer struct {
 func (p *mockPubSubServer) Connect() Waiter   { return nil }
 func (p *mockPubSubServer) Disconnect() error { return nil }
 
-func (p *mockPubSubServer) Publish(publication *Publication) error {
+func (p *mockPubSubServer) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 	p.publications = append(p.publications, publication)
 	return p.PublishErr
 }
 
-func (p *mockPubSubServer) Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func() {
+func (p *mockPubSubServer) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 	return nil
 }
 
