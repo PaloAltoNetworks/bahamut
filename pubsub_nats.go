@@ -75,11 +75,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return err
 	}
 
-	if err := config.replyValidator(msg.Data); err != nil {
-		return fmt.Errorf("reply validation error: %s", err)
-	}
-
-	return nil
+	return config.replyValidator(msg)
 }
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
@@ -103,11 +99,11 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 
 			resp := ackMessage
 			if config.replier != nil {
-				resp = config.replier(m.Data)
+				resp = config.replier(m)
 			}
 
 			if err := p.client.Publish(m.Reply, resp); err != nil {
-				zap.L().Error("Unable to send reply", zap.Error(err))
+				zap.L().Error("Unable to send requested reply", zap.Error(err))
 				return
 			}
 		}
