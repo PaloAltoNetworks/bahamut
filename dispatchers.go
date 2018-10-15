@@ -322,6 +322,8 @@ func dispatchDeleteOperation(
 func dispatchPatchOperation(
 	ctx *bcontext,
 	processorFinder processorFinderFunc,
+	modelManager elemental.ModelManager,
+	unmarshaller CustomUmarshaller,
 	authenticators []RequestAuthenticator,
 	authorizers []Authorizer,
 	pusher eventPusherFunc,
@@ -353,14 +355,22 @@ func dispatchPatchOperation(
 		audit(auditer, ctx, err)
 		return
 	}
+	var sparse elemental.Identifiable
 
-	var patch *elemental.Patch
-	if err = ctx.request.Decode(&patch); err != nil {
-		audit(auditer, ctx, err)
-		return
+	if unmarshaller != nil {
+		if sparse, err = unmarshaller(ctx.request); err != nil {
+			audit(auditer, ctx, err)
+			return
+		}
+	} else {
+		sparse = modelManager.SparseIdentifiable(ctx.request.Identity)
+		if err = ctx.request.Decode(&sparse); err != nil {
+			audit(auditer, ctx, err)
+			return
+		}
 	}
 
-	ctx.inputData = patch
+	ctx.inputData = sparse
 
 	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)

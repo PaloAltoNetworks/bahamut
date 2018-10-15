@@ -378,6 +378,8 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 			return dispatchPatchOperation(
 				ctx,
 				processorFinder,
+				cfg.model.modelManagers[ctx.request.Version],
+				cfg.model.unmarshallers[ctx.request.Identity],
 				cfg.security.requestAuthenticators,
 				cfg.security.authorizers,
 				pusherFunc,
