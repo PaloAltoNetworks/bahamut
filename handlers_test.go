@@ -184,7 +184,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		Convey("When I call makeResponse", func() {
 
 			Convey("Then it should panic", func() {
-				So(func() { makeResponse(ctx, response) }, ShouldPanic)
+				So(func() { makeResponse(ctx, response) }, ShouldPanic, testmodel.Manager())
 			})
 		})
 	})

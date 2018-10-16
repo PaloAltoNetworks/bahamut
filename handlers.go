@@ -50,6 +50,22 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 	}
 
 	if ctx.outputData != nil {
+
+		var requestedFields []string
+		if ctx.Request().Headers != nil {
+			requestedFields = ctx.Request().Headers["X-Fields"]
+		}
+
+		if len(requestedFields) > 0 {
+
+			switch ident := ctx.outputData.(type) {
+			case elemental.FullIdentifiable:
+				ctx.outputData = ident.ToSparse(requestedFields...)
+			case elemental.FullIdentifiables:
+				ctx.outputData = ident.ToSparse(requestedFields...)
+			}
+		}
+
 		if err := response.Encode(ctx.outputData); err != nil {
 			zap.L().Panic("Unable to encode output data", zap.Error(err))
 		}
