@@ -59,9 +59,9 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 		if len(requestedFields) > 0 {
 
 			switch ident := ctx.outputData.(type) {
-			case elemental.FullIdentifiable:
+			case elemental.PlainIdentifiable:
 				ctx.outputData = ident.ToSparse(requestedFields...)
-			case elemental.FullIdentifiables:
+			case elemental.PlainIdentifiables:
 				ctx.outputData = ident.ToSparse(requestedFields...)
 			}
 		}
