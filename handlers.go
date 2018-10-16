@@ -49,30 +49,31 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 		fields = append(fields, (log.Object("messages", msgs)))
 	}
 
-	if ctx.outputData != nil {
-
-		var requestedFields []string
-		if ctx.Request().Headers != nil {
-			requestedFields = ctx.Request().Headers["X-Fields"]
-		}
-
-		if len(requestedFields) > 0 {
-
-			switch ident := ctx.outputData.(type) {
-			case elemental.PlainIdentifiable:
-				ctx.outputData = ident.ToSparse(requestedFields...)
-			case elemental.PlainIdentifiables:
-				ctx.outputData = ident.ToSparse(requestedFields...)
-			}
-		}
-
-		if err := response.Encode(ctx.outputData); err != nil {
-			zap.L().Panic("Unable to encode output data", zap.Error(err))
-		}
-		fields = append(fields, (log.Object("response", string(response.Data))))
-	} else {
+	if ctx.outputData == nil {
 		response.StatusCode = http.StatusNoContent
+		return response
 	}
+
+	var requestedFields []string
+	if ctx.Request().Headers != nil {
+		requestedFields = ctx.Request().Headers["X-Fields"]
+	}
+
+	if len(requestedFields) > 0 {
+
+		switch ident := ctx.outputData.(type) {
+		case elemental.PlainIdentifiable:
+			ctx.outputData = ident.ToSparse(requestedFields...)
+		case elemental.PlainIdentifiables:
+			ctx.outputData = ident.ToSparse(requestedFields...)
+		}
+	}
+
+	if err := response.Encode(ctx.outputData); err != nil {
+		zap.L().Panic("Unable to encode output data", zap.Error(err))
+	}
+
+	fields = append(fields, (log.Object("response", string(response.Data))))
 
 	return response
 }
