@@ -965,11 +965,15 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 	Convey("Given I have a processor that handle ProcessPatch function", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		expectedID := "a"
+		expectedName := "Fake"
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				output: &elemental.Patch{Type: elemental.PatchTypeSetIfZero},
+				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
 			}, nil
 		}
@@ -978,41 +982,23 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		pusher := &mockPusher{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
 
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
-			So(ctx.outputData, ShouldResemble, &elemental.Patch{Type: elemental.PatchTypeSetIfZero})
+			So(ctx.outputData, ShouldResemble, &testmodel.SparseList{ID: &expectedID, Name: &expectedName})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 
-	Convey("Given I have a processor that handle ProcessPatch function with read only mode", t, func() {
-		request := elemental.NewRequest()
-		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
-
-		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &mockProcessor{}, nil
-		}
-
-		auditer := &mockAuditer{}
-
-		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, nil, auditer, true, nil)
-
-		Convey("Then I should have a 423 error and context should be nil", func() {
-			So(err, ShouldNotBeNil)
-			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
-		})
-	})
-
 	Convey("Given I have a processor that handle ProcessPatch function with an invalid JSON", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 		request.Data = []byte(`Invalid JSON`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
@@ -1022,7 +1008,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (elemental): Bad Request: Invalid JSON"
 		expectedNbCalls := 1
@@ -1035,6 +1021,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 	Convey("Given I have a processor that handle ProcessPatch function with error", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
@@ -1046,7 +1033,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -1059,6 +1046,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 	Convey("Given I have a processor that does not handle ProcessPatch function", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 		request.Operation = elemental.OperationRetrieveMany
 		request.Identity = elemental.MakeIdentity("Fake", "Test")
 
@@ -1072,7 +1060,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1082,6 +1070,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 	Convey("Given I have a processor that does not handle ProcessPatch function and an authenticator that is not authenticated", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockEmptyProcessor{}, nil
@@ -1103,7 +1092,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, authenticators, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, nil, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1113,6 +1102,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 	Convey("Given I have a processor that does not handle ProcessPatch function and an authorizer that is not authorize", t, func() {
 		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockEmptyProcessor{}, nil
@@ -1143,7 +1133,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, authenticators, authorizers, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, authorizers, nil, auditer, false, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
