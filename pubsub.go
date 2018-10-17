@@ -4,10 +4,16 @@ import (
 	"time"
 )
 
+// PubSubOptPublish is the type of option that can use in PubSubClient.Publish.
+type PubSubOptPublish func(interface{})
+
+// PubSubOptSubscribe is the type of option that can use in PubSubClient.Subscribe.
+type PubSubOptSubscribe func(interface{})
+
 // A PubSubClient is a structure that provides a publish/subscribe mechanism.
 type PubSubClient interface {
-	Publish(publication *Publication) error
-	Subscribe(pubs chan *Publication, errors chan error, topic string, args ...interface{}) func()
+	Publish(publication *Publication, opts ...PubSubOptPublish) error
+	Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func()
 	Connect() Waiter
 	Disconnect() error
 }

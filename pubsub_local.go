@@ -38,7 +38,7 @@ func newlocalPubSub() *localPubSub {
 }
 
 // Publish publishes a publication.
-func (p *localPubSub) Publish(publication *Publication) error {
+func (p *localPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 
 	p.publications <- publication
 
@@ -46,7 +46,7 @@ func (p *localPubSub) Publish(publication *Publication) error {
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string, args ...interface{}) func() {
+func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
 	unsubscribe := make(chan struct{})
 

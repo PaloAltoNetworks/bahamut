@@ -6,9 +6,8 @@ import (
 	"net/url"
 	"testing"
 
-	"go.aporeto.io/elemental/test/model"
-
 	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -26,9 +25,9 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
+				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding")
+				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
 			})
 		})
@@ -40,9 +39,9 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "*")
-				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages")
+				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding")
+				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
 			})
 		})
