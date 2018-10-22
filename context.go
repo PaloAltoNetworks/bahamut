@@ -8,9 +8,8 @@ import (
 	"context"
 	"sync"
 
-	"go.aporeto.io/elemental"
-
 	uuid "github.com/satori/go.uuid"
+	"go.aporeto.io/elemental"
 )
 
 type bcontext struct {

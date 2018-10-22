@@ -12,11 +12,10 @@ import (
 	"time"
 
 	"github.com/go-zoo/bone"
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type mockPubSubServer struct {

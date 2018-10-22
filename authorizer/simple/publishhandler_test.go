@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"go.aporeto.io/elemental"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 )
 
 func TestPublishHandler_NewPublishHandler(t *testing.T) {
