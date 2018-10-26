@@ -49,14 +49,21 @@ func handleRecoveredPanic(ctx context.Context, r interface{}, recover bool) erro
 	return err
 }
 
-func processError(ctx context.Context, err error) (outError elemental.Errors) {
-
-	span := opentracing.SpanFromContext(ctx)
+func extractSpanID(span opentracing.Span) string {
 
 	spanID := "unknown"
 	if stringer, ok := span.(fmt.Stringer); ok {
 		spanID = strings.SplitN(stringer.String(), ":", 2)[0]
 	}
+
+	return spanID
+}
+
+func processError(ctx context.Context, err error) (outError elemental.Errors) {
+
+	span := opentracing.SpanFromContext(ctx)
+
+	spanID := extractSpanID(span)
 
 	switch e := err.(type) {
 

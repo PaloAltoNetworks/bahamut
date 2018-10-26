@@ -2,15 +2,35 @@ package bahamut
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var vregexp = regexp.MustCompile(`^/v/\d+`)
+
+func sanitizeURL(url string) string {
+
+	url = vregexp.ReplaceAllString(url, "")
+
+	parts := strings.Split(url, "/")
+	if len(parts) <= 2 {
+		return url
+	}
+
+	parts[2] = ":id"
+
+	return strings.Join(parts, "/")
+}
+
 type prometheusMetricsManager struct {
 	reqDurationMetric   *prometheus.SummaryVec
 	reqTotalMetric      *prometheus.CounterVec
+	errorMetric         *prometheus.CounterVec
 	wsConnTotalMetric   prometheus.Counter
 	wsConnCurrentMetric prometheus.Gauge
 
@@ -33,7 +53,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Name: "http_requests_duration_seconds",
 				Help: "The average duration of the requests",
 			},
-			[]string{"code", "method"},
+			[]string{"code", "method", "url"},
 		),
 		wsConnTotalMetric: prometheus.NewCounter(
 			prometheus.CounterOpts{
@@ -47,21 +67,31 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Help: "The current number of ws connection.",
 			},
 		),
+		errorMetric: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_errors_5xx_total",
+				Help: "The total number of 5xx errors.",
+			},
+			[]string{"span", "method", "url"},
+		),
 	}
 
 	prometheus.MustRegister(mc.reqTotalMetric)
 	prometheus.MustRegister(mc.reqDurationMetric)
 	prometheus.MustRegister(mc.wsConnTotalMetric)
 	prometheus.MustRegister(mc.wsConnCurrentMetric)
+	prometheus.MustRegister(mc.errorMetric)
 
 	return mc
 }
 
-func (c *prometheusMetricsManager) MeasureRequest(code *int, method string) func() {
+func (c *prometheusMetricsManager) MeasureRequest(code *int, method string, url string) func(Context) {
 
 	c.reqTotalMetric.With(prometheus.Labels{
 		"method": method,
 	}).Inc()
+
+	surl := sanitizeURL(url)
 
 	timer := prometheus.NewTimer(
 		prometheus.ObserverFunc(
@@ -70,13 +100,27 @@ func (c *prometheusMetricsManager) MeasureRequest(code *int, method string) func
 					prometheus.Labels{
 						"code":   strconv.Itoa(*code),
 						"method": method,
+						"url":    surl,
 					},
 				).Observe(v)
 			},
 		),
 	)
 
-	return func() { timer.ObserveDuration() }
+	return func(ctx Context) {
+
+		if *code >= http.StatusInternalServerError && ctx != nil {
+
+			span := opentracing.SpanFromContext(ctx.Context())
+			c.errorMetric.With(prometheus.Labels{
+				"trace":  extractSpanID(span),
+				"method": method,
+				"url":    surl,
+			}).Inc()
+		}
+
+		timer.ObserveDuration()
+	}
 }
 
 func (c *prometheusMetricsManager) RegisterWSConnection() {
