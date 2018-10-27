@@ -72,7 +72,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Name: "http_errors_5xx_total",
 				Help: "The total number of 5xx errors.",
 			},
-			[]string{"span", "method", "url"},
+			[]string{"trace", "method", "url"},
 		),
 	}
 
