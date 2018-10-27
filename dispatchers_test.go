@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 // TestDispatchers_dispatchRetrieveManyOperation tests dispatchRetrieveManyOperation method

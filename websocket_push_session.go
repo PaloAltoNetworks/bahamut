@@ -15,10 +15,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	uuid "github.com/satori/go.uuid"
 	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 type unregisterFunc func(*wsPushSession)

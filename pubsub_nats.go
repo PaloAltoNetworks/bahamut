@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/nats-io/go-nats"
-	"go.uber.org/zap"
-
 	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 type natsPubSub struct {

@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
-
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
 // Publication is a structure that can be published to a PublishServer.

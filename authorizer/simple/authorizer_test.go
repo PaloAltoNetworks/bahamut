@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"go.aporeto.io/bahamut"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/bahamut"
 )
 
 func TestAuthorizer_NewAuthorizer(t *testing.T) {

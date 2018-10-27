@@ -2,26 +2,12 @@ package bahamut
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"runtime"
-	"runtime/debug"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
-
-type runtimeStats struct {
-	NumGoroutine     int
-	NumCgoCall       int64
-	NumCPU           int
-	NumRequests      int64
-	NumWSConnections int64
-	MemStats         runtime.MemStats
-	GCStats          debug.GCStats
-}
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
@@ -67,25 +53,6 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.cfg.healthServer.metricsManager.Write(w, r)
-
-	case "/_rstats":
-		// this is deprecated
-
-		stats := runtimeStats{
-			NumGoroutine: runtime.NumGoroutine(),
-			NumCgoCall:   runtime.NumCgoCall(),
-			NumCPU:       runtime.NumCPU(),
-		}
-
-		debug.ReadGCStats(&stats.GCStats)
-		runtime.ReadMemStats(&stats.MemStats)
-
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-
-		if err := enc.Encode(stats); err != nil {
-			http.Error(w, fmt.Sprintf("Unable to encode runtime stats: %s", err), http.StatusInternalServerError)
-		}
 
 	default:
 

@@ -7,10 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"go.aporeto.io/elemental/test/model"
-
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
+	"go.aporeto.io/elemental/test/model"
 )
 
 func TestHandlers_makeResponse(t *testing.T) {

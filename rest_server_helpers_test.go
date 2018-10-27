@@ -6,10 +6,9 @@ import (
 	"net/url"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRestServerHelpers_commonHeaders(t *testing.T) {
