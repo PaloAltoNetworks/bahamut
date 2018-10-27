@@ -9,10 +9,9 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/elemental"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestBahamut_MTLSAuthorizer(t *testing.T) {

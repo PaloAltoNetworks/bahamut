@@ -7,12 +7,10 @@ import (
 	"net/http"
 	"testing"
 
+	opentracing "github.com/opentracing/opentracing-go"
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
-
-	opentracing "github.com/opentracing/opentracing-go"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTracing_extractClaims(t *testing.T) {

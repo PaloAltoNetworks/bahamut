@@ -12,9 +12,8 @@ import (
 	"testing"
 
 	"github.com/opentracing/opentracing-go"
-	"go.aporeto.io/elemental"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 )
 
 func TestUtils_RecoverFromPanic(t *testing.T) {

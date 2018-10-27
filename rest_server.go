@@ -218,9 +218,12 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
 			var code int
+			var bctx *bcontext
 
 			if a.cfg.healthServer.metricsManager != nil {
-				defer a.cfg.healthServer.metricsManager.MeasureRequest(&code, req.Method)()
+				defer func() {
+					a.cfg.healthServer.metricsManager.MeasureRequest(&code, req.Method, req.URL.Path)(bctx)
+				}()
 			}
 
 			// TODO: find a way to support tracing in case of bad request here.
@@ -244,7 +247,8 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				}
 			}
 
-			code = writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+			bctx = newContext(ctx, request)
+			code = writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
 		}),
 	).(http.HandlerFunc)
 }

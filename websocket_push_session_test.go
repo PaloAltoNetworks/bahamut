@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
-
-	opentracing "github.com/opentracing/opentracing-go"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestWSPushSession_newPushSession(t *testing.T) {

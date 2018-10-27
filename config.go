@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/opentracing/opentracing-go"
-
 	"go.aporeto.io/elemental"
 	"golang.org/x/time/rate"
 )

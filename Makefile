@@ -21,11 +21,12 @@ lint:
 		--enable=unused \
 		--enable=structcheck \
 		--enable=varcheck \
-		--enable=ineffassign \
 		--enable=deadcode \
 		--enable=unconvert \
 		--enable=misspell \
 		--enable=unparam \
+		--enable=prealloc \
+		--enable=nakedret \
 		./...
 
 test:

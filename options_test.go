@@ -7,11 +7,10 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/elemental/test/model"
 	"golang.org/x/time/rate"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestBahamut_Options(t *testing.T) {

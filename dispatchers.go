@@ -36,12 +36,12 @@ func dispatchRetrieveManyOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	proc, _ := processorFinder(ctx.request.Identity)
@@ -49,12 +49,12 @@ func dispatchRetrieveManyOperation(
 	if _, ok := proc.(RetrieveManyProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = proc.(RetrieveManyProcessor).ProcessRetrieveMany(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -63,7 +63,7 @@ func dispatchRetrieveManyOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchRetrieveOperation(
@@ -77,12 +77,12 @@ func dispatchRetrieveOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	proc, _ := processorFinder(ctx.request.Identity)
@@ -90,12 +90,12 @@ func dispatchRetrieveOperation(
 	if _, ok := proc.(RetrieveProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = proc.(RetrieveProcessor).ProcessRetrieve(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -104,7 +104,7 @@ func dispatchRetrieveOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchCreateOperation(
@@ -122,17 +122,17 @@ func dispatchCreateOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if readOnlyMode {
 		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
-			return
+			return err
 		}
 	}
 
@@ -141,27 +141,27 @@ func dispatchCreateOperation(
 	if _, ok := proc.(CreateProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	var obj elemental.Identifiable
 	if unmarshaller != nil {
 		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
 		if err = ctx.request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	}
 
@@ -169,7 +169,7 @@ func dispatchCreateOperation(
 
 	if err = proc.(CreateProcessor).ProcessCreate(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -183,7 +183,7 @@ func dispatchCreateOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchUpdateOperation(
@@ -201,17 +201,17 @@ func dispatchUpdateOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if readOnlyMode {
 		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
-			return
+			return err
 		}
 	}
 
@@ -220,27 +220,27 @@ func dispatchUpdateOperation(
 	if _, ok := proc.(UpdateProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 	var obj elemental.Identifiable
 
 	if unmarshaller != nil {
 		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
 		if err = ctx.request.Decode(&obj); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	}
 
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	}
 
@@ -248,7 +248,7 @@ func dispatchUpdateOperation(
 
 	if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -262,7 +262,7 @@ func dispatchUpdateOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchDeleteOperation(
@@ -278,17 +278,17 @@ func dispatchDeleteOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if readOnlyMode {
 		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
-			return
+			return err
 		}
 	}
 
@@ -297,12 +297,12 @@ func dispatchDeleteOperation(
 	if _, ok := proc.(DeleteProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = proc.(DeleteProcessor).ProcessDelete(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -316,7 +316,7 @@ func dispatchDeleteOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchPatchOperation(
@@ -334,17 +334,17 @@ func dispatchPatchOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if readOnlyMode {
 		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
-			return
+			return err
 		}
 	}
 
@@ -353,20 +353,20 @@ func dispatchPatchOperation(
 	if _, ok := proc.(PatchProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 	var sparse elemental.Identifiable
 
 	if unmarshaller != nil {
 		if sparse, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	} else {
 		sparse = modelManager.SparseIdentifiable(ctx.request.Identity)
 		if err = ctx.request.Decode(&sparse); err != nil {
 			audit(auditer, ctx, err)
-			return
+			return err
 		}
 	}
 
@@ -374,7 +374,7 @@ func dispatchPatchOperation(
 
 	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -388,7 +388,7 @@ func dispatchPatchOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func dispatchInfoOperation(
@@ -402,12 +402,12 @@ func dispatchInfoOperation(
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = CheckAuthorization(authorizers, ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	proc, _ := processorFinder(ctx.request.Identity)
@@ -415,12 +415,12 @@ func dispatchInfoOperation(
 	if _, ok := proc.(InfoProcessor); !ok {
 		err = notImplementedErr(ctx.request)
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if err = proc.(InfoProcessor).ProcessInfo(ctx); err != nil {
 		audit(auditer, ctx, err)
-		return
+		return err
 	}
 
 	if len(ctx.events) > 0 {
@@ -429,7 +429,7 @@ func dispatchInfoOperation(
 
 	audit(auditer, ctx, nil)
 
-	return
+	return err
 }
 
 func makeReadOnlyError(identity elemental.Identity, readOnlyExclusion []elemental.Identity) error {
