@@ -111,7 +111,10 @@ func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, recover
 
 	go func() {
 		defer handleEventualPanic(ctx.ctx, e, recover)
-		e <- d()
+		select {
+		case e <- d():
+		default:
+		}
 	}()
 
 	select {
