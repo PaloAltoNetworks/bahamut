@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
-	uuid "github.com/satori/go.uuid"
 	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
 )
@@ -47,7 +47,7 @@ type wsPushSession struct {
 
 func newWSPushSession(request *http.Request, cfg config, unregister unregisterFunc) *wsPushSession {
 
-	id := uuid.NewV4().String()
+	id := uuid.Must(uuid.NewV4()).String()
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
