@@ -8,7 +8,7 @@ import (
 	"context"
 	"sync"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"go.aporeto.io/elemental"
 )
 
@@ -46,7 +46,7 @@ func newContext(ctx context.Context, request *elemental.Request) *bcontext {
 		claimsMap:    map[string]string{},
 		ctx:          ctx,
 		eventsLock:   &sync.Mutex{},
-		id:           uuid.NewV4().String(),
+		id:           uuid.Must(uuid.NewV4()).String(),
 		messagesLock: &sync.Mutex{},
 		request:      request,
 	}

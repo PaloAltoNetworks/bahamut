@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/go-nats"
-	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +32,7 @@ func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 		retryInterval:  5 * time.Second,
 		publishTimeout: 8 * time.Second,
 		retryNumber:    5,
-		clientID:       uuid.NewV4().String(),
+		clientID:       uuid.Must(uuid.NewV4()).String(),
 		clusterID:      "test-cluster",
 	}
 
