@@ -3,5 +3,8 @@ testresults.xml
 .tags
 
 *.cover
-coverage.txt
 *.lock
+vendor
+
+*.cov
+artifacts
