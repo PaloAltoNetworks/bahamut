@@ -7,6 +7,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net"
 	"net/http"
 	"time"
 
@@ -35,6 +36,7 @@ type config struct {
 		disableKeepalive      bool
 		enabled               bool
 		customRootHandlerFunc http.HandlerFunc
+		customListener        net.Listener
 	}
 
 	pushServer struct {

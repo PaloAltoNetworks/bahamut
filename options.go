@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -30,6 +31,13 @@ func OptRestServer(listen string) Option {
 	return func(c *config) {
 		c.restServer.enabled = true
 		c.restServer.listenAddress = listen
+	}
+}
+
+// OptCustomListener allows to set a custom listener for the api server..
+func OptCustomListener(listener net.Listener) Option {
+	return func(c *config) {
+		c.restServer.customListener = listener
 	}
 }
 

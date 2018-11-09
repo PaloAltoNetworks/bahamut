@@ -3,6 +3,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -26,6 +27,12 @@ func TestBahamut_Options(t *testing.T) {
 		OptRestServer("1.2.3.4:123")(&c)
 		So(c.restServer.enabled, ShouldEqual, true)
 		So(c.restServer.listenAddress, ShouldEqual, "1.2.3.4:123")
+	})
+
+	Convey("Calling OptCustomListener should work", t, func() {
+		listener := &net.UnixListener{}
+		OptCustomListener(listener)(&c)
+		So(c.restServer.customListener, ShouldEqual, listener)
 	})
 
 	Convey("Calling OptTimeouts should work", t, func() {

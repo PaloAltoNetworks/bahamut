@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -177,10 +178,19 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 	a.server.Handler = a.multiplexer
 
 	go func() {
+
+		listener := a.cfg.restServer.customListener
+		if listener == nil {
+			listener, err = net.Listen("tcp", a.server.Addr)
+			if err != nil {
+				zap.L().Fatal("Unable to dial", zap.Error(err))
+			}
+		}
+
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
-			err = a.server.ListenAndServeTLS("", "")
+			err = a.server.ServeTLS(listener, "", "")
 		} else {
-			err = a.server.ListenAndServe()
+			err = a.server.Serve(listener)
 		}
 
 		if err != nil {
