@@ -95,6 +95,7 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 			for v := range rb.verbs {
 				flatVerbs = append(flatVerbs, v)
 			}
+			sort.Strings(flatVerbs)
 
 			versionedRoutes[version] = append(
 				versionedRoutes[version],
