@@ -75,7 +75,7 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", identity.Private)
 				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "GET", identity.Private)
+					addRoute(routes, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "GET", identity.Private)
 				}
 			}
 
@@ -84,7 +84,7 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 				if parent == "root" {
 					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
 				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", parent, identity.Category), "POST", identity.Private)
+					addRoute(routes, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "POST", identity.Private)
 				}
 			}
 		}
