@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func handleRecoveredPanic(ctx context.Context, r interface{}, recover bool) error {
+func handleRecoveredPanic(ctx context.Context, r interface{}, disablePanicRecovery bool) error {
 
 	if r == nil {
 		return nil
@@ -39,7 +39,7 @@ func handleRecoveredPanic(ctx context.Context, r interface{}, recover bool) erro
 		)
 	}
 
-	if !recover {
+	if disablePanicRecovery {
 		if sp != nil {
 			sp.Finish()
 		}

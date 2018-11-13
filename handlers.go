@@ -98,19 +98,19 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	return response
 }
 
-func handleEventualPanic(ctx context.Context, c chan error, reco bool) {
+func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery bool) {
 
-	if err := handleRecoveredPanic(ctx, recover(), reco); err != nil {
+	if err := handleRecoveredPanic(ctx, recover(), disablePanicRecovery); err != nil {
 		c <- err
 	}
 }
 
-func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, recover bool) *elemental.Response {
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool) *elemental.Response {
 
 	e := make(chan error)
 
 	go func() {
-		defer handleEventualPanic(ctx.ctx, e, recover)
+		defer handleEventualPanic(ctx.ctx, e, disablePanicRecovery)
 		select {
 		case e <- d():
 		default:
