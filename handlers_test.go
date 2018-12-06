@@ -290,7 +290,7 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 		Convey("When I call my function that panics with handleEventualPanic installed with recover", func() {
 
 			f := func() {
-				defer handleEventualPanic(context.Background(), c, true)
+				defer handleEventualPanic(context.Background(), c, false)
 				panic("Noooooooooooooooooo")
 			}
 
@@ -306,7 +306,7 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 		Convey("When I call my function that panics with handleEventualPanic installed with no recover", func() {
 
 			f := func() {
-				defer handleEventualPanic(context.Background(), c, false)
+				defer handleEventualPanic(context.Background(), c, true)
 				panic("Noooooooooooooooooo")
 			}
 
