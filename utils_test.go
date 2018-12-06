@@ -26,7 +26,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(context.TODO(), recover(), true)
+				err = handleRecoveredPanic(context.TODO(), recover(), false)
 				wg.Done()
 			}()
 			panic("this is a panic!")
@@ -43,7 +43,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(context.TODO(), recover(), false) // nolint
+				handleRecoveredPanic(context.TODO(), recover(), true) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}

@@ -53,7 +53,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Name: "http_requests_duration_seconds",
 				Help: "The average duration of the requests",
 			},
-			[]string{"code", "method", "url"},
+			[]string{"method", "url"},
 		),
 		wsConnTotalMetric: prometheus.NewCounter(
 			prometheus.CounterOpts{
@@ -72,7 +72,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 				Name: "http_errors_5xx_total",
 				Help: "The total number of 5xx errors.",
 			},
-			[]string{"trace", "method", "url"},
+			[]string{"trace", "method", "url", "code"},
 		),
 	}
 
@@ -85,7 +85,7 @@ func NewPrometheusMetricsManager() MetricsManager {
 	return mc
 }
 
-func (c *prometheusMetricsManager) MeasureRequest(code *int, method string, url string) func(Context) {
+func (c *prometheusMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
 
 	c.reqTotalMetric.With(prometheus.Labels{
 		"method": method,
@@ -98,7 +98,6 @@ func (c *prometheusMetricsManager) MeasureRequest(code *int, method string, url 
 			func(v float64) {
 				c.reqDurationMetric.With(
 					prometheus.Labels{
-						"code":   strconv.Itoa(*code),
 						"method": method,
 						"url":    surl,
 					},
@@ -107,15 +106,15 @@ func (c *prometheusMetricsManager) MeasureRequest(code *int, method string, url 
 		),
 	)
 
-	return func(ctx Context) {
+	return func(code int, span opentracing.Span) {
 
-		if *code >= http.StatusInternalServerError && ctx != nil {
+		if code >= http.StatusInternalServerError {
 
-			span := opentracing.SpanFromContext(ctx.Context())
 			c.errorMetric.With(prometheus.Labels{
 				"trace":  extractSpanID(span),
 				"method": method,
 				"url":    surl,
+				"code":   strconv.Itoa(code),
 			}).Inc()
 		}
 

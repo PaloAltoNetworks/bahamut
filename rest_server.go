@@ -15,6 +15,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/go-zoo/bone"
+	opentracing "github.com/opentracing/opentracing-go"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
@@ -227,19 +228,17 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 	return gziphandler.GzipHandler(
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-			var code int
-			var bctx *bcontext
-
+			var measure FinishMeasurementFunc
 			if a.cfg.healthServer.metricsManager != nil {
-				defer func() {
-					a.cfg.healthServer.metricsManager.MeasureRequest(&code, req.Method, req.URL.Path)(bctx)
-				}()
+				measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
 			}
 
-			// TODO: find a way to support tracing in case of bad request here.
 			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 			if err != nil {
-				code = writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+				code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+				if measure != nil {
+					measure(code, nil)
+				}
 				return
 			}
 
@@ -252,13 +251,18 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 				defer cancel()
 				if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
-					code = writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
+					code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
+					if measure != nil {
+						measure(code, opentracing.SpanFromContext(ctx))
+					}
 					return
 				}
 			}
 
-			bctx = newContext(ctx, request)
-			code = writeHTTPResponse(w, handler(bctx, a.cfg, a.processorFinder, a.pusher))
+			code := writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+			if measure != nil {
+				measure(code, opentracing.SpanFromContext(ctx))
+			}
 		}),
 	).(http.HandlerFunc)
 }
