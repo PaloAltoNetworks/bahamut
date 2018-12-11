@@ -16,8 +16,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
-	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
+	"go.aporeto.io/wsc"
 )
 
 type unregisterFunc func(*wsPushSession)

@@ -13,9 +13,9 @@ import (
 
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
-	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
+	"go.aporeto.io/wsc"
 )
 
 type mockPubSubServer struct {

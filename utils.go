@@ -8,9 +8,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/opentracing/opentracing-go"
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
-	"go.aporeto.io/addedeffect/tagutils"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
@@ -106,11 +105,38 @@ func claimsToMap(claims []string) map[string]string {
 	var k, v string
 
 	for _, claim := range claims {
-		if err := tagutils.SplitPtr(claim, &k, &v); err != nil {
+		if err := splitPtr(claim, &k, &v); err != nil {
 			panic(err)
 		}
 		claimsMap[k] = v
 	}
 
 	return claimsMap
+}
+
+func splitPtr(tag string, key *string, value *string) (err error) {
+
+	l := len(tag)
+	if l < 3 {
+		err = fmt.Errorf("Invalid tag: invalid length '%s'", tag)
+		return
+	}
+
+	if tag[0] == '=' {
+		err = fmt.Errorf("Invalid tag: missing key '%s'", tag)
+		return
+	}
+
+	for i := 0; i < l; i++ {
+		if tag[i] == '=' {
+			if i+1 >= l {
+				return fmt.Errorf("Invalid tag: missing value '%s'", tag)
+			}
+			*key = tag[:i]
+			*value = tag[i+1:]
+			return
+		}
+	}
+
+	return fmt.Errorf("Invalid tag: missing equal symbol '%s'", tag)
 }
