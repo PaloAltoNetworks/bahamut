@@ -2,12 +2,13 @@ package bahamut
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
 )
 
 // TestDispatchers_dispatchRetrieveManyOperation tests dispatchRetrieveManyOperation method
@@ -475,6 +476,38 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		})
 	})
 
+	Convey("Given I have a processor with custom unmarshal function that fails", t, func() {
+		request := elemental.NewRequest()
+		request.Operation = elemental.OperationCreate
+		request.Identity = elemental.MakeIdentity("Fake", "Test")
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{}, nil
+		}
+
+		expectedError := "boom"
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchCreateOperation(
+			ctx,
+			processorFinder,
+			testmodel.Manager(),
+			func(*elemental.Request) (elemental.Identifiable, error) {
+				return nil, fmt.Errorf("boom")
+			},
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+			nil,
+		)
+
+		Convey("Then I should get a bahamut error and no context", func() {
+			So(err.Error(), ShouldEqual, expectedError)
+		})
+	})
+
 	Convey("Given I have a processor that does not handle ProcessCreate function and an authenticator that is not authenticated", t, func() {
 		request := elemental.NewRequest()
 
@@ -785,6 +818,38 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
 			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+		})
+	})
+
+	Convey("Given I have a processor with custom unmarshal function that fails", t, func() {
+		request := elemental.NewRequest()
+		request.Operation = elemental.OperationUpdate
+		request.Identity = elemental.MakeIdentity("Fake", "Test")
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{}, nil
+		}
+
+		expectedError := "boom"
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchUpdateOperation(
+			ctx,
+			processorFinder,
+			testmodel.Manager(),
+			func(*elemental.Request) (elemental.Identifiable, error) {
+				return nil, fmt.Errorf("boom")
+			},
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+			nil,
+		)
+
+		Convey("Then I should get a bahamut error and no context", func() {
+			So(err.Error(), ShouldEqual, expectedError)
 		})
 	})
 }
@@ -1139,6 +1204,58 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 		})
 	})
+
+	Convey("Given I have a processor that handle ProcessPatch function with read only mode", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{}, nil
+		}
+
+		auditer := &mockAuditer{}
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, true, nil)
+
+		Convey("Then I should have a 423 error and context should be nil", func() {
+			So(err, ShouldNotBeNil)
+			So(err.(elemental.Error).Code, ShouldEqual, http.StatusLocked)
+		})
+	})
+
+	Convey("Given I have a processor with custom unmarshal function that fails", t, func() {
+		request := elemental.NewRequest()
+		request.Operation = elemental.OperationUpdate
+		request.Identity = elemental.MakeIdentity("Fake", "Test")
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{}, nil
+		}
+
+		expectedError := "boom"
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(
+			ctx,
+			processorFinder,
+			testmodel.Manager(),
+			func(*elemental.Request) (elemental.Identifiable, error) {
+				return nil, fmt.Errorf("boom")
+			},
+			nil,
+			nil,
+			nil,
+			nil,
+			false,
+			nil,
+		)
+
+		Convey("Then I should get a bahamut error and no context", func() {
+			So(err.Error(), ShouldEqual, expectedError)
+		})
+	})
 }
 
 // TestDispatchers_dispatchInfoOperation tests dispatchInfoOperation method
@@ -1149,7 +1266,9 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &mockProcessor{}, nil
+			return &mockProcessor{
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventUpdate, &testmodel.List{})},
+			}, nil
 		}
 
 		auditer := &mockAuditer{}
@@ -1163,6 +1282,7 @@ func TestDispatchers_dispatchInfoOperation(t *testing.T) {
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldBeNil)
 			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
 		})
 	})
 

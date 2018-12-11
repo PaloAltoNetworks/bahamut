@@ -25,11 +25,11 @@ type CustomUmarshaller func(*elemental.Request) (elemental.Identifiable, error)
 func RegisterProcessorOrDie(server Server, processor Processor, identity elemental.Identity) {
 
 	if server == nil {
-		zap.L().Fatal("No bahamut set. You must create a bahamut server first")
+		panic("bahamut server must not be nil")
 	}
 
 	if err := server.RegisterProcessor(processor, identity); err != nil {
-		zap.L().Fatal("Duplicate identity registration", zap.Error(err))
+		panic(fmt.Sprintf("cannot register processor: %s", err))
 	}
 }
 

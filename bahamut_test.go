@@ -9,7 +9,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -78,6 +78,8 @@ func TestBahamut_NewBahamut(t *testing.T) {
 		cfg.pushServer.enabled = true
 		cfg.pushServer.dispatchEnabled = true
 		cfg.restServer.enabled = true
+		cfg.healthServer.enabled = true
+		cfg.profilingServer.enabled = true
 
 		b := NewServer(cfg)
 
@@ -89,9 +91,134 @@ func TestBahamut_NewBahamut(t *testing.T) {
 			So(b.(*server).pushServer, ShouldNotBeNil)
 		})
 
+		Convey("Then healthServer should not be nil", func() {
+			So(b.(*server).healthServer, ShouldNotBeNil)
+		})
+
+		Convey("Then profilingServer should not be nil", func() {
+			So(b.(*server).profilingServer, ShouldNotBeNil)
+		})
+
 		Convey("Then number of routes should be 1", func() {
 			So(len(b.(*server).multiplexer.Routes), ShouldEqual, 1)
 			So(b.(*server).multiplexer.Routes["GET"][0].Path, ShouldEqual, "/events")
+		})
+	})
+}
+
+func TestBahamut_RouteInfos(t *testing.T) {
+
+	Convey("Given I have a bahamut server loaded with test model", t, func() {
+
+		cfg := config{}
+		cfg.model.modelManagers = map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+		}
+
+		b := NewServer(cfg)
+
+		Convey("When I call RoutesInfo", func() {
+
+			ri := b.RoutesInfo()
+
+			// full test of content in buildVersionedRoutes test
+			Convey("Then ri should not be nil", func() {
+				So(ri, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestBahamut_VersionsInfo(t *testing.T) {
+
+	Convey("Given I have a bahamut server", t, func() {
+
+		cfg := config{}
+		cfg.meta.version = map[string]interface{}{}
+
+		b := NewServer(cfg)
+
+		Convey("When I call VersionsInfo", func() {
+
+			vi := b.VersionsInfo()
+
+			Convey("Then it should return the version info", func() {
+				So(vi, ShouldEqual, cfg.meta.version)
+			})
+		})
+	})
+}
+
+func TestBahamut_PushEndpoint(t *testing.T) {
+
+	Convey("Given I have a bahamut server with no push enabled", t, func() {
+
+		cfg := config{}
+
+		b := NewServer(cfg)
+
+		Convey("When I call PushEndpoint", func() {
+
+			pe := b.PushEndpoint()
+
+			Convey("Then it should be correct", func() {
+				So(pe, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("Given I have a bahamut server with push enabled but no dispatcher", t, func() {
+
+		cfg := config{}
+		cfg.pushServer.enabled = true
+		cfg.pushServer.dispatchEnabled = false
+
+		b := NewServer(cfg)
+
+		Convey("When I call PushEndpoint", func() {
+
+			pe := b.PushEndpoint()
+
+			Convey("Then it should be correct", func() {
+				So(pe, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("Given I have a bahamut server with push with no custom endpoint", t, func() {
+
+		cfg := config{}
+		cfg.pushServer.enabled = true
+		cfg.pushServer.dispatchEnabled = true
+
+		b := NewServer(cfg)
+
+		Convey("When I call PushEndpoint", func() {
+
+			pe := b.PushEndpoint()
+
+			Convey("Then it should be correct", func() {
+				So(pe, ShouldEqual, "/events")
+			})
+		})
+	})
+
+	Convey("Given I have a bahamut server with push with custom endpoint", t, func() {
+
+		cfg := config{}
+		cfg.pushServer.enabled = true
+		cfg.pushServer.dispatchEnabled = true
+		cfg.pushServer.endpoint = "/custom"
+
+		b := NewServer(cfg)
+
+		Convey("When I call PushEndpoint", func() {
+
+			pe := b.PushEndpoint()
+
+			Convey("Then it should be correct", func() {
+				So(pe, ShouldEqual, "/custom")
+			})
 		})
 	})
 }
@@ -164,6 +291,48 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestBahamyt_RegistorProcessorOrDie(t *testing.T) {
+
+	Convey("Given I have no bahamut server ", t, func() {
+
+		Convey("When I call RegisterProcessorOrDie", func() {
+
+			Convey("Then it should panic", func() {
+				So(func() { RegisterProcessorOrDie(nil, &mockEmptyProcessor{}, testmodel.ListIdentity) }, ShouldPanicWith, "bahamut server must not be nil")
+			})
+		})
+	})
+
+	Convey("Given I have a bahamut server ", t, func() {
+
+		cfg := config{}
+		b := NewServer(cfg)
+
+		Convey("When I call RegisterProcessorOrDie", func() {
+
+			Convey("Then it should panic", func() {
+				So(func() { RegisterProcessorOrDie(b, &mockEmptyProcessor{}, testmodel.ListIdentity) }, ShouldNotPanic)
+				rp, _ := b.ProcessorForIdentity(testmodel.ListIdentity)
+				So(rp, ShouldNotBeNil)
+			})
+		})
+	})
+
+	Convey("Given I have a bahamut server ", t, func() {
+
+		cfg := config{}
+		b := NewServer(cfg)
+
+		Convey("When I call RegisterProcessorOrDie on the same identity twice", func() {
+
+			Convey("Then it should panic", func() {
+				So(func() { RegisterProcessorOrDie(b, &mockEmptyProcessor{}, testmodel.ListIdentity) }, ShouldNotPanic)
+				So(func() { RegisterProcessorOrDie(b, &mockEmptyProcessor{}, testmodel.ListIdentity) }, ShouldPanicWith, "cannot register processor: identity <Identity list|lists> already has a registered processor")
 			})
 		})
 	})
