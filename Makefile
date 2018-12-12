@@ -8,11 +8,10 @@ PROJECT_RELEASE ?= dev
 ci: init lint test codecov
 
 init:
-	dep ensure
-	dep status
+	GO111MODULE=on go get ./...
 
 lint:
-	golangci-lint run \
+	GO111MODULE=on golangci-lint run \
 		--disable-all \
 		--exclude-use-default=false \
 		--enable=errcheck \
@@ -33,7 +32,7 @@ lint:
 test:
 	@ echo 'mode: atomic' > unit_coverage.cov
 	@ for d in $(shell go list ./... | grep -v vendor); do \
-		go test -race -coverprofile=profile.out -covermode=atomic "$$d"; \
+		GO111MODULE=on go test -race -coverprofile=profile.out -covermode=atomic "$$d"; \
 		if [ -f profile.out ]; then tail -q -n +2 profile.out >> unit_coverage.cov; rm -f profile.out; fi; \
 	done;
 
