@@ -8,7 +8,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/gofrs/uuid/v3"
+	"github.com/gofrs/uuid"
 	"go.aporeto.io/elemental"
 )
 
