@@ -202,7 +202,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{})
+	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{WriteChanSize: 512})
 	if err != nil {
 		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
 		return
