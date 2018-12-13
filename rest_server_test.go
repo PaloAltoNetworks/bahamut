@@ -69,6 +69,24 @@ func TestServer_createSecureHTTPServer(t *testing.T) {
 			})
 		})
 	})
+
+	Convey("Given I create a new api server without all custom tls cert func", t, func() {
+
+		r := func(*tls.ClientHelloInfo) (*tls.Certificate, error) { return nil, nil }
+
+		cfg := config{}
+		cfg.restServer.listenAddress = "address:80"
+		cfg.tls.serverCertificatesRetrieverFunc = r
+		c := newRestServer(cfg, bone.New(), nil, nil)
+
+		Convey("When I make a secure server", func() {
+			srv := c.createSecureHTTPServer(cfg.restServer.listenAddress)
+
+			Convey("Then the server should be correctly initialized", func() {
+				So(srv.TLSConfig.GetCertificate, ShouldEqual, r)
+			})
+		})
+	})
 }
 
 func TestServer_createUnsecureHTTPServer(t *testing.T) {
@@ -92,42 +110,50 @@ func TestServer_createUnsecureHTTPServer(t *testing.T) {
 
 func TestServer_RouteInstallation(t *testing.T) {
 
-	// Convey("Given I create a new api server with routes", t, func() {
-	//
-	// 	h := func(w http.ResponseWriter, req *http.Request) {}
-	//
-	// 	var routes []*Route
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPost, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodGet, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodDelete, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPatch, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodHead, h))
-	// 	routes = append(routes, NewRoute("/lists", http.MethodPut, h))
-	//
-	// 	cfg := APIServerConfig{
-	// 		ListenAddress:          "address:80",
-	// 		ProfilingListenAddress: "address:3434",
-	// 		Routes:                 routes,
-	// 		EnableProfiling:        true,
-	// 	}
-	//
-	// 	c := newAPIServer(cfg, bone.New())
-	//
-	// 	Convey("When I install the routes", func() {
-	//
-	// 		c.installRoutes()
-	//
-	// 		Convey("Then the bone Multiplexer should have correct number of handlers", func() {
-	// 			So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 2)
-	// 			So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 1)
-	// 			So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 1)
-	// 		})
-	// 	})
-	// })
+	Convey("Given I create a new api server with routes", t, func() {
+
+		routes := map[int][]RouteInfo{
+			1: []RouteInfo{
+				{
+					URL:   "/a",
+					Verbs: []string{"GET"},
+				},
+			},
+			2: []RouteInfo{
+				{
+					URL:   "/b",
+					Verbs: []string{"POST"},
+				},
+				{
+					URL:   "/c/d",
+					Verbs: []string{"POST", "GET"},
+				},
+			},
+		}
+
+		cfg := config{}
+		cfg.restServer.customRootHandlerFunc = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+		cfg.restServer.listenAddress = "address:80"
+		cfg.meta.serviceName = "hello"
+		cfg.meta.version = map[string]interface{}{}
+
+		c := newRestServer(cfg, bone.New(), nil, nil)
+
+		Convey("When I install the routes", func() {
+
+			c.installRoutes(routes)
+
+			Convey("Then the bone Multiplexer should have correct number of handlers", func() {
+				So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 5)
+				So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 10)
+				So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 3)
+				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 3)
+				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 5)
+				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 3)
+				So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 2)
+			})
+		})
+	})
 }
 
 func TestServer_Start(t *testing.T) {

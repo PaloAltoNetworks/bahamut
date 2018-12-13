@@ -10,7 +10,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
 	"golang.org/x/time/rate"
 )
 
@@ -242,5 +242,4 @@ func TestBahamut_Options(t *testing.T) {
 		OptPreStopHook(f)(&c)
 		So(c.hooks.preStop, ShouldEqual, f)
 	})
-
 }

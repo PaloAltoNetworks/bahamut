@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/opentracing/opentracing-go"
+	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
@@ -86,13 +86,9 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 
 	outError := processError(ctx, err)
 
-	if response == nil {
-		response = elemental.NewResponse(nil)
-	}
-
 	response.StatusCode = outError.Code()
 	if e := response.Encode(outError); e != nil {
-		zap.L().Panic("Unable to encode error", zap.Error(err))
+		zap.L().Panic("Unable to encode error", zap.Error(e))
 	}
 
 	return response

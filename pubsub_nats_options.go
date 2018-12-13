@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"fmt"
 
-	"github.com/nats-io/go-nats"
+	nats "github.com/nats-io/go-nats"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -104,12 +104,14 @@ func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.
 // the option NATSOptPublishReplyValidator.
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).replyValidator = func(msg *nats.Msg) error {
-			if !bytes.Equal(msg.Data, ackMessage) {
-				return fmt.Errorf("invalid ack: %s", string(msg.Data))
-			}
-			return nil
-		}
+		c.(*natsPublishConfig).replyValidator = ackValidator
 		c.(*natsPublishConfig).ctx = ctx
 	}
+}
+
+func ackValidator(msg *nats.Msg) error {
+	if !bytes.Equal(msg.Data, ackMessage) {
+		return fmt.Errorf("invalid ack: %s", string(msg.Data))
+	}
+	return nil
 }

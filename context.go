@@ -53,17 +53,11 @@ func newContext(ctx context.Context, request *elemental.Request) *bcontext {
 }
 
 func (c *bcontext) Identifier() string {
-
 	return c.id
 }
 
 func (c *bcontext) Context() context.Context {
-
-	if c.ctx != nil {
-		return c.ctx
-	}
-
-	return context.Background()
+	return c.ctx
 }
 
 func (c *bcontext) Request() *elemental.Request {
