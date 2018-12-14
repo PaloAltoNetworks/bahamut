@@ -39,6 +39,11 @@ type prometheusMetricsManager struct {
 
 // NewPrometheusMetricsManager returns a new MetricManager using the prometheus format.
 func NewPrometheusMetricsManager() MetricsManager {
+
+	return newPrometheusMetricsManager(prometheus.DefaultRegisterer)
+}
+
+func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManager {
 	mc := &prometheusMetricsManager{
 		handler: promhttp.Handler(),
 		reqTotalMetric: prometheus.NewCounterVec(
@@ -76,11 +81,11 @@ func NewPrometheusMetricsManager() MetricsManager {
 		),
 	}
 
-	prometheus.MustRegister(mc.reqTotalMetric)
-	prometheus.MustRegister(mc.reqDurationMetric)
-	prometheus.MustRegister(mc.wsConnTotalMetric)
-	prometheus.MustRegister(mc.wsConnCurrentMetric)
-	prometheus.MustRegister(mc.errorMetric)
+	registerer.MustRegister(mc.reqTotalMetric)
+	registerer.MustRegister(mc.reqDurationMetric)
+	registerer.MustRegister(mc.wsConnTotalMetric)
+	registerer.MustRegister(mc.wsConnCurrentMetric)
+	registerer.MustRegister(mc.errorMetric)
 
 	return mc
 }
