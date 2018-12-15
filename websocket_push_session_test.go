@@ -12,9 +12,9 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
-	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
+	"go.aporeto.io/wsc"
 )
 
 func TestWSPushSession_newPushSession(t *testing.T) {

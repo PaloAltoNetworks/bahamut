@@ -3,14 +3,13 @@ package bahamut
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
 )
 
 func TestTracing_extractClaims(t *testing.T) {
@@ -182,6 +181,7 @@ func TestTracing_traceRequest(t *testing.T) {
 		}
 		hreq.Header.Add("Authorization", "secretA")
 		hreq.Header.Add("Authorization", "secretB")
+		hreq.Header.Add("NotAuthorization", "notSecretA")
 
 		req, err := elemental.NewRequestFromHTTPRequest(hreq, testmodel.Manager())
 		if err != nil {
@@ -191,8 +191,10 @@ func TestTracing_traceRequest(t *testing.T) {
 		req.ExternalTrackingType = "yeah"
 		req.ClientIP = "127.0.0.1"
 		req.Namespace = "/a"
+		req.ObjectID = "id"
 		// Add the param after calling NewRequestFromHTTPRequest as this is not valid params from specs.
 		req.Parameters["token"] = elemental.NewParameter(elemental.ParameterTypeString, "1", "2")
+		req.Parameters["not-token"] = elemental.NewParameter(elemental.ParameterTypeString, "notSecretB")
 
 		tracer := &mockTracer{}
 		ts := newMockSpan(tracer)
@@ -229,18 +231,20 @@ func TestTracing_traceRequest(t *testing.T) {
 				So(len(span.fields), ShouldEqual, 8)
 				So(span.fields[0].String(), ShouldEqual, "req.page.number:3")
 				So(span.fields[1].String(), ShouldEqual, "req.page.size:30")
-				So(span.fields[2].String(), ShouldEqual, fmt.Sprintf("req.headers:map[Authorization:%s]", snipSlice))
+				So(span.fields[2].String(), ShouldContainSubstring, "Notauthorization:[notSecretA]")
+				So(span.fields[2].String(), ShouldContainSubstring, "Authorization:[[snip]]")
 				So(span.fields[3].String(), ShouldEqual, "req.claims:{}")
 				So(span.fields[4].String(), ShouldEqual, "req.client_ip:127.0.0.1")
 				So(span.fields[5].String(), ShouldNotContainSubstring, "secretA")
 				So(span.fields[5].String(), ShouldNotContainSubstring, "secretB")
 				So(span.fields[5].String(), ShouldContainSubstring, "[[snip]]")
+				So(span.fields[5].String(), ShouldContainSubstring, "notSecretB")
 				So(span.fields[6].String(), ShouldEqual, "req.order_by:[a b]")
 				So(span.fields[7].String(), ShouldEqual, "req.payload:the data")
 			})
 
 			Convey("Then the span tags should be correct", func() {
-				So(len(span.tags), ShouldEqual, 11)
+				So(len(span.tags), ShouldEqual, 12)
 				So(span.tags["req.parent.identity"], ShouldEqual, "task")
 				So(span.tags["req.id"], ShouldEqual, req.RequestID)
 				So(span.tags["req.recursive"], ShouldBeTrue)
@@ -252,6 +256,7 @@ func TestTracing_traceRequest(t *testing.T) {
 				So(span.tags["req.operation"], ShouldEqual, "create")
 				So(span.tags["req.override_protection"], ShouldBeTrue)
 				So(span.tags["req.parent.id"], ShouldEqual, "pid")
+				So(span.tags["req.object.id"], ShouldEqual, "id")
 			})
 		})
 	})

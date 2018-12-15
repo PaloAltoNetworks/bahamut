@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/nats-io/go-nats"
+	nats "github.com/nats-io/go-nats"
 	"go.uber.org/zap"
 )
 

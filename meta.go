@@ -16,7 +16,7 @@ type RouteInfo struct {
 }
 
 func (r RouteInfo) String() string {
-	return fmt.Sprintf("%s -> %s ", r.URL, strings.Join(r.Verbs, ", "))
+	return fmt.Sprintf("%s -> %s", r.URL, strings.Join(r.Verbs, ", "))
 }
 
 type routeBuilder struct {

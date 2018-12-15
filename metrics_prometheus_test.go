@@ -1,6 +1,11 @@
 package bahamut
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/prometheus/client_golang/prometheus"
+	. "github.com/smartystreets/goconvey/convey"
+)
 
 func Test_sanitizeURL(t *testing.T) {
 	type args struct {
@@ -61,4 +66,81 @@ func Test_sanitizeURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMeasureRequest(t *testing.T) {
+
+	Convey("Given I have a PrometheusMetricsManager", t, func() {
+
+		r := prometheus.NewRegistry()
+		pmm := newPrometheusMetricsManager(r).(*prometheusMetricsManager)
+
+		Convey("When I call measure a valid request", func() {
+
+			f := pmm.MeasureRequest("GET", "http://toto.com/id/toto")
+			f(200, nil)
+
+			data, _ := r.Gather()
+
+			Convey("Then the data should collected", func() {
+				So(data[1].GetName(), ShouldEqual, "http_requests_total")
+				So(data[1].GetMetric()[0].Counter.String(), ShouldEqual, "value:1 ")
+				So(data[1].GetMetric()[0].Label[0].String(), ShouldEqual, `name:"method" value:"GET" `)
+			})
+		})
+
+		Convey("When I call measure a 502 request", func() {
+
+			f := pmm.MeasureRequest("GET", "http://toto.com/id/toto")
+			f(502, nil)
+
+			data, _ := r.Gather()
+
+			Convey("Then the data should collected", func() {
+				So(data[0].GetName(), ShouldEqual, "http_errors_5xx_total")
+				So(data[0].GetMetric()[0].Label[0].String(), ShouldEqual, `name:"code" value:"502" `)
+				So(data[0].GetMetric()[0].Label[1].String(), ShouldEqual, `name:"method" value:"GET" `)
+				So(data[0].GetMetric()[0].Label[2].String(), ShouldEqual, `name:"trace" value:"unknown" `)
+				So(data[0].GetMetric()[0].Label[3].String(), ShouldEqual, `name:"url" value:"http://:id/id/toto" `)
+			})
+		})
+	})
+}
+
+func TestRegisterWSConnection(t *testing.T) {
+
+	Convey("Given I have a PrometheusMetricsManager", t, func() {
+
+		r := prometheus.NewRegistry()
+		pmm := newPrometheusMetricsManager(r).(*prometheusMetricsManager)
+
+		Convey("When I call RegisterWSConnection twice", func() {
+
+			pmm.RegisterWSConnection()
+			pmm.RegisterWSConnection()
+
+			data, _ := r.Gather()
+
+			Convey("Then the total should increase", func() {
+				So(data[0].GetName(), ShouldEqual, "http_ws_connections_current")
+				So(data[0].GetMetric()[0].String(), ShouldEqual, "gauge:<value:2 > ")
+				So(data[1].GetName(), ShouldEqual, "http_ws_connections_total")
+				So(data[1].GetMetric()[0].String(), ShouldEqual, "counter:<value:2 > ")
+			})
+
+			Convey("When I call UnregisterWSConnection", func() {
+
+				pmm.UnregisterWSConnection()
+
+				data, _ := r.Gather()
+
+				Convey("Then the total should increase", func() {
+					So(data[0].GetName(), ShouldEqual, "http_ws_connections_current")
+					So(data[0].GetMetric()[0].String(), ShouldEqual, "gauge:<value:1 > ")
+					So(data[1].GetName(), ShouldEqual, "http_ws_connections_total")
+					So(data[1].GetMetric()[0].String(), ShouldEqual, "counter:<value:2 > ")
+				})
+			})
+		})
+	})
 }

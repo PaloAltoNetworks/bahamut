@@ -196,5 +196,21 @@ func TestProcessorHelpers_checkAuthorized(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 		})
+
+		Convey("When I check the authorization with two registered authorizers, first one continue, second one continue", func() {
+
+			auth.action = AuthActionContinue
+			auth.errored = false
+
+			auth2 := &mockAuth{}
+			auth2.action = AuthActionContinue
+			auth2.errored = false
+
+			err := CheckAuthorization([]Authorizer{auth, auth2}, ctx)
+
+			Convey("Then it should not be authenticated", func() {
+				So(err, ShouldBeNil)
+			})
+		})
 	})
 }

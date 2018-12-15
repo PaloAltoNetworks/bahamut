@@ -16,8 +16,9 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/websocket"
-	"go.aporeto.io/addedeffect/wsc"
 	"go.aporeto.io/elemental"
+	"go.aporeto.io/wsc"
+	"go.uber.org/zap"
 )
 
 type unregisterFunc func(*wsPushSession)
@@ -162,6 +163,9 @@ func (s *wsPushSession) listen() {
 			}
 
 			s.setCurrentFilter(filter)
+
+		case err := <-s.conn.Error():
+			zap.L().Error("Error received from websocket", zap.String("session", s.id), zap.Error(err))
 
 		case <-s.conn.Done():
 			return

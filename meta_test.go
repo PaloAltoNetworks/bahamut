@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/elemental/test/model"
+	testmodel "go.aporeto.io/elemental/test/model"
 )
 
 func Test_buildVersionedRoutes(t *testing.T) {
@@ -164,6 +164,40 @@ func Test_buildVersionedRoutes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := buildVersionedRoutes(tt.args.modelManagers, tt.args.processorFinder); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("buildVersionedRoutes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRouteInfo_String(t *testing.T) {
+	type fields struct {
+		URL     string
+		Verbs   []string
+		Private bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			"simple",
+			fields{
+				URL:   "http.com",
+				Verbs: []string{"POST", "GET"},
+			},
+			"http.com -> POST, GET",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := RouteInfo{
+				URL:     tt.fields.URL,
+				Verbs:   tt.fields.Verbs,
+				Private: tt.fields.Private,
+			}
+			if got := r.String(); got != tt.want {
+				t.Errorf("RouteInfo.String() = %v, want %v", got, tt.want)
 			}
 		})
 	}
