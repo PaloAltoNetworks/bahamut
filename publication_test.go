@@ -44,7 +44,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the object", func() {
 
-				var l2 *testmodel.List
+				l2 := testmodel.NewList()
 				err := publication.Decode(l2)
 
 				Convey("Then err should be nil", func() {
@@ -75,7 +75,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the object with custom unmarshaller", func() {
 
-				var l2 *testmodel.List
+				l2 := testmodel.NewList()
 				err := publication.DecodeWithUnmarshaler(l2, json.Unmarshal)
 
 				Convey("Then err should be nil", func() {
@@ -106,7 +106,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("When I decode the non existing object", func() {
 
-				var l2 *testmodel.List
+				l2 := testmodel.NewList()
 				err := publication.Decode(l2)
 
 				Convey("Then err should not be nil", func() {
