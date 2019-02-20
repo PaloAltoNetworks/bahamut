@@ -54,7 +54,12 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("not connected to nats. messages dropped")
 	}
 
-	data, err := json.Marshal(publication)
+	marshalFunc := config.marshalFunc
+	if marshalFunc == nil {
+		marshalFunc = json.Marshal
+	}
+
+	data, err := marshalFunc(publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
@@ -87,9 +92,15 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	var sub *nats.Subscription
 	var err error
 
+	unmarshalFunc := config.unmarshalFunc
+	if unmarshalFunc == nil {
+		unmarshalFunc = json.Unmarshal
+	}
+
 	handler := func(m *nats.Msg) {
 		publication := NewPublication(topic)
-		if e := json.Unmarshal(m.Data, publication); e != nil {
+
+		if e := unmarshalFunc(m.Data, publication); e != nil {
 			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
 			return
 		}

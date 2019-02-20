@@ -44,11 +44,13 @@ func NATSOptTLS(tlsConfig *tls.Config) NATSOption {
 var ackMessage = []byte("ack")
 
 type natsSubscribeConfig struct {
-	queueGroup string
-	replier    func(msg *nats.Msg) []byte
+	unmarshalFunc func([]byte, interface{}) error
+	queueGroup    string
+	replier       func(msg *nats.Msg) []byte
 }
 
 type natsPublishConfig struct {
+	marshalFunc    func(interface{}) ([]byte, error)
 	ctx            context.Context
 	replyValidator func(msg *nats.Msg) error
 }
@@ -80,6 +82,15 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 	}
 }
 
+// NATSOptSubscribeUnmarshaler sets the unmarshaler func to use
+// to decode the data encoded in a publication.
+// By default json.Unmarshal is used
+func NATSOptSubscribeUnmarshaler(unmarshalFunc func([]byte, interface{}) error) PubSubOptSubscribe {
+	return func(c interface{}) {
+		c.(*natsSubscribeConfig).unmarshalFunc = unmarshalFunc
+	}
+}
+
 // NATSOptPublishReplyValidator sets the function that will be called to validate
 // a request reply.
 //
@@ -106,6 +117,15 @@ func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
 		c.(*natsPublishConfig).replyValidator = ackValidator
 		c.(*natsPublishConfig).ctx = ctx
+	}
+}
+
+// NATSOptPublishMarshaler sets the marshaler func to use
+// to encode the data in a publication.
+// By default json.Marshal is used
+func NATSOptPublishMarshaler(marshalFunc func(interface{}) ([]byte, error)) PubSubOptPublish {
+	return func(c interface{}) {
+		c.(*natsPublishConfig).marshalFunc = marshalFunc
 	}
 }
 
