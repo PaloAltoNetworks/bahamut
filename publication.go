@@ -64,7 +64,7 @@ func (p *Publication) DecodeWithUnmarshaler(dest interface{}, unmarshalFunc func
 		p.span.LogFields(log.Object("payload", string(p.Data)))
 	}
 
-	return unmarshalFunc(p.Data, &dest)
+	return unmarshalFunc(p.Data, dest)
 }
 
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.
