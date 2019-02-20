@@ -1,7 +1,6 @@
 package bahamut
 
 import (
-	"bytes"
 	"encoding/json"
 
 	opentracing "github.com/opentracing/opentracing-go"
@@ -32,12 +31,18 @@ func NewPublication(topic string) *Publication {
 // Encode the given object into the publication.
 func (p *Publication) Encode(o interface{}) error {
 
-	buffer := &bytes.Buffer{}
-	if err := json.NewEncoder(buffer).Encode(o); err != nil {
+	return p.EncodeWithMarshaler(o, json.Marshal)
+}
+
+// EncodeWithMarshaler the given object into the publication using the given marshal function.
+func (p *Publication) EncodeWithMarshaler(o interface{}, marshalFunc func(interface{}) ([]byte, error)) error {
+
+	data, err := marshalFunc(o)
+	if err != nil {
 		return err
 	}
 
-	p.Data = buffer.Bytes()
+	p.Data = data
 
 	if p.span != nil {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
@@ -49,11 +54,17 @@ func (p *Publication) Encode(o interface{}) error {
 // Decode decodes the data into the given dest.
 func (p *Publication) Decode(dest interface{}) error {
 
+	return p.DecodeWithUnmarshaler(dest, json.Unmarshal)
+}
+
+// DecodeWithUnmarshaler decodes the data into the given dest using the given unmarshal function.
+func (p *Publication) DecodeWithUnmarshaler(dest interface{}, unmarshalFunc func([]byte, interface{}) error) error {
+
 	if p.span != nil {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
 	}
 
-	return json.NewDecoder(bytes.NewReader(p.Data)).Decode(&dest)
+	return unmarshalFunc(p.Data, &dest)
 }
 
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.

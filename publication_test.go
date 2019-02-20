@@ -1,6 +1,7 @@
 package bahamut
 
 import (
+	"encoding/json"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -38,13 +39,44 @@ func TestPublication_EncodeDecode(t *testing.T) {
 			})
 
 			Convey("Then the publication contains the correct data", func() {
-				So(string(publication.Data), ShouldEqual, `{"ID":"xxx","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"l1","parentID":"","parentType":"","readOnly":"","slice":null}`+"\n")
+				So(string(publication.Data), ShouldEqual, `{"ID":"xxx","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"l1","parentID":"","parentType":"","readOnly":"","slice":null}`)
 			})
 
 			Convey("When I decode the object", func() {
 
 				var l2 *testmodel.List
 				err := publication.Decode(l2)
+
+				Convey("Then err should be nil", func() {
+					So(err, ShouldBeNil)
+				})
+
+				Convey("Then l2 should resemble to l1", func() {
+					So(l2, ShouldResemble, l2)
+				})
+			})
+		})
+
+		Convey("When I encode some object with custom unmarshaller", func() {
+
+			list := testmodel.NewList()
+			list.Name = "l1"
+			list.ID = "xxx"
+
+			err := publication.EncodeWithMarshaler(list, json.Marshal)
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then the publication contains the correct data", func() {
+				So(string(publication.Data), ShouldEqual, `{"ID":"xxx","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"l1","parentID":"","parentType":"","readOnly":"","slice":null}`)
+			})
+
+			Convey("When I decode the object with custom unmarshaller", func() {
+
+				var l2 *testmodel.List
+				err := publication.DecodeWithUnmarshaler(l2, json.Unmarshal)
 
 				Convey("Then err should be nil", func() {
 					So(err, ShouldBeNil)
