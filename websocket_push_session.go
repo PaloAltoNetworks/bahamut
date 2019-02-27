@@ -86,10 +86,7 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 
 func (s *wsPushSession) String() string {
 
-	return fmt.Sprintf("<pushsession id:%s parameters:%v>",
-		s.id,
-		s.parameters,
-	)
+	return fmt.Sprintf("<pushsession id:%s>", s.id)
 }
 
 // SetClaims implements elemental.ClaimsHolder.
@@ -102,16 +99,23 @@ func (s *wsPushSession) SetClaims(claims []string) {
 func (s *wsPushSession) Identifier() string                            { return s.id }
 func (s *wsPushSession) Claims() []string                              { return s.claims }
 func (s *wsPushSession) ClaimsMap() map[string]string                  { return s.claimsMap }
-func (s *wsPushSession) Token() string                                 { return s.parameters.Get("token") }
+func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
 func (s *wsPushSession) Metadata() interface{}                         { return s.metadata }
 func (s *wsPushSession) SetMetadata(m interface{})                     { s.metadata = m }
-func (s *wsPushSession) Parameter(key string) string                   { return s.parameters.Get(key) }
 func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remoteAddr = addr }
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }
 func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsConnectionState = st }
+
+func (s *wsPushSession) Parameter(key string) string {
+
+	s.currentFilterLock.Lock()
+	defer s.currentFilterLock.Unlock()
+
+	return s.parameters.Get(key)
+}
 
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 
@@ -129,6 +133,11 @@ func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
 
 	s.currentFilterLock.Lock()
 	s.filter = f
+	if s.filter != nil {
+		for k, v := range s.filter.Parameters() {
+			s.parameters[k] = v
+		}
+	}
 	s.currentFilterLock.Unlock()
 }
 

@@ -91,7 +91,7 @@ func TestWSPushSession_String(t *testing.T) {
 			str := s.String()
 
 			Convey("Then the string representation should be correct", func() {
-				So(str, ShouldEqual, fmt.Sprintf("<pushsession id:%s parameters:%v>", s.Identifier(), s.parameters))
+				So(str, ShouldEqual, fmt.Sprintf("<pushsession id:%s>", s.Identifier()))
 			})
 		})
 	})
