@@ -283,7 +283,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"update","timestamp":"`)
+				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
 			})
 		})
 
@@ -339,7 +339,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"update","timestamp":"`)
+				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
 			})
 		})
 

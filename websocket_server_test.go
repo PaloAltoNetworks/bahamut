@@ -408,7 +408,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			Convey("Then I should find one publication", func() {
 				So(len(srv.publications), ShouldEqual, 1)
-				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"create","timestamp":"`)
+				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":`)
 			})
 		})
 
@@ -430,7 +430,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 
 			Convey("Then I should find one publication", func() {
 				So(len(srv.publications), ShouldEqual, 1)
-				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"create","timestamp":"`)
+				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
 			})
 		})
 
@@ -557,8 +557,8 @@ func TestWebsocketServer_start(t *testing.T) {
 			}
 
 			Convey("Then both sessions should receive the event", func() {
-				So(string(msg1), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"create","timestamp":"`)
-				So(string(msg2), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","slice":null},"identity":"list","type":"create","timestamp":"`)
+				So(string(msg1), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
+				So(string(msg2), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
 			})
 		})
 
