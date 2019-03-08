@@ -59,6 +59,8 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 		requestedFields = ctx.Request().Headers["X-Fields"]
 	}
 
+	elemental.ResetSecretAttributesValues(ctx.outputData)
+
 	if len(requestedFields) > 0 {
 
 		switch ident := ctx.outputData.(type) {
