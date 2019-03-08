@@ -18,9 +18,14 @@ type healthServer struct {
 // newHealthServer returns a new healthServer.
 func newHealthServer(cfg config) *healthServer {
 
-	return &healthServer{
-		cfg: cfg,
+	s := &healthServer{
+		cfg:    cfg,
+		server: &http.Server{Addr: cfg.healthServer.listenAddress},
 	}
+
+	s.server.Handler = s
+
+	return s
 }
 
 func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -72,9 +77,6 @@ func (s *healthServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *healthServer) start(ctx context.Context) {
-
-	s.server = &http.Server{Addr: s.cfg.healthServer.listenAddress}
-	s.server.Handler = s
 
 	zap.L().Debug("Health server enabled", zap.String("listen", s.cfg.healthServer.listenAddress))
 
