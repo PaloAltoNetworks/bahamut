@@ -12,7 +12,7 @@ import (
 
 type handlerFunc func(*bcontext, config, processorFinderFunc, eventPusherFunc) *elemental.Response
 
-func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Response {
+func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceCleaner) *elemental.Response {
 
 	if ctx.redirect != "" {
 		response.Redirect = ctx.redirect
@@ -75,7 +75,12 @@ func makeResponse(ctx *bcontext, response *elemental.Response) *elemental.Respon
 		zap.L().Panic("Unable to encode output data", zap.Error(err))
 	}
 
-	fields = append(fields, (log.Object("response", string(response.Data))))
+	data := response.Data[:]
+	if cleaner != nil {
+		data = cleaner(response.Request.Identity, data)
+	}
+
+	fields = append(fields, (log.Object("response", string(data))))
 
 	return response
 }
@@ -103,7 +108,7 @@ func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery
 	}
 }
 
-func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool) *elemental.Response {
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, traceCleaner TraceCleaner) *elemental.Response {
 
 	e := make(chan error)
 
@@ -125,7 +130,7 @@ func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disable
 			return makeErrorResponse(ctx.ctx, r, err)
 		}
 
-		return makeResponse(ctx, r)
+		return makeResponse(ctx, r, traceCleaner)
 	}
 }
 
@@ -165,6 +170,7 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -203,6 +209,7 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -245,6 +252,7 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -287,6 +295,7 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -327,6 +336,7 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -365,6 +375,7 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }
 
@@ -407,5 +418,6 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
+		cfg.opentracing.traceCleaner,
 	)
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
@@ -23,7 +24,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Redirect should be set", func() {
 				So(response.Redirect, ShouldEqual, "http://ici")
@@ -42,7 +43,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationRetrieveMany
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should be set", func() {
 				So(response.Total, ShouldEqual, 42)
@@ -53,7 +54,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationInfo
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should be set", func() {
 				So(response.Total, ShouldEqual, 42)
@@ -64,40 +65,40 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationCreate
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
-		Convey("When I call makeResponse on a create update", func() {
+		Convey("When I call makeResponse on a update operation", func() {
 
 			ctx.request.Operation = elemental.OperationUpdate
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
-		Convey("When I call makeResponse on a create delete", func() {
+		Convey("When I call makeResponse on a delete operation", func() {
 
 			ctx.request.Operation = elemental.OperationDelete
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
 			})
 		})
 
-		Convey("When I call makeResponse on a create patch", func() {
+		Convey("When I call makeResponse on a patch operation", func() {
 
 			ctx.request.Operation = elemental.OperationPatch
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
@@ -116,7 +117,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationCreate
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.StatusCode should equal", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusCreated)
@@ -127,7 +128,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationInfo
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.StatusCode should equal", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
@@ -138,7 +139,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationRetrieve
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.StatusCode should equal", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusOK)
@@ -151,7 +152,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 			ctx.statusCode = http.StatusCreated
 			ctx.outputData = nil
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.StatusCode should equal", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
@@ -167,10 +168,45 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			makeResponse(ctx, response)
+			makeResponse(ctx, response, nil)
 
 			Convey("Then response.Message should be set", func() {
 				So(response.Messages, ShouldResemble, []string{"hello world"})
+			})
+		})
+	})
+
+	Convey("Given I have context indentifiable output data and a cleaner func", t, func() {
+
+		req := elemental.NewRequest()
+		req.Headers.Add("X-Fields", "name")
+		req.Headers.Add("X-Fields", "ID")
+
+		tracer := &mockTracer{}
+		ts := newMockSpan(tracer)
+		tctx := opentracing.ContextWithSpan(context.Background(), ts)
+
+		ctx := newContext(tctx, req)
+
+		response := elemental.NewResponse(req)
+		ctx.outputData = &testmodel.List{
+			Name:        "the name",
+			ID:          "xxx",
+			Description: " the description",
+		}
+
+		Convey("When I call makeResponse", func() {
+
+			resp := makeResponse(ctx, response, func(identity elemental.Identity, data []byte) []byte {
+				return []byte("modified")
+			})
+
+			Convey("Then output data should be correct", func() {
+				So(string(resp.Data), ShouldEqual, `{"ID":"xxx","name":"the name"}`)
+			})
+
+			Convey("Then span content should be modified", func() {
+				So(ts.fields[0].String(), ShouldEqual, "response:modified")
 			})
 		})
 	})
@@ -184,7 +220,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		Convey("When I call makeResponse", func() {
 
 			Convey("Then it should panic", func() {
-				So(func() { makeResponse(ctx, response) }, ShouldPanic)
+				So(func() { makeResponse(ctx, response, nil) }, ShouldPanic)
 			})
 		})
 	})
@@ -205,7 +241,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			resp := makeResponse(ctx, response)
+			resp := makeResponse(ctx, response, nil)
 
 			Convey("Then output data should be correct", func() {
 				So(string(resp.Data), ShouldEqual, `{"ID":"xxx","name":"the name"}`)
@@ -236,7 +272,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			resp := makeResponse(ctx, response)
+			resp := makeResponse(ctx, response, nil)
 
 			Convey("Then output data should be correct", func() {
 				So(string(resp.Data), ShouldEqual, `[{"ID":"xxx","name":"the name"},{"ID":"xxx2","name":"the name2"}]`)
@@ -339,7 +375,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 				return nil
 			}
 
-			r := runDispatcher(ctx, response, d, true)
+			r := runDispatcher(ctx, response, d, true, nil)
 
 			Convey("Then the code should be 204", func() {
 				So(r.StatusCode, ShouldEqual, 204)
@@ -357,7 +393,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 				return elemental.NewError("nop", "nope", "test", 42)
 			}
 
-			r := runDispatcher(ctx, response, d, true)
+			r := runDispatcher(ctx, response, d, true, nil)
 
 			Convey("Then the code should be 42", func() {
 				So(r.StatusCode, ShouldEqual, 42)
@@ -377,7 +413,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			}
 
 			r := elemental.NewResponse(elemental.NewRequest())
-			go func() { runDispatcher(ctx, r, d, true) }()
+			go func() { runDispatcher(ctx, r, d, true, nil) }()
 			time.Sleep(30 * time.Millisecond)
 			cancel()
 
