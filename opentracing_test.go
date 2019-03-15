@@ -202,7 +202,7 @@ func TestTracing_traceRequest(t *testing.T) {
 		ctx := opentracing.ContextWithSpan(context.Background(), ts)
 
 		Convey("When I call traceRequest with no tracer", func() {
-			tctx := traceRequest(ctx, req, nil, nil)
+			tctx := traceRequest(ctx, req, nil, nil, nil)
 
 			Convey("Then the returned context should should be the same", func() {
 				So(tctx, ShouldEqual, ctx)
@@ -210,7 +210,7 @@ func TestTracing_traceRequest(t *testing.T) {
 		})
 
 		Convey("When I call traceRequest on excluded identities", func() {
-			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"user": struct{}{}})
+			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"user": struct{}{}}, nil)
 
 			Convey("Then the returned context should should be the same", func() {
 				So(tctx, ShouldEqual, ctx)
@@ -219,7 +219,7 @@ func TestTracing_traceRequest(t *testing.T) {
 
 		Convey("When I call traceRequest", func() {
 
-			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"not-user": struct{}{}})
+			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"not-user": struct{}{}}, nil)
 
 			span := opentracing.SpanFromContext(tctx).(*mockSpan)
 
@@ -257,6 +257,33 @@ func TestTracing_traceRequest(t *testing.T) {
 				So(span.tags["req.override_protection"], ShouldBeTrue)
 				So(span.tags["req.parent.id"], ShouldEqual, "pid")
 				So(span.tags["req.object.id"], ShouldEqual, "id")
+			})
+		})
+
+		Convey("When I call traceRequest with a cleaner", func() {
+
+			var expectedIdentity elemental.Identity
+			tctx := traceRequest(ctx, req, tracer, nil, func(i elemental.Identity, data []byte) []byte {
+				expectedIdentity = i
+				return []byte("modified data")
+			})
+
+			span := opentracing.SpanFromContext(tctx).(*mockSpan)
+
+			Convey("Then the new context should be spanned", func() {
+				So(span, ShouldNotBeNil)
+			})
+
+			Convey("Then the cleaner should have been called with the correct identity", func() {
+				So(expectedIdentity.Name, ShouldEqual, "user")
+			})
+
+			Convey("Then the span data should have be cleaned", func() {
+				So(span.fields[7].String(), ShouldEqual, "req.payload:modified data")
+			})
+
+			Convey("Then original request data should not have changed", func() {
+				So(string(req.Data), ShouldEqual, "the data")
 			})
 		})
 	})

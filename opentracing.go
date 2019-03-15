@@ -61,7 +61,7 @@ func tracingName(r *elemental.Request) string {
 }
 
 // StartTracing starts tracing the request.
-func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.Tracer, exludedIdentities map[string]struct{}) context.Context {
+func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.Tracer, exludedIdentities map[string]struct{}, cleaner TraceCleaner) context.Context {
 
 	if tracer == nil {
 		return ctx
@@ -128,6 +128,11 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 		span.SetTag("req.parent.identity", r.ParentIdentity.Name)
 	}
 
+	data := r.Data
+	if cleaner != nil {
+		data = cleaner(r.Identity, r.Data[:])
+	}
+
 	span.LogFields(
 		log.Int("req.page.number", r.Page),
 		log.Int("req.page.size", r.PageSize),
@@ -136,7 +141,7 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 		log.Object("req.client_ip", r.ClientIP),
 		log.Object("req.parameters", safeParameters),
 		log.Object("req.order_by", r.Order),
-		log.String("req.payload", string(r.Data)),
+		log.String("req.payload", string(data)),
 	)
 
 	return trackingCtx

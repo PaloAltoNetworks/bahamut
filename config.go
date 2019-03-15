@@ -22,6 +22,11 @@ type HealthServerFunc func() error
 // HealthStatFunc is the type used by the Health Server to return additional custom health info.
 type HealthStatFunc func(http.ResponseWriter, *http.Request)
 
+// TraceCleaner is the type of function that can be used to clean a trace data
+// before it is sent to OpenTracing server. You can use this to strip passwords
+// or other sensitive data.
+type TraceCleaner func(elemental.Identity, []byte) []byte
+
 // A config represents the configuration of Bahamut.
 type config struct {
 	general struct {
@@ -104,6 +109,7 @@ type config struct {
 	opentracing struct {
 		tracer             opentracing.Tracer
 		excludedIdentities map[string]struct{}
+		traceCleaner       TraceCleaner
 	}
 
 	hooks struct {

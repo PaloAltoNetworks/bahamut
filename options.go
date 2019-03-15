@@ -361,3 +361,12 @@ func OptPreStopHook(hook func(Server) error) Option {
 		c.hooks.preStop = hook
 	}
 }
+
+// OptTraceCleaner registers a trace cleaner that will be called to
+// let a chance to clean up various sensitive information before
+// sending the trace to the OpenTracing server.
+func OptTraceCleaner(cleaner TraceCleaner) Option {
+	return func(c *config) {
+		c.opentracing.traceCleaner = cleaner
+	}
+}

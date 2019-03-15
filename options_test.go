@@ -242,4 +242,12 @@ func TestBahamut_Options(t *testing.T) {
 		OptPreStopHook(f)(&c)
 		So(c.hooks.preStop, ShouldEqual, f)
 	})
+
+	Convey("Calling OptTraceCleaner should work", t, func() {
+		f := func(elemental.Identity, []byte) []byte {
+			return nil
+		}
+		OptTraceCleaner(f)(&c)
+		So(c.opentracing.traceCleaner, ShouldEqual, f)
+	})
 }

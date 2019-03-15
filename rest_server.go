@@ -244,7 +244,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 			setCommonHeader(w, req.Header.Get("Origin"))
 
-			ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities)
+			ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
 			defer finishTracing(ctx)
 
 			if a.cfg.rateLimiting.rateLimiter != nil {
