@@ -22,7 +22,7 @@ type pushServer struct {
 	multiplexer     *bone.Mux
 	cfg             config
 	processorFinder processorFinderFunc
-	sessionsLock    *sync.Mutex
+	sessionsLock    sync.RWMutex
 	mainContext     context.Context
 }
 
@@ -32,7 +32,7 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		sessions:        map[string]*wsPushSession{},
 		multiplexer:     multiplexer,
 		cfg:             cfg,
-		sessionsLock:    &sync.Mutex{},
+		sessionsLock:    sync.RWMutex{},
 		processorFinder: processorFinder,
 	}
 
@@ -57,11 +57,11 @@ func (n *pushServer) registerSession(session *wsPushSession) {
 		n.cfg.healthServer.metricsManager.RegisterWSConnection()
 	}
 
-	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
-		n.sessionsLock.Unlock()
 		panic("cannot register websocket session. empty identifier")
 	}
+
+	n.sessionsLock.Lock()
 	n.sessions[session.Identifier()] = session
 	n.sessionsLock.Unlock()
 
@@ -76,11 +76,11 @@ func (n *pushServer) unregisterSession(session *wsPushSession) {
 		handler.OnPushSessionStop(session)
 	}
 
-	n.sessionsLock.Lock()
 	if session.Identifier() == "" {
-		n.sessionsLock.Unlock()
 		panic("cannot unregister websocket session. empty identifier")
 	}
+
+	n.sessionsLock.Lock()
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
 
@@ -228,9 +228,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 	n.mainContext = ctx
 
-	publications := make(chan *Publication)
+	publications := make(chan *Publication, 1000)
 	if n.cfg.pushServer.service != nil {
-		errors := make(chan error)
+		errors := make(chan error, 1000)
 		unsubscribe := n.cfg.pushServer.service.Subscribe(publications, errors, n.cfg.pushServer.topic)
 		defer unsubscribe()
 	}
@@ -255,12 +255,14 @@ func (n *pushServer) start(ctx context.Context) {
 				}
 
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
-				n.sessionsLock.Lock()
-				var sessions []PushSession
+				n.sessionsLock.RLock()
+				sessions := make([]PushSession, len(n.sessions))
+				var i int
 				for _, s := range n.sessions {
-					sessions = append(sessions, s)
+					sessions[i] = s
+					i++
 				}
-				n.sessionsLock.Unlock()
+				n.sessionsLock.RUnlock()
 
 				// Dispatch the event to all sessions
 				for _, session := range sessions {
@@ -296,9 +298,9 @@ func (n *pushServer) stop() {
 
 	// we wait for all session to get cleanly terminated.
 	for {
-		n.sessionsLock.Lock()
+		n.sessionsLock.RLock()
 		leftOvers := len(n.sessions)
-		n.sessionsLock.Unlock()
+		n.sessionsLock.RUnlock()
 
 		if leftOvers == 0 {
 			break
