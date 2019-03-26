@@ -185,6 +185,8 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(n.mainContext)
 
 	session := newWSPushSession(r, n.cfg, n.unregisterSession)
+	session.setTLSConnectionState(r.TLS)
+	session.setRemoteAddress(r.RemoteAddr)
 
 	if err := n.authSession(session); err != nil {
 		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
@@ -208,11 +210,9 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	n.registerSession(session)
-
 	session.setConn(conn)
-	session.setTLSConnectionState(r.TLS)
-	session.setRemoteAddress(r.RemoteAddr)
+
+	n.registerSession(session)
 
 	session.listen()
 }
