@@ -27,7 +27,7 @@ type wsPushSession struct {
 	events             chan *elemental.Event
 	filters            chan *elemental.PushFilter
 	filter             *elemental.PushFilter
-	currentFilterLock  *sync.Mutex
+	currentFilterLock  sync.RWMutex
 	claims             []string
 	claimsMap          map[string]string
 	cfg                config
@@ -43,7 +43,6 @@ type wsPushSession struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	closeCh            chan struct{}
-	closeLock          *sync.Mutex
 }
 
 func newWSPushSession(request *http.Request, cfg config, unregister unregisterFunc) *wsPushSession {
@@ -54,7 +53,6 @@ func newWSPushSession(request *http.Request, cfg config, unregister unregisterFu
 	return &wsPushSession{
 		events:             make(chan *elemental.Event),
 		filters:            make(chan *elemental.PushFilter),
-		currentFilterLock:  &sync.Mutex{},
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
@@ -68,7 +66,6 @@ func newWSPushSession(request *http.Request, cfg config, unregister unregisterFu
 		cancel:             cancel,
 		tlsConnectionState: request.TLS,
 		remoteAddr:         request.RemoteAddr,
-		closeLock:          &sync.Mutex{},
 	}
 }
 
@@ -111,16 +108,16 @@ func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsCo
 
 func (s *wsPushSession) Parameter(key string) string {
 
-	s.currentFilterLock.Lock()
-	defer s.currentFilterLock.Unlock()
+	s.currentFilterLock.RLock()
+	defer s.currentFilterLock.RUnlock()
 
 	return s.parameters.Get(key)
 }
 
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 
-	s.currentFilterLock.Lock()
-	defer s.currentFilterLock.Unlock()
+	s.currentFilterLock.RLock()
+	defer s.currentFilterLock.RUnlock()
 
 	if s.filter == nil {
 		return nil
