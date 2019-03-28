@@ -203,6 +203,7 @@ func (b *server) Run(ctx context.Context) {
 	if hook := b.cfg.hooks.postStart; hook != nil {
 		hook(b) // nolint
 	}
+
 	<-ctx.Done()
 
 	if hook := b.cfg.hooks.preStop; hook != nil {
