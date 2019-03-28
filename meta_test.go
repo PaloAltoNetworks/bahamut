@@ -30,14 +30,16 @@ func Test_buildVersionedRoutes(t *testing.T) {
 			map[int][]RouteInfo{
 				0: []RouteInfo{
 					{
-						URL: "/lists",
+						URL:      "/lists",
+						Identity: "lists",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/lists/:id",
+						URL:      "/lists/:id",
+						Identity: "lists",
 						Verbs: []string{
 							"DELETE",
 							"GET",
@@ -45,26 +47,30 @@ func Test_buildVersionedRoutes(t *testing.T) {
 						},
 					},
 					{
-						URL: "/lists/:id/tasks",
+						URL:      "/lists/:id/tasks",
+						Identity: "tasks",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/lists/:id/users",
+						URL:      "/lists/:id/users",
+						Identity: "users",
 						Verbs: []string{
 							"GET",
 						},
 					},
 					{
-						URL: "/tasks",
+						URL:      "/tasks",
+						Identity: "tasks",
 						Verbs: []string{
 							"POST",
 						},
 					},
 					{
-						URL: "/tasks/:id",
+						URL:      "/tasks/:id",
+						Identity: "tasks",
 						Verbs: []string{
 							"DELETE",
 							"GET",
@@ -72,14 +78,16 @@ func Test_buildVersionedRoutes(t *testing.T) {
 						},
 					},
 					{
-						URL: "/users",
+						URL:      "/users",
+						Identity: "users",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/users/:id",
+						URL:      "/users/:id",
+						Identity: "users",
 						Verbs: []string{
 							"DELETE",
 							"GET",
@@ -89,14 +97,16 @@ func Test_buildVersionedRoutes(t *testing.T) {
 				},
 				1: []RouteInfo{
 					{
-						URL: "/lists",
+						URL:      "/lists",
+						Identity: "lists",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/lists/:id",
+						URL:      "/lists/:id",
+						Identity: "lists",
 						Verbs: []string{
 							"DELETE",
 							"GET",
@@ -104,26 +114,30 @@ func Test_buildVersionedRoutes(t *testing.T) {
 						},
 					},
 					{
-						URL: "/lists/:id/tasks",
+						URL:      "/lists/:id/tasks",
+						Identity: "tasks",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/lists/:id/users",
+						URL:      "/lists/:id/users",
+						Identity: "users",
 						Verbs: []string{
 							"GET",
 						},
 					},
 					{
-						URL: "/tasks",
+						URL:      "/tasks",
+						Identity: "tasks",
 						Verbs: []string{
 							"POST",
 						},
 					},
 					{
-						URL: "/tasks/:id",
+						URL:      "/tasks/:id",
+						Identity: "tasks",
 						Verbs: []string{
 							"DELETE",
 							"GET",
@@ -131,14 +145,16 @@ func Test_buildVersionedRoutes(t *testing.T) {
 						},
 					},
 					{
-						URL: "/users",
+						URL:      "/users",
+						Identity: "users",
 						Verbs: []string{
 							"GET",
 							"POST",
 						},
 					},
 					{
-						URL: "/users/:id",
+						URL:      "/users/:id",
+						Identity: "users",
 						Verbs: []string{
 							"DELETE",
 							"GET",

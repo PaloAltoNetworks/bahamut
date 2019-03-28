@@ -10,9 +10,10 @@ import (
 
 // A RouteInfo contains basic information about an api route.
 type RouteInfo struct {
-	URL     string   `json:"url"`
-	Verbs   []string `json:"verbs,omitempty"`
-	Private bool     `json:"private,omitempty"`
+	Identity string   `json:"identity"`
+	URL      string   `json:"url"`
+	Verbs    []string `json:"verbs,omitempty"`
+	Private  bool     `json:"private,omitempty"`
 }
 
 func (r RouteInfo) String() string {
@@ -20,19 +21,21 @@ func (r RouteInfo) String() string {
 }
 
 type routeBuilder struct {
-	verbs   map[string]struct{}
-	private bool
+	verbs    map[string]struct{}
+	private  bool
+	identity elemental.Identity
 }
 
 func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processorFinder processorFinderFunc) map[int][]RouteInfo {
 
-	addRoute := func(routes map[string]routeBuilder, url string, verb string, private bool) {
+	addRoute := func(routes map[string]routeBuilder, identity elemental.Identity, url string, verb string, private bool) {
 
 		rb, ok := routes[url]
 		if !ok {
 			rb = routeBuilder{
-				verbs:   map[string]struct{}{},
-				private: private,
+				verbs:    map[string]struct{}{},
+				private:  private,
+				identity: identity,
 			}
 			routes[url] = rb
 		}
@@ -55,36 +58,36 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 			}
 
 			if len(relationship.Create) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
+				addRoute(routes, identity, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
 			}
 
 			if len(relationship.Retrieve) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "GET", identity.Private)
+				addRoute(routes, identity, fmt.Sprintf("/%s/:id", identity.Category), "GET", identity.Private)
 			}
 
 			if len(relationship.Delete) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "DELETE", identity.Private)
+				addRoute(routes, identity, fmt.Sprintf("/%s/:id", identity.Category), "DELETE", identity.Private)
 			}
 
 			if len(relationship.Update) > 0 {
-				addRoute(routes, fmt.Sprintf("/%s/:id", identity.Category), "PUT", identity.Private)
+				addRoute(routes, identity, fmt.Sprintf("/%s/:id", identity.Category), "PUT", identity.Private)
 			}
 
 			for parent := range relationship.RetrieveMany {
 
 				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "GET", identity.Private)
+					addRoute(routes, identity, fmt.Sprintf("/%s", identity.Category), "GET", identity.Private)
 				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "GET", identity.Private)
+					addRoute(routes, identity, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "GET", identity.Private)
 				}
 			}
 
 			for parent := range relationship.Create {
 
 				if parent == "root" {
-					addRoute(routes, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
+					addRoute(routes, identity, fmt.Sprintf("/%s", identity.Category), "POST", identity.Private)
 				} else {
-					addRoute(routes, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "POST", identity.Private)
+					addRoute(routes, identity, fmt.Sprintf("/%s/:id/%s", modelManager.IdentityFromName(parent).Category, identity.Category), "POST", identity.Private)
 				}
 			}
 		}
@@ -100,9 +103,10 @@ func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processo
 			versionedRoutes[version] = append(
 				versionedRoutes[version],
 				RouteInfo{
-					URL:     url,
-					Verbs:   flatVerbs,
-					Private: rb.private,
+					URL:      url,
+					Verbs:    flatVerbs,
+					Private:  rb.private,
+					Identity: rb.identity.Category,
 				},
 			)
 		}
