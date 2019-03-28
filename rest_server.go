@@ -209,7 +209,7 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 
 func (a *restServer) stop() context.Context {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 
 	go func() {
 		defer cancel()
