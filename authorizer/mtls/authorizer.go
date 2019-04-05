@@ -287,7 +287,7 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 func decodeCertHeader(header string) ([]*x509.Certificate, error) {
 
 	if len(header) < 54 {
-		return nil, errors.New("Invalid certificate in header")
+		return nil, errors.New("invalid certificate in header")
 	}
 	// TODO: support multiple of them.
 	header = fmt.Sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----", strings.Replace(header[28:len(header)-26], " ", "\n", -1))
@@ -299,7 +299,7 @@ func decodeCertHeader(header string) ([]*x509.Certificate, error) {
 	for {
 		pemBlock, rest = pem.Decode(rest)
 		if pemBlock == nil {
-			return nil, fmt.Errorf("No valid cert in: %s", header)
+			return nil, fmt.Errorf("no valid cert in '%s'", header)
 		}
 		cert, err := x509.ParseCertificate(pemBlock.Bytes)
 		if err != nil {

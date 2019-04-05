@@ -241,7 +241,7 @@ func TestTag_splitPtr(t *testing.T) {
 			e := splitPtr(t, &k, &v)
 
 			Convey("Then e should not be nil", func() {
-				So(e.Error(), ShouldEqual, "Invalid tag: invalid length 'a'")
+				So(e.Error(), ShouldEqual, "invalid tag: invalid length 'a'")
 			})
 
 		})
@@ -257,7 +257,7 @@ func TestTag_splitPtr(t *testing.T) {
 			e := splitPtr(t, &k, &v)
 
 			Convey("Then e should not be nil", func() {
-				So(e.Error(), ShouldEqual, "Invalid tag: invalid length 'a='")
+				So(e.Error(), ShouldEqual, "invalid tag: invalid length 'a='")
 			})
 
 		})
@@ -273,7 +273,7 @@ func TestTag_splitPtr(t *testing.T) {
 			e := splitPtr(t, &k, &v)
 
 			Convey("Then e should not be nil", func() {
-				So(e.Error(), ShouldEqual, "Invalid tag: missing equal symbol 'abc'")
+				So(e.Error(), ShouldEqual, "invalid tag: missing equal symbol 'abc'")
 			})
 
 		})
@@ -289,7 +289,7 @@ func TestTag_splitPtr(t *testing.T) {
 			e := splitPtr(t, &k, &v)
 
 			Convey("Then e should not be nil", func() {
-				So(e.Error(), ShouldEqual, "Invalid tag: missing value 'abc='")
+				So(e.Error(), ShouldEqual, "invalid tag: missing value 'abc='")
 			})
 
 		})
@@ -305,7 +305,7 @@ func TestTag_splitPtr(t *testing.T) {
 			e := splitPtr(t, &k, &v)
 
 			Convey("Then e should not be nil", func() {
-				So(e.Error(), ShouldEqual, "Invalid tag: missing key '=abc'")
+				So(e.Error(), ShouldEqual, "invalid tag: missing key '=abc'")
 			})
 
 		})

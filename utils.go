@@ -118,19 +118,19 @@ func splitPtr(tag string, key *string, value *string) (err error) {
 
 	l := len(tag)
 	if l < 3 {
-		err = fmt.Errorf("Invalid tag: invalid length '%s'", tag)
+		err = fmt.Errorf("invalid tag: invalid length '%s'", tag)
 		return
 	}
 
 	if tag[0] == '=' {
-		err = fmt.Errorf("Invalid tag: missing key '%s'", tag)
+		err = fmt.Errorf("invalid tag: missing key '%s'", tag)
 		return
 	}
 
 	for i := 0; i < l; i++ {
 		if tag[i] == '=' {
 			if i+1 >= l {
-				return fmt.Errorf("Invalid tag: missing value '%s'", tag)
+				return fmt.Errorf("invalid tag: missing value '%s'", tag)
 			}
 			*key = tag[:i]
 			*value = tag[i+1:]
@@ -138,5 +138,5 @@ func splitPtr(tag string, key *string, value *string) (err error) {
 		}
 	}
 
-	return fmt.Errorf("Invalid tag: missing equal symbol '%s'", tag)
+	return fmt.Errorf("invalid tag: missing equal symbol '%s'", tag)
 }
