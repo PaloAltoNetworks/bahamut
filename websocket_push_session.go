@@ -28,6 +28,7 @@ type wsPushSession struct {
 	filters            chan *elemental.PushFilter
 	filter             *elemental.PushFilter
 	currentFilterLock  sync.RWMutex
+	parametersLock     sync.RWMutex
 	claims             []string
 	claimsMap          map[string]string
 	cfg                config
@@ -108,8 +109,8 @@ func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsCo
 
 func (s *wsPushSession) Parameter(key string) string {
 
-	s.currentFilterLock.RLock()
-	defer s.currentFilterLock.RUnlock()
+	s.parametersLock.RLock()
+	defer s.parametersLock.RUnlock()
 
 	return s.parameters.Get(key)
 }
@@ -129,13 +130,19 @@ func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
 
 	s.currentFilterLock.Lock()
+	defer s.currentFilterLock.Unlock()
+
 	s.filter = f
-	if s.filter != nil {
-		for k, v := range s.filter.Parameters() {
-			s.parameters[k] = v
-		}
+	if s.filter == nil {
+		return
 	}
-	s.currentFilterLock.Unlock()
+
+	s.parametersLock.RLock()
+	defer s.parametersLock.RUnlock()
+
+	for k, v := range s.filter.Parameters() {
+		s.parameters[k] = v
+	}
 }
 
 func (s *wsPushSession) listen() {
