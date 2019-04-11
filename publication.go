@@ -1,18 +1,15 @@
 package bahamut
 
 import (
-	"encoding/json"
-
-	"go.aporeto.io/elemental"
-
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
+	"go.aporeto.io/elemental"
 )
 
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
-	Data         json.RawMessage            `json:"data,omitempty"`
+	Data         []byte                     `json:"data,omitempty"`
 	Topic        string                     `json:"topic,omitempty"`
 	Partition    int32                      `json:"partition,omitempty"`
 	TrackingName string                     `json:"trackingName,omitempty"`

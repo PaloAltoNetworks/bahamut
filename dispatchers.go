@@ -152,7 +152,7 @@ func dispatchCreateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := elemental.Decode(elemental.EncodingType(ctx.request.Headers.Get("Content-Type")), ctx.request.Data, obj); err != nil {
+		if err := ctx.Request().Decode(obj); err != nil {
 			audit(auditer, ctx, err)
 			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}
@@ -231,7 +231,7 @@ func dispatchUpdateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := elemental.Decode(elemental.EncodingType(ctx.request.Headers.Get("Content-Type")), ctx.request.Data, obj); err != nil {
+		if err := ctx.Request().Decode(obj); err != nil {
 			audit(auditer, ctx, err)
 			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}
@@ -364,7 +364,7 @@ func dispatchPatchOperation(
 		}
 	} else {
 		sparse = modelManager.SparseIdentifiable(ctx.request.Identity)
-		if err := elemental.Decode(elemental.EncodingType(ctx.request.Headers.Get("Content-Type")), ctx.request.Data, sparse); err != nil {
+		if err := ctx.Request().Decode(sparse); err != nil {
 			audit(auditer, ctx, err)
 			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}

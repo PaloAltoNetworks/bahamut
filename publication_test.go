@@ -1,7 +1,6 @@
 package bahamut
 
 import (
-	"encoding/json"
 	"testing"
 
 	"go.aporeto.io/elemental"
@@ -42,7 +41,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("Then the publication contains the correct data", func() {
 				d, _ := elemental.Encode(elemental.EncodingTypeJSON, list)
-				So(publication.Data, ShouldResemble, json.RawMessage(d))
+				So(publication.Data, ShouldResemble, d)
 			})
 
 			Convey("When I decode the object", func() {
@@ -74,7 +73,7 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 			Convey("Then the publication contains the correct data", func() {
 				d, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, list)
-				So(publication.Data, ShouldResemble, json.RawMessage(d))
+				So(publication.Data, ShouldResemble, d)
 			})
 
 			Convey("When I decode the object", func() {
@@ -141,7 +140,6 @@ func TestPublication_Duplicate(t *testing.T) {
 				So(dup.TrackingName, ShouldEqual, pub.TrackingName)
 				So(dup.Topic, ShouldEqual, pub.Topic)
 				So(dup.Encoding, ShouldEqual, pub.Encoding)
-
 			})
 		})
 	})

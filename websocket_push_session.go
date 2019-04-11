@@ -166,7 +166,7 @@ func (s *wsPushSession) listen() {
 
 			data, err := elemental.Encode(elemental.EncodingType(s.headers.Get("Accept")), event)
 			if err != nil {
-				fmt.Println(err)
+				zap.L().Error("Unable to encode event", zap.Error(err))
 				s.close(websocket.CloseInternalServerErr)
 				return
 			}

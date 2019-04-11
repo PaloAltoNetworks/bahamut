@@ -71,8 +71,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 		}
 	}
 
-	var err error
-	if response.Data, err = elemental.Encode(elemental.EncodingType(ctx.request.Headers.Get("Accept")), ctx.outputData); err != nil {
+	if err := response.Encode(ctx.OutputData()); err != nil {
 		panic(fmt.Errorf("unable to encode output data: %s", err))
 	}
 
@@ -95,9 +94,8 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	outError := processError(ctx, err)
 	response.StatusCode = outError.Code()
 
-	var e error
-	if response.Data, e = elemental.Encode(elemental.EncodingType(response.Request.Headers.Get("Accept")), outError); e != nil {
-		panic(fmt.Errorf("unable to encode error: %s", e))
+	if err := response.Encode(outError); err != nil {
+		panic(fmt.Errorf("unable to encode error: %s", err))
 	}
 
 	return response
