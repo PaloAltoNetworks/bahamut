@@ -241,6 +241,7 @@ type RateLimiter interface {
 type Session interface {
 	Identifier() string
 	Parameter(string) string
+	Header(string) string
 	SetClaims([]string)
 	Claims() []string
 	ClaimsMap() map[string]string

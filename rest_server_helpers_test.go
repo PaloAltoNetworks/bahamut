@@ -8,7 +8,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
-	testmodel "go.aporeto.io/elemental/test/model"
 )
 
 func TestRestServerHelpers_commonHeaders(t *testing.T) {
@@ -168,12 +167,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
 
-		l1 := testmodel.NewList()
-		l1.ID = "id"
-		l1.Name = "toto"
 		r.StatusCode = http.StatusCreated
-
-		_ = r.Encode(l1)
+		r.Data = []byte("hello")
 
 		Convey("When I call writeHTTPResponse", func() {
 

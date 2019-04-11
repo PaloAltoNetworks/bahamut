@@ -266,6 +266,10 @@ func TestWSPushSession_listen(t *testing.T) {
 
 		conn := wsc.NewMockWebsocket(ctx)
 		s.setConn(conn)
+		s.headers = http.Header{
+			"Content-Type": []string{string(elemental.EncodingTypeMSGPACK)},
+			"Accept":       []string{string(elemental.EncodingTypeMSGPACK)},
+		}
 
 		testEvent := elemental.NewEvent(elemental.EventUpdate, testmodel.NewList())
 
@@ -282,7 +286,8 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
+				So(data, ShouldResemble, r)
 			})
 		})
 
@@ -338,13 +343,19 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
+				So(data, ShouldResemble, r)
 			})
 		})
 
 		Convey("When I send a valid filter in the websocket", func() {
 
 			go s.listen()
+
+			s.headers = http.Header{
+				"Content-Type": []string{string(elemental.EncodingTypeJSON)},
+				"Accept":       []string{string(elemental.EncodingTypeJSON)},
+			}
 
 			conn.NextRead([]byte(`{"identities":{"not-list": null}}`))
 			<-time.After(300 * time.Millisecond)

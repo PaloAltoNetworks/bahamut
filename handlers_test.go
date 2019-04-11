@@ -297,7 +297,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 			})
 
 			Convey("Then response should be correctly encoded", func() {
-				So(string(resp.Data), ShouldEqual, `[{"code":500,"description":"paf","subject":"bahamut","title":"Internal Server Error","data":null,"trace":"unknown"}]`)
+				So(string(resp.Data), ShouldEqual, `[{"code":500,"description":"paf","subject":"elemental","title":"Internal Server Error","data":null,"trace":"unknown"}]`)
 			})
 		})
 	})

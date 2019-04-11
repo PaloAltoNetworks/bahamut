@@ -89,7 +89,7 @@ func TestUtils_processError(t *testing.T) {
 			Convey("Then errOut should be correct", func() {
 				So(errOut, ShouldHaveSameTypeAs, elemental.Errors{})
 				So(errOut.Code(), ShouldEqual, 500)
-				So(errOut.Error(), ShouldEqual, "error 500 (bahamut): Internal Server Error: boom [trace: unknown]")
+				So(errOut.Error(), ShouldEqual, "error 500 (elemental): Internal Server Error: boom [trace: unknown]")
 			})
 		})
 
@@ -110,17 +110,18 @@ func TestUtils_processError(t *testing.T) {
 			errIn := elemental.NewErrors(
 				elemental.NewError("boom", "blang", "sub", http.StatusNotFound),
 				elemental.NewError("clash", "klong", "sub", http.StatusMovedPermanently),
-				errors.New("kaboom"),
 			)
+
+			errIn = errIn.Append(errors.New("kaboom"))
 
 			errOut := processError(ctx, errIn)
 
 			Convey("Then errOut should be correct", func() {
 				So(errOut, ShouldHaveSameTypeAs, elemental.Errors{})
-				So(errOut.At(0).Code, ShouldEqual, http.StatusNotFound)
-				So(errOut.At(1).Code, ShouldEqual, http.StatusMovedPermanently)
-				So(errOut.At(2).Code, ShouldEqual, http.StatusInternalServerError)
-				So(errOut.Error(), ShouldEqual, "error 404 (sub): boom: blang [trace: unknown], error 301 (sub): clash: klong [trace: unknown], error 500 (bahamut): Internal Server Error: kaboom [trace: unknown]")
+				So(errOut[0].Code, ShouldEqual, http.StatusNotFound)
+				So(errOut[1].Code, ShouldEqual, http.StatusMovedPermanently)
+				So(errOut[2].Code, ShouldEqual, http.StatusInternalServerError)
+				So(errOut.Error(), ShouldEqual, "error 404 (sub): boom: blang [trace: unknown], error 301 (sub): clash: klong [trace: unknown], error 500 (elemental): Internal Server Error: kaboom [trace: unknown]")
 			})
 		})
 	})

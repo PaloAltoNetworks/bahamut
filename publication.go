@@ -3,6 +3,8 @@ package bahamut
 import (
 	"encoding/json"
 
+	"go.aporeto.io/elemental"
+
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
@@ -15,6 +17,7 @@ type Publication struct {
 	Partition    int32                      `json:"partition,omitempty"`
 	TrackingName string                     `json:"trackingName,omitempty"`
 	TrackingData opentracing.TextMapCarrier `json:"trackingData,omitempty"`
+	Encoding     elemental.EncodingType     `json:"encoding,omitempty"`
 
 	span opentracing.Span
 }
@@ -30,19 +33,19 @@ func NewPublication(topic string) *Publication {
 
 // Encode the given object into the publication.
 func (p *Publication) Encode(o interface{}) error {
-
-	return p.EncodeWithMarshaler(o, json.Marshal)
+	return p.EncodeWithEncoding(o, elemental.EncodingTypeMSGPACK)
 }
 
-// EncodeWithMarshaler the given object into the publication using the given marshal function.
-func (p *Publication) EncodeWithMarshaler(o interface{}, marshalFunc func(interface{}) ([]byte, error)) error {
+// EncodeWithEncoding the given object into the publication using the given encoding.
+func (p *Publication) EncodeWithEncoding(o interface{}, encoding elemental.EncodingType) error {
 
-	data, err := marshalFunc(o)
+	data, err := elemental.Encode(encoding, o)
 	if err != nil {
 		return err
 	}
 
 	p.Data = data
+	p.Encoding = encoding
 
 	if p.span != nil {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
@@ -54,17 +57,11 @@ func (p *Publication) EncodeWithMarshaler(o interface{}, marshalFunc func(interf
 // Decode decodes the data into the given dest.
 func (p *Publication) Decode(dest interface{}) error {
 
-	return p.DecodeWithUnmarshaler(dest, json.Unmarshal)
-}
-
-// DecodeWithUnmarshaler decodes the data into the given dest using the given unmarshal function.
-func (p *Publication) DecodeWithUnmarshaler(dest interface{}, unmarshalFunc func([]byte, interface{}) error) error {
-
 	if p.span != nil {
 		p.span.LogFields(log.Object("payload", string(p.Data)))
 	}
 
-	return unmarshalFunc(p.Data, dest)
+	return elemental.Decode(p.Encoding, p.Data, dest)
 }
 
 // StartTracingFromSpan starts a new child opentracing.Span using the given span as parent.
@@ -112,6 +109,7 @@ func (p *Publication) Duplicate() *Publication {
 	pub.TrackingName = p.TrackingName
 	pub.TrackingData = p.TrackingData
 	pub.span = p.span
+	pub.Encoding = p.Encoding
 
 	return pub
 }

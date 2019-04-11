@@ -2,9 +2,10 @@ package bahamut
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"time"
+
+	"go.aporeto.io/elemental"
 
 	"github.com/gofrs/uuid"
 	nats "github.com/nats-io/go-nats"
@@ -54,12 +55,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("not connected to nats. messages dropped")
 	}
 
-	marshalFunc := config.marshalFunc
-	if marshalFunc == nil {
-		marshalFunc = json.Marshal
-	}
-
-	data, err := marshalFunc(publication)
+	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
@@ -92,15 +88,10 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	var sub *nats.Subscription
 	var err error
 
-	unmarshalFunc := config.unmarshalFunc
-	if unmarshalFunc == nil {
-		unmarshalFunc = json.Unmarshal
-	}
-
 	handler := func(m *nats.Msg) {
 		publication := NewPublication(topic)
 
-		if e := unmarshalFunc(m.Data, publication); e != nil {
+		if e := elemental.Decode(elemental.EncodingTypeMSGPACK, m.Data, publication); e != nil {
 			zap.L().Error("Unable to decode publication envelope. Message dropped.", zap.Error(e))
 			return
 		}

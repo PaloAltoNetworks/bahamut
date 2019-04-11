@@ -7,7 +7,6 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -115,6 +114,11 @@ func (s *wsPushSession) Parameter(key string) string {
 	return s.parameters.Get(key)
 }
 
+func (s *wsPushSession) Header(key string) string {
+
+	return s.headers.Get(key)
+}
+
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 
 	s.currentFilterLock.RLock()
@@ -160,8 +164,9 @@ func (s *wsPushSession) listen() {
 				break
 			}
 
-			data, err := json.Marshal(event)
+			data, err := elemental.Encode(elemental.EncodingType(s.headers.Get("Accept")), event)
 			if err != nil {
+				fmt.Println(err)
 				s.close(websocket.CloseInternalServerErr)
 				return
 			}
@@ -170,7 +175,7 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
-			if err := json.Unmarshal(data, filter); err != nil {
+			if err := elemental.Decode(elemental.EncodingType(s.headers.Get("Content-Type")), data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
 			}
