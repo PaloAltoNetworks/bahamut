@@ -176,14 +176,11 @@ func (s *wsPushSession) listen() {
 
 			// We convert the inner Entity to the requested encoding. We don't need additional
 			// check as elemental.Convert will do anything if the EncodingTypes are identical.
-			var err error
-			event.Entity, err = elemental.Convert(event.Encoding, s.encodingWrite, event.Entity)
-			if err != nil {
+			if err := event.Convert(s.encodingWrite); err != nil {
 				zap.L().Error("Unable to convert event", zap.Error(err))
 				s.close(websocket.CloseInternalServerErr)
 				return
 			}
-			event.Encoding = s.encodingWrite
 
 			data, err := elemental.Encode(s.encodingWrite, event)
 			if err != nil {

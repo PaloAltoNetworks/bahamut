@@ -660,7 +660,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 			pub := NewPublication("")
-			evt.Entity = []byte(`{ broken`)
+			evt.RawData = []byte(`{ broken`)
 			if err := pub.Encode(evt); err != nil {
 				panic(err)
 			}

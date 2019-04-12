@@ -9,12 +9,12 @@ import (
 
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
-	Data         []byte                     `json:"data,omitempty"`
-	Topic        string                     `json:"topic,omitempty"`
-	Partition    int32                      `json:"partition,omitempty"`
-	TrackingName string                     `json:"trackingName,omitempty"`
-	TrackingData opentracing.TextMapCarrier `json:"trackingData,omitempty"`
-	Encoding     elemental.EncodingType     `json:"encoding,omitempty"`
+	Data         []byte                     `msgpack:"data,omitempty" json:"data,omitempty"`
+	Topic        string                     `msgpack:"topic,omitempty" json:"topic,omitempty"`
+	Partition    int32                      `msgpack:"partition,omitempty" json:"partition,omitempty"`
+	TrackingName string                     `msgpack:"trackingName,omitempty" json:"trackingName,omitempty"`
+	TrackingData opentracing.TextMapCarrier `msgpack:"trackingData,omitempty" json:"trackingData,omitempty"`
+	Encoding     elemental.EncodingType     `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
 
 	span opentracing.Span
 }
