@@ -162,7 +162,7 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 
 		Convey("When I register a valid push session", func() {
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			wss.registerSession(s)
 
 			Convey("Then the session should correctly registered", func() {
@@ -225,7 +225,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -243,7 +243,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -261,7 +261,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -280,7 +280,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -307,7 +307,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -325,7 +325,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -343,7 +343,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -362,7 +362,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -520,28 +520,26 @@ func TestWebsocketServer_start(t *testing.T) {
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
 			config{},
 			wss.unregisterSession,
+			elemental.EncodingTypeMSGPACK,
+			elemental.EncodingTypeMSGPACK,
 		)
 		conn1 := wsc.NewMockWebsocket(ctx)
 		s1.setConn(conn1)
 		s1.id = "s1"
-		s1.headers = http.Header{
-			"Content-Type": []string{string(elemental.EncodingTypeMSGPACK)},
-			"Accept":       []string{string(elemental.EncodingTypeMSGPACK)},
-		}
+
 		go s1.listen()
 
 		s2 := newWSPushSession(
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
 			config{},
 			wss.unregisterSession,
+			elemental.EncodingTypeMSGPACK,
+			elemental.EncodingTypeMSGPACK,
 		)
 		conn2 := wsc.NewMockWebsocket(ctx)
 		s2.setConn(conn2)
 		s2.id = "s2"
-		s2.headers = http.Header{
-			"Content-Type": []string{string(elemental.EncodingTypeMSGPACK)},
-			"Accept":       []string{string(elemental.EncodingTypeMSGPACK)},
-		}
+
 		go s2.listen()
 
 		wss.registerSession(s1)
@@ -781,11 +779,10 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.Unlock()
 
 			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
-			defer ws.Close(0) // nolint
-
 			Convey("Then err should should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			defer ws.Close(0) // nolint
 
 			Convey("Then resp should should be correct", func() {
 				So(resp.Status, ShouldEqual, "101 Switching Protocols")

@@ -105,7 +105,7 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
 	if a.cfg.meta.serviceName != "" {
 		a.multiplexer.Get("/_meta/name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"))
+			setCommonHeader(w, r.Header.Get("Origin"), "text/plain")
 			w.WriteHeader(200)
 			w.Write([]byte(a.cfg.meta.serviceName)) // nolint: errcheck
 		}))
@@ -119,7 +119,7 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 		}
 
 		a.multiplexer.Get("/_meta/routes", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"))
+			setCommonHeader(w, r.Header.Get("Origin"), elemental.EncodingTypeJSON)
 			w.WriteHeader(200)
 			w.Write(encodedRoutesInfo) // nolint: errcheck
 		}))
@@ -133,7 +133,7 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 		}
 
 		a.multiplexer.Get("/_meta/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"))
+			setCommonHeader(w, r.Header.Get("Origin"), elemental.EncodingTypeJSON)
 			w.WriteHeader(200)
 			w.Write(encodedVersionInfo) // nolint: errcheck
 		}))
@@ -242,7 +242,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				return
 			}
 
-			setCommonHeader(w, req.Header.Get("Origin"))
+			setCommonHeader(w, req.Header.Get("Origin"), request.Accept)
 
 			ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
 			defer finishTracing(ctx)

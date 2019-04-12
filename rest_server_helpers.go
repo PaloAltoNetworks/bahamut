@@ -15,30 +15,32 @@ var (
 	ErrRateLimit = elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests)
 )
 
-func setCommonHeader(w http.ResponseWriter, origin string) {
+func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.EncodingType) {
 
 	if origin == "" {
 		origin = "*"
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Content-Type", string(encoding))
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Cache-control", "private, no-transform")
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
 func corsHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w, r.Header.Get("Origin"))
+	_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
+	setCommonHeader(w, r.Header.Get("Origin"), writeEncoding)
 	w.WriteHeader(http.StatusOK)
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	setCommonHeader(w, r.Header.Get("Origin"))
+	_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
+	setCommonHeader(w, r.Header.Get("Origin"), writeEncoding)
 	writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound))
 }
 

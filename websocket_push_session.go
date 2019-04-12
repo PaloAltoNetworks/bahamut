@@ -43,9 +43,17 @@ type wsPushSession struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	closeCh            chan struct{}
+	encodingRead       elemental.EncodingType
+	encodingWrite      elemental.EncodingType
 }
 
-func newWSPushSession(request *http.Request, cfg config, unregister unregisterFunc) *wsPushSession {
+func newWSPushSession(
+	request *http.Request,
+	cfg config,
+	unregister unregisterFunc,
+	encodingRead elemental.EncodingType,
+	encodingWrite elemental.EncodingType,
+) *wsPushSession {
 
 	id := uuid.Must(uuid.NewV4()).String()
 	ctx, cancel := context.WithCancel(request.Context())
@@ -66,6 +74,8 @@ func newWSPushSession(request *http.Request, cfg config, unregister unregisterFu
 		cancel:             cancel,
 		tlsConnectionState: request.TLS,
 		remoteAddr:         request.RemoteAddr,
+		encodingRead:       encodingRead,
+		encodingWrite:      encodingWrite,
 	}
 }
 
@@ -164,7 +174,18 @@ func (s *wsPushSession) listen() {
 				break
 			}
 
-			data, err := elemental.Encode(elemental.EncodingType(s.headers.Get("Accept")), event)
+			// We convert the inner Entity to the requested encoding. We don't need additional
+			// check as elemental.Convert will do anything if the EncodingTypes are identical.
+			var err error
+			event.Entity, err = elemental.Convert(event.Encoding, s.encodingWrite, event.Entity)
+			if err != nil {
+				zap.L().Error("Unable to convert event", zap.Error(err))
+				s.close(websocket.CloseInternalServerErr)
+				return
+			}
+			event.Encoding = s.encodingWrite
+
+			data, err := elemental.Encode(s.encodingWrite, event)
 			if err != nil {
 				zap.L().Error("Unable to encode event", zap.Error(err))
 				s.close(websocket.CloseInternalServerErr)
@@ -175,7 +196,7 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
-			if err := elemental.Decode(elemental.EncodingType(s.headers.Get("Content-Type")), data, filter); err != nil {
+			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
 			}
