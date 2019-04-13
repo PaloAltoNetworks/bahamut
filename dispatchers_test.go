@@ -695,7 +695,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "'error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: only encoded map or array can be decoded into a struct'"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
