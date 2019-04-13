@@ -765,7 +765,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation info on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]'`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation info on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
