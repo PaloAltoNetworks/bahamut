@@ -297,7 +297,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 			})
 
 			Convey("Then response should be correctly encoded", func() {
-				So(string(resp.Data), ShouldEqual, `[{"code":500,"description":"paf","subject":"elemental","title":"Internal Server Error","data":null,"trace":"unknown"}]`)
+				So(string(resp.Data), ShouldEqual, `[{"code":500,"data":null,"description":"paf","subject":"elemental","title":"Internal Server Error","trace":"unknown"}]`)
 			})
 		})
 	})
@@ -455,7 +455,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation retrieve-many on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation retrieve-many on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]'`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -475,7 +475,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"RetrieveMany operation not allowed on users","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"RetrieveMany operation not allowed on users","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -517,7 +517,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation retrieve on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation retrieve on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -537,7 +537,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Retrieve operation not allowed on user","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Retrieve operation not allowed on user","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -579,7 +579,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation create on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation create on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -599,7 +599,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Create operation not allowed on user","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Create operation not allowed on user","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -641,7 +641,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation update on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation update on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -661,7 +661,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Update operation not allowed on user","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Update operation not allowed on user","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -703,7 +703,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation delete on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation delete on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -723,7 +723,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Delete operation not allowed on user","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Delete operation not allowed on user","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -765,7 +765,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation info on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation info on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]'`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -785,7 +785,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Info operation not allowed on users","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Info operation not allowed on users","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -827,7 +827,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":501,"description":"No handler for operation patch on user","subject":"bahamut","title":"Not implemented","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":501,"data":null,"description":"No handler for operation patch on user","subject":"bahamut","title":"Not implemented","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
@@ -847,7 +847,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 				Convey("Then resp should be correct", func() {
 					So(resp, ShouldNotBeNil)
-					So(string(resp.Data), ShouldEqual, `[{"code":405,"description":"Patch operation not allowed on users","subject":"bahamut","title":"Not allowed","data":null,"trace":"unknown"}]`)
+					So(string(resp.Data), ShouldEqual, `[{"code":405,"data":null,"description":"Patch operation not allowed on users","subject":"bahamut","title":"Not allowed","trace":"unknown"}]`)
 				})
 
 				Convey("Then the dispactcher should have been called once", func() {
