@@ -62,32 +62,7 @@ func processError(ctx context.Context, err error) (outError elemental.Errors) {
 
 	span := opentracing.SpanFromContext(ctx)
 
-	spanID := extractSpanID(span)
-
-	switch e := err.(type) {
-
-	case elemental.Error:
-		e.Trace = spanID
-		outError = elemental.NewErrors(e)
-
-	case elemental.Errors:
-		for _, err := range e {
-			if eerr, ok := err.(elemental.Error); ok {
-				eerr.Trace = spanID
-				outError = append(outError, eerr)
-			} else {
-				cerr := elemental.NewError("Internal Server Error", err.Error(), "bahamut", http.StatusInternalServerError)
-				cerr.Trace = spanID
-				outError = append(outError, cerr)
-			}
-		}
-
-	default:
-		eerr := elemental.NewError("Internal Server Error", e.Error(), "bahamut", http.StatusInternalServerError)
-		eerr.Trace = spanID
-		outError = elemental.NewErrors(eerr)
-		zap.L().Error("Internal Server Error", zap.Error(eerr), zap.String("trace", spanID))
-	}
+	outError = elemental.NewErrors(err).Trace(extractSpanID(span))
 
 	if span != nil {
 		span.SetTag("error", true)

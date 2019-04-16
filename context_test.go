@@ -27,13 +27,13 @@ func TestContext_NewContext(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
 
-		c := newContext(context.TODO(), request)
+		c := newContext(context.Background(), request)
 
 		Convey("Then it should be correctly initialized", func() {
 
 			So(c.request.Page, ShouldEqual, 1)
 			So(c.request.PageSize, ShouldEqual, 10)
-			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.ctx, ShouldEqual, context.Background())
 			So(c, ShouldImplement, (*Context)(nil))
 		})
 	})

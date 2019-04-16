@@ -10,10 +10,10 @@ import (
 
 // A RouteInfo contains basic information about an api route.
 type RouteInfo struct {
-	Identity string   `json:"identity"`
-	URL      string   `json:"url"`
-	Verbs    []string `json:"verbs,omitempty"`
-	Private  bool     `json:"private,omitempty"`
+	Identity string   `msgpack:"identity" json:"identity"`
+	URL      string   `msgpack:"url" json:"url"`
+	Verbs    []string `msgpack:"verbs,omitempty" json:"verbs,omitempty"`
+	Private  bool     `msgpack:"private,omitempty" json:"private,omitempty"`
 }
 
 func (r RouteInfo) String() string {

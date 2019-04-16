@@ -162,7 +162,7 @@ func TestWebsockerServer_SessionRegistration(t *testing.T) {
 
 		Convey("When I register a valid push session", func() {
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			wss.registerSession(s)
 
 			Convey("Then the session should correctly registered", func() {
@@ -225,7 +225,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -243,7 +243,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -261,7 +261,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -280,7 +280,7 @@ func TestWebsocketServer_authSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.authSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -307,7 +307,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -325,7 +325,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should be nil", func() {
@@ -343,7 +343,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -362,7 +362,7 @@ func TestWebsocketServer_initPushSession(t *testing.T) {
 
 			wss := newPushServer(cfg, mux, pf)
 
-			s := newWSPushSession(req, cfg, nil)
+			s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeJSON, elemental.EncodingTypeJSON)
 			err := wss.initPushSession(s)
 
 			Convey("Then err should not be nil", func() {
@@ -389,8 +389,7 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			wss := newPushServer(cfg, mux, pf)
 			wss.pushEvents(nil)
 
-			Convey("Then nothing special should happen", func() {
-			})
+			Convey("Then nothing special should happen", func() {})
 		})
 
 		Convey("When I call pushEvents with a service is configured but no sessions handler", func() {
@@ -404,11 +403,15 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.dispatchEnabled = true
 
 			wss := newPushServer(cfg, mux, pf)
-			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
+			evtin := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			wss.pushEvents(evtin)
 
 			Convey("Then I should find one publication", func() {
+				evtout := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+				evtout.Timestamp = evtin.Timestamp
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evtout)
 				So(len(srv.publications), ShouldEqual, 1)
-				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":`)
+				So(string(srv.publications[0].Data), ShouldResemble, string(r))
 			})
 		})
 
@@ -426,11 +429,15 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 			cfg.pushServer.publishHandler = h
 
 			wss := newPushServer(cfg, mux, pf)
-			wss.pushEvents(elemental.NewEvent(elemental.EventCreate, testmodel.NewList()))
+			evtin := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			wss.pushEvents(evtin)
 
 			Convey("Then I should find one publication", func() {
+				evtout := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+				evtout.Timestamp = evtin.Timestamp
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evtout)
 				So(len(srv.publications), ShouldEqual, 1)
-				So(string(srv.publications[0].Data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
+				So(string(srv.publications[0].Data), ShouldResemble, string(r))
 			})
 		})
 
@@ -488,7 +495,7 @@ func TestWebsocketServer_start(t *testing.T) {
 	Convey("Given I have a websocket server with 2 registered sessions", t, func() {
 
 		pubsub := NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(2 * time.Second) {
+		if !pubsub.Connect().Wait(3 * time.Second) {
 			panic("could not connect to local pubsub")
 		}
 
@@ -504,7 +511,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		wss := newPushServer(cfg, mux, pf)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		go wss.start(ctx)
@@ -513,20 +520,26 @@ func TestWebsocketServer_start(t *testing.T) {
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
 			config{},
 			wss.unregisterSession,
+			elemental.EncodingTypeMSGPACK,
+			elemental.EncodingTypeMSGPACK,
 		)
 		conn1 := wsc.NewMockWebsocket(ctx)
 		s1.setConn(conn1)
 		s1.id = "s1"
+
 		go s1.listen()
 
 		s2 := newWSPushSession(
 			(&http.Request{URL: &url.URL{}}).WithContext(ctx),
 			config{},
 			wss.unregisterSession,
+			elemental.EncodingTypeMSGPACK,
+			elemental.EncodingTypeMSGPACK,
 		)
 		conn2 := wsc.NewMockWebsocket(ctx)
 		s2.setConn(conn2)
 		s2.id = "s2"
+
 		go s2.listen()
 
 		wss.registerSession(s1)
@@ -538,9 +551,13 @@ func TestWebsocketServer_start(t *testing.T) {
 
 			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 			pub := NewPublication("")
-			pub.Encode(evt) // nolint: errcheck
+			if err := pub.Encode(evt); err != nil {
+				panic(err)
+			}
 
-			pubsub.Publish(pub) // nolint: errcheck
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
 
 			var msg1 []byte
 			select {
@@ -557,8 +574,9 @@ func TestWebsocketServer_start(t *testing.T) {
 			}
 
 			Convey("Then both sessions should receive the event", func() {
-				So(string(msg1), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
-				So(string(msg2), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"create","timestamp":"`)
+				d1, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evt)
+				So(msg1, ShouldResemble, d1)
+				So(msg2, ShouldResemble, d1)
 			})
 		})
 
@@ -568,9 +586,13 @@ func TestWebsocketServer_start(t *testing.T) {
 
 			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 			pub := NewPublication("")
-			pub.Encode(evt) // nolint: errcheck
+			if err := pub.Encode(evt); err != nil {
+				panic(err)
+			}
 
-			pubsub.Publish(pub) // nolint: errcheck
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
 
 			var msg1 []byte
 			select {
@@ -601,9 +623,13 @@ func TestWebsocketServer_start(t *testing.T) {
 
 			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 			pub := NewPublication("")
-			pub.Encode(evt) // nolint: errcheck
+			if err := pub.Encode(evt); err != nil {
+				panic(err)
+			}
 
-			pubsub.Publish(pub) // nolint: errcheck
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
 
 			var msg1 []byte
 			select {
@@ -634,10 +660,14 @@ func TestWebsocketServer_start(t *testing.T) {
 
 			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 			pub := NewPublication("")
-			evt.Entity = []byte(`{ broken`)
-			pub.Encode(evt) // nolint: errcheck
+			evt.RawData = []byte(`{ broken`)
+			if err := pub.Encode(evt); err != nil {
+				panic(err)
+			}
 
-			pubsub.Publish(pub) // nolint: errcheck
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
 
 			var msg1 []byte
 			select {
@@ -749,11 +779,10 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.Unlock()
 
 			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
-			defer ws.Close(0) // nolint
-
 			Convey("Then err should should be nil", func() {
 				So(err, ShouldBeNil)
 			})
+			defer ws.Close(0) // nolint
 
 			Convey("Then resp should should be correct", func() {
 				So(resp.Status, ShouldEqual, "101 Switching Protocols")

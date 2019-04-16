@@ -399,7 +399,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (elemental): Bad Request: unexpected end of JSON input"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 0]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
@@ -421,7 +421,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (elemental): Bad Request: invalid character 'A' looking for beginning of value"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: cannot decode into nil"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
@@ -672,7 +672,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (elemental): Bad Request: unexpected end of JSON input"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 0]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
@@ -695,7 +695,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (elemental): Bad Request: invalid character 'A' looking for beginning of value"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
@@ -1074,7 +1074,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (elemental): Bad Request: invalid character 'I' looking for beginning of value"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
 
 		Convey("Then I should have no error and context should be initiated", func() {

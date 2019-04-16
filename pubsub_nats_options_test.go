@@ -3,7 +3,6 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"testing"
 
 	nats "github.com/nats-io/go-nats"
@@ -51,11 +50,6 @@ func TestBahamut_PubSubNatsOptionsSubscribe(t *testing.T) {
 		NATSOptSubscribeReplyer(r)(&c)
 		So(c.replier, ShouldEqual, r)
 	})
-
-	Convey("Calling NATSOptSubscribeUnmarshaler should work", t, func() {
-		NATSOptSubscribeUnmarshaler(json.Unmarshal)(&c)
-		So(c.unmarshalFunc, ShouldEqual, json.Unmarshal)
-	})
 }
 
 func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
@@ -74,10 +68,5 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 		So(c.ctx, ShouldEqual, context.TODO())
 		So(c.replyValidator(&nats.Msg{Data: ackMessage}), ShouldEqual, nil)
 		So(c.replyValidator(&nats.Msg{Data: []byte("hello")}).Error(), ShouldEqual, "invalid ack: hello")
-	})
-
-	Convey("Calling NATSOptPublishMarshaler should work", t, func() {
-		NATSOptPublishMarshaler(json.Marshal)(&c)
-		So(c.marshalFunc, ShouldEqual, json.Marshal)
 	})
 }

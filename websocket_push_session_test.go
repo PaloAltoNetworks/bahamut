@@ -30,7 +30,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 			RemoteAddr: "1.2.3.4",
 		}
 		unregister := func(i *wsPushSession) {}
-		s := newWSPushSession(req, conf, unregister)
+		s := newWSPushSession(req, conf, unregister, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		Convey("Then it should be correctly initialized", func() {
 			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
@@ -57,7 +57,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
-		s := newWSPushSession(req, cfg, nil)
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 
@@ -83,7 +83,7 @@ func TestWSPushSession_String(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
-		s := newWSPushSession(req, cfg, nil)
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		Convey("When I call String", func() {
 
@@ -102,7 +102,7 @@ func TestWSPushSession_Filtering(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
-		s := newWSPushSession(req, cfg, nil)
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		f := elemental.NewPushFilter()
 
@@ -144,7 +144,7 @@ func TestWSPushSession_accessors(t *testing.T) {
 		req = req.WithContext(ctx)
 		unregister := func(i *wsPushSession) {}
 
-		s := newWSPushSession(req, conf, unregister)
+		s := newWSPushSession(req, conf, unregister, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		Convey("When I call Identifier()", func() {
 
@@ -262,6 +262,8 @@ func TestWSPushSession_listen(t *testing.T) {
 			func(i *wsPushSession) {
 				unregistered <- true
 			},
+			elemental.EncodingTypeMSGPACK,
+			elemental.EncodingTypeMSGPACK,
 		)
 
 		conn := wsc.NewMockWebsocket(ctx)
@@ -282,7 +284,8 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
+				So(data, ShouldResemble, r)
 			})
 		})
 
@@ -338,13 +341,17 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the websocket should send the event", func() {
-				So(string(data), ShouldStartWith, `{"entity":{"ID":"","creationOnly":"","date":"0001-01-01T00:00:00Z","description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","type":"update","timestamp":"`)
+				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
+				So(data, ShouldResemble, r)
 			})
 		})
 
 		Convey("When I send a valid filter in the websocket", func() {
 
 			go s.listen()
+
+			s.encodingRead = elemental.EncodingTypeJSON
+			s.encodingWrite = elemental.EncodingTypeJSON
 
 			conn.NextRead([]byte(`{"identities":{"not-list": null}}`))
 			<-time.After(300 * time.Millisecond)

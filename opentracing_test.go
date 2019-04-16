@@ -37,7 +37,12 @@ func TestTracing_extractClaims(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "http://server/lists/xx/tasks", nil)
 		req.Header.Add("X-Namespace", "ns")
 		req.Header.Add("Authorization", "Bearer "+token)
-		r, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
+		req.Header.Add("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+		r, err := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
+		if err != nil {
+			panic(err)
+		}
 
 		Convey("When I extract the claims", func() {
 

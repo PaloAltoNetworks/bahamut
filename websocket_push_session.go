@@ -7,7 +7,6 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -44,9 +43,17 @@ type wsPushSession struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	closeCh            chan struct{}
+	encodingRead       elemental.EncodingType
+	encodingWrite      elemental.EncodingType
 }
 
-func newWSPushSession(request *http.Request, cfg config, unregister unregisterFunc) *wsPushSession {
+func newWSPushSession(
+	request *http.Request,
+	cfg config,
+	unregister unregisterFunc,
+	encodingRead elemental.EncodingType,
+	encodingWrite elemental.EncodingType,
+) *wsPushSession {
 
 	id := uuid.Must(uuid.NewV4()).String()
 	ctx, cancel := context.WithCancel(request.Context())
@@ -67,6 +74,8 @@ func newWSPushSession(request *http.Request, cfg config, unregister unregisterFu
 		cancel:             cancel,
 		tlsConnectionState: request.TLS,
 		remoteAddr:         request.RemoteAddr,
+		encodingRead:       encodingRead,
+		encodingWrite:      encodingWrite,
 	}
 }
 
@@ -115,6 +124,11 @@ func (s *wsPushSession) Parameter(key string) string {
 	return s.parameters.Get(key)
 }
 
+func (s *wsPushSession) Header(key string) string {
+
+	return s.headers.Get(key)
+}
+
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 
 	s.currentFilterLock.RLock()
@@ -160,8 +174,17 @@ func (s *wsPushSession) listen() {
 				break
 			}
 
-			data, err := json.Marshal(event)
+			// We convert the inner Entity to the requested encoding. We don't need additional
+			// check as elemental.Convert will do anything if the EncodingTypes are identical.
+			if err := event.Convert(s.encodingWrite); err != nil {
+				zap.L().Error("Unable to convert event", zap.Error(err))
+				s.close(websocket.CloseInternalServerErr)
+				return
+			}
+
+			data, err := elemental.Encode(s.encodingWrite, event)
 			if err != nil {
+				zap.L().Error("Unable to encode event", zap.Error(err))
 				s.close(websocket.CloseInternalServerErr)
 				return
 			}
@@ -170,7 +193,7 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
-			if err := json.Unmarshal(data, filter); err != nil {
+			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
 			}

@@ -184,7 +184,12 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(n.mainContext)
 
-	session := newWSPushSession(r, n.cfg, n.unregisterSession)
+	readEncodingType, writeEncodingType, err := elemental.EncodingFromHeaders(r.Header)
+	if err != nil {
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+	}
+
+	session := newWSPushSession(r, n.cfg, n.unregisterSession, readEncodingType, writeEncodingType)
 	session.setTLSConnectionState(r.TLS)
 	session.setRemoteAddress(r.RemoteAddr)
 

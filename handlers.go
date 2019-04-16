@@ -2,12 +2,12 @@ package bahamut
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.aporeto.io/elemental"
-	"go.uber.org/zap"
 )
 
 type handlerFunc func(*bcontext, config, processorFinderFunc, eventPusherFunc) *elemental.Response
@@ -71,8 +71,8 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 		}
 	}
 
-	if err := response.Encode(ctx.outputData); err != nil {
-		zap.L().Panic("Unable to encode output data", zap.Error(err))
+	if err := response.Encode(ctx.OutputData()); err != nil {
+		panic(fmt.Errorf("unable to encode output data: %s", err))
 	}
 
 	data := response.Data[:]
@@ -80,7 +80,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 		data = cleaner(response.Request.Identity, data)
 	}
 
-	fields = append(fields, (log.Object("response", string(data))))
+	fields = append(fields, log.Object("response", string(data)))
 
 	return response
 }
@@ -92,10 +92,10 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	}
 
 	outError := processError(ctx, err)
-
 	response.StatusCode = outError.Code()
-	if e := response.Encode(outError); e != nil {
-		zap.L().Panic("Unable to encode error", zap.Error(e))
+
+	if err := response.Encode(outError); err != nil {
+		panic(fmt.Errorf("unable to encode error: %s", err))
 	}
 
 	return response
