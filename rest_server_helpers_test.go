@@ -21,6 +21,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			setCommonHeader(w, "http://toto.com:8443", elemental.EncodingTypeJSON)
 
 			Convey("Then the common headers should be set", func() {
+				So(w.Header().Get("Accept"), ShouldEqual, "application/msgpack,application/json")
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
@@ -35,6 +36,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 			setCommonHeader(w, "", elemental.EncodingTypeMSGPACK)
 
 			Convey("Then the common headers should be set", func() {
+				So(w.Header().Get("Accept"), ShouldEqual, "application/msgpack,application/json")
 				So(w.Header().Get("Content-Type"), ShouldEqual, "application/msgpack")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "*")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")

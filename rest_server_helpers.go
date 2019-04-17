@@ -21,6 +21,7 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 		origin = "*"
 	}
 
+	w.Header().Set("Accept", "application/msgpack,application/json")
 	w.Header().Set("Content-Type", string(encoding))
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Cache-control", "private, no-transform")
