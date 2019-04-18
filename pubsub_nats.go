@@ -60,12 +60,6 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
-	zap.L().Debug("Publishing message in nats",
-		zap.String("topic", publication.Topic),
-		zap.String("natsURL", p.natsURL),
-		zap.ByteString("data", publication.Data),
-	)
-
 	if config.replyValidator == nil {
 		return p.client.Publish(publication.Topic, data)
 	}
