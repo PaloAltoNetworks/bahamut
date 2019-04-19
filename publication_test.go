@@ -3,9 +3,8 @@ package bahamut
 import (
 	"testing"
 
-	"go.aporeto.io/elemental"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
 )
 
@@ -25,7 +24,9 @@ func TestPublication_EncodeDecode(t *testing.T) {
 
 	Convey("Given I create a new Publication", t, func() {
 
+		tracer := &mockTracer{}
 		publication := NewPublication("topic")
+		publication.StartTracing(tracer, "test")
 
 		Convey("When I encode some object using JSON encoding", func() {
 
@@ -115,6 +116,66 @@ func TestPublication_EncodeDecode(t *testing.T) {
 				Convey("Then err should not be nil", func() {
 					So(err, ShouldNotBeNil)
 				})
+			})
+		})
+	})
+}
+
+func TestPublicationTracing(t *testing.T) {
+
+	Convey("Given I have no tracer", t, func() {
+
+		publication := NewPublication("topic")
+
+		Convey("When I call StartTracing", func() {
+
+			publication.StartTracing(nil, "test")
+
+			Convey("Then the span should be correct", func() {
+				So(publication.Span(), ShouldBeNil)
+			})
+		})
+
+		Convey("When I call StartTracingFromSpan", func() {
+
+			span := &mockSpan{}
+			err := publication.StartTracingFromSpan(span, "test")
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then the span should be correct", func() {
+				So(publication.Span(), ShouldBeNil)
+			})
+		})
+	})
+
+	Convey("Given I have a tracer", t, func() {
+
+		tracer := &mockTracer{}
+		publication := NewPublication("topic")
+
+		Convey("When I call StartTracing", func() {
+
+			publication.StartTracing(tracer, "test")
+
+			Convey("Then the span should be correct", func() {
+				So(publication.Span(), ShouldNotBeNil)
+			})
+		})
+
+		Convey("When I call StartTracingFromSpan", func() {
+
+			span := newMockSpan(tracer)
+			err := publication.StartTracingFromSpan(span, "test")
+
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then the span should be correct", func() {
+				So(publication.Span(), ShouldNotBeNil)
 			})
 		})
 	})
