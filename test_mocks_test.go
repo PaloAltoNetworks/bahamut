@@ -260,6 +260,10 @@ func (s *mockSpan) Tracer() opentracing.Tracer {
 	return s.tracer
 }
 
+func (s *mockSpan) String() string {
+	return "1234567890"
+}
+
 func (s *mockSpan) LogEvent(event string)                                 {}
 func (s *mockSpan) LogEventWithPayload(event string, payload interface{}) {}
 func (s *mockSpan) Log(data opentracing.LogData)                          {}

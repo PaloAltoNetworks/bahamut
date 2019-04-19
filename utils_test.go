@@ -23,10 +23,13 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		var err error
 		var wg sync.WaitGroup
 
+		span := newMockSpan(&mockTracer{})
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
+
 		wg.Add(1)
 		go func() {
 			defer func() {
-				err = handleRecoveredPanic(context.TODO(), recover(), false)
+				err = handleRecoveredPanic(ctx, recover(), false)
 				wg.Done()
 			}()
 			panic("this is a panic!")
@@ -37,19 +40,33 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 		Convey("Then err should not be nil", func() {
 			So(err, ShouldNotBeNil)
 		})
+
+		Convey("Then tracing should be correct", func() {
+			So(span.tags["error"], ShouldBeTrue)
+			So(span.tags["panic"], ShouldBeTrue)
+		})
 	})
 
 	Convey("Given I call a function that panics and I don't want to recover", t, func() {
 
+		span := newMockSpan(&mockTracer{})
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
+
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(context.TODO(), recover(), true) // nolint
+				handleRecoveredPanic(ctx, recover(), true) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}
 
 		Convey("Then err should not be nil", func() {
 			So(f, ShouldPanic)
+		})
+
+		Convey("Then tracing should be correct", func() {
+			So(f, ShouldPanic)
+			So(span.tags["error"], ShouldBeTrue)
+			So(span.tags["panic"], ShouldBeTrue)
 		})
 	})
 
@@ -309,6 +326,23 @@ func TestTag_splitPtr(t *testing.T) {
 				So(e.Error(), ShouldEqual, "invalid tag: missing key '=abc'")
 			})
 
+		})
+	})
+}
+
+func TestExtractSpanID(t *testing.T) {
+
+	Convey("Given I have a span", t, func() {
+
+		span := &mockSpan{}
+
+		Convey("When I call extractSpanID", func() {
+
+			id := extractSpanID(span)
+
+			Convey("Then Id should be correct", func() {
+				So(id, ShouldEqual, "1234567890")
+			})
 		})
 	})
 }
