@@ -47,7 +47,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -75,7 +75,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -103,7 +103,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeHeaderOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -128,7 +128,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeHeaderThenTLSState)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -155,7 +155,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -186,7 +186,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeHeaderThenTLSState)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -216,7 +216,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeHeaderThenTLSState)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeHeaderThenTLSState)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -246,7 +246,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateThenHeader)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateThenHeader)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -277,7 +277,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -302,7 +302,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -330,7 +330,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -359,7 +359,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, func(cert *x509.Certificate) bool {
 				return false
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -388,7 +388,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -415,7 +415,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -442,7 +442,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, func(cert *x509.Certificate) bool {
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -471,7 +471,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -500,7 +500,7 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSAuthorizer(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, []elemental.Identity{identity}, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSAuthorizer(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, []elemental.Identity{identity}, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.IsAuthorized(ctx)
 
@@ -548,7 +548,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -576,7 +576,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -608,7 +608,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeHeaderOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -638,7 +638,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderThenTLSState)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeHeaderThenTLSState)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -668,7 +668,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderThenTLSState)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeHeaderThenTLSState)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -698,7 +698,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateThenHeader)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateThenHeader)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -728,7 +728,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -756,7 +756,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -790,7 +790,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return false
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -824,7 +824,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -851,7 +851,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -881,7 +881,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -909,7 +909,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSRequestAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSRequestAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateRequest(ctx)
 
@@ -973,7 +973,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateSession(s)
 
@@ -1001,7 +1001,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateSession(s)
 
@@ -1033,7 +1033,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeHeaderOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeHeaderOnly)
 
 			action, err := auth.AuthenticateSession(s)
 
@@ -1061,7 +1061,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -1095,7 +1095,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return false
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -1129,7 +1129,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateSession(s)
 
@@ -1157,7 +1157,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, func(cert *x509.Certificate) bool {
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, func(cert *x509.Certificate) bool {
 				return true
 			}, CertificateCheckModeTLSStateOnly)
 
@@ -1187,7 +1187,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateSession(s)
 
@@ -1215,7 +1215,7 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 			}
 
-			auth := NewMTLSSessionAuthenticator(opts, bahamut.AuthActionOK, bahamut.AuthActionKO, nil, CertificateCheckModeTLSStateOnly)
+			auth := NewMTLSSessionAuthenticator(opts, func(a bahamut.AuthAction, c bahamut.Context, s bahamut.Session) bahamut.AuthAction { return a }, nil, CertificateCheckModeTLSStateOnly)
 
 			action, err := auth.AuthenticateSession(s)
 

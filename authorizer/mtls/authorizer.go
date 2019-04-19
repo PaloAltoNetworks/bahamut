@@ -90,19 +90,24 @@ func CertificatesFromHeader(headerData string) (certs []*x509.Certificate, err e
 // verification on the certificates, like checking for the DN.
 type VerifierFunc func(*x509.Certificate) bool
 
+// DeciderFunc is the type of function to pass to decide
+// what bahamut.Action to return after the MTLS check is done.
+// It will be given the mtls result action, and the bahamut.Context or bahamut.Session
+// according to the kind of authorization. If bahamut.Context is given, bahamut.Session will
+// be nil and vice versa.
+type DeciderFunc func(bahamut.AuthAction, bahamut.Context, bahamut.Session) bahamut.AuthAction
+
 type mtlsVerifier struct {
 	verifyOptions        x509.VerifyOptions
 	ignoredIdentities    []elemental.Identity
-	authActionSuccess    bahamut.AuthAction
-	authActionFailure    bahamut.AuthAction
+	deciderFunc          DeciderFunc
 	verifier             VerifierFunc
 	certificateCheckMode CertificateCheckMode
 }
 
 func newMTLSVerifier(
 	verifyOptions x509.VerifyOptions,
-	authActionSuccess bahamut.AuthAction,
-	authActionFailure bahamut.AuthAction,
+	deciderFunc DeciderFunc,
 	ignoredIdentities []elemental.Identity,
 	verifier VerifierFunc,
 	certificateCheckMode CertificateCheckMode,
@@ -111,8 +116,7 @@ func newMTLSVerifier(
 	return &mtlsVerifier{
 		verifyOptions:        verifyOptions,
 		ignoredIdentities:    ignoredIdentities,
-		authActionSuccess:    authActionSuccess,
-		authActionFailure:    authActionFailure,
+		deciderFunc:          deciderFunc,
 		verifier:             verifier,
 		certificateCheckMode: certificateCheckMode,
 	}
@@ -122,67 +126,49 @@ func newMTLSVerifier(
 // can be verified using the given x509.VerifyOptions.
 // The Authorizer will not enforce this for identities given by ignoredIdentities.
 //
-// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
-// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
-//
-// authActionFailure is the bahamut.AuthAction to return if the verification fails.
-// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+// deciderFunc is the DeciderFunc to used return the actual action you want the Authorizer
+// to return.
 func NewMTLSAuthorizer(
 	verifyOptions x509.VerifyOptions,
-	authActionSuccess bahamut.AuthAction,
-	authActionFailure bahamut.AuthAction,
+	deciderFunc DeciderFunc,
 	ignoredIdentities []elemental.Identity,
 	certVerifier VerifierFunc,
 	certificateCheckMode CertificateCheckMode,
 ) bahamut.Authorizer {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, ignoredIdentities, certVerifier, certificateCheckMode)
+	return newMTLSVerifier(verifyOptions, deciderFunc, ignoredIdentities, certVerifier, certificateCheckMode)
 }
 
 // NewMTLSRequestAuthenticator returns a new Authenticator that ensures the client certificate
 // can be verified using the given x509.VerifyOptions.
 // The Authenticator will not enforce this for identities given by ignoredIdentities.
 //
-// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
-// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
-//
-// authActionFailure is the bahamut.AuthAction to return if the verification fails.
-// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+// deciderFunc is the DeciderFunc to used return the actual action you want the RequestAuthenticator
+// to return.
 func NewMTLSRequestAuthenticator(
 	verifyOptions x509.VerifyOptions,
-	authActionSuccess bahamut.AuthAction,
-	authActionFailure bahamut.AuthAction,
+	deciderFunc DeciderFunc,
 	certVerifier VerifierFunc,
 	certificateCheckMode CertificateCheckMode,
 ) bahamut.RequestAuthenticator {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil, certVerifier, certificateCheckMode)
+	return newMTLSVerifier(verifyOptions, deciderFunc, nil, certVerifier, certificateCheckMode)
 }
 
 // NewMTLSSessionAuthenticator returns a new Authenticator that ensures the client certificate are
 // can be verified using the given x509.VerifyOptions.
 // The Authenticator will not enforce this for identities given by ignoredIdentities.
 //
-// authActionSuccess is the bahamut.AuthAction to return if the verification succeeds.
-// This lets you a chance to return either bahamut.AuthActionOK to definitely validate
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
-//
-// authActionFailure is the bahamut.AuthAction to return if the verification fails.
-// This lets you a chance to return either bahamut.AuthActionKO to definitely fail
-// the call, or to return bahamut.AuthActionContinue to continue the authorizer chain.
+// deciderFunc is the DeciderFunc to used return the actual action you want the SessionAuthenticator
+// to return.
 func NewMTLSSessionAuthenticator(
 	verifyOptions x509.VerifyOptions,
-	authActionSuccess bahamut.AuthAction,
-	authActionFailure bahamut.AuthAction,
+	deciderFunc DeciderFunc,
 	certVerifier VerifierFunc,
 	certificateCheckMode CertificateCheckMode,
 ) bahamut.SessionAuthenticator {
 
-	return newMTLSVerifier(verifyOptions, authActionSuccess, authActionFailure, nil, certVerifier, certificateCheckMode)
+	return newMTLSVerifier(verifyOptions, deciderFunc, nil, certVerifier, certificateCheckMode)
 }
 
 func (a *mtlsVerifier) IsAuthorized(ctx bahamut.Context) (bahamut.AuthAction, error) {
@@ -214,33 +200,40 @@ func (a *mtlsVerifier) IsAuthorized(ctx bahamut.Context) (bahamut.AuthAction, er
 	}
 
 	if err != nil {
-		return a.authActionFailure, nil
+		return a.deciderFunc(bahamut.AuthActionKO, ctx, nil), nil
 	}
 
 	// If we can verify, we return the success auth action.
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-
-			// if paliateGo110VerificationBug(a.verifyOptions, cert) {
 			if a.verifier == nil || a.verifier(cert) {
-				return a.authActionSuccess, nil
+				return a.deciderFunc(bahamut.AuthActionOK, ctx, nil), nil
 			}
-			// }
 		}
 	}
 
 	// If we can't verify, we return the failure auth action.
-	return a.authActionFailure, nil
+	return a.deciderFunc(bahamut.AuthActionKO, ctx, nil), nil
 }
 
 func (a *mtlsVerifier) AuthenticateRequest(ctx bahamut.Context) (bahamut.AuthAction, error) {
 
-	return a.checkAction(ctx.Request().TLSConnectionState, ctx.Request().Headers.Get(tlsHeaderKey), ctx.SetClaims)
+	ac, err := a.checkAction(ctx.Request().TLSConnectionState, ctx.Request().Headers.Get(tlsHeaderKey), ctx.SetClaims)
+	if err != nil {
+		return bahamut.AuthActionKO, err
+	}
+
+	return a.deciderFunc(ac, ctx, nil), nil
 }
 
 func (a *mtlsVerifier) AuthenticateSession(session bahamut.Session) (bahamut.AuthAction, error) {
 
-	return a.checkAction(session.TLSConnectionState(), "", session.SetClaims)
+	ac, err := a.checkAction(session.TLSConnectionState(), "", session.SetClaims)
+	if err != nil {
+		return bahamut.AuthActionKO, err
+	}
+
+	return a.deciderFunc(ac, nil, session), nil
 }
 
 func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert string, claimSetter func([]string)) (bahamut.AuthAction, error) {
@@ -264,24 +257,21 @@ func (a *mtlsVerifier) checkAction(tlsState *tls.ConnectionState, headerCert str
 	}
 
 	if err != nil {
-		return a.authActionFailure, nil
+		return bahamut.AuthActionKO, nil
 	}
 
 	// If we can verify, we return the success auth action
 	for _, cert := range certs {
 		if _, err := cert.Verify(a.verifyOptions); err == nil {
-
-			// if paliateGo110VerificationBug(a.verifyOptions, cert) {
 			if a.verifier == nil || a.verifier(cert) {
 				claimSetter(makeClaims(cert))
-				return a.authActionSuccess, nil
+				return bahamut.AuthActionOK, nil
 			}
-			// }
 		}
 	}
 
 	// If we can't verify, we return the failure auth action.
-	return a.authActionFailure, nil
+	return bahamut.AuthActionKO, nil
 }
 
 func decodeCertHeader(header string) ([]*x509.Certificate, error) {
@@ -313,16 +303,3 @@ func decodeCertHeader(header string) ([]*x509.Certificate, error) {
 
 	return certs, nil
 }
-
-// func paliateGo110VerificationBug(opts x509.VerifyOptions, cert *x509.Certificate) bool {
-
-// 	for _, neededEKU := range opts.KeyUsages {
-// 		for _, currentEKU := range cert.ExtKeyUsage {
-// 			if neededEKU == currentEKU {
-// 				return true
-// 			}
-// 		}
-// 	}
-
-// 	return false
-// }
