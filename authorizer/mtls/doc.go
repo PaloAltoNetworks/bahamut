@@ -9,21 +9,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bahamut
-
-import (
-	"net/http"
-
-	opentracing "github.com/opentracing/opentracing-go"
-)
-
-// FinishMeasurementFunc is the kind of functinon returned by MetricsManager.MeasureRequest().
-type FinishMeasurementFunc func(code int, span opentracing.Span)
-
-// A MetricsManager handles Prometheus Metrics Management
-type MetricsManager interface {
-	MeasureRequest(method string, url string) FinishMeasurementFunc
-	RegisterWSConnection()
-	UnregisterWSConnection()
-	Write(w http.ResponseWriter, r *http.Request)
-}
+package mtls // import "go.aporeto.io/bahamut/authorizer/mtls"
