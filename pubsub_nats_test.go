@@ -14,6 +14,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -44,6 +45,7 @@ func TestNats_NewPubSubServer(t *testing.T) {
 			NATSOptClientID("id"),
 			NATSOptCredentials("username", "password"),
 			NATSOptTLS(tlsconfig),
+			NATSOptConnectRetryInterval(500*time.Millisecond),
 		).(*natsPubSub)
 
 		Convey("Then the PubSubServer should be correctly initialized", func() {
@@ -53,6 +55,7 @@ func TestNats_NewPubSubServer(t *testing.T) {
 			So(ps.username, ShouldEqual, "username")
 			So(ps.password, ShouldEqual, "password")
 			So(ps.tlsConfig, ShouldEqual, tlsconfig)
+			So(ps.retryInterval, ShouldEqual, 500*time.Millisecond)
 		})
 	})
 }

@@ -16,12 +16,20 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
 
 	nats "github.com/nats-io/go-nats"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
 type NATSOption func(*natsPubSub)
+
+// NATSOptConnectRetryInterval sets the connection retry interval
+func NATSOptConnectRetryInterval(interval time.Duration) NATSOption {
+	return func(n *natsPubSub) {
+		n.retryInterval = interval
+	}
+}
 
 // NATSOptCredentials sets the username and password to use to connect to nats.
 func NATSOptCredentials(username string, password string) NATSOption {
