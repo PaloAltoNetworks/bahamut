@@ -13,11 +13,14 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/bahamut/mocks"
 )
 
 func TestNats_NewNATSPubSubClient(t *testing.T) {
@@ -64,4 +67,55 @@ func TestNats_NewNATSPubSubClient(t *testing.T) {
 			So(ps.retryInterval, ShouldEqual, 500*time.Millisecond)
 		})
 	})
+}
+
+func TestPublish(t *testing.T) {
+
+	natsURL := "nats://localhost:4222"
+
+	tests := []struct {
+		description     string
+		setup           func(mockClient *mocks.MockNATSClient, pub *Publication)
+		expectedErrType error
+		publication     *Publication
+		natsOptions     []NATSOption
+		publishOptions  []PubSubOptPublish
+	}{
+		{
+			description: "should successfully publish publication",
+			publication: NewPublication("test topic"),
+			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(pub.Topic, gomock.Any()).
+					Return(nil).
+					Times(1)
+			},
+			expectedErrType: nil,
+			natsOptions:     []NATSOption{},
+			publishOptions:  []PubSubOptPublish{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockNATSClient := mocks.NewMockNATSClient(ctrl)
+			test.setup(mockNATSClient, test.publication)
+
+			// note: we prepend the NATSOption client option to use our mock client just in case the
+			// test case wishes to override this option (e.g. to provide a nil client)
+			test.natsOptions = append([]NATSOption{NATSOptClient(mockNATSClient)}, test.natsOptions...)
+			ps := NewNATSPubSubClient(
+				natsURL,
+				test.natsOptions...,
+			)
+
+			if actualErrType := reflect.TypeOf(ps.Publish(test.publication, test.publishOptions...)); actualErrType != reflect.TypeOf(test.expectedErrType) {
+				t.Errorf("Call to publish returned error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedErrType))
+			}
+		})
+	}
 }
