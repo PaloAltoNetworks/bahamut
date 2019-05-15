@@ -16,10 +16,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestNats_NewPubSubServer(t *testing.T) {
+func TestNats_NewNATSPubSubClient(t *testing.T) {
 
 	Convey("Given I create a new PubSubServer with no option", t, func() {
 
@@ -31,7 +32,12 @@ func TestNats_NewPubSubServer(t *testing.T) {
 			So(ps.clientID, ShouldNotBeEmpty)
 			So(ps.username, ShouldEqual, "")
 			So(ps.password, ShouldEqual, "")
+			So(ps.retryInterval, ShouldBeGreaterThan, 0)
 			So(ps.tlsConfig, ShouldEqual, nil)
+			// verify that client id is a proper V4 UUID
+			id, err := uuid.FromString(ps.clientID)
+			So(err, ShouldBeNil)
+			So(id.Version(), ShouldEqual, uuid.V4)
 		})
 	})
 
