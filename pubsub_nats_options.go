@@ -60,6 +60,14 @@ func NATSOptTLS(tlsConfig *tls.Config) NATSOption {
 	}
 }
 
+// NATSOptClient sets the NATS client that will be used
+// This is useful for unit testing as you can pass in a mocked NATS client
+func NATSOptClient(client NATSClient) NATSOption {
+	return func(n *natsPubSub) {
+		n.client = client
+	}
+}
+
 var ackMessage = []byte("ack")
 
 type natsSubscribeConfig struct {

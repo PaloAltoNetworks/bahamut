@@ -25,7 +25,7 @@ import (
 
 type natsPubSub struct {
 	natsURL        string
-	client         *nats.Conn
+	client         NATSClient
 	retryInterval  time.Duration
 	publishTimeout time.Duration
 	retryNumber    int
