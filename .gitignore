@@ -7,4 +7,5 @@ testresults.xml
 vendor
 
 *.cov
+.idea/*
 artifacts
