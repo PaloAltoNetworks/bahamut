@@ -113,6 +113,21 @@ func TestPublish(t *testing.T) {
 			},
 			publishOptions: []PubSubOptPublish{},
 		},
+		{
+			description: "should return an EncodingError error if the publication fails to get encoded",
+			// pass in a nil publication to cause an EncodingError!
+			publication: nil,
+			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// should never be called in this case!
+					Times(0)
+			},
+			expectedErrType: &EncodingError{},
+			natsOptions:     []NATSOption{},
+			publishOptions:  []PubSubOptPublish{},
+		},
 	}
 
 	for _, test := range tests {
