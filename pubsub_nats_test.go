@@ -12,10 +12,15 @@
 package bahamut
 
 import (
+	"context"
 	"crypto/tls"
 	"reflect"
 	"testing"
 	"time"
+
+	"go.aporeto.io/elemental"
+
+	"github.com/nats-io/go-nats"
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
@@ -75,7 +80,7 @@ func TestPublish(t *testing.T) {
 
 	tests := []struct {
 		description     string
-		setup           func(mockClient *mocks.MockNATSClient, pub *Publication)
+		setup           func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication)
 		expectedErrType error
 		publication     *Publication
 		natsOptions     []NATSOption
@@ -84,12 +89,18 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should successfully publish publication",
 			publication: NewPublication("test topic"),
-			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+
 				mockClient.
 					EXPECT().
 					Publish(pub.Topic, gomock.Any()).
 					Return(nil).
 					Times(1)
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
 			},
 			expectedErrType: nil,
 			natsOptions:     []NATSOption{},
@@ -98,7 +109,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return a NoClientError error if no NATS client had been connected",
 			publication: NewPublication("test topic"),
-			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(pub.Topic, gomock.Any()).
@@ -117,7 +128,7 @@ func TestPublish(t *testing.T) {
 			description: "should return an EncodingError error if the publication fails to get encoded",
 			// pass in a nil publication to cause an EncodingError!
 			publication: nil,
-			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
@@ -128,15 +139,53 @@ func TestPublish(t *testing.T) {
 			natsOptions:     []NATSOption{},
 			publishOptions:  []PubSubOptPublish{},
 		},
+		{
+			description: "should be able to provide a custom reply validator using the NATSOptPublishRequireAck option",
+			// pass in a nil publication to cause an EncodingError!
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
+					// return until a response is returned or we timeout waiting for one)
+					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
+					Times(0)
+
+				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedData).
+					Return(&nats.Msg{
+						Data: []byte("helloworld"),
+					}, nil).
+					Times(1)
+			},
+			expectedErrType: nil,
+			natsOptions:     []NATSOption{},
+			publishOptions: []PubSubOptPublish{
+				// this is a friendly validator, it always passes successfully!
+				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+					return nil
+				}),
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			mockNATSClient := mocks.NewMockNATSClient(ctrl)
-			test.setup(mockNATSClient, test.publication)
+			test.setup(t, mockNATSClient, test.publication)
 
 			// note: we prepend the NATSOption client option to use our mock client just in case the
 			// test case wishes to override this option (e.g. to provide a nil client)
