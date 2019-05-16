@@ -14,6 +14,7 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -173,6 +174,43 @@ func TestPublish(t *testing.T) {
 				// this is a friendly validator, it always passes successfully!
 				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
 					return nil
+				}),
+			},
+		},
+		{
+			description: "should return an error if custom response validator fails response message validation",
+			// pass in a nil publication to cause an EncodingError!
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
+					// return until a response is returned or we timeout waiting for one)
+					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
+					Times(0)
+
+				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedData).
+					Return(&nats.Msg{
+						Data: []byte("helloworld"),
+					}, nil).
+					Times(1)
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+			publishOptions: []PubSubOptPublish{
+				// this is an un-friendly validator, it always fails!
+				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+					return errors.New("message validation failed :-(")
 				}),
 			},
 		},
