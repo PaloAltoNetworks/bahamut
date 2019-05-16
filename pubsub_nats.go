@@ -16,12 +16,31 @@ import (
 	"fmt"
 	"time"
 
-	"go.aporeto.io/elemental"
-
 	"github.com/gofrs/uuid"
-	nats "github.com/nats-io/go-nats"
+	"github.com/nats-io/go-nats"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
+
+// NoClientError is returned in the event where a client was setup
+type NoClientError struct {
+	Message string
+}
+
+func (e *NoClientError) Error() string {
+	return e.Message
+}
+
+// EncodingError is returned in the event that the publication failed to be encoded
+// The underlying encoding error can be retrieved via 'Err'
+type EncodingError struct {
+	Message string
+	Err     error
+}
+
+func (e *EncodingError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Message, e.Err)
+}
 
 type natsPubSub struct {
 	natsURL        string
@@ -63,12 +82,17 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 	}
 
 	if p.client == nil {
-		return fmt.Errorf("not connected to nats. messages dropped")
+		return &NoClientError{
+			Message: "not connected to nats. messages dropped",
+		}
 	}
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
-		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
+		return &EncodingError{
+			Message: "unable to encode publication. message dropped",
+			Err:     err,
+		}
 	}
 
 	if config.replyValidator == nil {
