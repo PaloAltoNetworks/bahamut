@@ -95,6 +95,24 @@ func TestPublish(t *testing.T) {
 			natsOptions:     []NATSOption{},
 			publishOptions:  []PubSubOptPublish{},
 		},
+		{
+			description: "should return a NoClientError error if no NATS client had been connected",
+			publication: NewPublication("test topic"),
+			setup: func(mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(pub.Topic, gomock.Any()).
+					// should never be called in this case!
+					Times(0)
+			},
+			expectedErrType: &NoClientError{},
+			natsOptions: []NATSOption{
+				// notice how we pass a nil client explicitly to simulate the failure scenario
+				// desired by this test
+				NATSOptClient(nil),
+			},
+			publishOptions: []PubSubOptPublish{},
+		},
 	}
 
 	for _, test := range tests {
