@@ -141,6 +141,20 @@ func TestPublish(t *testing.T) {
 			publishOptions:  []PubSubOptPublish{},
 		},
 		{
+			description: "should return an error if Publish returns an error",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(pub.Topic, gomock.Any()).
+					Return(errors.New("failed to publish")).
+					Times(1)
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+			publishOptions:  []PubSubOptPublish{},
+		},
+		{
 			description: "should be able to provide a custom reply validator using the NATSOptPublishRequireAck option",
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
