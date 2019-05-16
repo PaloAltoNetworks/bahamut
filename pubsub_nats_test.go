@@ -142,7 +142,6 @@ func TestPublish(t *testing.T) {
 		},
 		{
 			description: "should be able to provide a custom reply validator using the NATSOptPublishRequireAck option",
-			// pass in a nil publication to cause an EncodingError!
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
@@ -179,7 +178,6 @@ func TestPublish(t *testing.T) {
 		},
 		{
 			description: "should return an error if custom response validator fails response message validation",
-			// pass in a nil publication to cause an EncodingError!
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
@@ -211,6 +209,41 @@ func TestPublish(t *testing.T) {
 				// this is an un-friendly validator, it always fails!
 				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
 					return errors.New("message validation failed :-(")
+				}),
+			},
+		},
+		{
+			description: "should return an error if RequestWithContext returns an error",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
+					// return until a response is returned or we timeout waiting for one)
+					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
+					Times(0)
+
+				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// notice how we are returning an error here!
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedData).
+					Return(nil, errors.New("darn, failed to get a response")).
+					Times(1)
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+			publishOptions: []PubSubOptPublish{
+				// this is a friendly validator, it always passes successfully!
+				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+					return nil
 				}),
 			},
 		},
