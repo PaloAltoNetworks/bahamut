@@ -75,7 +75,7 @@ func TestTracing_extractClaims(t *testing.T) {
 			claims := extractClaims(req)
 
 			Convey("Then claims should be correct", func() {
-				So(claims, ShouldEqual, `{}`)
+				So(claims, ShouldEqual, `invalid token format: `+tokenInavalid)
 			})
 		})
 	})
@@ -90,7 +90,7 @@ func TestTracing_extractClaims(t *testing.T) {
 			claims := extractClaims(req)
 
 			Convey("Then claims should be correct", func() {
-				So(claims, ShouldEqual, `{}`)
+				So(claims, ShouldEqual, `invalid token encoding: a.b.c: illegal base64 data at input byte 0`)
 			})
 		})
 	})

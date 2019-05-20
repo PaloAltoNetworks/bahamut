@@ -29,14 +29,18 @@ var snipSlice = []string{"[snip]"}
 
 func extractClaims(r *elemental.Request) string {
 
+	if r.Password == "" {
+		return "{}"
+	}
+
 	tokenParts := strings.SplitN(r.Password, ".", 3)
 	if len(tokenParts) != 3 {
-		return "{}"
+		return fmt.Sprintf("invalid token format: %s", r.Password)
 	}
 
 	identity, err := base64.RawStdEncoding.DecodeString(tokenParts[1])
 	if err != nil {
-		return "{}"
+		return fmt.Sprintf("invalid token encoding: %s: %s", r.Password, err)
 	}
 
 	return string(identity)
