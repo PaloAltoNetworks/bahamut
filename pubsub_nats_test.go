@@ -12,9 +12,12 @@
 package bahamut
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -22,6 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/go-nats"
+	natsserver "github.com/nats-io/nats-server/test"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut/mocks"
 	"go.aporeto.io/elemental"
@@ -282,4 +286,165 @@ func TestPublish(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSubscribe(t *testing.T) {
+
+	srv := natsserver.RunDefaultServer()
+	defer srv.Shutdown()
+	nc := newDefaultConnection(t)
+	defer nc.Close()
+
+	threshold := 500 * time.Millisecond
+	subscribeTopic := "test-topic"
+	serverAddr := srv.Addr().(*net.TCPAddr)
+	ps := NewNATSPubSubClient(
+		fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
+		natsOptClient(nc),
+	)
+
+	var tests = []struct {
+		description         string
+		expectedPublication *Publication
+		setup               func(t *testing.T, pub *Publication)
+		subscribeOptions    []PubSubOptSubscribe
+	}{
+		{
+			description: "should successfully subscribe to topic and receive a publication in provided channel",
+			setup: func(t *testing.T, pub *Publication) {
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				if err := nc.Publish(subscribeTopic, data); err != nil {
+					t.Fatalf("test setup failed - could not publish publication - error: %+v", err)
+					return
+				}
+
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			},
+			subscribeOptions: nil,
+		},
+		{
+			description: "should NOT receive anything in publication channel that cannot be decoded into a publication",
+			setup: func(t *testing.T, pub *Publication) {
+				if err := nc.Publish(subscribeTopic, []byte("this cannot be decoded into a publication")); err != nil {
+					t.Fatalf("test setup failed - could not publish publication - error: %+v", err)
+					return
+				}
+
+			},
+			expectedPublication: nil,
+			subscribeOptions:    nil,
+		},
+		{
+			description: "should respond back with an ACK message to all publications that expect an ACK response",
+			setup: func(t *testing.T, pub *Publication) {
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// publish a message expecting a response
+				msg, err := nc.Request(subscribeTopic, data, threshold)
+				if err != nil {
+					t.Fatalf("test setup failed to publish/receive message - error: %+v", err)
+					return
+				}
+
+				// validate that the received response is an ACK message
+				if !bytes.Equal(msg.Data, ackMessage) {
+					t.Errorf("expected response message data to be \"%s\", but received \"%s\"", ackMessage, msg.Data)
+				}
+
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			},
+			subscribeOptions: nil,
+		},
+		{
+			description: "should be able to set a custom response using the NATSOptSubscribeReplyer option to all publications that expect a response",
+			subscribeOptions: []PubSubOptSubscribe{
+				NATSOptSubscribeReplyer(func(_ *nats.Msg) []byte {
+					return []byte("custom response message")
+				}),
+			},
+			setup: func(t *testing.T, pub *Publication) {
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// publish a message expecting a (custom) response
+				msg, err := nc.Request(subscribeTopic, data, threshold)
+				if err != nil {
+					t.Fatalf("test setup failed to publish/receive message - error: %+v", err)
+					return
+				}
+
+				// validate that the received response is the custom response message we specified using the NATSOptSubscribeReplyer option
+				if !bytes.Equal(msg.Data, []byte("custom response message")) {
+					t.Errorf("expected response message data to be \"%s\", but received \"%s\"", ackMessage, msg.Data)
+				}
+
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+
+			publications := make(chan *Publication)
+			errors := make(chan error)
+			unsub := ps.Subscribe(publications, errors, subscribeTopic, test.subscribeOptions...)
+			defer unsub()
+			test.setup(t, test.expectedPublication)
+
+			select {
+			case pub := <-publications:
+
+				if test.expectedPublication == nil {
+					t.Fatalf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
+				}
+
+				if pub.Topic != test.expectedPublication.Topic {
+					t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
+				}
+
+				if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
+					t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
+				}
+
+			case err := <-errors:
+				t.Fatalf("received unexpected error - err: \"%+v\"", err)
+			case <-time.After(threshold):
+				if test.expectedPublication != nil {
+					t.Fatalf("timed out waiting to receive a publication: %+v", test.expectedPublication)
+				}
+			}
+		})
+	}
+}
+
+func newDefaultConnection(t *testing.T) *nats.Conn {
+	url := fmt.Sprintf("nats://127.0.0.1:%d", nats.DefaultPort)
+	nc, err := nats.Connect(url)
+	if err != nil {
+		t.Fatalf("failed to create default connection: %v\n", err)
+		return nil
+	}
+	return nc
 }
