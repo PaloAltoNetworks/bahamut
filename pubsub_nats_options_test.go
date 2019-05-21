@@ -15,6 +15,7 @@ import (
 	"context"
 	"crypto/tls"
 	"testing"
+	"time"
 
 	nats "github.com/nats-io/go-nats"
 	. "github.com/smartystreets/goconvey/convey"
@@ -44,6 +45,12 @@ func TestBahamut_NATSOption(t *testing.T) {
 		tlscfg := &tls.Config{}
 		NATSOptTLS(tlscfg)(n)
 		So(n.tlsConfig, ShouldEqual, tlscfg)
+	})
+
+	Convey("Calling NATSOptConnectRetryInterval should set the connection retry interval", t, func() {
+		desiredRetryInternal := 1 * time.Second
+		NATSOptConnectRetryInterval(desiredRetryInternal)(n)
+		So(n.retryInterval, ShouldEqual, desiredRetryInternal)
 	})
 }
 

@@ -13,19 +13,19 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"time"
 
-	"go.aporeto.io/elemental"
-
 	"github.com/gofrs/uuid"
-	nats "github.com/nats-io/go-nats"
+	"github.com/nats-io/go-nats"
+	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 
 type natsPubSub struct {
 	natsURL        string
-	client         *nats.Conn
+	client         natsClient
 	retryInterval  time.Duration
 	publishTimeout time.Duration
 	retryNumber    int
@@ -57,13 +57,17 @@ func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 
 func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 
+	if p.client == nil {
+		return errors.New("not connected to nats. messages dropped")
+	}
+
+	if publication == nil {
+		return errors.New("publication cannot be nil")
+	}
+
 	config := natsPublishConfig{}
 	for _, opt := range opts {
 		opt(&config)
-	}
-
-	if p.client == nil {
-		return fmt.Errorf("not connected to nats. messages dropped")
 	}
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
