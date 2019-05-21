@@ -13,6 +13,7 @@ package bahamut
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"time"
 
@@ -44,7 +45,7 @@ func (e *EncodingError) Error() string {
 
 type natsPubSub struct {
 	natsURL        string
-	client         NATSClient
+	client         natsClient
 	retryInterval  time.Duration
 	publishTimeout time.Duration
 	retryNumber    int
@@ -76,15 +77,19 @@ func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 
 func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 
-	config := natsPublishConfig{}
-	for _, opt := range opts {
-		opt(&config)
-	}
-
 	if p.client == nil {
 		return &NoClientError{
 			Message: "not connected to nats. messages dropped",
 		}
+	}
+
+	if publication == nil {
+		return errors.New("publication cannot be nil")
+	}
+
+	config := natsPublishConfig{}
+	for _, opt := range opts {
+		opt(&config)
 	}
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)

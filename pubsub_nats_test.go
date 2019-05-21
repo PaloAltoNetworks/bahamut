@@ -19,14 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"go.aporeto.io/elemental"
-
-	"github.com/nats-io/go-nats"
-
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
+	"github.com/nats-io/go-nats"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut/mocks"
+	"go.aporeto.io/elemental"
 )
 
 func TestNats_NewNATSPubSubClient(t *testing.T) {
@@ -121,13 +119,12 @@ func TestPublish(t *testing.T) {
 			natsOptions: []NATSOption{
 				// notice how we pass a nil client explicitly to simulate the failure scenario
 				// desired by this test
-				NATSOptClient(nil),
+				natsOptClient(nil),
 			},
 			publishOptions: []PubSubOptPublish{},
 		},
 		{
-			description: "should return an EncodingError error if the publication fails to get encoded",
-			// pass in a nil publication to cause an EncodingError!
+			description: "should return an error if passed in a nil publication",
 			publication: nil,
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
@@ -136,7 +133,7 @@ func TestPublish(t *testing.T) {
 					// should never be called in this case!
 					Times(0)
 			},
-			expectedErrType: &EncodingError{},
+			expectedErrType: errors.New(""),
 			natsOptions:     []NATSOption{},
 			publishOptions:  []PubSubOptPublish{},
 		},
@@ -274,7 +271,7 @@ func TestPublish(t *testing.T) {
 
 			// note: we prepend the NATSOption client option to use our mock client just in case the
 			// test case wishes to override this option (e.g. to provide a nil client)
-			test.natsOptions = append([]NATSOption{NATSOptClient(mockNATSClient)}, test.natsOptions...)
+			test.natsOptions = append([]NATSOption{natsOptClient(mockNATSClient)}, test.natsOptions...)
 			ps := NewNATSPubSubClient(
 				natsURL,
 				test.natsOptions...,

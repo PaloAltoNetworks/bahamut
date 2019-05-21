@@ -6,8 +6,8 @@ import (
 	nats "github.com/nats-io/go-nats"
 )
 
-// NATSClient is an interface for objects that can act as a NATS client
-type NATSClient interface {
+// natsClient is an interface for objects that can act as a NATS client
+type natsClient interface {
 	Publish(subj string, data []byte) error
 	RequestWithContext(ctx context.Context, subj string, data []byte) (*nats.Msg, error)
 	Subscribe(subj string, cb nats.MsgHandler) (*nats.Subscription, error)
