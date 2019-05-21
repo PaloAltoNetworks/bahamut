@@ -23,26 +23,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// NoClientError is returned in the event where a client was setup
-type NoClientError struct {
-	Message string
-}
-
-func (e *NoClientError) Error() string {
-	return e.Message
-}
-
-// EncodingError is returned in the event that the publication failed to be encoded
-// The underlying encoding error can be retrieved via 'Err'
-type EncodingError struct {
-	Message string
-	Err     error
-}
-
-func (e *EncodingError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Message, e.Err)
-}
-
 type natsPubSub struct {
 	natsURL        string
 	client         natsClient
@@ -78,9 +58,7 @@ func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 
 	if p.client == nil {
-		return &NoClientError{
-			Message: "not connected to nats. messages dropped",
-		}
+		return errors.New("not connected to nats. messages dropped")
 	}
 
 	if publication == nil {
@@ -94,10 +72,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
-		return &EncodingError{
-			Message: "unable to encode publication. message dropped",
-			Err:     err,
-		}
+		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
 	if config.replyValidator == nil {

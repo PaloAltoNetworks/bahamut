@@ -115,7 +115,7 @@ func TestPublish(t *testing.T) {
 					// should never be called in this case!
 					Times(0)
 			},
-			expectedErrType: &NoClientError{},
+			expectedErrType: errors.New(""),
 			natsOptions: []NATSOption{
 				// notice how we pass a nil client explicitly to simulate the failure scenario
 				// desired by this test
