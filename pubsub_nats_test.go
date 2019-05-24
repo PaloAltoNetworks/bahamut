@@ -298,16 +298,14 @@ func TestSubscribe(t *testing.T) {
 	threshold := 500 * time.Millisecond
 	subscribeTopic := "test-topic"
 	serverAddr := srv.Addr().(*net.TCPAddr)
-	ps := NewNATSPubSubClient(
-		fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
-		natsOptClient(nc),
-	)
 
 	var tests = []struct {
-		description         string
-		expectedPublication *Publication
-		setup               func(t *testing.T, pub *Publication)
-		subscribeOptions    []PubSubOptSubscribe
+		description          string
+		expectedPublication  *Publication
+		expectedError        error
+		setup                func(t *testing.T, pub *Publication)
+		subscribeOptions     []PubSubOptSubscribe
+		natsOptionsGenerator func() ([]NATSOption, func())
 	}{
 		{
 			description: "should successfully subscribe to topic and receive a publication in provided channel",
@@ -345,6 +343,7 @@ func TestSubscribe(t *testing.T) {
 		{
 			description: "should respond back with an ACK message to all publications that expect an ACK response",
 			setup: func(t *testing.T, pub *Publication) {
+
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -378,6 +377,7 @@ func TestSubscribe(t *testing.T) {
 				}),
 			},
 			setup: func(t *testing.T, pub *Publication) {
+
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -402,13 +402,61 @@ func TestSubscribe(t *testing.T) {
 				Data:  []byte("message"),
 			},
 		},
+		{
+			description:      "should receive an error in errors channel if subscribing fails for any reason",
+			expectedError:    nats.ErrConnectionClosed,
+			subscribeOptions: []PubSubOptSubscribe{},
+			setup:            func(t *testing.T, pub *Publication) {},
+			natsOptionsGenerator: func() ([]NATSOption, func()) {
+
+				// we use a mock client in this test as we want to simulate a failure when `Subscribe` is called
+				ctrl := gomock.NewController(t)
+				callback := func() {
+					ctrl.Finish()
+				}
+
+				mockClient := mocks.NewMockNATSClient(ctrl)
+				mockClient.
+					EXPECT().
+					Subscribe(subscribeTopic, gomock.Any()).
+					Return(nil, nats.ErrInvalidConnection).
+					Times(1)
+
+				// we haven't configured a queueGroup so QueueSubscribe should never be called!
+				mockClient.
+					EXPECT().
+					QueueSubscribe(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
+
+				return []NATSOption{
+					natsOptClient(mockClient),
+				}, callback
+			},
+			expectedPublication: nil,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 
+			var natOpts []NATSOption
+			if test.natsOptionsGenerator != nil {
+				var cleanup func()
+				natOpts, cleanup = test.natsOptionsGenerator()
+				defer cleanup()
+			}
+			// note: we prepend the NATSOption client option to allow test cases to override the actual client being used
+			// (e.g. if they want to provide a mock client instead)
+			natOpts = append([]NATSOption{natsOptClient(nc)}, natOpts...)
+			ps := NewNATSPubSubClient(
+				fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
+				natOpts...,
+			)
 			publications := make(chan *Publication)
-			errors := make(chan error)
+			// Why the buffered channel for errors?
+			// Because otherwise if the call to Subscribe or QueueSubscribe fails then an error will be written to the error channel,
+			// which would block indefinitely as there are no active readers on that channel yet.
+			errors := make(chan error, 1)
 			unsub := ps.Subscribe(publications, errors, subscribeTopic, test.subscribeOptions...)
 			defer unsub()
 			test.setup(t, test.expectedPublication)
@@ -429,11 +477,21 @@ func TestSubscribe(t *testing.T) {
 				}
 
 			case err := <-errors:
-				t.Fatalf("received unexpected error - err: \"%+v\"", err)
-			case <-time.After(threshold):
-				if test.expectedPublication != nil {
-					t.Fatalf("timed out waiting to receive a publication: %+v", test.expectedPublication)
+
+				if test.expectedError == nil {
+					t.Fatalf("received an unexpected error - err: \"%+v\"", err)
 				}
+
+				if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
+					t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
+				}
+
+			case <-time.After(threshold):
+
+				if test.expectedPublication != nil {
+					t.Errorf("timed out expecting to receive a publication: %+v", test.expectedPublication)
+				}
+
 			}
 		})
 	}
