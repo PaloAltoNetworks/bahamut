@@ -75,16 +75,27 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
-	if config.replyValidator == nil {
-		return p.client.Publish(publication.Topic, data)
+	if config.useRequestMode {
+
+		msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
+		if err != nil {
+			return err
+		}
+
+		if config.replyValidator != nil {
+			if err := config.replyValidator(msg); err != nil {
+				return err
+			}
+		}
+
+		if config.responseCh != nil {
+			config.responseCh <- msg
+		}
+
+		return nil
 	}
 
-	msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
-	if err != nil {
-		return err
-	}
-
-	return config.replyValidator(msg)
+	return p.client.Publish(publication.Topic, data)
 }
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
