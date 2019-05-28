@@ -109,7 +109,7 @@ func TestPublish(t *testing.T) {
 			natsOptions:     []NATSOption{},
 		},
 		{
-			description: "should be able to send raw message received to the configured response channel via the NATSOptRespondToChannel option",
+			description: "should send received publication response to the configured response channel via the NATSOptRespondToChannel option",
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 
@@ -118,7 +118,13 @@ func TestPublish(t *testing.T) {
 					Publish(gomock.Any(), gomock.Any()).
 					Times(0)
 
-				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				responsePayload, err := elemental.Encode(elemental.EncodingTypeMSGPACK, &Publication{Data: []byte("hello world!")})
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
 					return
@@ -126,15 +132,15 @@ func TestPublish(t *testing.T) {
 
 				mockClient.
 					EXPECT().
-					RequestWithContext(gomock.Any(), pub.Topic, expectedData).
+					RequestWithContext(gomock.Any(), pub.Topic, expectedPublishData).
 					Return(&nats.Msg{
-						Data: []byte("hello world!"),
+						Data: responsePayload,
 					}, nil).
 					Times(1)
 			},
 			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
 
-				respCh := make(chan *nats.Msg, 1)
+				respCh := make(chan *Publication, 1)
 				callback := func() {
 					select {
 					case response := <-respCh:
@@ -338,6 +344,7 @@ func TestPublish(t *testing.T) {
 			pubErr := ps.Publish(test.publication, pubOpts...)
 			if actualErrType := reflect.TypeOf(pubErr); actualErrType != reflect.TypeOf(test.expectedErrType) {
 				t.Errorf("Call to publish returned error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedErrType))
+				t.Logf("Received error: %v - Expected error: %v", pubErr, test.expectedErrType)
 			}
 		})
 	}

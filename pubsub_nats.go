@@ -89,7 +89,12 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		}
 
 		if config.responseCh != nil {
-			config.responseCh <- msg
+			responsePub := NewPublication("")
+			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, msg.Data, responsePub); err != nil {
+				return err
+			}
+
+			config.responseCh <- responsePub
 		}
 
 		return nil
