@@ -160,6 +160,49 @@ func TestPublish(t *testing.T) {
 			natsOptions:     []NATSOption{},
 		},
 		{
+			description: "should return an error if the response could not be decoded into a Publication when using the NATSOptRespondToChannel option",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					Times(0)
+
+				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedPublishData).
+					Return(&nats.Msg{
+						Data: []byte("this cannot be decoded into a publication!"),
+					}, nil).
+					Times(1)
+
+			},
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+
+				respCh := make(chan *Publication, 1)
+				callback := func() {
+					select {
+					case response := <-respCh:
+						t.Errorf("did not expect to receive a response in channel, but received - %+v", response)
+					default:
+					}
+				}
+
+				return []PubSubOptPublish{
+					NATSOptRespondToChannel(context.Background(), respCh),
+				}, callback
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+		},
+		{
 			description: "should return an error if no NATS client had been connected",
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
