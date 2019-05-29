@@ -78,6 +78,8 @@ type natsSubscribeConfig struct {
 type natsPublishConfig struct {
 	ctx            context.Context
 	replyValidator func(msg *nats.Msg) error
+	useRequestMode bool
+	responseCh     chan *Publication
 }
 
 // NATSOptSubscribeQueue sets the NATS subscriber queue group.
@@ -107,6 +109,23 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 	}
 }
 
+// NATSOptRespondToChannel will send the *Publication received to the provided channel.
+//
+// This is an advanced option which is useful in situations where you want to block until
+// you receive a response. The context parameter allows you to provide a deadline on how long
+// you should wait before considering the request as a failure:
+//
+//		myCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+//		respCh := make(chan *Publication)
+// 		publishOption := NATSOptRespondToChannel(myCtx, respCh)
+func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
+	return func(c interface{}) {
+		c.(*natsPublishConfig).useRequestMode = true
+		c.(*natsPublishConfig).ctx = ctx
+		c.(*natsPublishConfig).responseCh = resp
+	}
+}
+
 // NATSOptPublishReplyValidator sets the function that will be called to validate
 // a request reply.
 //
@@ -118,6 +137,7 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 // See: https://nats.io/documentation/concepts/nats-req-rep/
 func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.Msg) error) PubSubOptPublish {
 	return func(c interface{}) {
+		c.(*natsPublishConfig).useRequestMode = true
 		c.(*natsPublishConfig).replyValidator = validator
 		c.(*natsPublishConfig).ctx = ctx
 	}

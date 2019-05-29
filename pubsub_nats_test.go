@@ -82,12 +82,12 @@ func TestPublish(t *testing.T) {
 	natsURL := "nats://localhost:4222"
 
 	tests := []struct {
-		description     string
-		setup           func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication)
-		expectedErrType error
-		publication     *Publication
-		natsOptions     []NATSOption
-		publishOptions  []PubSubOptPublish
+		description             string
+		setup                   func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication)
+		expectedErrType         error
+		publication             *Publication
+		natsOptions             []NATSOption
+		publishOptionsGenerator func(t *testing.T) ([]PubSubOptPublish, func())
 	}{
 		{
 			description: "should successfully publish publication",
@@ -107,10 +107,103 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: nil,
 			natsOptions:     []NATSOption{},
-			publishOptions:  []PubSubOptPublish{},
 		},
 		{
-			description: "should return a NoClientError error if no NATS client had been connected",
+			description: "should send received publication response to the configured response channel via the NATSOptRespondToChannel option",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					Times(0)
+
+				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				responsePayload, err := elemental.Encode(elemental.EncodingTypeMSGPACK, &Publication{Data: []byte("hello world!")})
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedPublishData).
+					Return(&nats.Msg{
+						Data: responsePayload,
+					}, nil).
+					Times(1)
+			},
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+
+				respCh := make(chan *Publication, 1)
+				callback := func() {
+					select {
+					case response := <-respCh:
+						if !bytes.Equal(response.Data, []byte("hello world!")) {
+							t.Errorf("received a response, but data did not match. Hint: test setup may be broken")
+						}
+					default:
+						t.Errorf("expected to receive a response in channel, but got nothing!")
+					}
+				}
+
+				return []PubSubOptPublish{
+					NATSOptRespondToChannel(context.Background(), respCh),
+				}, callback
+			},
+			expectedErrType: nil,
+			natsOptions:     []NATSOption{},
+		},
+		{
+			description: "should return an error if the response could not be decoded into a Publication when using the NATSOptRespondToChannel option",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					Times(0)
+
+				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedPublishData).
+					Return(&nats.Msg{
+						Data: []byte("this cannot be decoded into a publication!"),
+					}, nil).
+					Times(1)
+
+			},
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+
+				respCh := make(chan *Publication, 1)
+				callback := func() {
+					select {
+					case response := <-respCh:
+						t.Errorf("did not expect to receive a response in channel, but received - %+v", response)
+					default:
+					}
+				}
+
+				return []PubSubOptPublish{
+					NATSOptRespondToChannel(context.Background(), respCh),
+				}, callback
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+		},
+		{
+			description: "should return an error if no NATS client had been connected",
 			publication: NewPublication("test topic"),
 			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
 				mockClient.
@@ -125,7 +218,6 @@ func TestPublish(t *testing.T) {
 				// desired by this test
 				natsOptClient(nil),
 			},
-			publishOptions: []PubSubOptPublish{},
 		},
 		{
 			description: "should return an error if passed in a nil publication",
@@ -139,7 +231,6 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: errors.New(""),
 			natsOptions:     []NATSOption{},
-			publishOptions:  []PubSubOptPublish{},
 		},
 		{
 			description: "should return an error if Publish returns an error",
@@ -153,7 +244,6 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: errors.New(""),
 			natsOptions:     []NATSOption{},
-			publishOptions:  []PubSubOptPublish{},
 		},
 		{
 			description: "should be able to provide a custom reply validator using the NATSOptPublishRequireAck option",
@@ -184,11 +274,13 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: nil,
 			natsOptions:     []NATSOption{},
-			publishOptions: []PubSubOptPublish{
-				// this is a friendly validator, it always passes successfully!
-				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
-					return nil
-				}),
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+				return []PubSubOptPublish{
+					// this is a friendly validator, it always passes successfully!
+					NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+						return nil
+					}),
+				}, func() {}
 			},
 		},
 		{
@@ -220,11 +312,13 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: errors.New(""),
 			natsOptions:     []NATSOption{},
-			publishOptions: []PubSubOptPublish{
-				// this is an un-friendly validator, it always fails!
-				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
-					return errors.New("message validation failed :-(")
-				}),
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+				return []PubSubOptPublish{
+					// this is a friendly validator, it always passes successfully!
+					NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+						return errors.New("message validation failed :-(")
+					}),
+				}, func() {}
 			},
 		},
 		{
@@ -255,11 +349,13 @@ func TestPublish(t *testing.T) {
 			},
 			expectedErrType: errors.New(""),
 			natsOptions:     []NATSOption{},
-			publishOptions: []PubSubOptPublish{
-				// this is a friendly validator, it always passes successfully!
-				NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
-					return nil
-				}),
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+				return []PubSubOptPublish{
+					// this is a friendly validator, it always passes successfully!
+					NATSOptPublishReplyValidator(context.Background(), func(_ *nats.Msg) error {
+						return nil
+					}),
+				}, func() {}
 			},
 		},
 	}
@@ -281,8 +377,17 @@ func TestPublish(t *testing.T) {
 				test.natsOptions...,
 			)
 
-			if actualErrType := reflect.TypeOf(ps.Publish(test.publication, test.publishOptions...)); actualErrType != reflect.TypeOf(test.expectedErrType) {
+			var pubOpts []PubSubOptPublish
+			if test.publishOptionsGenerator != nil {
+				var callback func()
+				pubOpts, callback = test.publishOptionsGenerator(t)
+				defer callback()
+			}
+
+			pubErr := ps.Publish(test.publication, pubOpts...)
+			if actualErrType := reflect.TypeOf(pubErr); actualErrType != reflect.TypeOf(test.expectedErrType) {
 				t.Errorf("Call to publish returned error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedErrType))
+				t.Logf("Received error: %v - Expected error: %v", pubErr, test.expectedErrType)
 			}
 		})
 	}
