@@ -71,6 +71,16 @@ func OptDisableKeepAlive() Option {
 	}
 }
 
+// OptDisableCompression disables HTTP gzip compression.
+//
+// This can be useful when your servers run behind
+// a proxy for instance.
+func OptDisableCompression(disabled bool) Option {
+	return func(c *config) {
+		c.restServer.disableCompression = disabled
+	}
+}
+
 // OptCustomRootHandler configures the custom root (/) handler.
 func OptCustomRootHandler(handler http.HandlerFunc) Option {
 	return func(c *config) {

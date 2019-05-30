@@ -232,44 +232,48 @@ func (a *restServer) stop() context.Context {
 
 func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
-	return gziphandler.GzipHandler(
-		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-			var measure FinishMeasurementFunc
-			if a.cfg.healthServer.metricsManager != nil {
-				measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
+		var measure FinishMeasurementFunc
+		if a.cfg.healthServer.metricsManager != nil {
+			measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
+		}
+
+		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
+		if err != nil {
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+			if measure != nil {
+				measure(code, nil)
 			}
+			return
+		}
 
-			request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
-			if err != nil {
-				code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+		setCommonHeader(w, req.Header.Get("Origin"), request.Accept)
+
+		ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
+		defer finishTracing(ctx)
+
+		if a.cfg.rateLimiting.rateLimiter != nil {
+			rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
+			defer cancel()
+			if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
+				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
 				if measure != nil {
-					measure(code, nil)
+					measure(code, opentracing.SpanFromContext(ctx))
 				}
 				return
 			}
+		}
 
-			setCommonHeader(w, req.Header.Get("Origin"), request.Accept)
+		code := writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+		if measure != nil {
+			measure(code, opentracing.SpanFromContext(ctx))
+		}
+	})
 
-			ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
-			defer finishTracing(ctx)
+	if a.cfg.restServer.disableCompression {
+		return h
+	}
 
-			if a.cfg.rateLimiting.rateLimiter != nil {
-				rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
-				defer cancel()
-				if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
-					code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
-					if measure != nil {
-						measure(code, opentracing.SpanFromContext(ctx))
-					}
-					return
-				}
-			}
-
-			code := writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
-			if measure != nil {
-				measure(code, opentracing.SpanFromContext(ctx))
-			}
-		}),
-	).(http.HandlerFunc)
+	return gziphandler.GzipHandler(h).(http.HandlerFunc)
 }
