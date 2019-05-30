@@ -180,7 +180,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
 
-		r.StatusCode = http.StatusCreated
+		r.StatusCode = http.StatusOK
 		r.Data = []byte("hello")
 
 		Convey("When I call writeHTTPResponse", func() {
@@ -194,7 +194,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			})
 
 			Convey("Then the code should be http.StatusNoContent", func() {
-				So(code, ShouldEqual, http.StatusCreated)
+				So(code, ShouldEqual, http.StatusOK)
 			})
 		})
 	})
