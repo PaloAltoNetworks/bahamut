@@ -75,9 +75,9 @@ func OptDisableKeepAlive() Option {
 //
 // This can be useful when your servers run behind
 // a proxy for instance.
-func OptDisableCompression(disabled bool) Option {
+func OptDisableCompression() Option {
 	return func(c *config) {
-		c.restServer.disableCompression = disabled
+		c.restServer.disableCompression = true
 	}
 }
 
