@@ -68,7 +68,10 @@ func natsOptClient(client natsClient) NATSOption {
 	}
 }
 
-var ackMessage = []byte("ack")
+var (
+	ackRequest = []byte("ack-request")
+	ackMessage = []byte("ack")
+)
 
 type natsSubscribeConfig struct {
 	queueGroup string
@@ -78,6 +81,8 @@ type natsSubscribeConfig struct {
 type natsPublishConfig struct {
 	ctx            context.Context
 	replyValidator func(msg *nats.Msg) error
+
+	sendAckReq     bool
 	useRequestMode bool
 	responseCh     chan *Publication
 }
@@ -126,6 +131,9 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 	}
 }
 
+// DEPRECATED: use NATSOptPublishRequireAck and/or NATSOptRespondToChannel instead;
+// this option will be removed in a future release
+//
 // NATSOptPublishReplyValidator sets the function that will be called to validate
 // a request reply.
 //
@@ -151,6 +159,7 @@ func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.
 // the option NATSOptPublishReplyValidator.
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
+		c.(*natsPublishConfig).sendAckReq = true
 		c.(*natsPublishConfig).replyValidator = ackValidator
 		c.(*natsPublishConfig).ctx = ctx
 	}

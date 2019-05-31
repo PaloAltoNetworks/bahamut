@@ -75,22 +75,29 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
-	if config.useRequestMode {
+	if config.sendAckReq {
+		var ackResponse *nats.Msg
+		if ackResponse, err = p.client.RequestWithContext(config.ctx, publication.Topic, ackRequest); err != nil {
+			// TODO: should use a custom error type here to let the client know
+			// that it was the ack-request that failed so the client code has sufficient
+			// context if it needs to build some kind of retry mechanism based on error type
+			return err
+		}
 
-		msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
+		if err = config.replyValidator(ackResponse); err != nil {
+			return err
+		}
+	}
+
+	if config.useRequestMode {
+		response, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
 		if err != nil {
 			return err
 		}
 
-		if config.replyValidator != nil {
-			if err := config.replyValidator(msg); err != nil {
-				return err
-			}
-		}
-
 		if config.responseCh != nil {
 			responsePub := NewPublication("")
-			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, msg.Data, responsePub); err != nil {
+			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, response.Data, responsePub); err != nil {
 				return err
 			}
 
