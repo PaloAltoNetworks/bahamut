@@ -41,8 +41,6 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 	response.StatusCode = ctx.statusCode
 	if response.StatusCode == 0 {
 		switch ctx.request.Operation {
-		case elemental.OperationCreate:
-			response.StatusCode = http.StatusCreated
 		case elemental.OperationInfo:
 			response.StatusCode = http.StatusNoContent
 		default:

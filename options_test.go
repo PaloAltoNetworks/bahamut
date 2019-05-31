@@ -58,6 +58,11 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.restServer.disableKeepalive, ShouldEqual, true)
 	})
 
+	Convey("Calling OptDisableCompression should work", t, func() {
+		OptDisableCompression()(&c)
+		So(c.restServer.disableCompression, ShouldEqual, true)
+	})
+
 	Convey("Calling OptCustomRootHandler should work", t, func() {
 		h := func(http.ResponseWriter, *http.Request) {}
 		OptCustomRootHandler(h)(&c)

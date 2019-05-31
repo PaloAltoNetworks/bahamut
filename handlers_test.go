@@ -130,8 +130,8 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response, nil)
 
-			Convey("Then response.StatusCode should equal", func() {
-				So(response.StatusCode, ShouldEqual, http.StatusCreated)
+			Convey("Then response.StatusCode should be http.StatusOK", func() {
+				So(response.StatusCode, ShouldEqual, http.StatusOK)
 			})
 		})
 
@@ -141,7 +141,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response, nil)
 
-			Convey("Then response.StatusCode should equal", func() {
+			Convey("Then response.StatusCode should be http.StatusNoContent", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
 			})
 		})
@@ -152,20 +152,20 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			makeResponse(ctx, response, nil)
 
-			Convey("Then response.StatusCode should equal", func() {
+			Convey("Then response.StatusCode should be http.StatusOK", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusOK)
 			})
 		})
 
-		Convey("When I set the operation to Create, status code created, but no data, and I call makeResponse", func() {
+		Convey("When I set the operation to Create, status code OK, but no data, and I call makeResponse", func() {
 
 			ctx.request.Operation = elemental.OperationCreate
-			ctx.statusCode = http.StatusCreated
+			ctx.statusCode = http.StatusOK
 			ctx.outputData = nil
 
 			makeResponse(ctx, response, nil)
 
-			Convey("Then response.StatusCode should equal", func() {
+			Convey("Then response.StatusCode should be http.StatusNoContent", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
 			})
 		})

@@ -45,6 +45,7 @@ type config struct {
 		readTimeout           time.Duration
 		writeTimeout          time.Duration
 		idleTimeout           time.Duration
+		disableCompression    bool
 		disableKeepalive      bool
 		enabled               bool
 		customRootHandlerFunc http.HandlerFunc
