@@ -12,6 +12,7 @@
 package bahamut
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -70,25 +71,37 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		opt(&config)
 	}
 
+	switch config.requestMode {
+	case waitForACK:
+		publication.ResponseMode = ReplyWithACK
+	case waitForPublication:
+		publication.ResponseMode = ReplyWithPublication
+	}
+
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
-	if config.useRequestMode {
+	switch config.requestMode {
+	case waitForACK, waitForPublication:
 
 		msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
 		if err != nil {
+			// TODO: should return a custom error type here to let the client know
+			// that the request failed so client code has sufficient context if
+			// it needs to build some kind of retry strategy based on the returned
+			// error type.
 			return err
 		}
 
-		if config.replyValidator != nil {
-			if err := config.replyValidator(msg); err != nil {
-				return err
+		if config.requestMode == waitForACK {
+			if !bytes.Equal(msg.Data, ackMessage) {
+				return fmt.Errorf("invalid ack: %s", string(msg.Data))
 			}
 		}
 
-		if config.responseCh != nil {
+		if config.requestMode == waitForPublication && config.responseCh != nil {
 			responsePub := NewPublication("")
 			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, msg.Data, responsePub); err != nil {
 				return err
@@ -98,9 +111,10 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		}
 
 		return nil
-	}
 
-	return p.client.Publish(publication.Topic, data)
+	default:
+		return p.client.Publish(publication.Topic, data)
+	}
 }
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {

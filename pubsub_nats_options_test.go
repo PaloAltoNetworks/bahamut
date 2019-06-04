@@ -74,17 +74,9 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 
 	c := natsPublishConfig{}
 
-	Convey("Calling NATSOptPublishReplyValidator should work", t, func() {
-		v := func(msg *nats.Msg) error { return nil }
-		NATSOptPublishReplyValidator(context.TODO(), v)(&c)
-		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.replyValidator, ShouldEqual, v)
-	})
-
 	Convey("Calling NATSOptPublishRequireAck should work", t, func() {
 		NATSOptPublishRequireAck(context.TODO())(&c)
 		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.replyValidator(&nats.Msg{Data: ackMessage}), ShouldEqual, nil)
-		So(c.replyValidator(&nats.Msg{Data: []byte("hello")}).Error(), ShouldEqual, "invalid ack: hello")
+		So(c.requestMode, ShouldEqual, waitForACK)
 	})
 }

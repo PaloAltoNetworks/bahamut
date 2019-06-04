@@ -12,13 +12,18 @@
 package bahamut
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"time"
 
-	nats "github.com/nats-io/go-nats"
+	"github.com/nats-io/go-nats"
+)
+
+type requestMode int
+
+const (
+	waitForACK requestMode = iota + 1
+	waitForPublication
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -76,10 +81,9 @@ type natsSubscribeConfig struct {
 }
 
 type natsPublishConfig struct {
-	ctx            context.Context
-	replyValidator func(msg *nats.Msg) error
-	useRequestMode bool
-	responseCh     chan *Publication
+	ctx         context.Context
+	requestMode requestMode
+	responseCh  chan *Publication
 }
 
 // NATSOptSubscribeQueue sets the NATS subscriber queue group.
@@ -120,26 +124,9 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 // 		publishOption := NATSOptRespondToChannel(myCtx, respCh)
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).useRequestMode = true
 		c.(*natsPublishConfig).ctx = ctx
 		c.(*natsPublishConfig).responseCh = resp
-	}
-}
-
-// NATSOptPublishReplyValidator sets the function that will be called to validate
-// a request reply.
-//
-// This is advanced option. You will not receive a
-// bahamut.Publication, but the raw nats.Msg.Data received as response. If you return
-// an error, the entire Publish process will be considered errored, and the caller
-// will receive you error as is.
-//
-// See: https://nats.io/documentation/concepts/nats-req-rep/
-func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.Msg) error) PubSubOptPublish {
-	return func(c interface{}) {
-		c.(*natsPublishConfig).useRequestMode = true
-		c.(*natsPublishConfig).replyValidator = validator
-		c.(*natsPublishConfig).ctx = ctx
+		c.(*natsPublishConfig).requestMode = waitForPublication
 	}
 }
 
@@ -151,14 +138,7 @@ func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.
 // the option NATSOptPublishReplyValidator.
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).replyValidator = ackValidator
 		c.(*natsPublishConfig).ctx = ctx
+		c.(*natsPublishConfig).requestMode = waitForACK
 	}
-}
-
-func ackValidator(msg *nats.Msg) error {
-	if !bytes.Equal(msg.Data, ackMessage) {
-		return fmt.Errorf("invalid ack: %s", string(msg.Data))
-	}
-	return nil
 }
