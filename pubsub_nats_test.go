@@ -288,6 +288,45 @@ func TestPublish(t *testing.T) {
 				}, func() {}
 			},
 		},
+		{
+			description: "should return an error if response is not a valid ACK response when using the NATSOptPublishRequireAck option",
+			publication: NewPublication("test topic"),
+			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
+					// return until a response is returned or we timeout waiting for one)
+					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
+					Times(0)
+
+				// note: passing in the NATSOptPublishRequireAck option should set the publication response mode
+				// to ACK before encoding the publication
+				pub.ResponseMode = ReplyWithACK
+				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// notice how the response is not a valid ACK response!
+				mockClient.
+					EXPECT().
+					RequestWithContext(gomock.Any(), pub.Topic, expectedData).
+					Return(&nats.Msg{
+						Data: []byte("this is not a valid ACK response!"),
+					}, nil).
+					Times(1)
+			},
+			expectedErrType: errors.New(""),
+			natsOptions:     []NATSOption{},
+			publishOptionsGenerator: func(t *testing.T) ([]PubSubOptPublish, func()) {
+				return []PubSubOptPublish{
+					NATSOptPublishRequireAck(context.Background()),
+				}, func() {}
+			},
+		},
 	}
 
 	for _, test := range tests {
