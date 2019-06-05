@@ -789,7 +789,9 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.onPushSessionInitOK = true
 			pushHandler.Unlock()
 
-			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
+			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{
+				Headers: http.Header{"X-Forwarded-For": []string{"12.12.12.12"}},
+			})
 			Convey("Then err should should be nil", func() {
 				So(err, ShouldBeNil)
 			})
@@ -808,7 +810,9 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 			pushHandler.onPushSessionInitOK = true
 			pushHandler.Unlock()
 
-			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{})
+			ws, resp, err := wsc.Connect(ctx, strings.Replace(ts.URL, "http://", "ws://", 1), wsc.Config{
+				Headers: http.Header{"X-Real-IP": []string{"12.12.12.12"}},
+			})
 
 			Convey("Then ws should be nil", func() {
 				So(ws, ShouldBeNil)

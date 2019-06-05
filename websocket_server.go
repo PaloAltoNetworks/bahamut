@@ -198,7 +198,16 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	session := newWSPushSession(r, n.cfg, n.unregisterSession, readEncodingType, writeEncodingType)
 	session.setTLSConnectionState(r.TLS)
-	session.setRemoteAddress(r.RemoteAddr)
+
+	var clientIP string
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		clientIP = ip
+	} else if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		clientIP = ip
+	} else {
+		clientIP = r.RemoteAddr
+	}
+	session.setRemoteAddress(clientIP)
 
 	if err := n.authSession(session); err != nil {
 		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err))
