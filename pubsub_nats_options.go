@@ -70,8 +70,9 @@ func natsOptClient(client natsClient) NATSOption {
 var ackMessage = []byte("ack")
 
 type natsSubscribeConfig struct {
-	queueGroup string
-	replier    func(msg *nats.Msg) []byte
+	queueGroup   string
+	replyTimeout time.Duration
+	replier      func(msg *nats.Msg) []byte
 }
 
 type natsPublishConfig struct {
@@ -104,6 +105,14 @@ func NATSOptSubscribeQueue(queueGroup string) PubSubOptSubscribe {
 func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscribe {
 	return func(c interface{}) {
 		c.(*natsSubscribeConfig).replier = replier
+	}
+}
+
+// NATSOptSubscribeReplyTimeout sets the duration of time to wait before giving up
+// waiting for a response to publish back to the client that is expecting a response
+func NATSOptSubscribeReplyTimeout(t time.Duration) PubSubOptSubscribe {
+	return func(c interface{}) {
+		c.(*natsSubscribeConfig).replyTimeout = t
 	}
 }
 

@@ -418,6 +418,7 @@ func TestSubscribe(t *testing.T) {
 			description: "should respond back with an ACK message to all publications that expect an ACK response",
 			setup: func(t *testing.T, pub *Publication) {
 
+				pub.ResponseMode = ResponseModeACK
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
