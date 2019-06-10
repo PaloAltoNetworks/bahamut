@@ -20,27 +20,6 @@ import (
 	"github.com/nats-io/go-nats"
 )
 
-type requestMode int
-
-const (
-	requestModeNoReply requestMode = iota
-	requestModeACK
-	requestModePublication
-)
-
-func (m requestMode) String() string {
-	switch m {
-	case requestModeNoReply:
-		return "requestModeNoReply"
-	case requestModeACK:
-		return "requestModeACK"
-	case requestModePublication:
-		return "requestModePublication"
-	default:
-		return "unknown"
-	}
-}
-
 // A NATSOption represents an option to the pubsub backed by nats
 type NATSOption func(*natsPubSub)
 
@@ -96,9 +75,9 @@ type natsSubscribeConfig struct {
 }
 
 type natsPublishConfig struct {
-	ctx         context.Context
-	requestMode requestMode
-	responseCh  chan *Publication
+	ctx             context.Context
+	desiredResponse ResponseMode
+	responseCh      chan *Publication
 }
 
 // NATSOptSubscribeQueue sets the NATS subscriber queue group.
@@ -142,12 +121,19 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
 	return func(c interface{}) {
 		config := c.(*natsPublishConfig)
-		if config.requestMode != requestModeNoReply {
-			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.requestMode))
+
+		switch {
+		case config.desiredResponse != ResponseModeNone:
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.desiredResponse))
+		case resp == nil:
+			panic("illegal argument: response channel cannot be nil")
+		case ctx == nil:
+			panic("illegal argument: context cannot be nil")
 		}
+
 		config.ctx = ctx
 		config.responseCh = resp
-		config.requestMode = requestModePublication
+		config.desiredResponse = ResponseModePublication
 	}
 }
 
@@ -162,10 +148,15 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
 		config := c.(*natsPublishConfig)
-		if config.requestMode != requestModeNoReply {
-			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.requestMode))
+
+		switch {
+		case config.desiredResponse != ResponseModeNone:
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.desiredResponse))
+		case ctx == nil:
+			panic("illegal argument: context cannot be nil")
 		}
+
 		config.ctx = ctx
-		config.requestMode = requestModeACK
+		config.desiredResponse = ResponseModeACK
 	}
 }

@@ -22,6 +22,19 @@ import (
 // handling a publication.
 type ResponseMode int
 
+func (r ResponseMode) String() string {
+	switch r {
+	case ResponseModeNone:
+		return "ResponseModeNone"
+	case ResponseModeACK:
+		return "ResponseModeACK"
+	case ResponseModePublication:
+		return "ResponseModePublication"
+	default:
+		return "ResponseModeUnknown"
+	}
+}
+
 const (
 	// ResponseModeNone indicates that no response is expected for the received publication
 	ResponseModeNone ResponseMode = iota

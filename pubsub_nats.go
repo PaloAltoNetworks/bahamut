@@ -71,10 +71,10 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		opt(&config)
 	}
 
-	switch config.requestMode {
-	case requestModeACK:
+	switch config.desiredResponse {
+	case ResponseModeACK:
 		publication.ResponseMode = ResponseModeACK
-	case requestModePublication:
+	case ResponseModePublication:
 		publication.ResponseMode = ResponseModePublication
 	default:
 		publication.ResponseMode = ResponseModeNone
@@ -85,8 +85,8 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
 	}
 
-	switch config.requestMode {
-	case requestModeACK, requestModePublication:
+	switch config.desiredResponse {
+	case ResponseModeACK, ResponseModePublication:
 
 		msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
 		if err != nil {
@@ -97,13 +97,13 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 			return err
 		}
 
-		if config.requestMode == requestModeACK {
+		if config.desiredResponse == ResponseModeACK {
 			if !bytes.Equal(msg.Data, ackMessage) {
 				return fmt.Errorf("invalid ack: %s", string(msg.Data))
 			}
 		}
 
-		if config.requestMode == requestModePublication && config.responseCh != nil {
+		if config.desiredResponse == ResponseModePublication {
 			responsePub := NewPublication("")
 			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, msg.Data, responsePub); err != nil {
 				return err

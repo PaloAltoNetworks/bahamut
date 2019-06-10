@@ -79,13 +79,20 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 		Convey("Calling NATSOptPublishRequireAck should work", func() {
 			NATSOptPublishRequireAck(context.TODO())(&c)
 			So(c.ctx, ShouldEqual, context.TODO())
-			So(c.requestMode, ShouldEqual, requestModeACK)
+			So(c.desiredResponse, ShouldEqual, ResponseModeACK)
 		})
 
 		Convey("Calling NATSOptPublishRequireAck should panic if requestMode has already been set", func() {
-			c.requestMode = requestModePublication
+			c.desiredResponse = ResponseModePublication
 			So(func() {
 				NATSOptPublishRequireAck(context.TODO())(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptPublishRequireAck should panic if supplied context is nil", func() {
+			So(func() {
+				// nolint - note: ignoring linter feedback as we are trying to cause a panic intentionally by passing in a `nil` context
+				NATSOptPublishRequireAck(nil)(&c)
 			}, ShouldPanic)
 		})
 
@@ -94,13 +101,27 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 			NATSOptRespondToChannel(context.TODO(), respCh)(&c)
 			So(c.ctx, ShouldEqual, context.TODO())
 			So(c.responseCh, ShouldEqual, respCh)
-			So(c.requestMode, ShouldEqual, requestModePublication)
+			So(c.desiredResponse, ShouldEqual, ResponseModePublication)
 		})
 
 		Convey("Calling NATSOptRespondToChannel should panic if requestMode has already been set", func() {
-			c.requestMode = requestModeACK
+			c.desiredResponse = ResponseModeACK
 			So(func() {
 				NATSOptRespondToChannel(context.TODO(), make(chan *Publication))(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if supplied response channel is nil", func() {
+			So(func() {
+				NATSOptRespondToChannel(context.TODO(), nil)(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if supplied context is nil", func() {
+			c.desiredResponse = ResponseModeACK
+			So(func() {
+				// nolint - note: ignoring linter feedback as we are trying to cause a panic intentionally by passing in a `nil` context
+				NATSOptRespondToChannel(nil, make(chan *Publication))(&c)
 			}, ShouldPanic)
 		})
 	})
