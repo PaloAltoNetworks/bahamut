@@ -14,6 +14,7 @@ package bahamut
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"time"
 
 	"github.com/nats-io/go-nats"
@@ -22,9 +23,23 @@ import (
 type requestMode int
 
 const (
-	requestModeACK requestMode = iota + 1
+	requestModeNoReply requestMode = iota
+	requestModeACK
 	requestModePublication
 )
+
+func (m requestMode) String() string {
+	switch m {
+	case requestModeNoReply:
+		return "requestModeNoReply"
+	case requestModeACK:
+		return "requestModeACK"
+	case requestModePublication:
+		return "requestModePublication"
+	default:
+		return "unknown"
+	}
+}
 
 // A NATSOption represents an option to the pubsub backed by nats
 type NATSOption func(*natsPubSub)
@@ -122,11 +137,17 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 //		myCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 //		respCh := make(chan *Publication)
 // 		publishOption := NATSOptRespondToChannel(myCtx, respCh)
+//
+// This option CANNOT be combined with NATSOptPublishRequireAck
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).ctx = ctx
-		c.(*natsPublishConfig).responseCh = resp
-		c.(*natsPublishConfig).requestMode = requestModePublication
+		config := c.(*natsPublishConfig)
+		if config.requestMode != requestModeNoReply {
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.requestMode))
+		}
+		config.ctx = ctx
+		config.responseCh = resp
+		config.requestMode = requestModePublication
 	}
 }
 
@@ -136,9 +157,15 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 // ack. If you are using a custom replyer with NATSOptSubscribeReplyer, you MUST
 // reply `ack` or implement your own logic to handle the reply by using
 // the option NATSOptPublishReplyValidator.
+//
+// This option CANNOT be combined with NATSOptRespondToChannel
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).ctx = ctx
-		c.(*natsPublishConfig).requestMode = requestModeACK
+		config := c.(*natsPublishConfig)
+		if config.requestMode != requestModeNoReply {
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.requestMode))
+		}
+		config.ctx = ctx
+		config.requestMode = requestModeACK
 	}
 }

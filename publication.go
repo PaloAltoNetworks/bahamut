@@ -23,10 +23,12 @@ import (
 type ResponseMode int
 
 const (
+	// ResponseModeNone indicates that no response is expected for the received publication
+	ResponseModeNone ResponseMode = iota
 	// ResponseModeACK indicates that the subscriber should reply back with an ACK
 	// as soon as it has received the publication BEFORE it starts processing the
 	// publication.
-	ResponseModeACK ResponseMode = iota + 1
+	ResponseModeACK
 	// ResponseModePublication indicates that the subscriber should reply back with a
 	// Publication AFTER it has finished processing the publication. Obviously, the
 	// subscriber should try to respond ASAP as there is a client waiting for a response.

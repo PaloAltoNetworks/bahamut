@@ -72,11 +72,36 @@ func TestBahamut_PubSubNatsOptionsSubscribe(t *testing.T) {
 
 func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 
-	c := natsPublishConfig{}
+	Convey("Setup", t, func() {
 
-	Convey("Calling NATSOptPublishRequireAck should work", t, func() {
-		NATSOptPublishRequireAck(context.TODO())(&c)
-		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.requestMode, ShouldEqual, requestModeACK)
+		c := natsPublishConfig{}
+
+		Convey("Calling NATSOptPublishRequireAck should work", func() {
+			NATSOptPublishRequireAck(context.TODO())(&c)
+			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.requestMode, ShouldEqual, requestModeACK)
+		})
+
+		Convey("Calling NATSOptPublishRequireAck should panic if requestMode has already been set", func() {
+			c.requestMode = requestModePublication
+			So(func() {
+				NATSOptPublishRequireAck(context.TODO())(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should work", func() {
+			respCh := make(chan *Publication)
+			NATSOptRespondToChannel(context.TODO(), respCh)(&c)
+			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.responseCh, ShouldEqual, respCh)
+			So(c.requestMode, ShouldEqual, requestModePublication)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if requestMode has already been set", func() {
+			c.requestMode = requestModeACK
+			So(func() {
+				NATSOptRespondToChannel(context.TODO(), make(chan *Publication))(&c)
+			}, ShouldPanic)
+		})
 	})
 }

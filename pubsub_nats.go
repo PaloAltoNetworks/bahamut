@@ -76,6 +76,8 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		publication.ResponseMode = ResponseModeACK
 	case requestModePublication:
 		publication.ResponseMode = ResponseModePublication
+	default:
+		publication.ResponseMode = ResponseModeNone
 	}
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
