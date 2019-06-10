@@ -72,10 +72,10 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 	}
 
 	switch config.requestMode {
-	case waitForACK:
-		publication.ResponseMode = ReplyWithACK
-	case waitForPublication:
-		publication.ResponseMode = ReplyWithPublication
+	case requestModeACK:
+		publication.ResponseMode = ResponseModeACK
+	case requestModePublication:
+		publication.ResponseMode = ResponseModePublication
 	}
 
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
@@ -84,7 +84,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 	}
 
 	switch config.requestMode {
-	case waitForACK, waitForPublication:
+	case requestModeACK, requestModePublication:
 
 		msg, err := p.client.RequestWithContext(config.ctx, publication.Topic, data)
 		if err != nil {
@@ -95,13 +95,13 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 			return err
 		}
 
-		if config.requestMode == waitForACK {
+		if config.requestMode == requestModeACK {
 			if !bytes.Equal(msg.Data, ackMessage) {
 				return fmt.Errorf("invalid ack: %s", string(msg.Data))
 			}
 		}
 
-		if config.requestMode == waitForPublication && config.responseCh != nil {
+		if config.requestMode == requestModePublication && config.responseCh != nil {
 			responsePub := NewPublication("")
 			if err := elemental.Decode(elemental.EncodingTypeMSGPACK, msg.Data, responsePub); err != nil {
 				return err

@@ -120,7 +120,7 @@ func TestPublish(t *testing.T) {
 
 				// note: passing in the NATSOptRespondToChannel option should set the publication response mode
 				// to ReplyWithPublication before encoding the publication
-				pub.ResponseMode = ReplyWithPublication
+				pub.ResponseMode = ResponseModePublication
 				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -174,7 +174,7 @@ func TestPublish(t *testing.T) {
 
 				// note: passing in the NATSOptRespondToChannel option should set the publication response mode
 				// to ReplyWithPublication before encoding the publication
-				pub.ResponseMode = ReplyWithPublication
+				pub.ResponseMode = ResponseModePublication
 				expectedPublishData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -266,7 +266,7 @@ func TestPublish(t *testing.T) {
 
 				// note: passing in the NATSOptPublishRequireAck option should set the publication response mode
 				// to ACK before encoding the publication
-				pub.ResponseMode = ReplyWithACK
+				pub.ResponseMode = ResponseModeACK
 				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -303,7 +303,7 @@ func TestPublish(t *testing.T) {
 
 				// note: passing in the NATSOptPublishRequireAck option should set the publication response mode
 				// to ACK before encoding the publication
-				pub.ResponseMode = ReplyWithACK
+				pub.ResponseMode = ResponseModeACK
 				expectedData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)

@@ -23,14 +23,14 @@ import (
 type ResponseMode int
 
 const (
-	// ReplyWithACK indicates that the subscriber should reply back with an ACK
+	// ResponseModeACK indicates that the subscriber should reply back with an ACK
 	// as soon as it has received the publication BEFORE it starts processing the
 	// publication.
-	ReplyWithACK ResponseMode = iota + 1
-	// ReplyWithPublication indicates that the subscriber should reply back with a
+	ResponseModeACK ResponseMode = iota + 1
+	// ResponseModePublication indicates that the subscriber should reply back with a
 	// Publication AFTER it has finished processing the publication. Obviously, the
 	// subscriber should try to respond ASAP as there is a client waiting for a response.
-	ReplyWithPublication
+	ResponseModePublication
 )
 
 // Publication is a structure that can be published to a PublishServer.

@@ -22,8 +22,8 @@ import (
 type requestMode int
 
 const (
-	waitForACK requestMode = iota + 1
-	waitForPublication
+	requestModeACK requestMode = iota + 1
+	requestModePublication
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -126,7 +126,7 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 	return func(c interface{}) {
 		c.(*natsPublishConfig).ctx = ctx
 		c.(*natsPublishConfig).responseCh = resp
-		c.(*natsPublishConfig).requestMode = waitForPublication
+		c.(*natsPublishConfig).requestMode = requestModePublication
 	}
 }
 
@@ -139,6 +139,6 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
 		c.(*natsPublishConfig).ctx = ctx
-		c.(*natsPublishConfig).requestMode = waitForACK
+		c.(*natsPublishConfig).requestMode = requestModeACK
 	}
 }

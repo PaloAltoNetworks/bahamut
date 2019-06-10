@@ -77,6 +77,6 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 	Convey("Calling NATSOptPublishRequireAck should work", t, func() {
 		NATSOptPublishRequireAck(context.TODO())(&c)
 		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.requestMode, ShouldEqual, waitForACK)
+		So(c.requestMode, ShouldEqual, requestModeACK)
 	})
 }
