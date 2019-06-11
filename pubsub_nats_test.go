@@ -531,7 +531,11 @@ func TestSubscribe(t *testing.T) {
 			case <-time.After(threshold):
 
 				if test.expectedPublication != nil {
-					t.Errorf("timed out expecting to receive a publication: %+v", test.expectedPublication)
+					t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
+				}
+
+				if test.expectedError != nil {
+					t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
 				}
 
 			}
