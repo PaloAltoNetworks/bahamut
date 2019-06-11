@@ -71,15 +71,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		opt(&config)
 	}
 
-	switch config.desiredResponse {
-	case ResponseModeACK:
-		publication.ResponseMode = ResponseModeACK
-	case ResponseModePublication:
-		publication.ResponseMode = ResponseModePublication
-	default:
-		publication.ResponseMode = ResponseModeNone
-	}
-
+	publication.ResponseMode = config.desiredResponse
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)

@@ -16,8 +16,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"time"
-
-	"github.com/nats-io/go-nats"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
