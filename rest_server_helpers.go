@@ -66,6 +66,8 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 		return 0
 	}
 
+	setCommonHeader(w, r.Request.Headers.Get("Origin"), r.Request.Accept)
+
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)
 		w.WriteHeader(http.StatusFound)

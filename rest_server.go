@@ -248,8 +248,6 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			return
 		}
 
-		setCommonHeader(w, req.Header.Get("Origin"), request.Accept)
-
 		ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
 		defer finishTracing(ctx)
 
