@@ -175,17 +175,6 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 				replyCh := make(chan *Publication)
 				publication.replyCh = replyCh
 				go responseHandler(m.Reply, replyCh)
-			// Finally, if client has configured a custom replier using the NATSOptSubscribeReplyer, use that to generate
-			// a response.
-			default:
-				if config.replier != nil {
-					if err := p.client.Publish(m.Reply, config.replier(m)); err != nil {
-						zap.L().Error("Failed to publish custom reply. Message dropped.",
-							zap.Error(err),
-							zap.String("nats_subject", m.Reply))
-						return
-					}
-				}
 			}
 		}
 

@@ -445,39 +445,6 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions: nil,
 		},
 		{
-			description: "should be able to set a custom response using the NATSOptSubscribeReplyer option to all publications that expect a response",
-			subscribeOptions: []PubSubOptSubscribe{
-				NATSOptSubscribeReplyer(func(_ *nats.Msg) []byte {
-					return []byte("custom response message")
-				}),
-			},
-			setup: func(t *testing.T, pub *Publication) {
-
-				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
-				if err != nil {
-					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
-					return
-				}
-
-				// publish a message expecting a (custom) response
-				msg, err := nc.Request(subscribeTopic, data, threshold)
-				if err != nil {
-					t.Fatalf("test setup failed to publish/receive message - error: %+v", err)
-					return
-				}
-
-				// validate that the received response is the custom response message we specified using the NATSOptSubscribeReplyer option
-				if !bytes.Equal(msg.Data, []byte("custom response message")) {
-					t.Errorf("expected response message data to be \"%s\", but received \"%s\"", ackMessage, msg.Data)
-				}
-
-			},
-			expectedPublication: &Publication{
-				Topic: subscribeTopic,
-				Data:  []byte("message"),
-			},
-		},
-		{
 			description:      "should receive an error in errors channel if subscribing fails for any reason",
 			expectedError:    nats.ErrConnectionClosed,
 			subscribeOptions: []PubSubOptSubscribe{},

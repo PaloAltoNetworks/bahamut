@@ -72,14 +72,12 @@ var ackMessage = []byte("ack")
 type natsSubscribeConfig struct {
 	queueGroup   string
 	replyTimeout time.Duration
-	replier      func(msg *nats.Msg) []byte
 }
 
 func defaultSubscribeConfig() natsSubscribeConfig {
 	return natsSubscribeConfig{
 		queueGroup:   "",
 		replyTimeout: 5 * time.Second,
-		replier:      nil,
 	}
 }
 
@@ -97,22 +95,6 @@ type natsPublishConfig struct {
 func NATSOptSubscribeQueue(queueGroup string) PubSubOptSubscribe {
 	return func(c interface{}) {
 		c.(*natsSubscribeConfig).queueGroup = queueGroup
-	}
-}
-
-// NATSOptSubscribeReplyer sets the function that will be called to eventually
-// reply to a nats Request.
-//
-// This is advanced option. You will not receive a
-// bahamut.Publication, but the raw nats.Msg received, and you must
-// reply with a direct payload []byte. If the reply cannot be sent, the subscription
-// channel will not receive anything and it is considered as a terminal error for that
-// message.
-//
-// See: https://nats.io/documentation/concepts/nats-req-rep/
-func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscribe {
-	return func(c interface{}) {
-		c.(*natsSubscribeConfig).replier = replier
 	}
 }
 
