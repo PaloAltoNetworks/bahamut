@@ -75,6 +75,14 @@ type natsSubscribeConfig struct {
 	replier      func(msg *nats.Msg) []byte
 }
 
+func defaultSubscribeConfig() natsSubscribeConfig {
+	return natsSubscribeConfig{
+		queueGroup:   "",
+		replyTimeout: 5 * time.Second,
+		replier:      nil,
+	}
+}
+
 type natsPublishConfig struct {
 	ctx             context.Context
 	desiredResponse ResponseMode

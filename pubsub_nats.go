@@ -121,9 +121,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
-	config := natsSubscribeConfig{
-		replyTimeout: 5 * time.Second,
-	}
+	config := defaultSubscribeConfig()
 
 	for _, opt := range opts {
 		opt(&config)
