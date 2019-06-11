@@ -18,6 +18,36 @@ import (
 	"go.aporeto.io/elemental"
 )
 
+// ResponseMode represents the response that is expected to be produced by the subscriber
+// handling a publication.
+type ResponseMode int
+
+func (r ResponseMode) String() string {
+	switch r {
+	case ResponseModeNone:
+		return "ResponseModeNone"
+	case ResponseModeACK:
+		return "ResponseModeACK"
+	case ResponseModePublication:
+		return "ResponseModePublication"
+	default:
+		return "ResponseModeUnknown"
+	}
+}
+
+const (
+	// ResponseModeNone indicates that no response is expected for the received publication
+	ResponseModeNone ResponseMode = iota
+	// ResponseModeACK indicates that the subscriber should reply back with an ACK
+	// as soon as it has received the publication BEFORE it starts processing the
+	// publication.
+	ResponseModeACK
+	// ResponseModePublication indicates that the subscriber should reply back with a
+	// Publication AFTER it has finished processing the publication. Obviously, the
+	// subscriber should try to respond ASAP as there is a client waiting for a response.
+	ResponseModePublication
+)
+
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
 	Data         []byte                     `msgpack:"data,omitempty" json:"data,omitempty"`
@@ -26,6 +56,7 @@ type Publication struct {
 	TrackingName string                     `msgpack:"trackingName,omitempty" json:"trackingName,omitempty"`
 	TrackingData opentracing.TextMapCarrier `msgpack:"trackingData,omitempty" json:"trackingData,omitempty"`
 	Encoding     elemental.EncodingType     `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
+	ResponseMode ResponseMode               `msgpack:"responseMode,omitempty" json:"responseMode,omitempty"`
 
 	span opentracing.Span
 }
@@ -116,8 +147,9 @@ func (p *Publication) Duplicate() *Publication {
 	pub.Partition = p.Partition
 	pub.TrackingName = p.TrackingName
 	pub.TrackingData = p.TrackingData
-	pub.span = p.span
 	pub.Encoding = p.Encoding
+	pub.ResponseMode = p.ResponseMode
+	pub.span = p.span
 
 	return pub
 }

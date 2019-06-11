@@ -72,19 +72,57 @@ func TestBahamut_PubSubNatsOptionsSubscribe(t *testing.T) {
 
 func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 
-	c := natsPublishConfig{}
+	Convey("Setup", t, func() {
 
-	Convey("Calling NATSOptPublishReplyValidator should work", t, func() {
-		v := func(msg *nats.Msg) error { return nil }
-		NATSOptPublishReplyValidator(context.TODO(), v)(&c)
-		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.replyValidator, ShouldEqual, v)
-	})
+		c := natsPublishConfig{}
 
-	Convey("Calling NATSOptPublishRequireAck should work", t, func() {
-		NATSOptPublishRequireAck(context.TODO())(&c)
-		So(c.ctx, ShouldEqual, context.TODO())
-		So(c.replyValidator(&nats.Msg{Data: ackMessage}), ShouldEqual, nil)
-		So(c.replyValidator(&nats.Msg{Data: []byte("hello")}).Error(), ShouldEqual, "invalid ack: hello")
+		Convey("Calling NATSOptPublishRequireAck should work", func() {
+			NATSOptPublishRequireAck(context.TODO())(&c)
+			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.desiredResponse, ShouldEqual, ResponseModeACK)
+		})
+
+		Convey("Calling NATSOptPublishRequireAck should panic if requestMode has already been set", func() {
+			c.desiredResponse = ResponseModePublication
+			So(func() {
+				NATSOptPublishRequireAck(context.TODO())(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptPublishRequireAck should panic if supplied context is nil", func() {
+			So(func() {
+				// nolint - note: ignoring linter feedback as we are trying to cause a panic intentionally by passing in a `nil` context
+				NATSOptPublishRequireAck(nil)(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should work", func() {
+			respCh := make(chan *Publication)
+			NATSOptRespondToChannel(context.TODO(), respCh)(&c)
+			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.responseCh, ShouldEqual, respCh)
+			So(c.desiredResponse, ShouldEqual, ResponseModePublication)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if requestMode has already been set", func() {
+			c.desiredResponse = ResponseModeACK
+			So(func() {
+				NATSOptRespondToChannel(context.TODO(), make(chan *Publication))(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if supplied response channel is nil", func() {
+			So(func() {
+				NATSOptRespondToChannel(context.TODO(), nil)(&c)
+			}, ShouldPanic)
+		})
+
+		Convey("Calling NATSOptRespondToChannel should panic if supplied context is nil", func() {
+			c.desiredResponse = ResponseModeACK
+			So(func() {
+				// nolint - note: ignoring linter feedback as we are trying to cause a panic intentionally by passing in a `nil` context
+				NATSOptRespondToChannel(nil, make(chan *Publication))(&c)
+			}, ShouldPanic)
+		})
 	})
 }

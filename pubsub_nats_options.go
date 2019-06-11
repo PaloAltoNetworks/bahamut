@@ -12,13 +12,12 @@
 package bahamut
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
 	"time"
 
-	nats "github.com/nats-io/go-nats"
+	"github.com/nats-io/go-nats"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -76,10 +75,9 @@ type natsSubscribeConfig struct {
 }
 
 type natsPublishConfig struct {
-	ctx            context.Context
-	replyValidator func(msg *nats.Msg) error
-	useRequestMode bool
-	responseCh     chan *Publication
+	ctx             context.Context
+	desiredResponse ResponseMode
+	responseCh      chan *Publication
 }
 
 // NATSOptSubscribeQueue sets the NATS subscriber queue group.
@@ -118,28 +116,24 @@ func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscr
 //		myCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 //		respCh := make(chan *Publication)
 // 		publishOption := NATSOptRespondToChannel(myCtx, respCh)
+//
+// This option CANNOT be combined with NATSOptPublishRequireAck
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).useRequestMode = true
-		c.(*natsPublishConfig).ctx = ctx
-		c.(*natsPublishConfig).responseCh = resp
-	}
-}
+		config := c.(*natsPublishConfig)
 
-// NATSOptPublishReplyValidator sets the function that will be called to validate
-// a request reply.
-//
-// This is advanced option. You will not receive a
-// bahamut.Publication, but the raw nats.Msg.Data received as response. If you return
-// an error, the entire Publish process will be considered errored, and the caller
-// will receive you error as is.
-//
-// See: https://nats.io/documentation/concepts/nats-req-rep/
-func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.Msg) error) PubSubOptPublish {
-	return func(c interface{}) {
-		c.(*natsPublishConfig).useRequestMode = true
-		c.(*natsPublishConfig).replyValidator = validator
-		c.(*natsPublishConfig).ctx = ctx
+		switch {
+		case config.desiredResponse != ResponseModeNone:
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.desiredResponse))
+		case resp == nil:
+			panic("illegal argument: response channel cannot be nil")
+		case ctx == nil:
+			panic("illegal argument: context cannot be nil")
+		}
+
+		config.ctx = ctx
+		config.responseCh = resp
+		config.desiredResponse = ResponseModePublication
 	}
 }
 
@@ -149,16 +143,20 @@ func NATSOptPublishReplyValidator(ctx context.Context, validator func(msg *nats.
 // ack. If you are using a custom replyer with NATSOptSubscribeReplyer, you MUST
 // reply `ack` or implement your own logic to handle the reply by using
 // the option NATSOptPublishReplyValidator.
+//
+// This option CANNOT be combined with NATSOptRespondToChannel
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
 	return func(c interface{}) {
-		c.(*natsPublishConfig).replyValidator = ackValidator
-		c.(*natsPublishConfig).ctx = ctx
-	}
-}
+		config := c.(*natsPublishConfig)
 
-func ackValidator(msg *nats.Msg) error {
-	if !bytes.Equal(msg.Data, ackMessage) {
-		return fmt.Errorf("invalid ack: %s", string(msg.Data))
+		switch {
+		case config.desiredResponse != ResponseModeNone:
+			panic(fmt.Sprintf("illegal option: request mode has already been set to %s", config.desiredResponse))
+		case ctx == nil:
+			panic("illegal argument: context cannot be nil")
+		}
+
+		config.ctx = ctx
+		config.desiredResponse = ResponseModeACK
 	}
-	return nil
 }
