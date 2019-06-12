@@ -125,6 +125,9 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	responseHandler := func(replyAddr string, replyCh <-chan *Publication) {
 		select {
 		case r := <-replyCh:
+			// no response should be expected for a response, therefore override this in case the caller
+			// has set the response mode to something else
+			r.ResponseMode = ResponseModeNone
 			r.Topic = replyAddr
 			if err := p.Publish(r); err != nil {
 				errors <- err
@@ -153,9 +156,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 			// to respond to the publisher with an ACK.
 			case ResponseModeACK:
 				if err := p.client.Publish(m.Reply, ackMessage); err != nil {
-					zap.L().Error("Failed to publish ACK reply. Message dropped.",
-						zap.Error(err),
-						zap.String("nats_subject", m.Reply))
+					errors <- err
 					return
 				}
 			// `ResponseModePublication` mode is used in cases when the subscriber needs to do processing on the
