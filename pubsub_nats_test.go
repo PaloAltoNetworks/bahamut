@@ -374,16 +374,18 @@ func TestSubscribe(t *testing.T) {
 	serverAddr := srv.Addr().(*net.TCPAddr)
 
 	var tests = []struct {
-		description          string
-		expectedPublication  *Publication
+		description string
+		// the publication that will be sent to the publication channel
+		expectedPublication *Publication
+		// the error that will be sent to the errors channel
 		expectedError        error
-		setup                func(t *testing.T, pub *Publication)
+		setup                func(t *testing.T, pub *Publication, client PubSubClient)
 		subscribeOptions     []PubSubOptSubscribe
 		natsOptionsGenerator func() ([]NATSOption, func())
 	}{
 		{
 			description: "should successfully subscribe to topic and receive a publication in provided channel",
-			setup: func(t *testing.T, pub *Publication) {
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -404,7 +406,7 @@ func TestSubscribe(t *testing.T) {
 		},
 		{
 			description: "should NOT receive anything in publication channel that cannot be decoded into a publication",
-			setup: func(t *testing.T, pub *Publication) {
+			setup: func(t *testing.T, _ *Publication, _ PubSubClient) {
 				if err := nc.Publish(subscribeTopic, []byte("this cannot be decoded into a publication")); err != nil {
 					t.Fatalf("test setup failed - could not publish publication - error: %+v", err)
 					return
@@ -415,8 +417,54 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions:    nil,
 		},
 		{
+			description: "should NOT receive anything in publication channel if responding back with an ACK fails",
+			setup: func(t *testing.T, _ *Publication, client PubSubClient) {
+
+				pc, ok := client.(*natsPubSub)
+				if !ok {
+					t.Fatalf("test setup failed - could not assert `PubSubClient` to `*natsPubSub`")
+					return
+				}
+
+				ctrl := gomock.NewController(t)
+				mockClient := mocks.NewMockNATSClient(ctrl)
+				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
+				// a failure when the message handler attempts to respond back to the request with an ACK.
+				pc.client = mockClient
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), ackMessage).
+					// notice how this is returning an error
+					Return(errors.New("whoops, failed to publish ACK response")).
+					Times(1)
+
+				// act as a client - publish a message expecting to get back an ACK
+				pub := NewPublication(subscribeTopic)
+				pub.ResponseMode = ResponseModeACK
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// our request should fail now (w/ a timeout) as we have injected a deliberate fault (see above)
+				// when the Subscriber attempts to respond back to our request with an ACK response
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err == nil {
+					t.Fatalf("test setup failed - expected to get an error here, but got a response back instead: \"%+v\". "+
+						"Hint: test structure has likely been messed up.", *response)
+					return
+				}
+			},
+			// we expect to get an error because when Subscriber should fail to Publish back its ACK response to the client's request
+			// it will send the error it gets back from its call to Publish to the configured error channel.
+			expectedError:       errors.New(""),
+			expectedPublication: nil,
+			subscribeOptions:    nil,
+		},
+		{
 			description: "should respond back with an ACK message to all publications that expect an ACK response",
-			setup: func(t *testing.T, pub *Publication) {
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
 
 				pub.ResponseMode = ResponseModeACK
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
@@ -448,7 +496,7 @@ func TestSubscribe(t *testing.T) {
 			description:      "should receive an error in errors channel if subscribing fails for any reason",
 			expectedError:    nats.ErrConnectionClosed,
 			subscribeOptions: []PubSubOptSubscribe{},
-			setup:            func(t *testing.T, pub *Publication) {},
+			setup:            func(t *testing.T, pub *Publication, client PubSubClient) {},
 			natsOptionsGenerator: func() ([]NATSOption, func()) {
 
 				// we use a mock client in this test as we want to simulate a failure when `Subscribe` is called
@@ -487,7 +535,7 @@ func TestSubscribe(t *testing.T) {
 				natOpts, cleanup = test.natsOptionsGenerator()
 				defer cleanup()
 			}
-			// note: we prepend the NATSOption client option to allow test cases to override the actual client being used
+			// note: we prepend the NATSOption natsOptClient option to allow test cases to override the actual client being used
 			// (e.g. if they want to provide a mock client instead)
 			natOpts = append([]NATSOption{natsOptClient(nc)}, natOpts...)
 			ps := NewNATSPubSubClient(
@@ -501,7 +549,7 @@ func TestSubscribe(t *testing.T) {
 			errors := make(chan error, 1)
 			unsub := ps.Subscribe(publications, errors, subscribeTopic, test.subscribeOptions...)
 			defer unsub()
-			test.setup(t, test.expectedPublication)
+			test.setup(t, test.expectedPublication, ps)
 
 			select {
 			case pub := <-publications:
