@@ -158,13 +158,17 @@ func (p *Publication) Duplicate() *Publication {
 }
 
 // Reply will publish the provided publication back to the client. An error is returned if
-// the client was not expecting a response. If you take too long to reply to a publication
-// an error may be returned in the errors channel you provided in your call to the `Subscribe`
-// method as the client may have given up waiting for your response.
+// the client was not expecting a response or the supplied publication was nil. If you take
+// too long to reply to a publication an error may be returned in the errors channel you provided
+// in your call to the `Subscribe` method as the client may have given up waiting for your response.
 func (p *Publication) Reply(response *Publication) error {
 
 	if p.replyCh == nil {
 		return errors.New("no response required for publication")
+	}
+
+	if response == nil {
+		return errors.New("response cannot be nil")
 	}
 
 	p.replyCh <- response
