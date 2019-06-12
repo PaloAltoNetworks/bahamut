@@ -74,8 +74,7 @@ type natsSubscribeConfig struct {
 
 func defaultSubscribeConfig() natsSubscribeConfig {
 	return natsSubscribeConfig{
-		queueGroup:   "",
-		replyTimeout: 5 * time.Second,
+		replyTimeout: 60 * time.Second,
 	}
 }
 
