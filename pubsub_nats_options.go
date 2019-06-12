@@ -136,9 +136,7 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 // NATSOptPublishRequireAck is a helper to require a ack in the limit
 // of the given context.Context. If the other side is bahamut.PubSubClient
 // using the Subscribe method, then it will automatically send back the expected
-// ack. If you are using a custom replyer with NATSOptSubscribeReplyer, you MUST
-// reply `ack` or implement your own logic to handle the reply by using
-// the option NATSOptPublishReplyValidator.
+// ack.
 //
 // This option CANNOT be combined with NATSOptRespondToChannel
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
