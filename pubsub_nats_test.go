@@ -378,8 +378,13 @@ func TestSubscribe(t *testing.T) {
 		// the publication that will be sent to the publication channel
 		expectedPublication *Publication
 		// the error that will be sent to the errors channel
-		expectedError        error
-		setup                func(t *testing.T, pub *Publication, client PubSubClient)
+		expectedError error
+		// this callback is called right after the call to Subscribe has been made. this is opportunity for you
+		// to setup mocks and mimic client behaviour by making actual publications to the test topic
+		setup func(t *testing.T, pub *Publication, client PubSubClient)
+		// this callback is called in the event that a publication was sent to the configured publication channel.
+		// you use this as an opportunity to reply back to the publication using the `Reply` method
+		replier              func(t *testing.T, pub *Publication)
 		subscribeOptions     []PubSubOptSubscribe
 		natsOptionsGenerator func() ([]NATSOption, func())
 	}{
@@ -463,6 +468,50 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions:    nil,
 		},
 		{
+			description: "should be able to respond back to a publication manually",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+
+				// act as the client making the request:
+				//   - make a request expecting to get back an Publication as a response by setting the
+				//     response mode to ResponseModePublication
+				pub.ResponseMode = ResponseModePublication
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err != nil {
+					t.Fatalf("test setup failed - request was not successful - error: %+v", err)
+					return
+				}
+
+				// the received response should be a publication
+				responsePub := NewPublication("")
+				if err := elemental.Decode(elemental.EncodingTypeMSGPACK, response.Data, responsePub); err != nil {
+					t.Fatalf("test failed - the response to the request could not be decoded into a *Publication - error: %+v", err)
+					return
+				}
+
+			},
+			replier: func(t *testing.T, pub *Publication) {
+
+				response := &Publication{
+					Data: []byte("some response"),
+				}
+
+				if err := pub.Reply(response); err != nil {
+					t.Errorf("test failed - could not reply to publication - err: %+v", err)
+				}
+
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			},
+		},
+		{
 			description: "should respond back with an ACK message to all publications that expect an ACK response",
 			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
 
@@ -542,51 +591,61 @@ func TestSubscribe(t *testing.T) {
 				fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
 				natOpts...,
 			)
+			done := make(chan struct{})
 			publications := make(chan *Publication)
-			// Why the buffered channel for errors?
-			// Because otherwise if the call to Subscribe or QueueSubscribe fails then an error will be written to the error channel,
-			// which would block indefinitely as there are no active readers on that channel yet.
-			errors := make(chan error, 1)
+			errors := make(chan error)
+			go func() {
+				select {
+				case pub := <-publications:
+
+					if test.expectedPublication == nil {
+						t.Errorf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
+						return
+					}
+
+					if pub.Topic != test.expectedPublication.Topic {
+						t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
+					}
+
+					if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
+						t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
+					}
+
+					if test.replier != nil {
+						test.replier(t, pub)
+					}
+
+				case err := <-errors:
+
+					if test.expectedError == nil {
+						t.Errorf("received an unexpected error - err: \"%+v\"", err)
+						return
+					}
+
+					if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
+						t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
+					}
+
+				case <-time.After(threshold):
+
+					if test.expectedPublication != nil {
+						t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
+					}
+
+					if test.expectedError != nil {
+						t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
+					}
+				}
+
+				close(done)
+			}()
+
 			unsub := ps.Subscribe(publications, errors, subscribeTopic, test.subscribeOptions...)
 			defer unsub()
 			test.setup(t, test.expectedPublication, ps)
 
-			select {
-			case pub := <-publications:
-
-				if test.expectedPublication == nil {
-					t.Fatalf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
-				}
-
-				if pub.Topic != test.expectedPublication.Topic {
-					t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
-				}
-
-				if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
-					t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
-				}
-
-			case err := <-errors:
-
-				if test.expectedError == nil {
-					t.Fatalf("received an unexpected error - err: \"%+v\"", err)
-				}
-
-				if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
-					t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
-				}
-
-			case <-time.After(threshold):
-
-				if test.expectedPublication != nil {
-					t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
-				}
-
-				if test.expectedError != nil {
-					t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
-				}
-
-			}
+			// wait for assertions to finish
+			<-done
 		})
 	}
 }
