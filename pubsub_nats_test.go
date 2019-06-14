@@ -384,7 +384,7 @@ func TestSubscribe(t *testing.T) {
 		setup func(t *testing.T, pub *Publication, client PubSubClient)
 		// this callback is called in the event that a publication was sent to the configured publication channel.
 		// you use this as an opportunity to reply back to the publication using the `Reply` method
-		replier              func(t *testing.T, pub *Publication)
+		replier              func(t *testing.T, pub *Publication, client PubSubClient) bool
 		subscribeOptions     []PubSubOptSubscribe
 		natsOptionsGenerator func() ([]NATSOption, func())
 	}{
@@ -422,7 +422,7 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions:    nil,
 		},
 		{
-			description: "should NOT receive anything in publication channel if responding back with an ACK fails",
+			description: "should receive error in errors channel if responding back with an ACK fails",
 			setup: func(t *testing.T, _ *Publication, client PubSubClient) {
 
 				pc, ok := client.(*natsPubSub)
@@ -495,7 +495,7 @@ func TestSubscribe(t *testing.T) {
 				}
 
 			},
-			replier: func(t *testing.T, pub *Publication) {
+			replier: func(t *testing.T, pub *Publication, _ PubSubClient) bool {
 
 				response := &Publication{
 					Data: []byte("some response"),
@@ -505,10 +505,77 @@ func TestSubscribe(t *testing.T) {
 					t.Errorf("test failed - could not reply to publication - err: %+v", err)
 				}
 
+				return false
 			},
 			expectedPublication: &Publication{
 				Topic: subscribeTopic,
 				Data:  []byte("message"),
+			},
+		},
+		{
+			description: "should receive error in errors channel if publishing manual response fails for whatever reason",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+				// high level overview of this test:
+				//   - make a request expecting to get back a publication
+				//   - subscriber gets the publication
+				//   - subscriber responds to the publication via the Reply call
+				//   - the Reply call fails internally for some reason because the call the Publish call fails
+				//   - this should result in an error being sent to the configured errors channel
+
+				// act as a client - publish a message expecting to get back a Publication response
+				pub.ResponseMode = ResponseModePublication
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// our request should fail now (w/ a timeout) as we have injected a deliberate fault (see replier below)
+				// when the Subscriber attempts to respond back to our request with a publication response
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err == nil {
+					t.Fatalf("test setup failed - expected to get an error here, but got a response back instead: \"%+v\". "+
+						"Hint: test structure has likely been messed up.", *response)
+					return
+				}
+			},
+			expectedError: errors.New(""),
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			}, replier: func(t *testing.T, pub *Publication, client PubSubClient) bool {
+
+				pc, ok := client.(*natsPubSub)
+				if !ok {
+					t.Fatalf("test setup failed - could not assert `PubSubClient` to `*natsPubSub`")
+					return false
+				}
+
+				replyMessage := &Publication{
+					Data:         []byte("some custom reply"),
+					ResponseMode: ResponseModeNone,
+				}
+
+				ctrl := gomock.NewController(t)
+				mockClient := mocks.NewMockNATSClient(ctrl)
+				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
+				// a failure when the message handler attempts to respond back to the request with a publication.
+				pc.client = mockClient
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// notice how this is returning an error
+					Return(errors.New("whoops, failed to publish publication response")).
+					Times(1)
+
+				// stronger assertion
+				replyMessage.ResponseMode = ResponseModeACK
+				if err := pub.Reply(replyMessage); err != nil {
+					t.Errorf("test failed - could not reply to publication - err: %+v", err)
+				}
+
+				return true
+
 			},
 		},
 		{
@@ -595,45 +662,59 @@ func TestSubscribe(t *testing.T) {
 			publications := make(chan *Publication)
 			errors := make(chan error)
 			go func() {
-				select {
-				case pub := <-publications:
 
-					if test.expectedPublication == nil {
-						t.Errorf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
-						return
-					}
+			Loop:
+				for {
+					select {
+					case pub := <-publications:
 
-					if pub.Topic != test.expectedPublication.Topic {
-						t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
-					}
+						if test.expectedPublication == nil {
+							t.Errorf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
+							return
+						}
 
-					if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
-						t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
-					}
+						if pub.Topic != test.expectedPublication.Topic {
+							t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
+						}
 
-					if test.replier != nil {
-						test.replier(t, pub)
-					}
+						if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
+							t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
+						}
 
-				case err := <-errors:
+						if test.replier == nil {
+							break Loop
+						}
 
-					if test.expectedError == nil {
-						t.Errorf("received an unexpected error - err: \"%+v\"", err)
-						return
-					}
+						// if there is a replier func, we don't want to break out of the select loop just yet because maybe the call to Reply fails
+						// in which case the test scenario may want to validate that an error is sent to the errors channel
+						if readChannelsAgain := test.replier(t, pub, ps); !readChannelsAgain {
+							break Loop
+						}
 
-					if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
-						t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
-					}
+					case err := <-errors:
 
-				case <-time.After(threshold):
+						if test.expectedError == nil {
+							t.Errorf("received an unexpected error - err: \"%+v\"", err)
+							return
+						}
 
-					if test.expectedPublication != nil {
-						t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
-					}
+						if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
+							t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
+						}
 
-					if test.expectedError != nil {
-						t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
+						break Loop
+
+					case <-time.After(threshold):
+
+						if test.expectedPublication != nil {
+							t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
+						}
+
+						if test.expectedError != nil {
+							t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
+						}
+
+						break Loop
 					}
 				}
 
