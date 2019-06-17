@@ -374,16 +374,23 @@ func TestSubscribe(t *testing.T) {
 	serverAddr := srv.Addr().(*net.TCPAddr)
 
 	var tests = []struct {
-		description          string
-		expectedPublication  *Publication
-		expectedError        error
-		setup                func(t *testing.T, pub *Publication)
+		description string
+		// the publication that will be sent to the publication channel
+		expectedPublication *Publication
+		// the error that will be sent to the errors channel
+		expectedError error
+		// this callback is called right after the call to Subscribe has been made. this is opportunity for you
+		// to setup mocks and mimic client behaviour by making actual publications to the test topic
+		setup func(t *testing.T, pub *Publication, client PubSubClient)
+		// this callback is called in the event that a publication was sent to the configured publication channel.
+		// you use this as an opportunity to reply back to the publication using the `Reply` method
+		replier              func(t *testing.T, pub *Publication, client PubSubClient) bool
 		subscribeOptions     []PubSubOptSubscribe
 		natsOptionsGenerator func() ([]NATSOption, func())
 	}{
 		{
 			description: "should successfully subscribe to topic and receive a publication in provided channel",
-			setup: func(t *testing.T, pub *Publication) {
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -404,7 +411,7 @@ func TestSubscribe(t *testing.T) {
 		},
 		{
 			description: "should NOT receive anything in publication channel that cannot be decoded into a publication",
-			setup: func(t *testing.T, pub *Publication) {
+			setup: func(t *testing.T, _ *Publication, _ PubSubClient) {
 				if err := nc.Publish(subscribeTopic, []byte("this cannot be decoded into a publication")); err != nil {
 					t.Fatalf("test setup failed - could not publish publication - error: %+v", err)
 					return
@@ -415,9 +422,167 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions:    nil,
 		},
 		{
-			description: "should respond back with an ACK message to all publications that expect an ACK response",
-			setup: func(t *testing.T, pub *Publication) {
+			description: "should receive error in errors channel if responding back with an ACK fails",
+			setup: func(t *testing.T, _ *Publication, client PubSubClient) {
 
+				pc, ok := client.(*natsPubSub)
+				if !ok {
+					t.Fatalf("test setup failed - could not assert `PubSubClient` to `*natsPubSub`")
+					return
+				}
+
+				ctrl := gomock.NewController(t)
+				mockClient := mocks.NewMockNATSClient(ctrl)
+				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
+				// a failure when the message handler attempts to respond back to the request with an ACK.
+				pc.client = mockClient
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), ackMessage).
+					// notice how this is returning an error
+					Return(errors.New("whoops, failed to publish ACK response")).
+					Times(1)
+
+				// act as a client - publish a message expecting to get back an ACK
+				pub := NewPublication(subscribeTopic)
+				pub.ResponseMode = ResponseModeACK
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// our request should fail now (w/ a timeout) as we have injected a deliberate fault (see above)
+				// when the Subscriber attempts to respond back to our request with an ACK response
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err == nil {
+					t.Fatalf("test setup failed - expected to get an error here, but got a response back instead: \"%+v\". "+
+						"Hint: test structure has likely been messed up.", *response)
+					return
+				}
+			},
+			// we expect to get an error because when Subscriber should fail to Publish back its ACK response to the client's request
+			// it will send the error it gets back from its call to Publish to the configured error channel.
+			expectedError:       errors.New(""),
+			expectedPublication: nil,
+			subscribeOptions:    nil,
+		},
+		{
+			description: "should be able to respond back to a publication manually",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+
+				// act as the client making the request:
+				//   - make a request expecting to get back an Publication as a response by setting the
+				//     response mode to ResponseModePublication
+				pub.ResponseMode = ResponseModePublication
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err != nil {
+					t.Fatalf("test setup failed - request was not successful - error: %+v", err)
+					return
+				}
+
+				// the received response should be a publication
+				responsePub := NewPublication("")
+				if err := elemental.Decode(elemental.EncodingTypeMSGPACK, response.Data, responsePub); err != nil {
+					t.Fatalf("test failed - the response to the request could not be decoded into a *Publication - error: %+v", err)
+					return
+				}
+
+			},
+			replier: func(t *testing.T, pub *Publication, _ PubSubClient) bool {
+
+				response := &Publication{
+					Data: []byte("some response"),
+				}
+
+				if err := pub.Reply(response); err != nil {
+					t.Errorf("test failed - could not reply to publication - err: %+v", err)
+				}
+
+				return false
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			},
+		},
+		{
+			description: "should receive error in errors channel if publishing manual response fails for whatever reason",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+				// high level overview of this test:
+				//   - make a request expecting to get back a publication
+				//   - subscriber gets the publication
+				//   - subscriber responds to the publication via the Reply call
+				//   - the Reply call fails internally for some reason because the call the Publish call fails
+				//   - this should result in an error being sent to the configured errors channel
+
+				// act as a client - publish a message expecting to get back a Publication response
+				pub.ResponseMode = ResponseModePublication
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// our request should fail now (w/ a timeout) as we have injected a deliberate fault (see replier below)
+				// when the Subscriber attempts to respond back to our request with a publication response
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err == nil {
+					t.Fatalf("test setup failed - expected to get an error here, but got a response back instead: \"%+v\". "+
+						"Hint: test structure has likely been messed up.", *response)
+					return
+				}
+			},
+			expectedError: errors.New(""),
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			}, replier: func(t *testing.T, pub *Publication, client PubSubClient) bool {
+
+				pc, ok := client.(*natsPubSub)
+				if !ok {
+					t.Fatalf("test setup failed - could not assert `PubSubClient` to `*natsPubSub`")
+					return false
+				}
+
+				replyMessage := &Publication{
+					Data:         []byte("some custom reply"),
+					ResponseMode: ResponseModeNone,
+				}
+
+				ctrl := gomock.NewController(t)
+				mockClient := mocks.NewMockNATSClient(ctrl)
+				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
+				// a failure when the message handler attempts to respond back to the request with a publication.
+				pc.client = mockClient
+				mockClient.
+					EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					// notice how this is returning an error
+					Return(errors.New("whoops, failed to publish publication response")).
+					Times(1)
+
+				// stronger assertion
+				replyMessage.ResponseMode = ResponseModeACK
+				if err := pub.Reply(replyMessage); err != nil {
+					t.Errorf("test failed - could not reply to publication - err: %+v", err)
+				}
+
+				return true
+
+			},
+		},
+		{
+			description: "should respond back with an ACK message to all publications that expect an ACK response",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+
+				pub.ResponseMode = ResponseModeACK
 				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
 				if err != nil {
 					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
@@ -444,43 +609,10 @@ func TestSubscribe(t *testing.T) {
 			subscribeOptions: nil,
 		},
 		{
-			description: "should be able to set a custom response using the NATSOptSubscribeReplyer option to all publications that expect a response",
-			subscribeOptions: []PubSubOptSubscribe{
-				NATSOptSubscribeReplyer(func(_ *nats.Msg) []byte {
-					return []byte("custom response message")
-				}),
-			},
-			setup: func(t *testing.T, pub *Publication) {
-
-				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
-				if err != nil {
-					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
-					return
-				}
-
-				// publish a message expecting a (custom) response
-				msg, err := nc.Request(subscribeTopic, data, threshold)
-				if err != nil {
-					t.Fatalf("test setup failed to publish/receive message - error: %+v", err)
-					return
-				}
-
-				// validate that the received response is the custom response message we specified using the NATSOptSubscribeReplyer option
-				if !bytes.Equal(msg.Data, []byte("custom response message")) {
-					t.Errorf("expected response message data to be \"%s\", but received \"%s\"", ackMessage, msg.Data)
-				}
-
-			},
-			expectedPublication: &Publication{
-				Topic: subscribeTopic,
-				Data:  []byte("message"),
-			},
-		},
-		{
 			description:      "should receive an error in errors channel if subscribing fails for any reason",
 			expectedError:    nats.ErrConnectionClosed,
 			subscribeOptions: []PubSubOptSubscribe{},
-			setup:            func(t *testing.T, pub *Publication) {},
+			setup:            func(t *testing.T, pub *Publication, client PubSubClient) {},
 			natsOptionsGenerator: func() ([]NATSOption, func()) {
 
 				// we use a mock client in this test as we want to simulate a failure when `Subscribe` is called
@@ -519,54 +651,82 @@ func TestSubscribe(t *testing.T) {
 				natOpts, cleanup = test.natsOptionsGenerator()
 				defer cleanup()
 			}
-			// note: we prepend the NATSOption client option to allow test cases to override the actual client being used
+			// note: we prepend the NATSOption natsOptClient option to allow test cases to override the actual client being used
 			// (e.g. if they want to provide a mock client instead)
 			natOpts = append([]NATSOption{natsOptClient(nc)}, natOpts...)
 			ps := NewNATSPubSubClient(
 				fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
 				natOpts...,
 			)
+			done := make(chan struct{})
 			publications := make(chan *Publication)
-			// Why the buffered channel for errors?
-			// Because otherwise if the call to Subscribe or QueueSubscribe fails then an error will be written to the error channel,
-			// which would block indefinitely as there are no active readers on that channel yet.
-			errors := make(chan error, 1)
+			errors := make(chan error)
+			go func() {
+
+			Loop:
+				for {
+					select {
+					case pub := <-publications:
+
+						if test.expectedPublication == nil {
+							t.Errorf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
+							return
+						}
+
+						if pub.Topic != test.expectedPublication.Topic {
+							t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
+						}
+
+						if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
+							t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
+						}
+
+						if test.replier == nil {
+							break Loop
+						}
+
+						// if there is a replier func, we don't want to break out of the select loop just yet because maybe the call to Reply fails
+						// in which case the test scenario may want to validate that an error is sent to the errors channel
+						if readChannelsAgain := test.replier(t, pub, ps); !readChannelsAgain {
+							break Loop
+						}
+
+					case err := <-errors:
+
+						if test.expectedError == nil {
+							t.Errorf("received an unexpected error - err: \"%+v\"", err)
+							return
+						}
+
+						if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
+							t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
+						}
+
+						break Loop
+
+					case <-time.After(threshold):
+
+						if test.expectedPublication != nil {
+							t.Errorf("timed out expecting to receive a publication: \"%+v\"", test.expectedPublication)
+						}
+
+						if test.expectedError != nil {
+							t.Errorf("timed out expecting to receive an error: \"%+v\"", test.expectedError)
+						}
+
+						break Loop
+					}
+				}
+
+				close(done)
+			}()
+
 			unsub := ps.Subscribe(publications, errors, subscribeTopic, test.subscribeOptions...)
 			defer unsub()
-			test.setup(t, test.expectedPublication)
+			test.setup(t, test.expectedPublication, ps)
 
-			select {
-			case pub := <-publications:
-
-				if test.expectedPublication == nil {
-					t.Fatalf("did not expect to receive any publications, but received publication - \"%+v\"", pub)
-				}
-
-				if pub.Topic != test.expectedPublication.Topic {
-					t.Errorf("expected publication with topic \"%s\", but received publication with topic \"%s\"", test.expectedPublication.Topic, pub.Topic)
-				}
-
-				if !bytes.Equal(pub.Data, test.expectedPublication.Data) {
-					t.Errorf("expected publication with data: \"%+v\", but received publication with data: \"%+v\"", pub.Data, test.expectedPublication.Data)
-				}
-
-			case err := <-errors:
-
-				if test.expectedError == nil {
-					t.Fatalf("received an unexpected error - err: \"%+v\"", err)
-				}
-
-				if actualErrType := reflect.TypeOf(test.expectedError); actualErrType != reflect.TypeOf(err) {
-					t.Errorf("received error of type \"%+v\", when an error of type \"%+v\" was expected", actualErrType, reflect.TypeOf(test.expectedError))
-				}
-
-			case <-time.After(threshold):
-
-				if test.expectedPublication != nil {
-					t.Errorf("timed out expecting to receive a publication: %+v", test.expectedPublication)
-				}
-
-			}
+			// wait for assertions to finish
+			<-done
 		})
 	}
 }

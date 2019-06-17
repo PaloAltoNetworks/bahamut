@@ -16,8 +16,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"time"
-
-	"github.com/nats-io/go-nats"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -70,8 +68,14 @@ func natsOptClient(client natsClient) NATSOption {
 var ackMessage = []byte("ack")
 
 type natsSubscribeConfig struct {
-	queueGroup string
-	replier    func(msg *nats.Msg) []byte
+	queueGroup   string
+	replyTimeout time.Duration
+}
+
+func defaultSubscribeConfig() natsSubscribeConfig {
+	return natsSubscribeConfig{
+		replyTimeout: 60 * time.Second,
+	}
 }
 
 type natsPublishConfig struct {
@@ -91,19 +95,11 @@ func NATSOptSubscribeQueue(queueGroup string) PubSubOptSubscribe {
 	}
 }
 
-// NATSOptSubscribeReplyer sets the function that will be called to eventually
-// reply to a nats Request.
-//
-// This is advanced option. You will not receive a
-// bahamut.Publication, but the raw nats.Msg received, and you must
-// reply with a direct payload []byte. If the reply cannot be sent, the subscription
-// channel will not receive anything and it is considered as a terminal error for that
-// message.
-//
-// See: https://nats.io/documentation/concepts/nats-req-rep/
-func NATSOptSubscribeReplyer(replier func(msg *nats.Msg) []byte) PubSubOptSubscribe {
+// NATSOptSubscribeReplyTimeout sets the duration of time to wait before giving up
+// waiting for a response to publish back to the client that is expecting a response
+func NATSOptSubscribeReplyTimeout(t time.Duration) PubSubOptSubscribe {
 	return func(c interface{}) {
-		c.(*natsSubscribeConfig).replier = replier
+		c.(*natsSubscribeConfig).replyTimeout = t
 	}
 }
 
@@ -140,9 +136,7 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 // NATSOptPublishRequireAck is a helper to require a ack in the limit
 // of the given context.Context. If the other side is bahamut.PubSubClient
 // using the Subscribe method, then it will automatically send back the expected
-// ack. If you are using a custom replyer with NATSOptSubscribeReplyer, you MUST
-// reply `ack` or implement your own logic to handle the reply by using
-// the option NATSOptPublishReplyValidator.
+// ack.
 //
 // This option CANNOT be combined with NATSOptRespondToChannel
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {

@@ -12,7 +12,10 @@
 package bahamut
 
 import (
-	opentracing "github.com/opentracing/opentracing-go"
+	"errors"
+	"sync"
+
+	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"go.aporeto.io/elemental"
@@ -58,7 +61,10 @@ type Publication struct {
 	Encoding     elemental.EncodingType     `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
 	ResponseMode ResponseMode               `msgpack:"responseMode,omitempty" json:"responseMode,omitempty"`
 
-	span opentracing.Span
+	replyCh chan *Publication
+	replied bool
+	mux     sync.Mutex
+	span    opentracing.Span
 }
 
 // NewPublication returns a new Publication.
@@ -152,4 +158,28 @@ func (p *Publication) Duplicate() *Publication {
 	pub.span = p.span
 
 	return pub
+}
+
+// Reply will publish the provided publication back to the client. An error is returned if
+// the client was not expecting a response or the supplied publication was nil. If you take
+// too long to reply to a publication an error may be returned in the errors channel you provided
+// in your call to the `Subscribe` method as the client may have given up waiting for your response.
+// Reply can only be called once for
+func (p *Publication) Reply(response *Publication) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
+	switch {
+	case p.replyCh == nil:
+		return errors.New("no response required for publication")
+	case response == nil:
+		return errors.New("response cannot be nil")
+	case p.replied:
+		return errors.New("already replied to publication")
+	}
+
+	p.replyCh <- response
+	p.replied = true
+
+	return nil
 }

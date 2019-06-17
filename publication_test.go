@@ -13,6 +13,7 @@ package bahamut
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
@@ -215,4 +216,87 @@ func TestPublication_Duplicate(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestReply(t *testing.T) {
+
+	threshold := 100 * time.Millisecond
+	testCases := []struct {
+		description    string
+		setup          func() *Publication
+		response       *Publication
+		expectingReply bool
+		shouldError    bool
+	}{
+		{
+			description: "should send publication response to reply channel",
+			setup: func() *Publication {
+				return &Publication{
+					replyCh: make(chan *Publication),
+				}
+			},
+			response:       NewPublication("test topic"),
+			expectingReply: true,
+			shouldError:    false,
+		},
+		{
+			description: "should return an error if no reply channel is configured for publication",
+			setup: func() *Publication {
+				return NewPublication("")
+			},
+			response:    NewPublication("test topic"),
+			shouldError: true,
+		},
+		{
+			description: "should return an error if passed in a nil publication",
+			setup: func() *Publication {
+				return &Publication{
+					replyCh: make(chan *Publication),
+				}
+			},
+			response:    nil,
+			shouldError: true,
+		},
+		{
+			description: "should return an error if publication has already been responded to",
+			setup: func() *Publication {
+				return &Publication{
+					replyCh: make(chan *Publication),
+					replied: true,
+				}
+			},
+			response:    NewPublication("test topic"),
+			shouldError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			done := make(chan struct{})
+			pub := tc.setup()
+
+			go func() {
+				if pub.replyCh != nil {
+					select {
+					case response := <-pub.replyCh:
+						if !tc.expectingReply {
+							t.Errorf("was NOT expecting to get a response in reply channel, but got: %+v", *response)
+						}
+					case <-time.After(threshold):
+						if tc.expectingReply {
+							t.Errorf("expected to get a response in reply channel, but got nothing.")
+						}
+					}
+				}
+
+				close(done)
+			}()
+
+			if err := pub.Reply(tc.response); !tc.shouldError && err != nil {
+				t.Errorf("error returned when none was expected - error: %+v", err)
+			}
+
+			<-done
+		})
+	}
 }

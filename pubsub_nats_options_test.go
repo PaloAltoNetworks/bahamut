@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	nats "github.com/nats-io/go-nats"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -63,11 +62,6 @@ func TestBahamut_PubSubNatsOptionsSubscribe(t *testing.T) {
 		So(c.queueGroup, ShouldEqual, "queueGroup")
 	})
 
-	Convey("Calling NATSOptSubscribeReplyer should work", t, func() {
-		r := func(msg *nats.Msg) []byte { return nil }
-		NATSOptSubscribeReplyer(r)(&c)
-		So(c.replier, ShouldEqual, r)
-	})
 }
 
 func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {

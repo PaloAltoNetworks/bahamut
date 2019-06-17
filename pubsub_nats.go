@@ -71,15 +71,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 		opt(&config)
 	}
 
-	switch config.desiredResponse {
-	case ResponseModeACK:
-		publication.ResponseMode = ResponseModeACK
-	case ResponseModePublication:
-		publication.ResponseMode = ResponseModePublication
-	default:
-		publication.ResponseMode = ResponseModeNone
-	}
-
+	publication.ResponseMode = config.desiredResponse
 	data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, publication)
 	if err != nil {
 		return fmt.Errorf("unable to encode publication. message dropped: %s", err)
@@ -121,13 +113,33 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
-	config := natsSubscribeConfig{}
+	config := defaultSubscribeConfig()
+
 	for _, opt := range opts {
 		opt(&config)
 	}
 
 	var sub *nats.Subscription
 	var err error
+
+	responseHandler := func(replyAddr string, replyCh <-chan *Publication) {
+		select {
+		case r := <-replyCh:
+			// no response should be expected for a response, therefore override this in case the caller
+			// has set the response mode to something else
+			r.ResponseMode = ResponseModeNone
+			r.Topic = replyAddr
+			if err := p.Publish(r); err != nil {
+				errors <- err
+			}
+		// TODO: the publisher should be able to provide a response deadline for the publication to the
+		// subscriber so that the subscriber knows when to give up in the event that processing has taken
+		// too long and will no longer be fruitful (e.g. the client that made the request no longer cares
+		// about the reply because you took too long to respond).
+		case <-time.After(config.replyTimeout):
+			errors <- fmt.Errorf("timed out waiting for response to send to subscriber on NATS subject: %s", replyAddr)
+		}
+	}
 
 	handler := func(m *nats.Msg) {
 		publication := NewPublication(topic)
@@ -138,15 +150,24 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 		}
 
 		if m.Reply != "" {
-
-			resp := ackMessage
-			if config.replier != nil {
-				resp = config.replier(m)
-			}
-
-			if err := p.client.Publish(m.Reply, resp); err != nil {
-				zap.L().Error("Unable to send requested reply", zap.Error(err))
-				return
+			switch publication.ResponseMode {
+			// `ResponseModeACK` mode responds to the client right away, BEFORE the subscriber has had the opportunity
+			// to process the publication. Most consumers do message processing asynchronously and simply need
+			// to respond to the publisher with an ACK.
+			case ResponseModeACK:
+				if err := p.client.Publish(m.Reply, ackMessage); err != nil {
+					errors <- err
+					return
+				}
+			// `ResponseModePublication` mode is used in cases when the subscriber needs to do processing on the
+			// received publication PRIOR to publishing a response back. In such case, the received publication
+			// will have a write-only response channel set up so that the subscriber can send a response publication
+			// to whenever it is ready. The subscriber SHOULD attempt to respond ASAP as there is a client waiting
+			// for a response.
+			case ResponseModePublication:
+				replyCh := make(chan *Publication)
+				publication.replyCh = replyCh
+				go responseHandler(m.Reply, replyCh)
 			}
 		}
 
