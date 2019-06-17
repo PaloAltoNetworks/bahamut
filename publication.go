@@ -61,10 +61,11 @@ type Publication struct {
 	Encoding     elemental.EncodingType     `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
 	ResponseMode ResponseMode               `msgpack:"responseMode,omitempty" json:"responseMode,omitempty"`
 
-	replyCh chan *Publication
-	replied bool
-	mux     sync.Mutex
-	span    opentracing.Span
+	replyCh  chan *Publication
+	replied  bool
+	timedOut bool
+	mux      sync.Mutex
+	span     opentracing.Span
 }
 
 // NewPublication returns a new Publication.
@@ -170,16 +171,25 @@ func (p *Publication) Reply(response *Publication) error {
 	defer p.mux.Unlock()
 
 	switch {
-	case p.replyCh == nil:
-		return errors.New("no response required for publication")
+	case p.timedOut:
+		return errors.New("took too long to reply to publication")
 	case response == nil:
 		return errors.New("response cannot be nil")
 	case p.replied:
 		return errors.New("already replied to publication")
+	case p.replyCh == nil:
+		return errors.New("no response required for publication")
 	}
 
 	p.replyCh <- response
 	p.replied = true
 
 	return nil
+}
+
+func (p *Publication) setExpired() {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	p.timedOut = true
+	p.replyCh = nil
 }
