@@ -158,8 +158,8 @@ func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
 		return
 	}
 
-	s.parametersLock.RLock()
-	defer s.parametersLock.RUnlock()
+	s.parametersLock.Lock()
+	defer s.parametersLock.Unlock()
 
 	for k, v := range s.filter.Parameters() {
 		s.parameters[k] = v
