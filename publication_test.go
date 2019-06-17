@@ -280,7 +280,7 @@ func TestReply(t *testing.T) {
 					select {
 					case response := <-pub.replyCh:
 						if !tc.expectingReply {
-							t.Errorf("was NOT expecting to get a response in reply channel, but got: %+v", *response)
+							t.Errorf("was NOT expecting to get a response in reply channel, but got: %+v", response)
 						}
 					case <-time.After(threshold):
 						if tc.expectingReply {
