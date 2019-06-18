@@ -85,7 +85,7 @@ func (s *profilingServer) start(ctx context.Context) {
 			}
 		}()
 
-		zap.L().Info("Profiler profiler started", zap.String("address", s.cfg.profilingServer.listenAddress))
+		zap.L().Info("Profiler server started", zap.String("address", s.cfg.profilingServer.listenAddress))
 	}
 
 	<-ctx.Done()
