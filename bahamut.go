@@ -208,13 +208,17 @@ func (b *server) Run(ctx context.Context) {
 	}
 
 	if hook := b.cfg.hooks.postStart; hook != nil {
-		hook(b) // nolint
+		if err := hook(b); err != nil {
+			zap.L().Fatal("Unable to execute bahamut postStart hook", zap.Error(err))
+		}
 	}
 
 	<-ctx.Done()
 
 	if hook := b.cfg.hooks.preStop; hook != nil {
-		hook(b) // nolint
+		if err := hook(b); err != nil {
+			zap.L().Error("Unable to execute bahamut preStop hook", zap.Error(err))
+		}
 	}
 
 	// Stop the health server first so we become unhealthy.
