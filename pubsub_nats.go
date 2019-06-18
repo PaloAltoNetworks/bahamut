@@ -114,7 +114,6 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
 	config := defaultSubscribeConfig()
-
 	for _, opt := range opts {
 		opt(&config)
 	}
@@ -122,9 +121,9 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	var sub *nats.Subscription
 	var err error
 
-	responseHandler := func(replyAddr string, replyCh <-chan *Publication) {
+	responseHandler := func(replyAddr string, pub *Publication) {
 		select {
-		case r := <-replyCh:
+		case r := <-pub.replyCh:
 			// no response should be expected for a response, therefore override this in case the caller
 			// has set the response mode to something else
 			r.ResponseMode = ResponseModeNone
@@ -137,6 +136,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 		// too long and will no longer be fruitful (e.g. the client that made the request no longer cares
 		// about the reply because you took too long to respond).
 		case <-time.After(config.replyTimeout):
+			pub.setExpired()
 			errors <- fmt.Errorf("timed out waiting for response to send to subscriber on NATS subject: %s", replyAddr)
 		}
 	}
@@ -165,9 +165,8 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 			// to whenever it is ready. The subscriber SHOULD attempt to respond ASAP as there is a client waiting
 			// for a response.
 			case ResponseModePublication:
-				replyCh := make(chan *Publication)
-				publication.replyCh = replyCh
-				go responseHandler(m.Reply, replyCh)
+				publication.replyCh = make(chan *Publication)
+				go responseHandler(m.Reply, publication)
 			}
 		}
 

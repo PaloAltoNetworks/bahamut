@@ -258,7 +258,7 @@ func TestPublish(t *testing.T) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
-					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// should never be called in this case as passing in the NATSOptPublishRequireAck
 					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
 					// return until a response is returned or we timeout waiting for one)
 					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
@@ -295,7 +295,7 @@ func TestPublish(t *testing.T) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
-					// should never be called in this case as passing in the NATSOptPublishReplyValidator
+					// should never be called in this case as passing in the NATSOptPublishRequireAck
 					// will cause Publish to use the Request-Reply pattern that is synchronous (i.e. will not
 					// return until a response is returned or we timeout waiting for one)
 					// See Request-Reply: https://nats.io/documentation/writing_applications/publishing/
@@ -576,6 +576,64 @@ func TestSubscribe(t *testing.T) {
 
 				return true
 
+			},
+		},
+		{
+			description: "should receive error in errors channel if you take too long to respond to publication",
+			setup: func(t *testing.T, pub *Publication, _ PubSubClient) {
+				// high level overview of this test:
+				//   - make a request expecting to get back a publication
+				//   - subscriber gets the publication
+				//   - subscriber responds to the publication via the Reply call
+				//   - the Reply call will fail because the replyCh will be set to nil by the message
+				//     handler as the deadline will be reached.
+				//   - this should result in an error being sent to the configured errors channel
+
+				// act as a client - publish a message expecting to get back a Publication response
+				pub.ResponseMode = ResponseModePublication
+				data, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pub)
+				if err != nil {
+					t.Fatalf("test setup failed - could not encode publication - error: %+v", err)
+					return
+				}
+
+				// our request should fail as the subscriber is not going to be able to respond in time due to an artificial
+				// deadline (0 nanoseconds) - see the subscribe options for this test
+				response, err := nc.Request(subscribeTopic, data, threshold)
+				if err == nil {
+					t.Fatalf("test setup failed - expected to get an error here, but got a response back instead: \"%+v\". "+
+						"Hint: test structure has likely been messed up.", *response)
+					return
+				}
+			},
+			// we expect to get an error back, because we take longer than the configured timeout to respond to the publication
+			expectedError: errors.New(""),
+			subscribeOptions: []PubSubOptSubscribe{
+				// we deliberately set a low timeout here!
+				NATSOptSubscribeReplyTimeout(100 * time.Millisecond),
+			},
+			expectedPublication: &Publication{
+				Topic: subscribeTopic,
+				Data:  []byte("message"),
+			}, replier: func(t *testing.T, pub *Publication, client PubSubClient) bool {
+
+				response := &Publication{
+					Data: []byte("some response"),
+				}
+
+				// simulate some work, just long enough that we will reach our configured timeout
+				<-time.After(1 * time.Second)
+
+				// this should fail now because we took too long to call Reply
+				if err := pub.Reply(response); err == nil {
+					t.Error("test failed - expected to receive an error, but got nothing")
+				}
+
+				// we are expecting to get an error as a result of failing to respond back to the
+				// publication in time, so we get the test suite to read from all the channels again
+				// by returning true. This is so we can assert that an error was sent to the errors
+				// channel.
+				return true
 			},
 		},
 		{

@@ -62,6 +62,12 @@ func TestBahamut_PubSubNatsOptionsSubscribe(t *testing.T) {
 		So(c.queueGroup, ShouldEqual, "queueGroup")
 	})
 
+	Convey("Calling NATSOptSubscribeReplyTimeout should set the timeout", t, func() {
+		duration := 15 * time.Second
+		NATSOptSubscribeReplyTimeout(duration)(&c)
+		So(c.replyTimeout, ShouldEqual, duration)
+	})
+
 }
 
 func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {

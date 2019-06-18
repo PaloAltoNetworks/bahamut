@@ -268,6 +268,17 @@ func TestReply(t *testing.T) {
 			response:    NewPublication("test topic"),
 			shouldError: true,
 		},
+		{
+			description: "should return an error if caller took too long to respond to publication",
+			setup: func() *Publication {
+				return &Publication{
+					replyCh:  make(chan *Publication),
+					timedOut: true,
+				}
+			},
+			response:    NewPublication("test topic"),
+			shouldError: true,
+		},
 	}
 
 	for _, tc := range testCases {
