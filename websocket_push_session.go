@@ -65,7 +65,7 @@ func newWSPushSession(
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
-		events:             make(chan *elemental.Event, 100),
+		events:             make(chan *elemental.Event, 1024),
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
