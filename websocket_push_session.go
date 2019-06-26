@@ -31,7 +31,6 @@ type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
 	events             chan *elemental.Event
-	filters            chan *elemental.PushFilter
 	filter             *elemental.PushFilter
 	currentFilterLock  sync.RWMutex
 	parametersLock     sync.RWMutex
@@ -66,8 +65,7 @@ func newWSPushSession(
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
-		events:             make(chan *elemental.Event),
-		filters:            make(chan *elemental.PushFilter),
+		events:             make(chan *elemental.Event, 100),
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
@@ -94,7 +92,16 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
-		s.events <- event
+		select {
+		case s.events <- event:
+		default:
+			zap.L().Warn("Slow consumer. event dropped",
+				zap.String("sessionID", s.id),
+				zap.Strings("claims", s.claims),
+				zap.String("eventType", string(event.Type)),
+				zap.String("eventIdentity", event.Identity),
+			)
+		}
 	}
 }
 

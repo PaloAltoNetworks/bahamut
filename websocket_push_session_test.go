@@ -45,7 +45,6 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 
 		Convey("Then it should be correctly initialized", func() {
 			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
-			So(s.filters, ShouldHaveSameTypeAs, make(chan *elemental.PushFilter))
 			So(s.claims, ShouldResemble, []string{})
 			So(s.claimsMap, ShouldResemble, map[string]string{})
 			So(s.cfg, ShouldResemble, conf)
