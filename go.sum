@@ -206,8 +206,8 @@ github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:
 go.aporeto.io/elemental v1.62.0 h1:6KuExS7XDX7kS2eEfTqAa4BJ0+29LxAii29u7qRAcRA=
 go.aporeto.io/elemental v1.62.0/go.mod h1:EzfUVmVBesbD7XqgOxobYqfEzjZJmFh5obQBnqnaYGI=
 go.aporeto.io/regolithe v1.32.0/go.mod h1:JwVl0QPBn7pvLsVGBRpYjlDYKaYnZhXRycJNpL+Nbo8=
-go.aporeto.io/wsc v1.26.0 h1:OVCIZqCrRdyTBfIbFhFRfSRc5/u6tT1OIVtiYt0M/Kc=
-go.aporeto.io/wsc v1.26.0/go.mod h1:ODrDZxIhHTyHIMJ3uXSqaVhN2+1upXxsTSjIaDKSQMw=
+go.aporeto.io/wsc v1.27.0 h1:xeyKufPNvSjJDsSaO8V8tiHHECIy7Pdn2vxc7Tf9VVc=
+go.aporeto.io/wsc v1.27.0/go.mod h1:RtLQspKU7si9US0WNw8RnOy70R+ep0MKjhLtvfRKIb0=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0 h1:mU6zScU4U1YAFPHEHYk+3JC4SY7JxgkqS10ZOSyksNg=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

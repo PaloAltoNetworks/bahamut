@@ -22,7 +22,7 @@ require (
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a
 	go.aporeto.io/elemental v1.62.0
-	go.aporeto.io/wsc v1.26.0
+	go.aporeto.io/wsc v1.27.0
 	go.opencensus.io v0.22.0 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
