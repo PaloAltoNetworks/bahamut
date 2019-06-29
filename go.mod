@@ -3,6 +3,11 @@ module go.aporeto.io/bahamut
 go 1.12
 
 require (
+	go.aporeto.io/elemental master
+	go.aporeto.io/wsc master
+)
+
+require (
 	cloud.google.com/go v0.40.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/go-zoo/bone v1.3.0
@@ -17,8 +22,6 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prometheus/client_golang v1.0.0
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a
-	go.aporeto.io/elemental v1.67.0
-	go.aporeto.io/wsc v1.27.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
