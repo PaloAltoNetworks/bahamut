@@ -13,6 +13,7 @@ package bahamut
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -352,6 +353,39 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		})
 	})
 
+	// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
+	Convey("Given I have a processor that handle ProcessCreate function with a context output that does not satisfy elemental.Identifiable", t, func() {
+
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				// notice how this output will NOT satisfy the elemental.Identifiable interface
+				output: json.RawMessage("some random bytes!"),
+			}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		var err error
+
+		Convey("Then I should not panic no events should be pushed", func() {
+			So(func() {
+				err = dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+			}, ShouldNotPanic)
+			So(err, ShouldBeNil)
+			So(ctx.InputData, ShouldNotBeNil)
+			So(auditer.GetCallCount(), ShouldEqual, 1)
+			So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+
+	})
+
 	Convey("Given I have a processor that handle ProcessCreate function with read only mode", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
@@ -623,6 +657,39 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
 		})
+	})
+
+	// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
+	Convey("Given I have a processor that handle ProcessUpdate function with a context output that does not satisfy elemental.Identifiable", t, func() {
+
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				// notice how this output will NOT satisfy the elemental.Identifiable interface
+				output: json.RawMessage("some random bytes!"),
+			}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		var err error
+
+		Convey("Then I should not panic no events should be pushed", func() {
+			So(func() {
+				err = dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+			}, ShouldNotPanic)
+			So(err, ShouldBeNil)
+			So(ctx.InputData, ShouldNotBeNil)
+			So(auditer.GetCallCount(), ShouldEqual, 1)
+			So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+
 	})
 
 	Convey("Given I have a processor that handle ProcessUpdate function with read only mode", t, func() {
@@ -897,6 +964,37 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 		})
 	})
 
+	// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
+	Convey("Given I have a processor that handle ProcessDelete function with a context output that does not satisfy elemental.Identifiable", t, func() {
+
+		request := elemental.NewRequest()
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				// notice how this output will NOT satisfy the elemental.Identifiable interface
+				output: json.RawMessage("some random bytes!"),
+			}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		var err error
+
+		Convey("Then I should not panic no events should be pushed", func() {
+			So(func() {
+				err = dispatchDeleteOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer, false, nil)
+			}, ShouldNotPanic)
+			So(err, ShouldBeNil)
+			So(auditer.GetCallCount(), ShouldEqual, 1)
+			So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+
+	})
+
 	Convey("Given I have a processor that handle ProcessDelete function with read only mode", t, func() {
 		request := elemental.NewRequest()
 		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
@@ -1069,6 +1167,37 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
 		})
+	})
+
+	// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
+	Convey("Given I have a processor that handle ProcessPatch function with a context output that does not satisfy elemental.Identifiable", t, func() {
+
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				// notice how this output will NOT satisfy the elemental.Identifiable interface
+				output: json.RawMessage("some random bytes!"),
+			}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		var err error
+
+		Convey("Then I should not panic no events should be pushed", func() {
+			So(func() {
+				err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+			}, ShouldNotPanic)
+			So(err, ShouldBeNil)
+			So(auditer.GetCallCount(), ShouldEqual, 1)
+			So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+
 	})
 
 	Convey("Given I have a processor that handle ProcessPatch function with an invalid JSON", t, func() {
