@@ -688,37 +688,65 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		})
 	})
 
-	// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
-	Convey("Given I have a processor that handle ProcessUpdate function with a context output that does not satisfy elemental.Identifiable", t, func() {
+	Convey("Setup request and fresh context", t, func() {
 
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
 		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
-
-		processorFinder := func(identity elemental.Identity) (Processor, error) {
-			return &mockProcessor{
-				// notice how this output will NOT satisfy the elemental.Identifiable interface
-				output: json.RawMessage("some random bytes!"),
-			}, nil
-		}
+		ctx := newContext(context.TODO(), request)
 
 		auditer := &mockAuditer{}
 		pusher := &mockPusher{}
 
-		ctx := newContext(context.TODO(), request)
-		var err error
+		// bug fix: https://github.com/aporeto-inc/bahamut/issues/64
+		Convey("Given I have a processor that handle ProcessUpdate function with a context output that does not satisfy elemental.Identifiable", func() {
 
-		Convey("Then I should not panic no events should be pushed", func() {
-			So(func() {
-				err = dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
-			}, ShouldNotPanic)
-			So(err, ShouldBeNil)
-			So(ctx.InputData, ShouldNotBeNil)
-			So(auditer.GetCallCount(), ShouldEqual, 1)
-			So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
-			So(len(pusher.events), ShouldEqual, 0)
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					// notice how this output will NOT satisfy the elemental.Identifiable interface
+					output: json.RawMessage("some random bytes!"),
+				}, nil
+			}
+
+			Convey("Then I should not panic no events should be pushed", func() {
+				var err error
+				So(func() {
+					err = dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
+				So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+				So(len(pusher.events), ShouldEqual, 0)
+			})
 		})
 
+		Convey("Given I have a processor that handle ProcessUpdate function with a context output that contains a nil elemental.Identifiable", func() {
+
+			// notice how this is a type that satisfies the elemental.Identifiable interface, but it is not a nil interface!
+			var testIdentifiable *testmodel.List
+			var _ elemental.Identifiable = testIdentifiable
+			ctx.SetOutputData(testIdentifiable)
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					// notice how this output satisfies the elemental.Identifiable interface
+					output: testIdentifiable,
+				}, nil
+			}
+
+			Convey("Then I should not panic and an event should be pushed", func() {
+				var err error
+				So(func() {
+					err = dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
+				So(ctx.outputData, ShouldResemble, (*testmodel.List)(nil))
+				So(len(pusher.events), ShouldEqual, 1)
+			})
+		})
 	})
 
 	Convey("Given I have a processor that handle ProcessUpdate function with read only mode", t, func() {
