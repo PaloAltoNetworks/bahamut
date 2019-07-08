@@ -495,7 +495,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: cannot decode into nil"
+		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 0]: cannot decode into nil"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
