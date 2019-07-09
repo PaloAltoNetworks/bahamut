@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	go.aporeto.io/elemental v1.79.0
-	go.aporeto.io/wsc v1.28.0
+	go.aporeto.io/wsc v1.28.1
 )
 
 require (
