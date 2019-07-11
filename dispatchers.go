@@ -24,7 +24,8 @@ func audit(auditer Auditer, ctx *bcontext, err error) {
 		return
 	}
 
-	go auditer.Audit(ctx, err)
+	// Simple fix to avoid race
+	auditer.Audit(ctx, err)
 }
 
 func notImplementedErr(request *elemental.Request) error {
