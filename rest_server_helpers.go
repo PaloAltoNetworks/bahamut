@@ -33,7 +33,12 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 	}
 
 	w.Header().Set("Accept", "application/msgpack,application/json")
-	w.Header().Set("Content-Type", string(encoding))
+	if encoding == elemental.EncodingTypeJSON {
+		w.Header().Set("Content-Type", string(encoding)+"; charset=UTF-8")
+	} else {
+		w.Header().Set("Content-Type", string(encoding))
+	}
+
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Cache-control", "private, no-transform")
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")

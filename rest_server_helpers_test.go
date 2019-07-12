@@ -33,7 +33,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Accept"), ShouldEqual, "application/msgpack,application/json")
-				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json")
+				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
