@@ -96,6 +96,9 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 		select {
 		case s.events <- event:
 		default:
+			s.claimsLock.RLock()
+			defer s.claimsLock.RUnlock()
+
 			zap.L().Warn("Slow consumer. event dropped",
 				zap.String("sessionID", s.id),
 				zap.Strings("claims", s.claims),
@@ -121,6 +124,14 @@ func (s *wsPushSession) SetClaims(claims []string) {
 	s.claimsMap = claimsToMap(claims)
 }
 
+func (s *wsPushSession) Claims() []string {
+
+	s.claimsLock.RLock()
+	defer s.claimsLock.RUnlock()
+
+	return s.claims
+}
+
 func (s *wsPushSession) ClaimsMap() map[string]string {
 
 	s.claimsLock.RLock()
@@ -130,7 +141,6 @@ func (s *wsPushSession) ClaimsMap() map[string]string {
 }
 
 func (s *wsPushSession) Identifier() string                            { return s.id }
-func (s *wsPushSession) Claims() []string                              { return s.claims }
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
