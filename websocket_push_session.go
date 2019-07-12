@@ -36,6 +36,7 @@ type wsPushSession struct {
 	parametersLock     sync.RWMutex
 	claims             []string
 	claimsMap          map[string]string
+	claimsLock         sync.RWMutex
 	cfg                config
 	headers            http.Header
 	id                 string
@@ -113,13 +114,23 @@ func (s *wsPushSession) String() string {
 // SetClaims implements elemental.ClaimsHolder.
 func (s *wsPushSession) SetClaims(claims []string) {
 
+	s.claimsLock.Lock()
+	defer s.claimsLock.Unlock()
+
 	s.claims = claims
 	s.claimsMap = claimsToMap(claims)
 }
 
+func (s *wsPushSession) ClaimsMap() map[string]string {
+
+	s.claimsLock.RLock()
+	defer s.claimsLock.RUnlock()
+
+	return s.claimsMap
+}
+
 func (s *wsPushSession) Identifier() string                            { return s.id }
 func (s *wsPushSession) Claims() []string                              { return s.claims }
-func (s *wsPushSession) ClaimsMap() map[string]string                  { return s.claimsMap }
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
