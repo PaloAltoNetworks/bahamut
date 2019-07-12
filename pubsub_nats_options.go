@@ -57,9 +57,9 @@ func NATSOptTLS(tlsConfig *tls.Config) NATSOption {
 	}
 }
 
-// natsOptClient sets the NATS client that will be used
+// NATSOptClient sets the NATS client that will be used
 // This is useful for unit testing as you can pass in a mocked NATS client
-func natsOptClient(client natsClient) NATSOption {
+func NATSOptClient(client natsClient) NATSOption {
 	return func(n *natsPubSub) {
 		n.client = client
 	}

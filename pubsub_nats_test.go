@@ -222,7 +222,7 @@ func TestPublish(t *testing.T) {
 			natsOptions: []NATSOption{
 				// notice how we pass a nil client explicitly to simulate the failure scenario
 				// desired by this test
-				natsOptClient(nil),
+				NATSOptClient(nil),
 			},
 		},
 		{
@@ -340,7 +340,7 @@ func TestPublish(t *testing.T) {
 
 			// note: we prepend the NATSOption client option to use our mock client just in case the
 			// test case wishes to override this option (e.g. to provide a nil client)
-			test.natsOptions = append([]NATSOption{natsOptClient(mockNATSClient)}, test.natsOptions...)
+			test.natsOptions = append([]NATSOption{NATSOptClient(mockNATSClient)}, test.natsOptions...)
 			ps := NewNATSPubSubClient(
 				natsURL,
 				test.natsOptions...,
@@ -693,7 +693,7 @@ func TestSubscribe(t *testing.T) {
 					Times(0)
 
 				return []NATSOption{
-					natsOptClient(mockClient),
+					NATSOptClient(mockClient),
 				}, callback
 			},
 			expectedPublication: nil,
@@ -711,7 +711,7 @@ func TestSubscribe(t *testing.T) {
 			}
 			// note: we prepend the NATSOption natsOptClient option to allow test cases to override the actual client being used
 			// (e.g. if they want to provide a mock client instead)
-			natOpts = append([]NATSOption{natsOptClient(nc)}, natOpts...)
+			natOpts = append([]NATSOption{NATSOptClient(nc)}, natOpts...)
 			ps := NewNATSPubSubClient(
 				fmt.Sprintf("%s:%d", serverAddr.IP, serverAddr.Port),
 				natOpts...,
