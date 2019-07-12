@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mitchellh/copystructure"
 	"go.aporeto.io/elemental"
 )
 
@@ -25,13 +24,7 @@ func audit(auditer Auditer, ctx *bcontext, err error) {
 		return
 	}
 
-	duplicateCtx, ierr := copystructure.Copy(ctx)
-
-	if ierr != nil {
-		panic(fmt.Sprintf("unable to deep copy context: %s", ierr))
-	}
-
-	go auditer.Audit(duplicateCtx.(*bcontext), err)
+	auditer.Audit(ctx, err)
 }
 
 func notImplementedErr(request *elemental.Request) error {
