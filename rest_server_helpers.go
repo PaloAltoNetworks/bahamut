@@ -49,20 +49,26 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func corsHandler(w http.ResponseWriter, r *http.Request) {
-	_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
-	setCommonHeader(w, r.Header.Get("Origin"), writeEncoding)
-	w.WriteHeader(http.StatusOK)
+func makeCORSHandler(origin string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		o := r.Header.Get("Origin")
+		if origin != "" {
+			o = origin
+		}
+		_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
+		setCommonHeader(w, o, writeEncoding)
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
-	setCommonHeader(w, r.Header.Get("Origin"), writeEncoding)
-	writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound))
+func makeNotFoundHandler(origin string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		writeHTTPResponse(origin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound))
+	}
 }
 
 // writeHTTPResponse writes the response into the given http.ResponseWriter.
-func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
+func writeHTTPResponse(CORSOrigin string, w http.ResponseWriter, r *elemental.Response) int {
 
 	// If r is nil, we simply stop.
 	// It mostly means the client closed the connection and
@@ -71,7 +77,12 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 		return 0
 	}
 
-	setCommonHeader(w, r.Request.Headers.Get("Origin"), r.Request.Accept)
+	origin := r.Request.Headers.Get("Origin")
+	if CORSOrigin != "" {
+		origin = CORSOrigin
+	}
+
+	setCommonHeader(w, origin, r.Request.Accept)
 
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)
