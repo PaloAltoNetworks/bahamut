@@ -391,3 +391,13 @@ func OptTraceCleaner(cleaner TraceCleaner) Option {
 		c.opentracing.traceCleaner = cleaner
 	}
 }
+
+// OptCORSOrigin sets the allowed origin for CORS requests.
+// If not set, bahamut will use the HTTP Header `Origin` and if
+// it cannot find it, it will use `*`.
+// If this option is set, the given origin will always be used.
+func OptCORSOrigin(origin string) Option {
+	return func(c *config) {
+		c.security.CORSOrigin = origin
+	}
+}

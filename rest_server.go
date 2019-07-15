@@ -102,13 +102,13 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
-	a.multiplexer.Options("*", http.HandlerFunc(corsHandler))
-	a.multiplexer.NotFound(http.HandlerFunc(notFoundHandler))
+	a.multiplexer.Options("*", http.HandlerFunc(makeCORSHandler(a.cfg.security.CORSOrigin)))
+	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler(a.cfg.security.CORSOrigin)))
 
 	if a.cfg.restServer.customRootHandlerFunc != nil {
 		a.multiplexer.Handle("/", a.cfg.restServer.customRootHandlerFunc)
 	} else {
-		a.multiplexer.Get("/", http.HandlerFunc(corsHandler))
+		a.multiplexer.Get("/", http.HandlerFunc(makeCORSHandler(a.cfg.security.CORSOrigin)))
 	}
 
 	if a.cfg.meta.serviceName != "" {
@@ -242,7 +242,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+			code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -256,7 +256,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 			defer cancel()
 			if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
-				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
+				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
@@ -264,7 +264,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			}
 		}
 
-		code := writeHTTPResponse(w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+		code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
 		if measure != nil {
 			measure(code, opentracing.SpanFromContext(ctx))
 		}
