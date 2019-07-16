@@ -33,7 +33,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 
 			Convey("Then the common headers should be set", func() {
 				So(w.Header().Get("Accept"), ShouldEqual, "application/msgpack,application/json")
-				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json")
+				So(w.Header().Get("Content-Type"), ShouldEqual, "application/json; charset=UTF-8")
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
@@ -67,7 +67,7 @@ func TestRestServerHelper_corsHandler(t *testing.T) {
 		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		corsHandler(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
+		makeCORSHandler("")(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusOK)
@@ -83,7 +83,7 @@ func TestRestServerHelper_notFoundHandler(t *testing.T) {
 		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		notFoundHandler(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
+		makeNotFoundHandler("")(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
 
 		Convey("Then the response should be correct", func() {
 			So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -99,7 +99,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			code := writeHTTPResponse(w, nil)
+			code := writeHTTPResponse("", w, nil)
 
 			Convey("Then the code should be 0", func() {
 				So(code, ShouldEqual, 0)
@@ -115,10 +115,30 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			code := writeHTTPResponse(w, r)
+			code := writeHTTPResponse("", w, r)
 
 			Convey("Then the should header Location should be set", func() {
 				So(w.Header().Get("location"), ShouldEqual, "https://la.bas")
+			})
+
+			Convey("Then the code should be 302", func() {
+				So(code, ShouldEqual, 302)
+			})
+		})
+	})
+
+	Convey("Given I have a CORS origin configured", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(elemental.NewRequest())
+		r.Redirect = "https://la.bas"
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			code := writeHTTPResponse("ici", w, r)
+
+			Convey("Then the should header Location should be set", func() {
+				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "ici")
 			})
 
 			Convey("Then the code should be 302", func() {
@@ -136,7 +156,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			code := writeHTTPResponse(w, r)
+			code := writeHTTPResponse("", w, r)
 
 			Convey("Then the should headers should be correct", func() {
 				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
@@ -163,7 +183,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			code := writeHTTPResponse(w, r)
+			code := writeHTTPResponse("", w, r)
 
 			Convey("Then the should header message should be set", func() {
 				So(w.Header().Get("X-Messages"), ShouldEqual, "msg1;msg2")
@@ -185,7 +205,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
-			code := writeHTTPResponse(w, r)
+			code := writeHTTPResponse("", w, r)
 
 			Convey("Then the body should be correct", func() {
 				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")

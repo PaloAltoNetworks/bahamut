@@ -266,4 +266,9 @@ func TestBahamut_Options(t *testing.T) {
 		OptTraceCleaner(f)(&c)
 		So(c.opentracing.traceCleaner, ShouldEqual, f)
 	})
+
+	Convey("Calling OptCORSOrigin should work", t, func() {
+		OptCORSOrigin("here")(&c)
+		So(c.security.CORSOrigin, ShouldEqual, "here")
+	})
 }

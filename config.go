@@ -94,6 +94,7 @@ type config struct {
 		sessionAuthenticators []SessionAuthenticator
 		authorizers           []Authorizer
 		auditer               Auditer
+		CORSOrigin            string
 	}
 
 	rateLimiting struct {
