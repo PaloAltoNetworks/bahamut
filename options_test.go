@@ -223,6 +223,12 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.model.unmarshallers, ShouldResemble, u)
 	})
 
+	Convey("Calling OptMarshallers should work", t, func() {
+		u := map[elemental.Identity]CustomMarshaller{testmodel.ListIdentity: func(interface{}) ([]byte, error) { return nil, nil }}
+		OptMarshallers(u)(&c)
+		So(c.model.marshallers, ShouldResemble, u)
+	})
+
 	Convey("Calling OptServiceInfo should work", t, func() {
 		sb := map[string]interface{}{}
 		OptServiceInfo("n", "v", sb)(&c)

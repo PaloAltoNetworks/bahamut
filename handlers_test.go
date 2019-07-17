@@ -35,7 +35,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Redirect should be set", func() {
 				So(response.Redirect, ShouldEqual, "http://ici")
@@ -54,7 +54,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationRetrieveMany
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should be set", func() {
 				So(response.Total, ShouldEqual, 42)
@@ -65,7 +65,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationInfo
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should be set", func() {
 				So(response.Total, ShouldEqual, 42)
@@ -76,7 +76,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationCreate
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
@@ -87,7 +87,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationUpdate
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
@@ -98,7 +98,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationDelete
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
@@ -109,7 +109,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationPatch
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Total should not be set", func() {
 				So(response.Total, ShouldEqual, 0)
@@ -128,7 +128,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationCreate
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.StatusCode should be http.StatusOK", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusOK)
@@ -139,7 +139,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationInfo
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.StatusCode should be http.StatusNoContent", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
@@ -150,7 +150,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationRetrieve
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.StatusCode should be http.StatusOK", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusOK)
@@ -163,7 +163,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 			ctx.statusCode = http.StatusOK
 			ctx.outputData = nil
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.StatusCode should be http.StatusNoContent", func() {
 				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
@@ -179,7 +179,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			makeResponse(ctx, response, nil)
+			makeResponse(ctx, response, nil, nil)
 
 			Convey("Then response.Message should be set", func() {
 				So(response.Messages, ShouldResemble, []string{"hello world"})
@@ -210,7 +210,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			resp := makeResponse(ctx, response, func(identity elemental.Identity, data []byte) []byte {
 				return []byte("modified")
-			})
+			}, nil)
 
 			Convey("Then output data should be correct", func() {
 				So(string(resp.Data), ShouldEqual, `{"ID":"xxx","name":"the name"}`)
@@ -231,7 +231,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		Convey("When I call makeResponse", func() {
 
 			Convey("Then it should panic", func() {
-				So(func() { makeResponse(ctx, response, nil) }, ShouldPanic)
+				So(func() { makeResponse(ctx, response, nil, nil) }, ShouldPanic)
 			})
 		})
 	})
@@ -252,7 +252,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			resp := makeResponse(ctx, response, nil)
+			resp := makeResponse(ctx, response, nil, nil)
 
 			Convey("Then output data should be correct", func() {
 				So(string(resp.Data), ShouldEqual, `{"ID":"xxx","name":"the name"}`)
@@ -283,11 +283,66 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 		Convey("When I call makeResponse", func() {
 
-			resp := makeResponse(ctx, response, nil)
+			resp := makeResponse(ctx, response, nil, nil)
 
 			Convey("Then output data should be correct", func() {
 				So(string(resp.Data), ShouldEqual, `[{"ID":"xxx","name":"the name"},{"ID":"xxx2","name":"the name2"}]`)
 			})
+		})
+	})
+
+	Convey("Given I have context indentifiable output data and custom working marshaller", t, func() {
+
+		req := elemental.NewRequest()
+		req.Identity = testmodel.ListIdentity
+		req.Headers.Add("X-Fields", "name")
+		req.Headers.Add("X-Fields", "ID")
+
+		ctx := newContext(context.Background(), req)
+
+		response := elemental.NewResponse(req)
+		ctx.outputData = &testmodel.List{
+			Name:        "the name",
+			ID:          "xxx",
+			Description: " the description",
+		}
+
+		Convey("When I call makeResponse", func() {
+
+			resp := makeResponse(ctx, response, nil, map[elemental.Identity]CustomMarshaller{
+				testmodel.ListIdentity: func(interface{}) ([]byte, error) { return []byte("coucou"), nil },
+			})
+
+			Convey("Then output data should be correct", func() {
+				So(string(resp.Data), ShouldEqual, `coucou`)
+			})
+		})
+	})
+
+	Convey("Given I have context indentifiable output data and custom non working marshaller", t, func() {
+
+		req := elemental.NewRequest()
+		req.Identity = testmodel.ListIdentity
+		req.Headers.Add("X-Fields", "name")
+		req.Headers.Add("X-Fields", "ID")
+
+		ctx := newContext(context.Background(), req)
+
+		response := elemental.NewResponse(req)
+		ctx.outputData = &testmodel.List{
+			Name:        "the name",
+			ID:          "xxx",
+			Description: " the description",
+		}
+
+		Convey("When I call makeResponse should panic", func() {
+
+			So(func() {
+				makeResponse(ctx, response, nil, map[elemental.Identity]CustomMarshaller{
+					testmodel.ListIdentity: func(interface{}) ([]byte, error) { return nil, fmt.Errorf("boom") },
+				})
+			}, ShouldPanicWith, "unable to encode output data using custom marshaller: boom")
+
 		})
 	})
 }
@@ -301,7 +356,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 		Convey("When I call makeErrorResponse", func() {
 
-			r := makeErrorResponse(context.Background(), resp, err)
+			r := makeErrorResponse(context.Background(), resp, err, nil)
 
 			Convey("Then the returned response should be the same", func() {
 				So(resp, ShouldEqual, r)
@@ -319,11 +374,55 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 		Convey("When I call makeErrorResponse", func() {
 
-			r := makeErrorResponse(context.Background(), nil, err)
+			r := makeErrorResponse(context.Background(), nil, err, nil)
 
 			Convey("Then the returned response should be the same", func() {
 				So(r, ShouldEqual, nil)
 			})
+		})
+	})
+
+	Convey("Given I have context indentifiable output data and custom working marshaller", t, func() {
+
+		req := elemental.NewRequest()
+		req.Identity = testmodel.ListIdentity
+		req.Headers.Add("X-Fields", "name")
+		req.Headers.Add("X-Fields", "ID")
+
+		resp := elemental.NewResponse(req)
+
+		err := fmt.Errorf("paf")
+
+		Convey("When I call makeErrorResponse", func() {
+
+			r := makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
+				testmodel.ListIdentity: func(interface{}) ([]byte, error) { return []byte("coucou"), nil },
+			})
+
+			Convey("Then the returned response should be the same", func() {
+				So(r.Data, ShouldResemble, []byte("coucou"))
+			})
+		})
+	})
+
+	Convey("Given I have context indentifiable output data and custom working marshaller", t, func() {
+
+		req := elemental.NewRequest()
+		req.Identity = testmodel.ListIdentity
+		req.Headers.Add("X-Fields", "name")
+		req.Headers.Add("X-Fields", "ID")
+
+		resp := elemental.NewResponse(req)
+
+		err := fmt.Errorf("paf")
+
+		Convey("When I call makeErrorResponse should panic", func() {
+
+			So(func() {
+				makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
+					testmodel.ListIdentity: func(interface{}) ([]byte, error) { return nil, fmt.Errorf("boom") },
+				})
+			}, ShouldPanicWith, "unable to encode error using custom marshaller: boom")
 		})
 	})
 }
@@ -386,7 +485,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 				return nil
 			}
 
-			r := runDispatcher(ctx, response, d, true, nil)
+			r := runDispatcher(ctx, response, d, true, nil, nil)
 
 			Convey("Then the code should be 204", func() {
 				So(r.StatusCode, ShouldEqual, 204)
@@ -404,7 +503,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 				return elemental.NewError("nop", "nope", "test", 42)
 			}
 
-			r := runDispatcher(ctx, response, d, true, nil)
+			r := runDispatcher(ctx, response, d, true, nil, nil)
 
 			Convey("Then the code should be 42", func() {
 				So(r.StatusCode, ShouldEqual, 42)
@@ -424,7 +523,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			}
 
 			r := elemental.NewResponse(elemental.NewRequest())
-			go func() { runDispatcher(ctx, r, d, true, nil) }()
+			go func() { runDispatcher(ctx, r, d, true, nil, nil) }()
 			time.Sleep(30 * time.Millisecond)
 			cancel()
 

@@ -26,6 +26,9 @@ import (
 // CustomUmarshaller is the type of function use to create custom unmarshalling.
 type CustomUmarshaller func(*elemental.Request) (elemental.Identifiable, error)
 
+// CustomMarshaller is the type of function use to create custom marshalling.
+type CustomMarshaller func(data interface{}) ([]byte, error)
+
 // RegisterProcessorOrDie will register the given Processor for the given
 // Identity and will exit in case of errors. This is just a helper for
 // Server.RegisterProcessor function.
