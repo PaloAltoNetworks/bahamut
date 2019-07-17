@@ -31,6 +31,7 @@ lint:
 		--enable=misspell \
 		--enable=prealloc \
 		--enable=nakedret \
+		--enable=typecheck \
 		./...
 
 test:
