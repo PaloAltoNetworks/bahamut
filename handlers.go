@@ -71,7 +71,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 	elemental.ResetSecretAttributesValues(ctx.outputData)
 
 	if m, ok := marshallers[ctx.Request().Identity]; ok {
-		data, err := m(ctx.OutputData())
+		data, err := m(response, nil)
 		if err != nil {
 			panic(fmt.Sprintf("unable to encode output data using custom marshaller: %s", err))
 		}
@@ -112,7 +112,7 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	response.StatusCode = outError.Code()
 
 	if m, ok := marshallers[response.Request.Identity]; ok {
-		data, err := m(err)
+		data, err := m(response, outError)
 		if err != nil {
 			panic(fmt.Sprintf("unable to encode error using custom marshaller: %s", err))
 		}
