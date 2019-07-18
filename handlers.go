@@ -23,7 +23,7 @@ import (
 
 type handlerFunc func(*bcontext, config, processorFinderFunc, eventPusherFunc) *elemental.Response
 
-func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceCleaner) *elemental.Response {
+func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceCleaner, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
 
 	if ctx.redirect != "" {
 		response.Redirect = ctx.redirect
@@ -70,18 +70,26 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 
 	elemental.ResetSecretAttributesValues(ctx.outputData)
 
-	if len(requestedFields) > 0 {
-
-		switch ident := ctx.outputData.(type) {
-		case elemental.PlainIdentifiable:
-			ctx.outputData = ident.ToSparse(requestedFields...)
-		case elemental.PlainIdentifiables:
-			ctx.outputData = ident.ToSparse(requestedFields...)
+	if m, ok := marshallers[ctx.Request().Identity]; ok {
+		data, err := m(ctx.OutputData())
+		if err != nil {
+			panic(fmt.Sprintf("unable to encode output data using custom marshaller: %s", err))
 		}
-	}
+		response.Data = data
+	} else {
+		if len(requestedFields) > 0 {
 
-	if err := response.Encode(ctx.OutputData()); err != nil {
-		panic(fmt.Errorf("unable to encode output data: %s", err))
+			switch ident := ctx.outputData.(type) {
+			case elemental.PlainIdentifiable:
+				ctx.outputData = ident.ToSparse(requestedFields...)
+			case elemental.PlainIdentifiables:
+				ctx.outputData = ident.ToSparse(requestedFields...)
+			}
+		}
+
+		if err := response.Encode(ctx.OutputData()); err != nil {
+			panic(fmt.Sprintf("unable to encode output data: %s", err))
+		}
 	}
 
 	data := response.Data[:]
@@ -94,7 +102,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 	return response
 }
 
-func makeErrorResponse(ctx context.Context, response *elemental.Response, err error) *elemental.Response {
+func makeErrorResponse(ctx context.Context, response *elemental.Response, err error, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
 
 	if err == context.Canceled {
 		return nil
@@ -103,8 +111,16 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	outError := processError(ctx, err)
 	response.StatusCode = outError.Code()
 
-	if err := response.Encode(outError); err != nil {
-		panic(fmt.Errorf("unable to encode error: %s", err))
+	if m, ok := marshallers[response.Request.Identity]; ok {
+		data, err := m(err)
+		if err != nil {
+			panic(fmt.Sprintf("unable to encode error using custom marshaller: %s", err))
+		}
+		response.Data = data
+	} else {
+		if err := response.Encode(outError); err != nil {
+			panic(fmt.Sprintf("unable to encode error: %s", err))
+		}
 	}
 
 	return response
@@ -117,7 +133,7 @@ func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery
 	}
 }
 
-func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, traceCleaner TraceCleaner) *elemental.Response {
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, traceCleaner TraceCleaner, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
 
 	e := make(chan error)
 
@@ -132,14 +148,14 @@ func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disable
 	select {
 
 	case <-ctx.ctx.Done():
-		return makeErrorResponse(ctx.ctx, r, ctx.ctx.Err())
+		return makeErrorResponse(ctx.ctx, r, ctx.ctx.Err(), marshallers)
 
 	case err := <-e:
 		if err != nil {
-			return makeErrorResponse(ctx.ctx, r, err)
+			return makeErrorResponse(ctx.ctx, r, err, marshallers)
 		}
 
-		return makeResponse(ctx, r, traceCleaner)
+		return makeResponse(ctx, r, traceCleaner, marshallers)
 	}
 }
 
@@ -162,6 +178,7 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 				"bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -180,6 +197,7 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -201,6 +219,7 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 				"Retrieve operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -219,6 +238,7 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -240,6 +260,7 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				"Create operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -262,6 +283,7 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -283,6 +305,7 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				"Update operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -305,6 +328,7 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -326,6 +350,7 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				"Delete operation not allowed on "+ctx.request.Identity.Name, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -346,6 +371,7 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -367,6 +393,7 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 				"Info operation not allowed on "+ctx.request.Identity.Category, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -385,6 +412,7 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
 
@@ -406,6 +434,7 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 				"Patch operation not allowed on "+ctx.request.Identity.Category, "bahamut",
 				http.StatusMethodNotAllowed,
 			),
+			cfg.model.marshallers,
 		)
 	}
 
@@ -428,5 +457,6 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.opentracing.traceCleaner,
+		cfg.model.marshallers,
 	)
 }
