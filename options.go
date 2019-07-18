@@ -331,6 +331,18 @@ func OptUnmarshallers(unmarshallers map[elemental.Identity]CustomUmarshaller) Op
 	}
 }
 
+// OptMarshallers sets the custom marshallers.
+//
+// Marshallers contains a list of custom marshaller per identity.
+// This allows to create custom function to marshal the payload of a response.
+// If none is provided for a particular identity, the standard unmarshal function
+// is used.
+func OptMarshallers(marshallers map[elemental.Identity]CustomMarshaller) Option {
+	return func(c *config) {
+		c.model.marshallers = marshallers
+	}
+}
+
 // OptServiceInfo configures the service basic information.
 //
 // ServiceName contains the name of the service.
