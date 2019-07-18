@@ -224,7 +224,7 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptMarshallers should work", t, func() {
-		u := map[elemental.Identity]CustomMarshaller{testmodel.ListIdentity: func(*elemental.Response, error) ([]byte, error) { return nil, nil }}
+		u := map[elemental.Identity]CustomMarshaller{testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return nil, nil }}
 		OptMarshallers(u)(&c)
 		So(c.model.marshallers, ShouldResemble, u)
 	})
