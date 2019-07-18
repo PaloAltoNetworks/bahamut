@@ -63,7 +63,7 @@ func makeCORSHandler(origin string) func(w http.ResponseWriter, r *http.Request)
 
 func makeNotFoundHandler(origin string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeHTTPResponse(origin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound))
+		writeHTTPResponse(origin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil))
 	}
 }
 

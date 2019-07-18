@@ -242,7 +242,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 		if err != nil {
-			code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err))
+			code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -256,7 +256,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 			defer cancel()
 			if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
-				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit))
+				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
