@@ -112,7 +112,7 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	response.StatusCode = outError.Code()
 
 	if m, ok := marshallers[response.Request.Identity]; ok {
-		data, err := m(response, outError, nil)
+		data, err := m(response, nil, outError)
 		if err != nil {
 			panic(fmt.Sprintf("unable to encode error using custom marshaller: %s", err))
 		}
