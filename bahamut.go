@@ -27,7 +27,7 @@ import (
 type CustomUmarshaller func(*elemental.Request) (elemental.Identifiable, error)
 
 // CustomMarshaller is the type of function use to create custom marshalling.
-type CustomMarshaller func(data interface{}) ([]byte, error)
+type CustomMarshaller func(*elemental.Response, interface{}, error) ([]byte, error)
 
 // RegisterProcessorOrDie will register the given Processor for the given
 // Identity and will exit in case of errors. This is just a helper for
