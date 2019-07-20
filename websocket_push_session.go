@@ -36,7 +36,6 @@ type wsPushSession struct {
 	parametersLock     sync.RWMutex
 	claims             []string
 	claimsMap          map[string]string
-	claimsLock         sync.RWMutex
 	cfg                config
 	headers            http.Header
 	id                 string
@@ -96,9 +95,6 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 		select {
 		case s.events <- event:
 		default:
-			s.claimsLock.RLock()
-			defer s.claimsLock.RUnlock()
-
 			zap.L().Warn("Slow consumer. event dropped",
 				zap.String("sessionID", s.id),
 				zap.Strings("claims", s.claims),
@@ -117,30 +113,23 @@ func (s *wsPushSession) String() string {
 // SetClaims implements elemental.ClaimsHolder.
 func (s *wsPushSession) SetClaims(claims []string) {
 
-	s.claimsLock.Lock()
-	defer s.claimsLock.Unlock()
-
-	s.claims = claims
-	s.claimsMap = claimsToMap(claims)
-}
-
-func (s *wsPushSession) Claims() []string {
-
-	s.claimsLock.RLock()
-	defer s.claimsLock.RUnlock()
-
-	return s.claims
+	s.claims = claims[:]
+	s.claimsMap = claimsToMap(s.claims)
 }
 
 func (s *wsPushSession) ClaimsMap() map[string]string {
 
-	s.claimsLock.RLock()
-	defer s.claimsLock.RUnlock()
+	copiedClaimsMap := make(map[string]string, len(s.claimsMap))
 
-	return s.claimsMap
+	for k, v := range s.claimsMap {
+		copiedClaimsMap[k] = v
+	}
+
+	return copiedClaimsMap
 }
 
 func (s *wsPushSession) Identifier() string                            { return s.id }
+func (s *wsPushSession) Claims() []string                              { return s.claims[:] }
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
