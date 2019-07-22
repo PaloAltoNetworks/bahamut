@@ -113,19 +113,8 @@ func (s *wsPushSession) String() string {
 // SetClaims implements elemental.ClaimsHolder.
 func (s *wsPushSession) SetClaims(claims []string) {
 
-	copiedClaims := make([]string, len(claims))
-	copy(copiedClaims, claims)
-
-	s.claims = copiedClaims
+	s.claims = append([]string{}, claims...)
 	s.claimsMap = claimsToMap(s.claims)
-}
-
-func (s *wsPushSession) Claims() []string {
-
-	copiedClaims := make([]string, len(s.claims))
-	copy(copiedClaims, s.claims)
-
-	return copiedClaims
 }
 
 func (s *wsPushSession) ClaimsMap() map[string]string {
@@ -140,6 +129,7 @@ func (s *wsPushSession) ClaimsMap() map[string]string {
 }
 
 func (s *wsPushSession) Identifier() string                            { return s.id }
+func (s *wsPushSession) Claims() []string                              { return append([]string{}, s.claims...) }
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
