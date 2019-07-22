@@ -92,7 +92,9 @@ func makeResponse(ctx *bcontext, response *elemental.Response, cleaner TraceClea
 		}
 	}
 
-	data := response.Data[:]
+	data := make([]byte, len(response.Data))
+	copy(data, response.Data)
+
 	if cleaner != nil {
 		data = cleaner(response.Request.Identity, data)
 	}
