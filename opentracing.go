@@ -143,9 +143,9 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 		span.SetTag("req.parent.identity", r.ParentIdentity.Name)
 	}
 
-	data := r.Data
+	data := append([]byte{}, r.Data...)
 	if cleaner != nil {
-		data = cleaner(r.Identity, r.Data[:])
+		data = cleaner(r.Identity, data)
 	}
 
 	span.LogFields(
