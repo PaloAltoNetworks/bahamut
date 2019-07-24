@@ -159,7 +159,7 @@ func dispatchCreateOperation(
 	if unmarshaller != nil {
 		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return err
+			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
@@ -238,7 +238,7 @@ func dispatchUpdateOperation(
 	if unmarshaller != nil {
 		if obj, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return err
+			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
@@ -371,7 +371,7 @@ func dispatchPatchOperation(
 	if unmarshaller != nil {
 		if sparse, err = unmarshaller(ctx.request); err != nil {
 			audit(auditer, ctx, err)
-			return err
+			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
 		}
 	} else {
 		sparse = modelManager.SparseIdentifiable(ctx.request.Identity)
