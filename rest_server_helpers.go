@@ -57,7 +57,7 @@ func makeCORSHandler(origin string) func(w http.ResponseWriter, r *http.Request)
 		}
 		_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
 		setCommonHeader(w, o, writeEncoding)
-		w.Header().Set("Access-Control-Max-Age", "86400")
+		w.Header().Set("Access-Control-Max-Age", "1500")
 		w.WriteHeader(http.StatusOK)
 	}
 }
