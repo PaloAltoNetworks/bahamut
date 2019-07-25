@@ -567,7 +567,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf("boom")
+				return nil, fmt.Errorf(expectedError)
 			},
 			nil,
 			nil,
@@ -578,7 +578,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		)
 
 		Convey("Then I should get a bahamut error and no context", func() {
-			So(err.Error(), ShouldEqual, expectedError)
+			So(err.Error(), ShouldEqual, fmt.Sprintf("error 400 (bahamut): Bad Request: %s", expectedError))
 		})
 	})
 
@@ -973,7 +973,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf("boom")
+				return nil, fmt.Errorf(expectedError)
 			},
 			nil,
 			nil,
@@ -984,7 +984,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 		)
 
 		Convey("Then I should get a bahamut error and no context", func() {
-			So(err.Error(), ShouldEqual, expectedError)
+			So(err.Error(), ShouldEqual, fmt.Sprintf("error 400 (bahamut): Bad Request: %s", expectedError))
 		})
 	})
 }
@@ -1494,7 +1494,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf("boom")
+				return nil, fmt.Errorf(expectedError)
 			},
 			nil,
 			nil,
@@ -1505,7 +1505,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		)
 
 		Convey("Then I should get a bahamut error and no context", func() {
-			So(err.Error(), ShouldEqual, expectedError)
+			So(err.Error(), ShouldEqual, fmt.Sprintf("error 400 (bahamut): Bad Request: %s", expectedError))
 		})
 	})
 }
