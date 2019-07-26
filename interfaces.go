@@ -257,6 +257,7 @@ type Session interface {
 	Metadata() interface{}
 	SetMetadata(interface{})
 	Context() context.Context
+	ClientIP() string
 }
 
 // PushSession is a Push Session

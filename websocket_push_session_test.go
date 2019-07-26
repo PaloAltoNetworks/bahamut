@@ -35,7 +35,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 		u, _ := url.Parse("http://toto.com?a=b")
 		conf := config{}
 		req := &http.Request{
-			Header:     http.Header{"h1": {"a"}},
+			Header:     http.Header{"Authorization": {"a"}},
 			URL:        u,
 			TLS:        &tls.ConnectionState{},
 			RemoteAddr: "1.2.3.4",
@@ -45,18 +45,20 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 
 		Convey("Then it should be correctly initialized", func() {
 			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
-			So(s.claims, ShouldResemble, []string{})
+			So(s.Claims(), ShouldResemble, []string{})
 			So(s.claimsMap, ShouldResemble, map[string]string{})
 			So(s.cfg, ShouldResemble, conf)
-			So(s.headers, ShouldEqual, req.Header)
+			So(s.headers, ShouldResemble, http.Header{"Authorization": {"a"}})
+			So(s.Header("Authorization"), ShouldEqual, "a")
 			So(s.id, ShouldNotBeEmpty)
 			So(s.parameters, ShouldResemble, url.Values{"a": {"b"}})
+			So(s.Parameter("a"), ShouldEqual, "b")
 			So(s.closeCh, ShouldHaveSameTypeAs, make(chan struct{}))
 			So(s.unregister, ShouldEqual, unregister)
-			So(s.ctx, ShouldNotBeNil)
+			So(s.Context(), ShouldNotBeNil)
 			So(s.cancel, ShouldNotBeNil)
-			So(s.tlsConnectionState, ShouldEqual, req.TLS)
-			So(s.remoteAddr, ShouldEqual, req.RemoteAddr)
+			So(s.TLSConnectionState(), ShouldEqual, req.TLS)
+			So(s.ClientIP(), ShouldEqual, req.RemoteAddr)
 		})
 	})
 }

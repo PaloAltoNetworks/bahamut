@@ -135,6 +135,7 @@ func (s *wsPushSession) Context() context.Context                      { return 
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
 func (s *wsPushSession) Metadata() interface{}                         { return s.metadata }
 func (s *wsPushSession) SetMetadata(m interface{})                     { s.metadata = m }
+func (s *wsPushSession) ClientIP() string                              { return s.remoteAddr }
 func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remoteAddr = addr }
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }
