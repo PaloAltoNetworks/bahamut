@@ -816,7 +816,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ctx.Claims(), ShouldBeNil)
+				So(len(ctx.Claims()), ShouldEqual, 0)
 			})
 		})
 
