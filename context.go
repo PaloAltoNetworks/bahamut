@@ -135,18 +135,24 @@ func (c *bcontext) SetClaims(claims []string) {
 		return
 	}
 
-	c.claims = claims
-	c.claimsMap = claimsToMap(claims)
+	c.claims = append([]string{}, claims...)
+	c.claimsMap = claimsToMap(c.claims)
 }
 
 func (c *bcontext) Claims() []string {
 
-	return c.claims
+	return append([]string{}, c.claims...)
 }
 
 func (c *bcontext) ClaimsMap() map[string]string {
 
-	return c.claimsMap
+	o := make(map[string]string, len(c.claimsMap))
+
+	for k, v := range c.claimsMap {
+		o[k] = v
+	}
+
+	return o
 }
 
 func (c *bcontext) EnqueueEvents(events ...*elemental.Event) {
