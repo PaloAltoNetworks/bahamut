@@ -113,18 +113,29 @@ func (s *wsPushSession) String() string {
 // SetClaims implements elemental.ClaimsHolder.
 func (s *wsPushSession) SetClaims(claims []string) {
 
-	s.claims = claims
-	s.claimsMap = claimsToMap(claims)
+	s.claims = append([]string{}, claims...)
+	s.claimsMap = claimsToMap(s.claims)
+}
+
+func (s *wsPushSession) ClaimsMap() map[string]string {
+
+	copiedClaimsMap := map[string]string{}
+
+	for k, v := range s.claimsMap {
+		copiedClaimsMap[k] = v
+	}
+
+	return copiedClaimsMap
 }
 
 func (s *wsPushSession) Identifier() string                            { return s.id }
-func (s *wsPushSession) Claims() []string                              { return s.claims }
-func (s *wsPushSession) ClaimsMap() map[string]string                  { return s.claimsMap }
+func (s *wsPushSession) Claims() []string                              { return append([]string{}, s.claims...) }
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
 func (s *wsPushSession) Metadata() interface{}                         { return s.metadata }
 func (s *wsPushSession) SetMetadata(m interface{})                     { s.metadata = m }
+func (s *wsPushSession) ClientIP() string                              { return s.remoteAddr }
 func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remoteAddr = addr }
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }

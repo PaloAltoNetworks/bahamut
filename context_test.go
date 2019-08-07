@@ -161,15 +161,18 @@ func TestContext_GetClaims(t *testing.T) {
 
 	Convey("Given I have a Context with claims", t, func() {
 
+		oc := []string{"ouais=yes"}
+
 		ctx := newContext(context.TODO(), elemental.NewRequest())
-		ctx.SetClaims([]string{"ouais=yes"})
+		ctx.SetClaims(oc)
 
 		Convey("When I call GetClaims", func() {
 
 			claims := ctx.Claims()
 
 			Convey("Then claims should be correct", func() {
-				So(claims, ShouldResemble, []string{"ouais=yes"})
+				So(claims, ShouldResemble, oc)
+				So(claims, ShouldNotEqual, oc)
 			})
 		})
 
@@ -179,6 +182,7 @@ func TestContext_GetClaims(t *testing.T) {
 
 			Convey("Then claims should be correct", func() {
 				So(claimsMap, ShouldResemble, map[string]string{"ouais": "yes"})
+				So(claimsMap, ShouldNotEqual, ctx.claimsMap)
 			})
 		})
 	})

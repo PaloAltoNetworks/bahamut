@@ -816,7 +816,7 @@ func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 			})
 
 			Convey("Then claims should be correctly populated", func() {
-				So(ctx.Claims(), ShouldBeNil)
+				So(len(ctx.Claims()), ShouldEqual, 0)
 			})
 		})
 
@@ -951,6 +951,7 @@ func (s *mockSession) TLSConnectionState() *tls.ConnectionState { return s.state
 func (s *mockSession) Metadata() interface{}                    { return nil }
 func (s *mockSession) SetMetadata(interface{})                  {}
 func (s *mockSession) Context() context.Context                 { return context.Background() }
+func (s *mockSession) ClientIP() string                         { return "" }
 
 func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 
