@@ -204,8 +204,14 @@ func (p *natsPubSub) Connect() Waiter {
 			} else {
 				p.client, err = nats.Connect(p.natsURL, nats.Secure(p.tlsConfig))
 			}
-
 			if err == nil {
+				// Install error handler
+				nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, natsErr error) {
+					zap.L().Error("NATS error",
+						zap.String("subject", sub.Subject),
+						zap.Error(err),
+					)
+				})
 				break
 			}
 
