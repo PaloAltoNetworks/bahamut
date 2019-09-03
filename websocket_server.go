@@ -249,9 +249,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 	n.mainContext = ctx
 
-	publications := make(chan *Publication, 1000)
+	publications := make(chan *Publication, 24000)
 	if n.cfg.pushServer.service != nil {
-		errors := make(chan error, 1000)
+		errors := make(chan error, 24000)
 		unsubscribe := n.cfg.pushServer.service.Subscribe(publications, errors, n.cfg.pushServer.topic)
 		defer unsubscribe()
 	}
