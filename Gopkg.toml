@@ -1,10 +1,7 @@
-[[constraint]]
-  name = "github.com/prometheus/client_golang"
-  branch = "master"
 
-[prune]
-  go-tests = true
-  unused-packages = true
+[[constraint]]
+  branch = "master"
+  name = "github.com/prometheus/client_golang"
 
 [[constraint]]
   name = "github.com/golang/mock"
@@ -13,3 +10,7 @@
 [[constraint]]
   name = "github.com/nats-io/nats-server"
   version = "1.4.1"
+
+[prune]
+  go-tests = true
+  unused-packages = true
