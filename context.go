@@ -35,6 +35,7 @@ type bcontext struct {
 	redirect     string
 	request      *elemental.Request
 	statusCode   int
+	next         string
 }
 
 // NewContext creates a new *Context.
@@ -161,6 +162,10 @@ func (c *bcontext) EnqueueEvents(events ...*elemental.Event) {
 	defer c.eventsLock.Unlock()
 
 	c.events = append(c.events, events...)
+}
+
+func (c *bcontext) SetNext(next string) {
+	c.next = next
 }
 
 func (c *bcontext) AddMessage(msg string) {

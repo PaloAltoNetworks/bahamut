@@ -43,7 +43,7 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 	w.Header().Set("Cache-control", "private, no-transform")
 	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields")
+	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -92,6 +92,10 @@ func writeHTTPResponse(CORSOrigin string, w http.ResponseWriter, r *elemental.Re
 	}
 
 	w.Header().Set("X-Count-Total", strconv.Itoa(r.Total))
+
+	if r.Next != "" {
+		w.Header().Set("X-Next", r.Next)
+	}
 
 	if len(r.Messages) > 0 {
 		w.Header().Set("X-Messages", strings.Join(r.Messages, ";"))
