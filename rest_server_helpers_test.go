@@ -195,6 +195,28 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		})
 	})
 
+	Convey("Given I have a response next", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(elemental.NewRequest())
+
+		r.Next = "next"
+		r.StatusCode = 200
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			code := writeHTTPResponse("", w, r)
+
+			Convey("Then the should header message should be set", func() {
+				So(w.Header().Get("X-Next"), ShouldEqual, "next")
+			})
+
+			Convey("Then the code should be http.StatusNoContent", func() {
+				So(code, ShouldEqual, http.StatusOK)
+			})
+		})
+	})
+
 	Convey("Given I have a response with data", t, func() {
 
 		w := httptest.NewRecorder()

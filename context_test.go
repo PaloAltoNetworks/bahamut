@@ -62,13 +62,13 @@ func TestContext_NewContext(t *testing.T) {
 		}
 		request, _ := elemental.NewRequestFromHTTPRequest(req, testmodel.Manager())
 
-		c := NewContext(context.TODO(), request)
+		c := NewContext(context.Background(), request)
 
 		Convey("Then it should be correctly initialized", func() {
 
 			So(c.Request().Page, ShouldEqual, 1)
 			So(c.Request().PageSize, ShouldEqual, 10)
-			So(c.Context(), ShouldEqual, context.TODO())
+			So(c.Context(), ShouldEqual, context.Background())
 			So(c.Metadata("hello"), ShouldBeNil)
 		})
 	})
@@ -78,7 +78,7 @@ func TestContext_Identifier(t *testing.T) {
 
 	Convey("Given I have a context", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		ctx.request.Operation = elemental.OperationCreate
 
 		Convey("When I get its Identifier", func() {
@@ -96,7 +96,7 @@ func TestContext_Events(t *testing.T) {
 
 	Convey("Given I create a Context", t, func() {
 
-		c := newContext(context.TODO(), elemental.NewRequest())
+		c := newContext(context.Background(), elemental.NewRequest())
 		c.request.Operation = elemental.OperationCreate
 
 		Convey("When I enqueue 2 events", func() {
@@ -125,7 +125,7 @@ func TestContext_Duplicate(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
-		ctx := newContext(context.TODO(), req)
+		ctx := newContext(context.Background(), req)
 		ctx.SetCount(10)
 		ctx.SetInputData("input")
 		ctx.SetInputData("output")
@@ -135,6 +135,7 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.AddMessage("b")
 		ctx.SetMetadata("hello", "world")
 		ctx.SetClaims([]string{"ouais=yes"})
+		ctx.SetNext("next")
 
 		Convey("When I call the Duplicate method", func() {
 
@@ -150,7 +151,8 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.statusCode, ShouldEqual, ctx2.StatusCode())
 				So(ctx.claims, ShouldResemble, ctx2.Claims())
 				So(ctx.claimsMap, ShouldResemble, ctx2.ClaimsMap())
-				So(ctx.redirect, ShouldResemble, ctx2.Redirect())
+				So(ctx.redirect, ShouldEqual, ctx2.Redirect())
+				So(ctx.next, ShouldEqual, ctx2.(*bcontext).next)
 				So(ctx.messages, ShouldResemble, ctx2.(*bcontext).messages)
 			})
 		})
@@ -163,7 +165,7 @@ func TestContext_GetClaims(t *testing.T) {
 
 		oc := []string{"ouais=yes"}
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		ctx.SetClaims(oc)
 
 		Convey("When I call GetClaims", func() {
@@ -189,7 +191,7 @@ func TestContext_GetClaims(t *testing.T) {
 
 	Convey("Given I have a Context nil claims", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		ctx.SetClaims(nil)
 
 		Convey("When I call GetClaims", func() {

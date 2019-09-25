@@ -185,6 +185,7 @@ func (c *bcontext) Duplicate() Context {
 	c2.claims = append(c2.claims, c.claims...)
 	c2.redirect = c.redirect
 	c2.messages = append(c2.messages, c.messages...)
+	c2.next = c.next
 
 	for k, v := range c.claimsMap {
 		c2.claimsMap[k] = v
