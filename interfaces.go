@@ -137,6 +137,9 @@ type Context interface {
 	// Duplicate creates a copy of the Context.
 	Duplicate() Context
 
+	// SetNext can be use to give the next pagination token.
+	SetNext(string)
+
 	// EnqueueEvents enqueues the given event to the Context.
 	//
 	// Bahamut will automatically generate events on the currently processed object.
