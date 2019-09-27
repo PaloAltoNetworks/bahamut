@@ -473,7 +473,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		ctx := newContext(context.TODO(), request)
 		err := dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
 
-		expectedError := "'error 422 (elemental): Validation Error: Attribute 'name' is require"
+		expectedError := "error 422 (elemental): Validation Error: Attribute 'name' is required"
 		expectedNbCalls := 1
 
 		Convey("Then I should get a bahamut error and no context", func() {
