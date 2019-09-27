@@ -503,8 +503,10 @@ func TestWebsocketServer_start(t *testing.T) {
 		return struct{}{}, nil
 	}
 
-	Convey("Given I have a websocket server with 2 registered sessions", t, func() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	makePubsub := func(ctx context.Context) (PubSubClient, *mockSessionHandler, wsc.MockWebsocket, wsc.MockWebsocket) {
 		pubsub := NewLocalPubSubClient()
 		if !pubsub.Connect().Wait(3 * time.Second) {
 			panic("could not connect to local pubsub")
@@ -521,9 +523,6 @@ func TestWebsocketServer_start(t *testing.T) {
 		cfg.pushServer.dispatchHandler = pushHandler
 
 		wss := newPushServer(cfg, mux, pf)
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
 
 		go wss.start(ctx)
 
@@ -556,151 +555,153 @@ func TestWebsocketServer_start(t *testing.T) {
 		wss.registerSession(s1)
 		wss.registerSession(s2)
 
-		Convey("When I push an event and the handler is ok", func() {
+		return pubsub, pushHandler, conn1, conn2
+	}
 
-			pushHandler.shouldDispatchOK = true
+	Convey("Given I push an event and the handler is ok then both sessions should receive the event", t, func() {
 
-			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
-			pub := NewPublication("")
-			if err := pub.Encode(evt); err != nil {
-				panic(err)
-			}
+		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
 
-			if err := pubsub.Publish(pub); err != nil {
-				panic(err)
-			}
+		pushHandler.shouldDispatchOK = true
 
-			var msg1 []byte
-			select {
-			case msg1 = <-conn1.LastWrite():
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
 
-			var msg2 []byte
-			select {
-			case msg2 = <-conn2.LastWrite():
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		if err := pubsub.Publish(pub); err != nil {
+			panic(err)
+		}
 
-			Convey("Then both sessions should receive the event", func() {
-				d1, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evt)
-				So(msg1, ShouldResemble, d1)
-				So(msg2, ShouldResemble, d1)
-			})
-		})
+		var msg1 []byte
+		select {
+		case msg1 = <-conn1.LastWrite():
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-		Convey("When I push an event and the handler is not ok", func() {
+		var msg2 []byte
+		select {
+		case msg2 = <-conn2.LastWrite():
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-			pushHandler.shouldDispatchOK = false
+		d1, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evt)
+		So(msg1, ShouldResemble, d1)
+		So(msg2, ShouldResemble, d1)
+	})
 
-			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
-			pub := NewPublication("")
-			if err := pub.Encode(evt); err != nil {
-				panic(err)
-			}
+	Convey("Given I push an event and the handler is not ok then both sessions should receive the event", t, func() {
 
-			if err := pubsub.Publish(pub); err != nil {
-				panic(err)
-			}
+		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
 
-			var msg1 []byte
-			select {
-			case msg1 = <-conn1.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		pushHandler.shouldDispatchOK = false
 
-			var msg2 []byte
-			select {
-			case msg2 = <-conn2.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
 
-			Convey("Then both sessions should receive the event", func() {
-				So(msg1, ShouldBeNil)
-				So(msg2, ShouldBeNil)
-			})
-		})
+		if err := pubsub.Publish(pub); err != nil {
+			panic(err)
+		}
 
-		Convey("When I push an event and the handler returns an error", func() {
+		var msg1 []byte
+		select {
+		case msg1 = <-conn1.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-			pushHandler.shouldDispatchOK = true
-			pushHandler.shouldDispatchErr = errors.New("nope")
+		var msg2 []byte
+		select {
+		case msg2 = <-conn2.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
-			pub := NewPublication("")
-			if err := pub.Encode(evt); err != nil {
-				panic(err)
-			}
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
+	})
 
-			if err := pubsub.Publish(pub); err != nil {
-				panic(err)
-			}
+	Convey("Given I push an event and the handler returns an error then then both sessions should receive no event", t, func() {
 
-			var msg1 []byte
-			select {
-			case msg1 = <-conn1.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
 
-			var msg2 []byte
-			select {
-			case msg2 = <-conn2.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		pushHandler.shouldDispatchOK = true
+		pushHandler.shouldDispatchErr = errors.New("nope")
 
-			Convey("Then both sessions should receive the event", func() {
-				So(msg1, ShouldBeNil)
-				So(msg2, ShouldBeNil)
-			})
-		})
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
 
-		Convey("When I push bad event", func() {
+		if err := pubsub.Publish(pub); err != nil {
+			panic(err)
+		}
 
-			pushHandler.shouldDispatchOK = true
-			pushHandler.shouldDispatchErr = errors.New("nope")
+		var msg1 []byte
+		select {
+		case msg1 = <-conn1.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-			evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
-			pub := NewPublication("")
-			evt.RawData = []byte(`{ broken`)
-			if err := pub.Encode(evt); err != nil {
-				panic(err)
-			}
+		var msg2 []byte
+		select {
+		case msg2 = <-conn2.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
 
-			if err := pubsub.Publish(pub); err != nil {
-				panic(err)
-			}
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
+	})
 
-			var msg1 []byte
-			select {
-			case msg1 = <-conn1.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+	Convey("Given I push bad event then both sessions should receive no event", t, func() {
 
-			var msg2 []byte
-			select {
-			case msg2 = <-conn2.LastWrite():
-			case <-time.After(300 * time.Millisecond):
-			case <-ctx.Done():
-				panic("test: no response in time")
-			}
+		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
 
-			Convey("Then both sessions should receive the event", func() {
-				So(msg1, ShouldBeNil)
-				So(msg2, ShouldBeNil)
-			})
-		})
+		pushHandler.shouldDispatchOK = true
+		pushHandler.shouldDispatchErr = errors.New("nope")
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		pub := NewPublication("")
+		evt.RawData = []byte(`{ broken`)
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
+
+		if err := pubsub.Publish(pub); err != nil {
+			panic(err)
+		}
+
+		var msg1 []byte
+		select {
+		case msg1 = <-conn1.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
+
+		var msg2 []byte
+		select {
+		case msg2 = <-conn2.LastWrite():
+		case <-time.After(300 * time.Millisecond):
+		case <-ctx.Done():
+			panic("test: no response in time")
+		}
+
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
 	})
 
 	Convey("Given I start a websocket server with no push dispatching", t, func() {
@@ -734,7 +735,7 @@ func TestWebsocketServer_start(t *testing.T) {
 				)
 			})
 
-			Convey("When I stop it", func() {
+			Convey("When I stop it then the server should should exit", func() {
 
 				cancel()
 
@@ -745,9 +746,7 @@ func TestWebsocketServer_start(t *testing.T) {
 					panic("test: no respons in time")
 				}
 
-				Convey("Then the server should should exit", func() {
-					So(exited, ShouldBeTrue)
-				})
+				So(exited, ShouldBeTrue)
 			})
 		})
 	})

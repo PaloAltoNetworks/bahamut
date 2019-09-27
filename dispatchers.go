@@ -163,9 +163,11 @@ func dispatchCreateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := ctx.Request().Decode(obj); err != nil {
-			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+		if len(ctx.Request().Data) > 0 {
+			if err := ctx.Request().Decode(obj); err != nil {
+				audit(auditer, ctx, err)
+				return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+			}
 		}
 	}
 
@@ -242,9 +244,11 @@ func dispatchUpdateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := ctx.Request().Decode(obj); err != nil {
-			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+		if len(ctx.Request().Data) > 0 {
+			if err := ctx.Request().Decode(obj); err != nil {
+				audit(auditer, ctx, err)
+				return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+			}
 		}
 	}
 
