@@ -1509,6 +1509,155 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			So(err.Error(), ShouldEqual, fmt.Sprintf("error 400 (bahamut): Bad Request: %s", expectedError))
 		})
 	})
+
+	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that works", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		expectedID := "a"
+		expectedName := "Fake"
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
+			}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return &testmodel.List{ID: expectedID, Name: "will be patched"}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedNbCalls := 1
+
+		Convey("Then I should have no error and context should be initiated", func() {
+			So(err, ShouldBeNil)
+			So(retrieverCalled, ShouldEqual, 1)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldResemble, &testmodel.SparseList{ID: &expectedID, Name: &expectedName})
+			So(len(pusher.events), ShouldEqual, 2)
+			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that works but the processor returns an error", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		expectedID := "a"
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				err: fmt.Errorf("this is an error"),
+			}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return &testmodel.List{ID: expectedID, Name: "will be patched"}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedNbCalls := 1
+
+		Convey("Then I should have no error and context should be initiated", func() {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "this is an error")
+			So(retrieverCalled, ShouldEqual, 1)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldBeNil)
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that fails", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		expectedID := "a"
+		expectedName := "Fake"
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
+			}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return nil, fmt.Errorf("oh noes")
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedNbCalls := 1
+
+		Convey("Then I should have no error and context should be initiated", func() {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "oh noes")
+			So(retrieverCalled, ShouldEqual, 1)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldBeNil)
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+	})
+
+	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever but processor does not implement update", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockEmptyProcessor{}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return &testmodel.List{ID: "expectedID", Name: "will be patched"}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.TODO(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedNbCalls := 1
+
+		Convey("Then I should have no error and context should be initiated", func() {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error 501 (bahamut): Not implemented: No handler for operation  on list")
+			So(retrieverCalled, ShouldEqual, 0)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldBeNil)
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+	})
 }
 
 // TestDispatchers_dispatchInfoOperation tests dispatchInfoOperation method
