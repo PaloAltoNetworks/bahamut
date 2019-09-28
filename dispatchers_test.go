@@ -1607,13 +1607,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		var retrieverCalled int
 		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
 			retrieverCalled++
-			type I interface {
-				SetIdentifier(string)
-				Identifier() string
-				Identity() elemental.Identity
-				Version() int
-			}
-			return struct{ I }{}, nil
+			return &struct{ elemental.Identifiable }{}, nil
 		}
 
 		auditer := &mockAuditer{}
