@@ -413,3 +413,13 @@ func OptCORSOrigin(origin string) Option {
 		c.security.CORSOrigin = origin
 	}
 }
+
+// OptIdentifiableRetriever sets the IdentifiableRetriever tha will be used to perform transparent
+// patch support using elemental.SparseIdentifiable. When set, the handler for PATCH method will use
+// this function to retrieve the target identifiable, will apply the patch and
+// treat the request as a standard elemental update operation.
+func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
+	return func(c *config) {
+		c.model.retriever = f
+	}
+}

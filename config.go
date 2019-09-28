@@ -34,6 +34,13 @@ type HealthStatFunc func(http.ResponseWriter, *http.Request)
 // or other sensitive data.
 type TraceCleaner func(elemental.Identity, []byte) []byte
 
+// An IdentifiableRetriever is the type of function you can use to perform transparent
+// patch support using elemental.SparseIdentifiable.
+// If this is set in the configuration, the handler for PATCH method will use
+// this function to retrieve the target identifiable, will apply the patch and
+// treat the request as a standard update.
+type IdentifiableRetriever func(*elemental.Request) (elemental.Identifiable, error)
+
 // A config represents the configuration of Bahamut.
 type config struct {
 	general struct {
@@ -107,6 +114,7 @@ type config struct {
 		readOnlyExcludedIdentities []elemental.Identity
 		unmarshallers              map[elemental.Identity]CustomUmarshaller
 		marshallers                map[elemental.Identity]CustomMarshaller
+		retriever                  IdentifiableRetriever
 	}
 
 	meta struct {

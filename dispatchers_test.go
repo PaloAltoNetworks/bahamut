@@ -1239,7 +1239,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		pusher := &mockPusher{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, nil)
 
 		expectedNbCalls := 1
 
@@ -1276,7 +1276,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			Convey("Then I should not panic no events should be pushed", func() {
 				var err error
 				So(func() {
-					err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+					err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, nil)
 				}, ShouldNotPanic)
 				So(err, ShouldBeNil)
 				So(auditer.GetCallCount(), ShouldEqual, 1)
@@ -1302,7 +1302,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			Convey("Then I should not panic and an event should be pushed", func() {
 				var err error
 				So(func() {
-					err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+					err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, nil)
 				}, ShouldNotPanic)
 				So(err, ShouldBeNil)
 				So(auditer.GetCallCount(), ShouldEqual, 1)
@@ -1324,7 +1324,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil, nil)
 
 		expectedError := "error 400 (bahamut): Bad Request: unable to decode application/json: json decode error [pos 1]: only encoded map or array can be decoded into a struct"
 		expectedNbCalls := 1
@@ -1349,7 +1349,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil, nil)
 
 		expectedError := "error 400 (bahamut-test): Error: Bad request."
 		expectedNbCalls := 1
@@ -1376,7 +1376,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, false, nil, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1408,7 +1408,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, nil, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, nil, nil, auditer, false, nil, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1449,7 +1449,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		expectedNbCalls := 1
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, authorizers, nil, auditer, false, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, authenticators, authorizers, nil, auditer, false, nil, nil)
 
 		Convey("Then I should get a bahamut error and no context", func() {
 			So(err.Error(), ShouldEqual, expectedError)
@@ -1469,7 +1469,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		auditer := &mockAuditer{}
 
 		ctx := newContext(context.TODO(), request)
-		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, true, nil)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, nil, auditer, true, nil, nil)
 
 		Convey("Then I should have a 423 error and context should be nil", func() {
 			So(err, ShouldNotBeNil)
@@ -1501,6 +1501,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			nil,
 			nil,
 			false,
+			nil,
 			nil,
 		)
 
