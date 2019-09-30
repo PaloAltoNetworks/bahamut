@@ -277,4 +277,10 @@ func TestBahamut_Options(t *testing.T) {
 		OptCORSOrigin("here")(&c)
 		So(c.security.CORSOrigin, ShouldEqual, "here")
 	})
+
+	Convey("Calling OptIdentifiableRetriever should work", t, func() {
+		f := func(*elemental.Request) (elemental.Identifiable, error) { return nil, nil }
+		OptIdentifiableRetriever(f)(&c)
+		So(c.model.retriever, ShouldEqual, f)
+	})
 }

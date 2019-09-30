@@ -444,6 +444,7 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 				cfg.security.auditer,
 				cfg.model.readOnly,
 				cfg.model.readOnlyExcludedIdentities,
+				cfg.model.retriever,
 			)
 		},
 		cfg.general.panicRecoveryDisabled,
