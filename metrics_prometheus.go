@@ -62,7 +62,7 @@ func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManage
 				Name: "http_requests_total",
 				Help: "The total number of requests.",
 			},
-			[]string{"method"},
+			[]string{"method", "url", "code"},
 		),
 		reqDurationMetric: prometheus.NewSummaryVec(
 			prometheus.SummaryOpts{
@@ -104,10 +104,6 @@ func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManage
 
 func (c *prometheusMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
 
-	c.reqTotalMetric.With(prometheus.Labels{
-		"method": method,
-	}).Inc()
-
 	surl := sanitizeURL(url)
 
 	timer := prometheus.NewTimer(
@@ -124,6 +120,12 @@ func (c *prometheusMetricsManager) MeasureRequest(method string, url string) Fin
 	)
 
 	return func(code int, span opentracing.Span) {
+
+		c.reqTotalMetric.With(prometheus.Labels{
+			"method": method,
+			"url":    surl,
+			"code":   strconv.Itoa(code),
+		}).Inc()
 
 		if code >= http.StatusInternalServerError {
 

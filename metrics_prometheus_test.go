@@ -88,7 +88,7 @@ func TestMeasureRequest(t *testing.T) {
 
 		Convey("When I call measure a valid request", func() {
 
-			f := pmm.MeasureRequest("GET", "http://toto.com/id/toto")
+			f := pmm.MeasureRequest("GET", "/toto/id")
 			f(200, nil)
 
 			data, _ := r.Gather()
@@ -96,7 +96,9 @@ func TestMeasureRequest(t *testing.T) {
 			Convey("Then the data should collected", func() {
 				So(data[1].GetName(), ShouldEqual, "http_requests_total")
 				So(data[1].GetMetric()[0].Counter.String(), ShouldEqual, "value:1 ")
-				So(data[1].GetMetric()[0].Label[0].String(), ShouldEqual, `name:"method" value:"GET" `)
+				So(data[1].GetMetric()[0].Label[0].String(), ShouldEqual, `name:"code" value:"200" `)
+				So(data[1].GetMetric()[0].Label[1].String(), ShouldEqual, `name:"method" value:"GET" `)
+				So(data[1].GetMetric()[0].Label[2].String(), ShouldEqual, `name:"url" value:"/toto/:id" `)
 			})
 		})
 
