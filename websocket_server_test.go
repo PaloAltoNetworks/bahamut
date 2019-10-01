@@ -711,44 +711,36 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		wss := newPushServer(cfg, mux, pf)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		Convey("When I start it", func() {
+		out := make(chan bool)
+		go func() {
+			wss.start(ctx)
+			out <- true
+		}()
 
-			out := make(chan bool)
-			go func() {
-				wss.start(ctx)
-				out <- true
-			}()
-
-			Convey("Then it be running", func() {
-				So(
-					func() {
-						select {
-						case <-out:
-							panic("test: unexpected response")
-						case <-time.After(1 * time.Second):
-						}
-					},
-					ShouldNotPanic,
-				)
-			})
-
-			Convey("When I stop it then the server should should exit", func() {
-
-				cancel()
-
-				var exited bool
+		So(
+			func() {
 				select {
-				case exited = <-out:
-				case <-time.After(1 * time.Second):
-					panic("test: no respons in time")
+				case <-out:
+					panic("test: unexpected response")
+				case <-time.After(3 * time.Second):
 				}
+			},
+			ShouldNotPanic,
+		)
 
-				So(exited, ShouldBeTrue)
-			})
-		})
+		cancel()
+
+		var exited bool
+		select {
+		case exited = <-out:
+		case <-time.After(3 * time.Second):
+			panic("test: no respons in time")
+		}
+
+		So(exited, ShouldBeTrue)
 	})
 }
 
