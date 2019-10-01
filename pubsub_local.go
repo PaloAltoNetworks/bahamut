@@ -133,9 +133,15 @@ func (p *localPubSub) listen() {
 		case publication := <-p.publications:
 
 			p.lock.Lock()
+			var wg sync.WaitGroup
 			for _, sub := range p.subscribers[publication.Topic] {
-				go func(s chan *Publication, p *Publication) { s <- p.Duplicate() }(sub, publication)
+				wg.Add(1)
+				go func(s chan *Publication, p *Publication) {
+					defer wg.Done()
+					s <- p.Duplicate()
+				}(sub, publication)
 			}
+			wg.Wait()
 			p.lock.Unlock()
 
 		case <-p.stop:
