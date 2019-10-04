@@ -13,6 +13,7 @@ package bahamut
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -31,6 +32,7 @@ type pushServer struct {
 	processorFinder processorFinderFunc
 	sessionsLock    sync.RWMutex
 	mainContext     context.Context
+	publications    chan *Publication
 }
 
 func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
@@ -41,6 +43,7 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		cfg:             cfg,
 		sessionsLock:    sync.RWMutex{},
 		processorFinder: processorFinder,
+		publications:    make(chan *Publication, 24000),
 	}
 
 	endpoint := cfg.pushServer.endpoint
@@ -249,11 +252,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 	n.mainContext = ctx
 
-	publications := make(chan *Publication, 24000)
 	if n.cfg.pushServer.service != nil {
 		errors := make(chan error, 24000)
-		unsubscribe := n.cfg.pushServer.service.Subscribe(publications, errors, n.cfg.pushServer.topic)
-		defer unsubscribe()
+		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, n.cfg.pushServer.topic)()
 	}
 
 	zap.L().Debug("Websocket server started",
@@ -265,19 +266,33 @@ func (n *pushServer) start(ctx context.Context) {
 	for {
 		select {
 
-		case p := <-publications:
+		case p := <-n.publications:
 
 			go func(publication *Publication) {
 
 				event := &elemental.Event{}
 				if err := publication.Decode(event); err != nil {
-					zap.L().Error("Unable to decode event", zap.Error(err))
+					zap.L().Error("Unable to decode event",
+						zap.Stringer("event", event),
+						zap.Error(err),
+					)
+					return
+				}
+
+				// We prepare the event data in both json and msgpack
+				// once for all.
+				dataMSGPACK, dataJSON, err := prepareEventData(event)
+				if err != nil {
+					zap.L().Error("Unable to prepare event encoding",
+						zap.Stringer("event", event),
+						zap.Error(err),
+					)
 					return
 				}
 
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
 				n.sessionsLock.RLock()
-				sessions := make([]PushSession, len(n.sessions))
+				sessions := make([]*wsPushSession, len(n.sessions))
 				var i int
 				for _, s := range n.sessions {
 					sessions[i] = s
@@ -288,13 +303,22 @@ func (n *pushServer) start(ctx context.Context) {
 				// Dispatch the event to all sessions
 				for _, session := range sessions {
 
-					go func(s PushSession, evt *elemental.Event) {
+					if event.Timestamp.Before(session.startTime) {
+						continue
+					}
+
+					f := session.currentFilter()
+					if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+						continue
+					}
+
+					go func(s *wsPushSession) { // Should we drop that go routine now?
 
 						if n.cfg.pushServer.dispatchHandler != nil {
 
-							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, evt)
+							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, event)
 							if err != nil {
-								zap.L().Error("Error while calling SessionsHandler ShouldPush", zap.Error(err))
+								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
 								return
 							}
 
@@ -303,9 +327,14 @@ func (n *pushServer) start(ctx context.Context) {
 							}
 						}
 
-						s.DirectPush(evt)
+						switch s.encodingWrite {
+						case elemental.EncodingTypeMSGPACK:
+							s.send(dataMSGPACK)
+						case elemental.EncodingTypeJSON:
+							s.send(dataJSON)
+						}
 
-					}(session, event.Duplicate())
+					}(session)
 				}
 			}(p)
 
@@ -331,4 +360,46 @@ func (n *pushServer) stop() {
 	}
 
 	zap.L().Info("Push server stopped")
+}
+
+func prepareEventData(event *elemental.Event) (msgpack []byte, json []byte, err error) {
+
+	eventCopy := event.Duplicate()
+
+	switch event.GetEncoding() {
+
+	case elemental.EncodingTypeMSGPACK:
+
+		msgpack, err = elemental.Encode(elemental.EncodingTypeMSGPACK, event)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to encode original msgpack event: %s", err)
+		}
+
+		if err = eventCopy.Convert(elemental.EncodingTypeJSON); err != nil {
+			return nil, nil, fmt.Errorf("unable to convert original msgpack encoding to json: %s", err)
+		}
+
+		json, err = elemental.Encode(elemental.EncodingTypeJSON, eventCopy)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to encode json version of original msgpack event: %s", err)
+		}
+
+	case elemental.EncodingTypeJSON:
+
+		json, err = elemental.Encode(elemental.EncodingTypeJSON, event)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to encode original json event: %s", err)
+		}
+
+		if err = eventCopy.Convert(elemental.EncodingTypeMSGPACK); err != nil {
+			return nil, nil, fmt.Errorf("unable to convert original json encoding to msgpack: %s", err)
+		}
+
+		msgpack, err = elemental.Encode(elemental.EncodingTypeMSGPACK, eventCopy)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to encode msgpack version of original json event: %s", err)
+		}
+	}
+
+	return msgpack, json, nil
 }
