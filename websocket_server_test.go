@@ -71,6 +71,7 @@ type mockSessionHandler struct {
 	relatedIdentitiesCalled  int
 	relatedIdentities        []string
 	summarizeEvent           interface{}
+	summarizeEventErr        error
 	summarizeEventCalled     int
 
 	sync.Mutex
@@ -123,13 +124,13 @@ func (h *mockSessionHandler) RelatedEventIdentities(i string) []string {
 	return h.relatedIdentities
 }
 
-func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) interface{} {
+func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) (interface{}, error) {
 
 	h.Lock()
 	defer h.Unlock()
 
 	h.summarizeEventCalled++
-	return h.summarizeEvent
+	return h.summarizeEvent, h.summarizeEventErr
 }
 
 func TestWebsocketServer_newWebsocketServer(t *testing.T) {

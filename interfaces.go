@@ -229,7 +229,7 @@ type PushDispatchHandler interface {
 	OnPushSessionStop(PushSession)
 	ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error)
 	RelatedEventIdentities(string) []string
-	SummarizeEvent(event *elemental.Event) interface{}
+	SummarizeEvent(event *elemental.Event) (interface{}, error)
 }
 
 // PushPublishHandler is the interface that must be implemented in order to

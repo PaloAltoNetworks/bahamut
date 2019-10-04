@@ -293,7 +293,14 @@ func (n *pushServer) start(ctx context.Context) {
 				// We prepate the event summary if needed
 				var eventSummary interface{}
 				if n.cfg.pushServer.dispatchHandler != nil {
-					eventSummary = n.cfg.pushServer.dispatchHandler.SummarizeEvent(event)
+					eventSummary, err = n.cfg.pushServer.dispatchHandler.SummarizeEvent(event)
+					if err != nil {
+						zap.L().Error("Unable to summary event",
+							zap.Stringer("event", event),
+							zap.Error(err),
+						)
+						return
+					}
 				}
 
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
