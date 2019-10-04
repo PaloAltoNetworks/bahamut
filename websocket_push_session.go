@@ -30,7 +30,7 @@ import (
 type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
-	events             chan *elemental.Event
+	dataCh             chan []byte
 	filter             *elemental.PushFilter
 	currentFilterLock  sync.RWMutex
 	parametersLock     sync.RWMutex
@@ -65,7 +65,7 @@ func newWSPushSession(
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
-		events:             make(chan *elemental.Event, 1024),
+		dataCh:             make(chan []byte, 1024),
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
@@ -92,16 +92,43 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
-		select {
-		case s.events <- event:
-		default:
-			zap.L().Warn("Slow consumer. event dropped",
-				zap.String("sessionID", s.id),
-				zap.Strings("claims", s.claims),
-				zap.String("eventType", string(event.Type)),
-				zap.String("eventIdentity", event.Identity),
+		f := s.currentFilter()
+		if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+			continue
+		}
+
+		// We convert the inner Entity to the requested encoding. We don't need additional
+		// check as elemental.Convert will do anything if the EncodingTypes are identical.
+		if err := event.Convert(s.encodingWrite); err != nil {
+			zap.L().Error("Unable to convert event",
+				zap.Stringer("event", event),
+				zap.Error(err),
 			)
 		}
+
+		data, err := elemental.Encode(s.encodingWrite, event)
+		if err != nil {
+			zap.L().Error("Unable to encode event",
+				zap.Stringer("event", event),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		s.Push(data)
+	}
+}
+
+func (s *wsPushSession) Push(data []byte) {
+
+	select {
+	case s.dataCh <- data:
+	default:
+		zap.L().Warn("Slow consumer. event dropped",
+			zap.String("sessionID", s.id),
+			zap.Strings("claims", s.claims),
+			zap.String("data", string(data)),
+		)
 	}
 }
 
@@ -192,27 +219,7 @@ func (s *wsPushSession) listen() {
 
 	for {
 		select {
-		case event := <-s.events:
-
-			f := s.currentFilter()
-			if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-				break
-			}
-
-			// We convert the inner Entity to the requested encoding. We don't need additional
-			// check as elemental.Convert will do anything if the EncodingTypes are identical.
-			if err := event.Convert(s.encodingWrite); err != nil {
-				zap.L().Error("Unable to convert event", zap.Error(err))
-				s.close(websocket.CloseInternalServerErr)
-				return
-			}
-
-			data, err := elemental.Encode(s.encodingWrite, event)
-			if err != nil {
-				zap.L().Error("Unable to encode event", zap.Error(err))
-				s.close(websocket.CloseInternalServerErr)
-				return
-			}
+		case data := <-s.dataCh:
 
 			s.conn.Write(data)
 

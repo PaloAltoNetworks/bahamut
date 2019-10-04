@@ -843,3 +843,119 @@ func TestWebsocketServer_handleRequest(t *testing.T) {
 		})
 	})
 }
+
+func Test_prepareEventData(t *testing.T) {
+
+	pristineEvent := elemental.NewEvent(
+		elemental.EventUpdate,
+		&testmodel.List{ID: "ID1", Name: "Hello"},
+	)
+
+	// keep a copy
+	event := pristineEvent.Duplicate()
+
+	// prepare some known conversions
+	msgpackEventData, err := elemental.Encode(elemental.EncodingTypeMSGPACK, event)
+	if err != nil {
+		panic(err)
+	}
+
+	err = event.Convert(elemental.EncodingTypeJSON)
+	if err != nil {
+		panic(err)
+	}
+
+	jsonEventData, err := elemental.Encode(elemental.EncodingTypeJSON, event)
+	if err != nil {
+		panic(err)
+	}
+
+	type args struct {
+		event *elemental.Event
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		wantMSGPACK string
+		wantJSON    string
+		checkErr    func(error) (bool, string)
+	}{
+		{
+			"msgpack event",
+			args{
+				pristineEvent,
+			},
+			string(msgpackEventData),
+			string(jsonEventData),
+			func(err error) (bool, string) {
+				return false, ""
+			},
+		},
+		{
+			"unencodable msgpack event",
+			args{
+				func() *elemental.Event {
+					dupe := pristineEvent.Duplicate()
+					dupe.RawData = []byte("broken")
+					return dupe
+				}(),
+			},
+			"",
+			"",
+			func(err error) (bool, string) {
+				return true, "unable to convert original msgpack encoding to json: unable to decode application/msgpack: msgpack decode error [pos 1]: cannot read container length: unrecognized descriptor byte: hex: 62, decimal: 98"
+			},
+		},
+
+		{
+			"json event",
+			args{
+				event,
+			},
+			string(msgpackEventData),
+			string(jsonEventData),
+			func(err error) (bool, string) {
+				return false, ""
+			},
+		},
+
+		{
+			"unencodable json event",
+			args{
+				func() *elemental.Event {
+					dupe := event.Duplicate()
+					dupe.JSONData = []byte("broken")
+					return dupe
+				}(),
+			},
+			"",
+			"",
+			func(err error) (bool, string) {
+				return true, "unable to convert original json encoding to msgpack: unable to decode application/json: json decode error [pos 1]: read map - expect char '{' but got char 'b'"
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMSGPACK, gotJSON, err := prepareEventData(tt.args.event)
+
+			wantErr, wantErrStr := tt.checkErr(err)
+
+			if wantErr && err == nil {
+				t.Errorf("prepareEventData() error = %v want %s", err, wantErrStr)
+			}
+
+			if wantErr && err.Error() != wantErrStr {
+				t.Errorf("prepareEventData() error = %v want %s", err, wantErrStr)
+			}
+
+			if string(gotMSGPACK) != tt.wantMSGPACK {
+				t.Errorf("prepareEventData() gotMsgpack = %v, want %v", string(gotMSGPACK), tt.wantMSGPACK)
+			}
+			if string(gotJSON) != tt.wantJSON {
+				t.Errorf("prepareEventData() gotJson = %v, want %v", string(gotJSON), tt.wantJSON)
+			}
+		})
+	}
+}

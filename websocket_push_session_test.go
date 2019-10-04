@@ -44,7 +44,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 		s := newWSPushSession(req, conf, unregister, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		Convey("Then it should be correctly initialized", func() {
-			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
+			So(s.dataCh, ShouldHaveSameTypeAs, make(chan []byte))
 			So(s.Claims(), ShouldResemble, []string{})
 			So(s.claimsMap, ShouldResemble, map[string]string{})
 			So(s.cfg, ShouldResemble, conf)
@@ -73,17 +73,42 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 
+		msgpack, _, err := prepareEventData(evt)
+		if err != nil {
+			panic(err)
+		}
+
 		Convey("When I call directPush and pull from the event channel", func() {
 
 			go s.DirectPush(evt, evt)
-			evt1 := <-s.events
-			evt2 := <-s.events
+			data1 := <-s.dataCh
+			data2 := <-s.dataCh
 
-			Convey("Then evt1 should be correct", func() {
-				So(evt1, ShouldEqual, evt)
+			Convey("Then data1 should be correct", func() {
+				So(string(data1), ShouldEqual, string(msgpack))
 			})
-			Convey("Then evt2 should be correct", func() {
-				So(evt2, ShouldEqual, evt)
+			Convey("Then data2 should be correct", func() {
+				So(string(data2), ShouldEqual, string(msgpack))
+			})
+		})
+	})
+}
+
+func TestWSPushSession_Push(t *testing.T) {
+
+	Convey("Given I have a session and an event", t, func() {
+
+		req, _ := http.NewRequest("GET", "bla", nil)
+		cfg := config{}
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
+
+		Convey("When I call directPush and pull from the event channel", func() {
+
+			go s.Push([]byte("hello"))
+			data := <-s.dataCh
+
+			Convey("Then data1 should be correct", func() {
+				So(string(data), ShouldEqual, "hello")
 			})
 		})
 	})
