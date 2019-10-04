@@ -290,6 +290,12 @@ func (n *pushServer) start(ctx context.Context) {
 					return
 				}
 
+				// We prepate the event summary if needed
+				var eventSummary interface{}
+				if n.cfg.pushServer.dispatchHandler != nil {
+					eventSummary = n.cfg.pushServer.dispatchHandler.SummarizeEvent(event)
+				}
+
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
 				n.sessionsLock.RLock()
 				sessions := make([]*wsPushSession, len(n.sessions))
@@ -303,20 +309,37 @@ func (n *pushServer) start(ctx context.Context) {
 				// Dispatch the event to all sessions
 				for _, session := range sessions {
 
+					// If event happened before session, we don't send it.
 					if event.Timestamp.Before(session.startTime) {
 						continue
 					}
 
-					f := session.currentFilter()
-					if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-						continue
+					// If the event identity (or related identities) are filtered out
+					// we don't send it.
+					if f := session.currentFilter(); f != nil {
+
+						identities := []string{event.Identity}
+						if n.cfg.pushServer.dispatchHandler != nil {
+							identities = append(identities, n.cfg.pushServer.dispatchHandler.RelatedEventIdentities(event.Identity)...)
+						}
+
+						var ok bool
+						for _, identity := range identities {
+							if !f.IsFilteredOut(identity, event.Type) {
+								ok = true
+								break
+							}
+						}
+
+						if !ok {
+							continue
+						}
 					}
 
 					go func(s *wsPushSession) { // Should we drop that go routine now?
 
 						if n.cfg.pushServer.dispatchHandler != nil {
-
-							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, event)
+							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, event, eventSummary)
 							if err != nil {
 								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
 								return

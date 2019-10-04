@@ -68,6 +68,10 @@ type mockSessionHandler struct {
 	shouldDispatchCalled     int
 	shouldDispatchOK         bool
 	shouldDispatchErr        error
+	relatedIdentitiesCalled  int
+	relatedIdentities        []string
+	summarizeEvent           interface{}
+	summarizeEventCalled     int
 
 	sync.Mutex
 }
@@ -102,12 +106,30 @@ func (h *mockSessionHandler) ShouldPublish(*elemental.Event) (bool, error) {
 	return h.shouldPublishOK, h.shouldPublishErr
 }
 
-func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event) (bool, error) {
+func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error) {
 	h.Lock()
 	defer h.Unlock()
 
 	h.shouldDispatchCalled++
 	return h.shouldDispatchOK, h.shouldDispatchErr
+}
+
+func (h *mockSessionHandler) RelatedEventIdentities(i string) []string {
+
+	h.Lock()
+	defer h.Unlock()
+
+	h.relatedIdentitiesCalled++
+	return h.relatedIdentities
+}
+
+func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) interface{} {
+
+	h.Lock()
+	defer h.Unlock()
+
+	h.summarizeEventCalled++
+	return h.summarizeEvent
 }
 
 func TestWebsocketServer_newWebsocketServer(t *testing.T) {
@@ -570,6 +592,10 @@ func TestWebsocketServer_start(t *testing.T) {
 		filter.FilterIdentity("something-else")
 		s1.setCurrentFilter(filter)
 
+		filter = elemental.NewPushFilter()
+		filter.FilterIdentity("list")
+		s2.setCurrentFilter(filter)
+
 		pushHandler.shouldDispatchOK = true
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
@@ -606,6 +632,60 @@ func TestWebsocketServer_start(t *testing.T) {
 		<-finished
 
 		So(msg1, ShouldBeNil)
+		So(msg2, ShouldNotBeNil)
+	})
+
+	Convey("Given I push an event that is filtered out but related by one session", t, func() {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.relatedIdentities = []string{"something-else"}
+
+		filter := elemental.NewPushFilter()
+		filter.FilterIdentity("something-else")
+		s1.setCurrentFilter(filter)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		evt.Timestamp = time.Now().Add(time.Second)
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
+
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		So(msg1, ShouldNotBeNil)
 		So(msg2, ShouldNotBeNil)
 	})
 

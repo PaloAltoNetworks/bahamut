@@ -222,11 +222,14 @@ type Authorizer interface {
 
 // PushDispatchHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Dispatch handler.
+// Deprecated: Use PushDispatcher.
 type PushDispatchHandler interface {
 	OnPushSessionInit(PushSession) (bool, error)
 	OnPushSessionStart(PushSession)
 	OnPushSessionStop(PushSession)
-	ShouldDispatch(PushSession, *elemental.Event) (bool, error)
+	ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error)
+	RelatedEventIdentities(string) []string
+	SummarizeEvent(event *elemental.Event) interface{}
 }
 
 // PushPublishHandler is the interface that must be implemented in order to
