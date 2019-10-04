@@ -14,6 +14,7 @@ package bahamut
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -503,10 +504,8 @@ func TestWebsocketServer_start(t *testing.T) {
 		return struct{}{}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	makePubsub := func(ctx context.Context, idprefix string) (*pushServer, *mockSessionHandler, *wsPushSession, *wsPushSession) {
 
-	makePubsub := func(ctx context.Context) (PubSubClient, *mockSessionHandler, wsc.MockWebsocket, wsc.MockWebsocket) {
 		pubsub := NewLocalPubSubClient()
 		if !pubsub.Connect().Wait(3 * time.Second) {
 			panic("could not connect to local pubsub")
@@ -535,7 +534,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		)
 		conn1 := wsc.NewMockWebsocket(ctx)
 		s1.setConn(conn1)
-		s1.id = "s1"
+		s1.id = idprefix + "s1"
 
 		go s1.listen()
 
@@ -555,12 +554,69 @@ func TestWebsocketServer_start(t *testing.T) {
 		wss.registerSession(s1)
 		wss.registerSession(s2)
 
-		return pubsub, pushHandler, conn1, conn2
+		return wss, pushHandler, s1, s2
 	}
+
+	Convey("Given I push an event that is filtered out by one session", t, func() {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		filter := elemental.NewPushFilter()
+		filter.FilterIdentity("something-else")
+		s1.setCurrentFilter(filter)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		evt.Timestamp = time.Now().Add(time.Second)
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
+
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldNotBeNil)
+	})
 
 	Convey("Given I push an event and the handler is ok then both sessions should receive the event", t, func() {
 
-		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "toto")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
 
 		pushHandler.shouldDispatchOK = true
 
@@ -570,32 +626,56 @@ func TestWebsocketServer_start(t *testing.T) {
 			panic(err)
 		}
 
-		if err := pubsub.Publish(pub); err != nil {
-			panic(err)
-		}
+		pushServer.publications <- pub
 
 		var msg1 []byte
-		select {
-		case msg1 = <-conn1.LastWrite():
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
-
 		var msg2 []byte
-		select {
-		case msg2 = <-conn2.LastWrite():
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+
+			for {
+
+				if len(msg1) > 0 && len(msg2) > 0 {
+					close(finished)
+					return
+				}
+
+				select {
+				case data := <-conn1.LastWrite():
+					fmt.Println("ZOBN")
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					fmt.Println("P{ROUT")
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+
+				case <-ctx.Done():
+					panic("test: no response in time")
+				}
+			}
+		}()
+		<-finished
 
 		d1, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, evt)
+
+		l.Lock()
 		So(msg1, ShouldResemble, d1)
 		So(msg2, ShouldResemble, d1)
+		l.Unlock()
 	})
 
-	Convey("Given I push an event and the handler is not ok then both sessions should receive the event", t, func() {
+	Convey("Given I push an event and the handler is not ok then no session should receive the event", t, func() {
 
-		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
 
 		pushHandler.shouldDispatchOK = false
 
@@ -605,33 +685,97 @@ func TestWebsocketServer_start(t *testing.T) {
 			panic(err)
 		}
 
-		if err := pubsub.Publish(pub); err != nil {
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
+		l.Unlock()
+	})
+
+	Convey("Given I push an event that is that older than session connection time", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		evt.Timestamp = time.Now().Add(-time.Hour)
+
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
 			panic(err)
 		}
 
+		pushServer.publications <- pub
+
 		var msg1 []byte
-		select {
-		case msg1 = <-conn1.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
-
 		var msg2 []byte
-		select {
-		case msg2 = <-conn2.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
 
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
 		So(msg1, ShouldBeNil)
 		So(msg2, ShouldBeNil)
+		l.Unlock()
 	})
 
 	Convey("Given I push an event and the handler returns an error then then both sessions should receive no event", t, func() {
 
-		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
 
 		pushHandler.shouldDispatchOK = true
 		pushHandler.shouldDispatchErr = errors.New("nope")
@@ -642,66 +786,182 @@ func TestWebsocketServer_start(t *testing.T) {
 			panic(err)
 		}
 
-		if err := pubsub.Publish(pub); err != nil {
-			panic(err)
-		}
+		pushServer.publications <- pub
 
 		var msg1 []byte
-		select {
-		case msg1 = <-conn1.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
-
 		var msg2 []byte
-		select {
-		case msg2 = <-conn2.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
 
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
 		So(msg1, ShouldBeNil)
 		So(msg2, ShouldBeNil)
+		l.Unlock()
 	})
 
-	Convey("Given I push bad event then both sessions should receive no event", t, func() {
+	Convey("Given I dispatcher returns an error then both sessions should receive no event", t, func() {
 
-		pubsub, pushHandler, conn1, conn2 := makePubsub(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
 
 		pushHandler.shouldDispatchOK = true
-		pushHandler.shouldDispatchErr = errors.New("nope")
+		pushHandler.shouldDispatchErr = fmt.Errorf("boom")
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 		pub := NewPublication("")
-		evt.RawData = []byte(`{ broken`)
 		if err := pub.Encode(evt); err != nil {
 			panic(err)
 		}
 
-		if err := pubsub.Publish(pub); err != nil {
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
+		l.Unlock()
+	})
+
+	Convey("Given I I receive a bad event in the publication", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		pub := NewPublication("")
+		evt.RawData = []byte("{broken")
+		if err := pub.Encode(evt); err != nil {
 			panic(err)
 		}
 
+		pushServer.publications <- pub
+
 		var msg1 []byte
-		select {
-		case msg1 = <-conn1.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
-
 		var msg2 []byte
-		select {
-		case msg2 = <-conn2.LastWrite():
-		case <-time.After(300 * time.Millisecond):
-		case <-ctx.Done():
-			panic("test: no response in time")
-		}
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
 
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
 		So(msg1, ShouldBeNil)
 		So(msg2, ShouldBeNil)
+		l.Unlock()
+	})
+
+	Convey("Given I I receive a bad  publication", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.shouldDispatchOK = true
+
+		pub := NewPublication("")
+		pub.Data = []byte("{broken")
+
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		l.Lock()
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldBeNil)
+		l.Unlock()
 	})
 
 	Convey("Given I start a websocket server with no push dispatching", t, func() {

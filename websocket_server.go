@@ -32,6 +32,7 @@ type pushServer struct {
 	processorFinder processorFinderFunc
 	sessionsLock    sync.RWMutex
 	mainContext     context.Context
+	publications    chan *Publication
 }
 
 func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {
@@ -42,6 +43,7 @@ func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorF
 		cfg:             cfg,
 		sessionsLock:    sync.RWMutex{},
 		processorFinder: processorFinder,
+		publications:    make(chan *Publication, 24000),
 	}
 
 	endpoint := cfg.pushServer.endpoint
@@ -250,11 +252,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 	n.mainContext = ctx
 
-	publications := make(chan *Publication, 24000)
 	if n.cfg.pushServer.service != nil {
 		errors := make(chan error, 24000)
-		unsubscribe := n.cfg.pushServer.service.Subscribe(publications, errors, n.cfg.pushServer.topic)
-		defer unsubscribe()
+		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, n.cfg.pushServer.topic)()
 	}
 
 	zap.L().Debug("Websocket server started",
@@ -266,7 +266,7 @@ func (n *pushServer) start(ctx context.Context) {
 	for {
 		select {
 
-		case p := <-publications:
+		case p := <-n.publications:
 
 			go func(publication *Publication) {
 
@@ -287,6 +287,7 @@ func (n *pushServer) start(ctx context.Context) {
 						zap.Stringer("event", event),
 						zap.Error(err),
 					)
+					return
 				}
 
 				// Keep a references to all current ready push sessions as it may change at any time, we lost 8h on this one...
