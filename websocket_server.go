@@ -302,16 +302,16 @@ func (n *pushServer) start(ctx context.Context) {
 				// Dispatch the event to all sessions
 				for _, session := range sessions {
 
-					go func(s *wsPushSession) {
+					if event.Timestamp.Before(session.startTime) {
+						continue
+					}
 
-						if event.Timestamp.Before(s.startTime) {
-							return
-						}
+					f := session.currentFilter()
+					if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+						continue
+					}
 
-						f := s.currentFilter()
-						if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-							return
-						}
+					go func(s *wsPushSession) { // Should we drop that go routine now?
 
 						if n.cfg.pushServer.dispatchHandler != nil {
 
@@ -328,9 +328,9 @@ func (n *pushServer) start(ctx context.Context) {
 
 						switch s.encodingWrite {
 						case elemental.EncodingTypeMSGPACK:
-							s.Push(dataMSGPACK)
+							s.send(dataMSGPACK)
 						case elemental.EncodingTypeJSON:
-							s.Push(dataJSON)
+							s.send(dataJSON)
 						}
 
 					}(session)

@@ -94,7 +94,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 	})
 }
 
-func TestWSPushSession_Push(t *testing.T) {
+func TestWSPushSession_send(t *testing.T) {
 
 	Convey("Given I have a session and an event", t, func() {
 
@@ -104,7 +104,7 @@ func TestWSPushSession_Push(t *testing.T) {
 
 		Convey("When I call directPush and pull from the event channel", func() {
 
-			go s.Push([]byte("hello"))
+			go s.send([]byte("hello"))
 			data := <-s.dataCh
 
 			Convey("Then data1 should be correct", func() {

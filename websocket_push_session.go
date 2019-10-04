@@ -115,20 +115,7 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
-		s.Push(data)
-	}
-}
-
-func (s *wsPushSession) Push(data []byte) {
-
-	select {
-	case s.dataCh <- data:
-	default:
-		zap.L().Warn("Slow consumer. event dropped",
-			zap.String("sessionID", s.id),
-			zap.Strings("claims", s.claims),
-			zap.String("data", string(data)),
-		)
+		s.send(data)
 	}
 }
 
@@ -167,18 +154,11 @@ func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remot
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }
 func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsConnectionState = st }
-
+func (s *wsPushSession) Header(key string) string                      { return s.headers.Get(key) }
 func (s *wsPushSession) Parameter(key string) string {
-
 	s.parametersLock.RLock()
 	defer s.parametersLock.RUnlock()
-
 	return s.parameters.Get(key)
-}
-
-func (s *wsPushSession) Header(key string) string {
-
-	return s.headers.Get(key)
 }
 
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
@@ -199,15 +179,29 @@ func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
 	defer s.currentFilterLock.Unlock()
 
 	s.filter = f
-	if s.filter == nil {
+	if f == nil {
 		return
 	}
 
 	s.parametersLock.Lock()
-	defer s.parametersLock.Unlock()
-
-	for k, v := range s.filter.Parameters() {
+	for k, v := range f.Parameters() {
 		s.parameters[k] = v
+	}
+	s.parametersLock.Unlock()
+}
+
+// send sends the given bytes as is, with no
+// additional checks.
+func (s *wsPushSession) send(data []byte) {
+
+	select {
+	case s.dataCh <- data:
+	default:
+		zap.L().Warn("Slow consumer. event dropped",
+			zap.String("sessionID", s.id),
+			zap.Strings("claims", s.claims),
+			zap.String("data", string(data)),
+		)
 	}
 }
 

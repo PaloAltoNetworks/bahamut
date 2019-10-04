@@ -503,7 +503,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		return struct{}{}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	makePubsub := func(ctx context.Context) (PubSubClient, *mockSessionHandler, wsc.MockWebsocket, wsc.MockWebsocket) {
