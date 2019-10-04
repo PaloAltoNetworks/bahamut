@@ -78,7 +78,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 			panic(err)
 		}
 
-		Convey("When I call directPush and pull from the event channel", func() {
+		Convey("When I call directPush", func() {
 
 			go s.DirectPush(evt, evt)
 			data1 := <-s.dataCh
@@ -89,6 +89,59 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 			})
 			Convey("Then data2 should be correct", func() {
 				So(string(data2), ShouldEqual, string(msgpack))
+			})
+		})
+
+		Convey("When I call directPush but event is filtered", func() {
+
+			f := elemental.NewPushFilter()
+			f.FilterIdentity("not-list")
+
+			s.setCurrentFilter(f)
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
+			})
+		})
+
+		Convey("When I call directPush but event is before session", func() {
+
+			s.startTime = time.Now().Add(1 * time.Second)
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
+			})
+		})
+
+		Convey("When I call directPush with a bad event", func() {
+
+			evt.Encoding = elemental.EncodingTypeJSON
+			evt.RawData = []byte("{brodken")
+
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
 			})
 		})
 	})
@@ -104,11 +157,32 @@ func TestWSPushSession_send(t *testing.T) {
 
 		Convey("When I call directPush and pull from the event channel", func() {
 
-			go s.send([]byte("hello"))
+			s.send([]byte("hello"))
 			data := <-s.dataCh
 
-			Convey("Then data1 should be correct", func() {
+			Convey("Then data should be correct", func() {
 				So(string(data), ShouldEqual, "hello")
+			})
+		})
+
+		Convey("When I call directPush and overflow it", func() {
+
+			for i := 0; i < 2000; i++ {
+				s.send([]byte("hello"))
+			}
+
+			var total int
+			for i := 0; i < 2000; i++ {
+				select {
+				case <-s.dataCh:
+					total++
+				default:
+				}
+
+			}
+
+			Convey("Then we should get 1024 data", func() {
+				So(total, ShouldEqual, 1024)
 			})
 		})
 	})
@@ -142,6 +216,7 @@ func TestWSPushSession_Filtering(t *testing.T) {
 		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		f := elemental.NewPushFilter()
+		f.SetParameter("hello", "world")
 
 		Convey("When I call setCurrentFilter", func() {
 
@@ -150,6 +225,10 @@ func TestWSPushSession_Filtering(t *testing.T) {
 			Convey("Then the filter should be installed", func() {
 				So(s.currentFilter(), ShouldNotEqual, f)
 				So(s.currentFilter(), ShouldResemble, f)
+			})
+
+			Convey("Then the parameters have benn installed", func() {
+				So(s.Parameter("hello"), ShouldEqual, "world")
 			})
 
 			Convey("When I reset the filter to nil", func() {

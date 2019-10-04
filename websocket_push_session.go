@@ -104,6 +104,7 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 				zap.Stringer("event", event),
 				zap.Error(err),
 			)
+			continue
 		}
 
 		data, err := elemental.Encode(s.encodingWrite, event)
