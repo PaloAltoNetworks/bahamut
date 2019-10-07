@@ -5,16 +5,10 @@ PROJECT_SHA ?= $(shell git rev-parse HEAD)
 PROJECT_VERSION ?= $(lastword $(shell git tag --sort version:refname --merged $(shell git rev-parse --abbrev-ref HEAD)))
 PROJECT_RELEASE ?= dev
 
-# Until we support go.mod properly
-export GO111MODULE = off
+export GO111MODULE = on
+export GOPRIVATE = '*'
 
-ci: init lint test codecov
-
-init:
-	go get -u github.com/aporeto-inc/go-bindata/...
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	dep ensure
-	dep status
+ci: lint test codecov
 
 lint:
 	# --enable=unparam
