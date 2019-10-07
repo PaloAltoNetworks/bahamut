@@ -90,6 +90,8 @@ func (n *pushServer) unregisterSession(session *wsPushSession) {
 		panic("cannot unregister websocket session. empty identifier")
 	}
 
+	session.cancel()
+
 	n.sessionsLock.Lock()
 	delete(n.sessions, session.Identifier())
 	n.sessionsLock.Unlock()
@@ -228,7 +230,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{WriteChanSize: 1024, ReadChanSize: 512})
+	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{WriteChanSize: 64, ReadChanSize: 16})
 	if err != nil {
 		writeHTTPResponse(n.cfg.security.CORSOrigin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
 		return
@@ -343,28 +345,24 @@ func (n *pushServer) start(ctx context.Context) {
 						}
 					}
 
-					go func(s *wsPushSession) { // Should we drop that go routine now?
-
-						if n.cfg.pushServer.dispatchHandler != nil {
-							ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(s, event, eventSummary)
-							if err != nil {
-								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
-								return
-							}
-
-							if !ok {
-								return
-							}
+					if n.cfg.pushServer.dispatchHandler != nil {
+						ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
+						if err != nil {
+							zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
+							continue
 						}
 
-						switch s.encodingWrite {
-						case elemental.EncodingTypeMSGPACK:
-							s.send(dataMSGPACK)
-						case elemental.EncodingTypeJSON:
-							s.send(dataJSON)
+						if !ok {
+							continue
 						}
+					}
 
-					}(session)
+					switch session.encodingWrite {
+					case elemental.EncodingTypeMSGPACK:
+						session.send(dataMSGPACK)
+					case elemental.EncodingTypeJSON:
+						session.send(dataJSON)
+					}
 				}
 			}(p)
 

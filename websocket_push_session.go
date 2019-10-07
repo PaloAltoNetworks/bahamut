@@ -65,7 +65,7 @@ func newWSPushSession(
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
-		dataCh:             make(chan []byte, 1024),
+		dataCh:             make(chan []byte, 64),
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},

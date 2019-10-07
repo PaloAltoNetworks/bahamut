@@ -181,8 +181,8 @@ func TestWSPushSession_send(t *testing.T) {
 
 			}
 
-			Convey("Then we should get 1024 data", func() {
-				So(total, ShouldEqual, 1024)
+			Convey("Then we should get 64 data", func() {
+				So(total, ShouldEqual, 64)
 			})
 		})
 	})
