@@ -201,7 +201,6 @@ func (s *wsPushSession) send(data []byte) {
 		zap.L().Warn("Slow consumer. event dropped",
 			zap.String("sessionID", s.id),
 			zap.Strings("claims", s.claims),
-			zap.String("data", string(data)),
 		)
 	}
 }
