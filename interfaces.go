@@ -222,13 +222,36 @@ type Authorizer interface {
 
 // PushDispatchHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Dispatch handler.
-// Deprecated: Use PushDispatcher.
 type PushDispatchHandler interface {
+
+	// OnPushSessionInit is called when a new push session wants to connect.
+	// If it returns false, the push session will be considered
+	// as forbidden. If it returns an error, it will be returned
+	// to the client.
 	OnPushSessionInit(PushSession) (bool, error)
+
+	// OnPushSessionStart is called when a new push session starts.
 	OnPushSessionStart(PushSession)
+
+	// OnPushSessionStart is called when a new push session terminated.
 	OnPushSessionStop(PushSession)
+
+	// ShouldDispatch is called to decide if the given event should be sent to the given session.
+	// The last parameter will contain whatever has been returned by SummarizeEvent.
+	// It is NOT safe to modify the given *elemental.Event. This would cause
+	// race conditions. You can only safely read from it.
 	ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error)
+
+	// RelatedEventIdentities allows to return a list of related identities
+	// associated to the main event identity. This allows to pass filtering
+	// in case a push on identity A must also trigger a push on identity B and C.
 	RelatedEventIdentities(string) []string
+
+	// SummarizeEvent is called once per event and allows the implementation
+	// to return am intenface that will be passed to ShouldDispatch.
+	// If you need to decode an event to read some information to make a
+	// dispatch decision, this is a good place as it will allow to only
+	// do this once.
 	SummarizeEvent(event *elemental.Event) (interface{}, error)
 }
 
