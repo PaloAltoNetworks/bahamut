@@ -445,7 +445,7 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 
 func TestHandlers_runDispatcher(t *testing.T) {
 
-	Convey("Given I have a fake dispatcher", t, func() {
+	Convey("When I call runDispatcher", t, func() {
 
 		calledCounter := &counter{}
 
@@ -458,58 +458,75 @@ func TestHandlers_runDispatcher(t *testing.T) {
 
 		response := elemental.NewResponse(elemental.NewRequest())
 
-		Convey("When I call runDispatcher", func() {
+		d := func() error {
+			calledCounter.Add(1)
+			return nil
+		}
 
-			d := func() error {
-				calledCounter.Add(1)
-				return nil
-			}
+		r := runDispatcher(ctx, response, d, true, nil)
 
-			r := runDispatcher(ctx, response, d, true, nil)
-
-			Convey("Then the code should be 204", func() {
-				So(r.StatusCode, ShouldEqual, 204)
-			})
-
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
-			})
+		Convey("Then the code should be 204", func() {
+			So(r.StatusCode, ShouldEqual, 204)
 		})
 
-		Convey("When I call runDispatcher and it returns an error", func() {
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 1)
+		})
+	})
 
-			d := func() error {
-				calledCounter.Add(1)
-				return elemental.NewError("nop", "nope", "test", 42)
-			}
+	Convey("When I call runDispatcher and it returns an error", t, func() {
 
-			r := runDispatcher(ctx, response, d, true, nil)
+		calledCounter := &counter{}
 
-			Convey("Then the code should be 42", func() {
-				So(r.StatusCode, ShouldEqual, 42)
-			})
+		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
-			})
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		response := elemental.NewResponse(elemental.NewRequest())
+
+		d := func() error {
+			calledCounter.Add(1)
+			return elemental.NewError("nop", "nope", "test", 42)
+		}
+
+		r := runDispatcher(ctx, response, d, true, nil)
+
+		Convey("Then the code should be 42", func() {
+			So(r.StatusCode, ShouldEqual, 42)
 		})
 
-		Convey("When I call runDispatcher and cancel the context", func() {
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 1)
+		})
+	})
 
-			d := func() error {
-				time.Sleep(300 * time.Millisecond)
-				calledCounter.Add(1)
-				return nil
-			}
+	Convey("When I call runDispatcher and cancel the context", t, func() {
 
-			r := elemental.NewResponse(elemental.NewRequest())
-			go func() { runDispatcher(ctx, r, d, true, nil) }()
-			time.Sleep(30 * time.Millisecond)
-			cancel()
+		calledCounter := &counter{}
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 0)
-			})
+		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		d := func() error {
+			time.Sleep(300 * time.Millisecond)
+			calledCounter.Add(1)
+			return nil
+		}
+
+		r := elemental.NewResponse(elemental.NewRequest())
+		go func() { runDispatcher(ctx, r, d, true, nil) }()
+		time.Sleep(30 * time.Millisecond)
+		cancel()
+
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 0)
 		})
 	})
 }
