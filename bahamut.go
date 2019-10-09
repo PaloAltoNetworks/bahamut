@@ -216,7 +216,7 @@ func (b *server) Run(ctx context.Context) {
 		}
 	}
 
-	<-ctx.Done()
+	<-ctx.Done(
 
 	if hook := b.cfg.hooks.preStop; hook != nil {
 		if err := hook(b); err != nil {
