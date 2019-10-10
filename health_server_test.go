@@ -60,7 +60,7 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		<-time.After(300 * time.Millisecond)
+		<-time.After(1 * time.Second)
 
 		Convey("When I get /", func() {
 
@@ -157,7 +157,7 @@ func TestHealthServerWithCustomHandler(t *testing.T) {
 		go hs.start(ctx)
 		defer hs.stop()
 
-		<-time.After(300 * time.Millisecond)
+		<-time.After(1 * time.Second)
 
 		Convey("When I get / with", func() {
 
