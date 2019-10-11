@@ -171,6 +171,9 @@ func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 		return nil
 	}
 
+	s.parametersLock.Lock()
+	defer s.parametersLock.Unlock()
+
 	return s.filter.Duplicate()
 }
 
