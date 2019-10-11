@@ -28,3 +28,6 @@ lint:
 
 test:
 	go test ./... -race -cover -covermode=atomic -coverprofile=unit_coverage.cov
+
+sec:
+	gosec -quiet ./...
