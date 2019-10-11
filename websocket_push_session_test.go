@@ -248,7 +248,7 @@ func TestWSPushSession_Filtering(t *testing.T) {
 
 		var wg sync.WaitGroup
 
-		wg.Add(4)
+		wg.Add(5)
 		go func() {
 			defer wg.Done()
 
