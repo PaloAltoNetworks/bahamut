@@ -48,7 +48,7 @@ func (m *testMetricsManager) Write(w http.ResponseWriter, r *http.Request) {
 
 func TestHealthServer(t *testing.T) {
 
-	Convey("Given I have a health server with no custom handlers", t, func() {
+	Convey("Given I have a health server with no custom handlers and I get /", t, func() {
 
 		port := freePort()
 		cfg := config{}
@@ -62,74 +62,101 @@ func TestHealthServer(t *testing.T) {
 		go hs.start(ctx)
 		<-time.After(1 * time.Second)
 
-		Convey("When I get /", func() {
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
 
-			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
-
-			Convey("Then err should be nil", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("Then code should be 204", func() {
-				So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
-			})
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
 		})
+	})
 
-		Convey("When I get /metrics", func() {
+	Convey("Given I have a health server with no custom handlers and I get /metrics", t, func() {
 
-			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
-			Convey("Then err should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+		hs := newHealthServer(cfg)
 
-			Convey("Then code should be 501", func() {
-				So(resp.StatusCode, ShouldEqual, http.StatusNotImplemented)
-			})
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNotImplemented)
 		})
+	})
 
-		Convey("When I get /something with no custom stats", func() {
+	Convey("Given I have a health server with no custom handlers and I get /something with no custom stats", t, func() {
 
-			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
-			Convey("Then err should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+		hs := newHealthServer(cfg)
 
-			Convey("Then code should be 404", func() {
-				So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
-			})
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
 		})
+	})
 
-		Convey("When I send a POST", func() {
+	Convey("Given I have a health server with no custom handlers and I send a POST", t, func() {
 
-			resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
-			Convey("Then err should be nil", func() {
-				So(err, ShouldBeNil)
-			})
+		hs := newHealthServer(cfg)
 
-			Convey("Then code should be 405", func() {
-				So(resp.StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
-			})
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
 		})
+	})
 
-		Convey("When I stop it", func() {
+	Convey("Given I have a health server with no custom handlers and I get stop it", t, func() {
 
-			hs.stop()
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
 
-			Convey("Then it should stop", func() {
+		hs := newHealthServer(cfg)
 
-				resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-				Convey("Then err should not be nil", func() {
-					So(err, ShouldNotBeNil)
-				})
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
 
-				Convey("Then resp should be nil", func() {
-					So(resp, ShouldBeNil)
-				})
-			})
+		hs.stop()
+
+		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldNotBeNil)
+			So(resp, ShouldBeNil)
 		})
 	})
 }
