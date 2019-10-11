@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -209,7 +210,7 @@ func TestWSPushSession_String(t *testing.T) {
 
 func TestWSPushSession_Filtering(t *testing.T) {
 
-	Convey("Given I have a session and a filter", t, func() {
+	Convey("Given I call setCurrentFilter", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
@@ -218,28 +219,85 @@ func TestWSPushSession_Filtering(t *testing.T) {
 		f := elemental.NewPushFilter()
 		f.SetParameter("hello", "world")
 
-		Convey("When I call setCurrentFilter", func() {
+		s.setCurrentFilter(f)
 
-			s.setCurrentFilter(f)
+		Convey("Then the filter should be installed", func() {
+			So(s.currentFilter(), ShouldNotEqual, f)
+			So(s.currentFilter(), ShouldResemble, f)
+		})
 
-			Convey("Then the filter should be installed", func() {
-				So(s.currentFilter(), ShouldNotEqual, f)
-				So(s.currentFilter(), ShouldResemble, f)
-			})
+		Convey("Then the parameters have benn installed", func() {
+			So(s.Parameter("hello"), ShouldEqual, "world")
+		})
 
-			Convey("Then the parameters have benn installed", func() {
-				So(s.Parameter("hello"), ShouldEqual, "world")
-			})
+		Convey("When I reset the filter to nil", func() {
 
-			Convey("When I reset the filter to nil", func() {
+			s.setCurrentFilter(nil)
 
-				s.setCurrentFilter(nil)
-
-				Convey("Then the filter should be uninstalled", func() {
-					So(s.currentFilter(), ShouldBeNil)
-				})
+			Convey("Then the filter should be uninstalled", func() {
+				So(s.currentFilter(), ShouldBeNil)
 			})
 		})
+	})
+
+	Convey("Given I call setCurrentFilter and read at the same time", t, func() {
+
+		req, _ := http.NewRequest("GET", "bla", nil)
+		cfg := config{}
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
+
+		var wg sync.WaitGroup
+
+		wg.Add(4)
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < 10000; i++ {
+				f := elemental.NewPushFilter()
+				f.SetParameter("hello", "world")
+
+				s.setCurrentFilter(f)
+			}
+		}()
+
+		f := elemental.NewPushFilter()
+		f.SetParameter("yo", "world")
+
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < 10000; i++ {
+				s.setCurrentFilter(f)
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < 10000; i++ {
+				s.parametersLock.Lock()
+				f.SetParameter("hey", "yo")
+				s.parametersLock.Unlock()
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < 10000; i++ {
+				s.currentFilter()
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			for i := 0; i < 10000; i++ {
+				s.Parameter("hello")
+			}
+		}()
+
+		wg.Wait()
 	})
 }
 
