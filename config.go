@@ -82,11 +82,8 @@ type config struct {
 	}
 
 	profilingServer struct {
-		listenAddress    string
-		enabled          bool
-		mode             string
-		gcpProjectID     string
-		gcpServicePrefix string
+		listenAddress string
+		enabled       bool
 	}
 
 	tls struct {

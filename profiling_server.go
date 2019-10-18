@@ -17,7 +17,6 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"cloud.google.com/go/profiler"
 	"go.uber.org/zap"
 )
 
@@ -38,55 +37,27 @@ func newProfilingServer(cfg config) *profilingServer {
 // start starts the profilingServer.
 func (s *profilingServer) start(ctx context.Context) {
 
-	if s.cfg.profilingServer.mode == "gcp" {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-		name := s.cfg.meta.serviceName
-		if prfx := s.cfg.profilingServer.gcpServicePrefix; prfx != "" {
-			name = prfx + "-" + name
-		}
-
-		if err := profiler.Start(profiler.Config{
-			Service:        name,
-			ServiceVersion: s.cfg.meta.serviceVersion,
-			ProjectID:      s.cfg.profilingServer.gcpProjectID,
-		}); err != nil {
-			zap.L().Fatal("Unable to start gcp profile server", zap.Error(err))
-		}
-
-		projectID := s.cfg.profilingServer.gcpProjectID
-		if projectID == "" {
-			projectID = "auto"
-		}
-
-		zap.L().Info("GCP profiler started",
-			zap.String("service", name),
-			zap.String("project-id", projectID),
-		)
-
-	} else {
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/debug/pprof/", pprof.Index)
-		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-
-		s.server = &http.Server{
-			Addr:    s.cfg.profilingServer.listenAddress,
-			Handler: mux,
-		}
-
-		go func() {
-			if err := s.server.ListenAndServe(); err != nil {
-				if err == http.ErrServerClosed {
-					return
-				}
-				zap.L().Fatal("Unable to start profiling server", zap.Error(err))
-			}
-		}()
-
-		zap.L().Info("Profiler server started", zap.String("address", s.cfg.profilingServer.listenAddress))
+	s.server = &http.Server{
+		Addr:    s.cfg.profilingServer.listenAddress,
+		Handler: mux,
 	}
+
+	go func() {
+		if err := s.server.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			zap.L().Fatal("Unable to start profiling server", zap.Error(err))
+		}
+	}()
+
+	zap.L().Info("Profiler server started", zap.String("address", s.cfg.profilingServer.listenAddress))
 
 	<-ctx.Done()
 }

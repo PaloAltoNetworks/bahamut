@@ -150,16 +150,7 @@ func TestBahamut_Options(t *testing.T) {
 	Convey("Calling OptProfilingLocal should work", t, func() {
 		OptProfilingLocal("1.2.3.4:123")(&c)
 		So(c.profilingServer.enabled, ShouldEqual, true)
-		So(c.profilingServer.mode, ShouldEqual, "gops")
 		So(c.profilingServer.listenAddress, ShouldEqual, "1.2.3.4:123")
-	})
-
-	Convey("Calling OptProfilingGCP should work", t, func() {
-		OptProfilingGCP("id", "prfx")(&c)
-		So(c.profilingServer.enabled, ShouldEqual, true)
-		So(c.profilingServer.mode, ShouldEqual, "gcp")
-		So(c.profilingServer.gcpProjectID, ShouldEqual, "id")
-		So(c.profilingServer.gcpServicePrefix, ShouldEqual, "prfx")
 	})
 
 	Convey("Calling OptTLS should work", t, func() {
