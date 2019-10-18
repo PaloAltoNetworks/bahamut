@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 	"testing"
 	"time"
 
@@ -238,66 +237,6 @@ func TestWSPushSession_Filtering(t *testing.T) {
 				So(s.currentFilter(), ShouldBeNil)
 			})
 		})
-	})
-
-	Convey("Given I call setCurrentFilter and read at the same time", t, func() {
-
-		req, _ := http.NewRequest("GET", "bla", nil)
-		cfg := config{}
-		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
-
-		var wg sync.WaitGroup
-
-		wg.Add(5)
-		go func() {
-			defer wg.Done()
-
-			for i := 0; i < 10000; i++ {
-				f := elemental.NewPushFilter()
-				f.SetParameter("hello", "world")
-
-				s.setCurrentFilter(f)
-			}
-		}()
-
-		f := elemental.NewPushFilter()
-		f.SetParameter("yo", "world")
-
-		go func() {
-			defer wg.Done()
-
-			for i := 0; i < 10000; i++ {
-				s.setCurrentFilter(f)
-			}
-		}()
-
-		go func() {
-			defer wg.Done()
-
-			for i := 0; i < 10000; i++ {
-				s.parametersLock.Lock()
-				f.SetParameter("hey", "yo")
-				s.parametersLock.Unlock()
-			}
-		}()
-
-		go func() {
-			defer wg.Done()
-
-			for i := 0; i < 10000; i++ {
-				s.currentFilter()
-			}
-		}()
-
-		go func() {
-			defer wg.Done()
-
-			for i := 0; i < 10000; i++ {
-				s.Parameter("hello")
-			}
-		}()
-
-		wg.Wait()
 	})
 }
 

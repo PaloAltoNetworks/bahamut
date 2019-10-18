@@ -171,9 +171,6 @@ func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 		return nil
 	}
 
-	s.parametersLock.Lock()
-	defer s.parametersLock.Unlock()
-
 	return s.filter.Duplicate()
 }
 
@@ -210,8 +207,6 @@ func (s *wsPushSession) send(data []byte) {
 
 func (s *wsPushSession) listen() {
 
-	filter := elemental.NewPushFilter()
-
 	defer s.unregister(s)
 
 	for {
@@ -222,6 +217,7 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
+			filter := elemental.NewPushFilter()
 			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
