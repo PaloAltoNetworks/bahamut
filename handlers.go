@@ -58,6 +58,10 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 		fields = append(fields, (log.Object("messages", msgs)))
 	}
 
+	if ctx.next != "" {
+		response.Next = ctx.next
+	}
+
 	if ctx.outputData == nil {
 		response.StatusCode = http.StatusNoContent
 		return response
@@ -440,6 +444,7 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 				cfg.security.auditer,
 				cfg.model.readOnly,
 				cfg.model.readOnlyExcludedIdentities,
+				cfg.model.retriever,
 			)
 		},
 		cfg.general.panicRecoveryDisabled,

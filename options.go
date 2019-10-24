@@ -203,23 +203,7 @@ func OptHealthServerTimeouts(read, write, idle time.Duration) Option {
 func OptProfilingLocal(listen string) Option {
 	return func(c *config) {
 		c.profilingServer.enabled = true
-		c.profilingServer.mode = "gops"
 		c.profilingServer.listenAddress = listen
-	}
-}
-
-// OptProfilingGCP configure gcp profiling.
-//
-// ProjectID is the GCP project to use. When running on gcp, this can be empty.
-// servicePrefix can be set to add a prefix to your service name when reporting
-// profile to GCP. This allows to differentiate multiple instance
-// of an application running in the same project.
-func OptProfilingGCP(projectID string, servicePrefix string) Option {
-	return func(c *config) {
-		c.profilingServer.enabled = true
-		c.profilingServer.mode = "gcp"
-		c.profilingServer.gcpProjectID = projectID
-		c.profilingServer.gcpServicePrefix = servicePrefix
 	}
 }
 
@@ -411,5 +395,15 @@ func OptTraceCleaner(cleaner TraceCleaner) Option {
 func OptCORSOrigin(origin string) Option {
 	return func(c *config) {
 		c.security.CORSOrigin = origin
+	}
+}
+
+// OptIdentifiableRetriever sets the IdentifiableRetriever tha will be used to perform transparent
+// patch support using elemental.SparseIdentifiable. When set, the handler for PATCH method will use
+// this function to retrieve the target identifiable, will apply the patch and
+// treat the request as a standard elemental update operation.
+func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
+	return func(c *config) {
+		c.model.retriever = f
 	}
 }

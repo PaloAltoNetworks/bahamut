@@ -27,7 +27,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a redirect and a response", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 
 		ctx.redirect = "http://ici"
@@ -44,7 +44,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a a count and a response", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 
 		ctx.count = 42
@@ -118,7 +118,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with a status code set to 0 and a response", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.outputData = []string{}
 		ctx.statusCode = 0
@@ -172,7 +172,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 	Convey("Given I have context with messages and a response", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.AddMessage("hello world")
 
@@ -186,9 +186,25 @@ func TestHandlers_makeResponse(t *testing.T) {
 		})
 	})
 
+	Convey("Given I have context with next and a response", t, func() {
+
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		response := elemental.NewResponse(elemental.NewRequest())
+		ctx.SetNext("a")
+
+		Convey("When I call makeResponse", func() {
+
+			makeResponse(ctx, response, nil)
+
+			Convey("Then response.Message should be set", func() {
+				So(response.Next, ShouldEqual, "a")
+			})
+		})
+	})
+
 	Convey("Given I have context with unmarshalable data and a response", t, func() {
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		response := elemental.NewResponse(elemental.NewRequest())
 		ctx.outputData = testmodel.NewUnmarshalableList()
 
@@ -206,7 +222,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		req.Headers.Add("X-Fields", "name")
 		req.Headers.Add("X-Fields", "ID")
 
-		ctx := newContext(context.TODO(), req)
+		ctx := newContext(context.Background(), req)
 		response := elemental.NewResponse(req)
 		ctx.outputData = &testmodel.List{
 			Name:        "the name",
@@ -230,7 +246,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		req.Headers.Add("X-Fields", "name")
 		req.Headers.Add("X-Fields", "ID")
 
-		ctx := newContext(context.TODO(), req)
+		ctx := newContext(context.Background(), req)
 		response := elemental.NewResponse(req)
 		ctx.outputData = testmodel.ListsList{
 			&testmodel.List{
@@ -429,71 +445,88 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 
 func TestHandlers_runDispatcher(t *testing.T) {
 
-	Convey("Given I have a fake dispatcher", t, func() {
+	Convey("When I call runDispatcher", t, func() {
 
 		calledCounter := &counter{}
 
 		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
 
-		ctx := newContext(context.TODO(), elemental.NewRequest())
+		ctx := newContext(context.Background(), elemental.NewRequest())
 		ctx.request = elemental.NewRequest()
 		ctx.ctx = gctx
 
 		response := elemental.NewResponse(elemental.NewRequest())
 
-		Convey("When I call runDispatcher", func() {
+		d := func() error {
+			calledCounter.Add(1)
+			return nil
+		}
 
-			d := func() error {
-				calledCounter.Add(1)
-				return nil
-			}
+		r := runDispatcher(ctx, response, d, true, nil)
 
-			r := runDispatcher(ctx, response, d, true, nil)
-
-			Convey("Then the code should be 204", func() {
-				So(r.StatusCode, ShouldEqual, 204)
-			})
-
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
-			})
+		Convey("Then the code should be 204", func() {
+			So(r.StatusCode, ShouldEqual, 204)
 		})
 
-		Convey("When I call runDispatcher and it returns an error", func() {
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 1)
+		})
+	})
 
-			d := func() error {
-				calledCounter.Add(1)
-				return elemental.NewError("nop", "nope", "test", 42)
-			}
+	Convey("When I call runDispatcher and it returns an error", t, func() {
 
-			r := runDispatcher(ctx, response, d, true, nil)
+		calledCounter := &counter{}
 
-			Convey("Then the code should be 42", func() {
-				So(r.StatusCode, ShouldEqual, 42)
-			})
+		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 1)
-			})
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		response := elemental.NewResponse(elemental.NewRequest())
+
+		d := func() error {
+			calledCounter.Add(1)
+			return elemental.NewError("nop", "nope", "test", 42)
+		}
+
+		r := runDispatcher(ctx, response, d, true, nil)
+
+		Convey("Then the code should be 42", func() {
+			So(r.StatusCode, ShouldEqual, 42)
 		})
 
-		Convey("When I call runDispatcher and cancel the context", func() {
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 1)
+		})
+	})
 
-			d := func() error {
-				time.Sleep(300 * time.Millisecond)
-				calledCounter.Add(1)
-				return nil
-			}
+	Convey("When I call runDispatcher and cancel the context", t, func() {
 
-			r := elemental.NewResponse(elemental.NewRequest())
-			go func() { runDispatcher(ctx, r, d, true, nil) }()
-			time.Sleep(30 * time.Millisecond)
-			cancel()
+		calledCounter := &counter{}
 
-			Convey("Then the dispatcher should have been called once", func() {
-				So(calledCounter.Value(), ShouldEqual, 0)
-			})
+		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		d := func() error {
+			time.Sleep(300 * time.Millisecond)
+			calledCounter.Add(1)
+			return nil
+		}
+
+		r := elemental.NewResponse(elemental.NewRequest())
+		go func() { runDispatcher(ctx, r, d, true, nil) }()
+		time.Sleep(30 * time.Millisecond)
+		cancel()
+
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 0)
 		})
 	})
 }
@@ -518,7 +551,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 			Convey("When I call handleRetrieveMany on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.ParentIdentity = elemental.RootIdentity
 				ctx.request.Identity = testmodel.UserIdentity
@@ -539,7 +572,7 @@ func TestHandlers_handleRetrieveMany(t *testing.T) {
 
 			Convey("When I call handleRetrieveMany on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationRetrieveMany
@@ -580,7 +613,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 			Convey("When I call handleRetrieve on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationRetrieve
@@ -601,7 +634,7 @@ func TestHandlers_handleRetrieve(t *testing.T) {
 
 			Convey("When I call handleRetrieve on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationRetrieve
@@ -642,7 +675,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 			Convey("When I call handleCreate on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationCreate
@@ -663,7 +696,7 @@ func TestHandlers_handleCreate(t *testing.T) {
 
 			Convey("When I call handleCreate on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationCreate
@@ -704,7 +737,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 			Convey("When I call handleUpdate on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationUpdate
@@ -725,7 +758,7 @@ func TestHandlers_handleUpdate(t *testing.T) {
 
 			Convey("When I call handleUpdate on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationUpdate
@@ -766,7 +799,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 			Convey("When I call handleDelete on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationDelete
@@ -787,7 +820,7 @@ func TestHandlers_handleDelete(t *testing.T) {
 
 			Convey("When I call handleDelete on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationDelete
@@ -828,7 +861,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 			Convey("When I call handleInfo on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationInfo
@@ -849,7 +882,7 @@ func TestHandlers_handleInfo(t *testing.T) {
 
 			Convey("When I call handleInfo on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationInfo
@@ -890,7 +923,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 			Convey("When I call handlePatch on valid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationPatch
@@ -911,7 +944,7 @@ func TestHandlers_handlePatch(t *testing.T) {
 
 			Convey("When I call handlePatch on invalid api call", func() {
 
-				ctx := newContext(context.TODO(), elemental.NewRequest())
+				ctx := newContext(context.Background(), elemental.NewRequest())
 				ctx.request = elemental.NewRequest()
 				ctx.request.Identity = testmodel.UserIdentity
 				ctx.request.Operation = elemental.OperationPatch

@@ -48,7 +48,7 @@ func (m *testMetricsManager) Write(w http.ResponseWriter, r *http.Request) {
 
 func TestHealthServer(t *testing.T) {
 
-	Convey("Given I have a health server with no custom handlers", t, func() {
+	Convey("Given I have a health server with no custom handlers and I get /", t, func() {
 
 		port := freePort()
 		cfg := config{}
@@ -56,85 +56,108 @@ func TestHealthServer(t *testing.T) {
 
 		hs := newHealthServer(cfg)
 
-		Convey("When I start it", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
 
-			go hs.start(ctx)
-			<-time.After(300 * time.Millisecond)
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
 
-			Convey("When I get /", func() {
-
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
-
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
-
-				Convey("Then code should be 204", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
-				})
-			})
-
-			Convey("When I get /metrics", func() {
-
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
-
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
-
-				Convey("Then code should be 501", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusNotImplemented)
-				})
-			})
-
-			Convey("When I get /something with no custom stats", func() {
-
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
-
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
-
-				Convey("Then code should be 404", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
-				})
-			})
-
-			Convey("When I send a POST", func() {
-
-				resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
-
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
-
-				Convey("Then code should be 405", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
-				})
-			})
-
-			Convey("When I stop it", func() {
-
-				hs.stop()
-
-				Convey("Then it should stop", func() {
-
-					resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
-
-					Convey("Then err should not be nil", func() {
-						So(err, ShouldNotBeNil)
-					})
-
-					Convey("Then resp should be nil", func() {
-						So(resp, ShouldBeNil)
-					})
-				})
-			})
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNoContent)
 		})
+	})
 
+	Convey("Given I have a health server with no custom handlers and I get /metrics", t, func() {
+
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+		hs := newHealthServer(cfg)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNotImplemented)
+		})
+	})
+
+	Convey("Given I have a health server with no custom handlers and I get /something with no custom stats", t, func() {
+
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+		hs := newHealthServer(cfg)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
+		})
+	})
+
+	Convey("Given I have a health server with no custom handlers and I send a POST", t, func() {
+
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+		hs := newHealthServer(cfg)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldBeNil)
+			So(resp.StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
+		})
+	})
+
+	Convey("Given I have a health server with no custom handlers and I get stop it", t, func() {
+
+		port := freePort()
+		cfg := config{}
+		cfg.healthServer.listenAddress = fmt.Sprintf("127.0.0.1:%d", port)
+
+		hs := newHealthServer(cfg)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		go hs.start(ctx)
+		<-time.After(1 * time.Second)
+
+		hs.stop()
+
+		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
+
+		Convey("Result should be correct", func() {
+			So(err, ShouldNotBeNil)
+			So(resp, ShouldBeNil)
+		})
 	})
 }
 
@@ -155,66 +178,63 @@ func TestHealthServerWithCustomHandler(t *testing.T) {
 
 		hs := newHealthServer(cfg)
 
-		Convey("When I start it", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+		go hs.start(ctx)
+		defer hs.stop()
 
-			go hs.start(ctx)
-			defer hs.stop()
+		<-time.After(1 * time.Second)
 
-			<-time.After(300 * time.Millisecond)
+		Convey("When I get / with", func() {
 
-			Convey("When I get / with", func() {
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
 
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
-
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
-
-				Convey("Then code should be 500", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
-				})
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 
-			Convey("When I get /metrics", func() {
+			Convey("Then code should be 500", func() {
+				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
+			})
+		})
 
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
+		Convey("When I get /metrics", func() {
 
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
 
-				Convey("Then code should be 418", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusTeapot)
-				})
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 
-			Convey("When I get /teapot", func() {
+			Convey("Then code should be 418", func() {
+				So(resp.StatusCode, ShouldEqual, http.StatusTeapot)
+			})
+		})
 
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/teapot", port))
+		Convey("When I get /teapot", func() {
 
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/teapot", port))
 
-				Convey("Then code should be 418", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusTeapot)
-				})
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 
-			Convey("When I get /something", func() {
+			Convey("Then code should be 418", func() {
+				So(resp.StatusCode, ShouldEqual, http.StatusTeapot)
+			})
+		})
 
-				resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
+		Convey("When I get /something", func() {
 
-				Convey("Then err should be nil", func() {
-					So(err, ShouldBeNil)
-				})
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
 
-				Convey("Then code should be 404", func() {
-					So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
-				})
+			Convey("Then err should be nil", func() {
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then code should be 404", func() {
+				So(resp.StatusCode, ShouldEqual, http.StatusNotFound)
 			})
 		})
 	})

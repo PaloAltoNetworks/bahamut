@@ -163,9 +163,11 @@ func dispatchCreateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := ctx.Request().Decode(obj); err != nil {
-			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+		if len(ctx.Request().Data) > 0 {
+			if err := ctx.Request().Decode(obj); err != nil {
+				audit(auditer, ctx, err)
+				return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+			}
 		}
 	}
 
@@ -242,9 +244,11 @@ func dispatchUpdateOperation(
 		}
 	} else {
 		obj = modelManager.Identifiable(ctx.request.Identity)
-		if err := ctx.Request().Decode(obj); err != nil {
-			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+		if len(ctx.Request().Data) > 0 {
+			if err := ctx.Request().Decode(obj); err != nil {
+				audit(auditer, ctx, err)
+				return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+			}
 		}
 	}
 
@@ -341,6 +345,7 @@ func dispatchPatchOperation(
 	auditer Auditer,
 	readOnlyMode bool,
 	readOnlyExclusion []elemental.Identity,
+	identifiableRetriever IdentifiableRetriever,
 ) (err error) {
 
 	if err = CheckAuthentication(authenticators, ctx); err != nil {
@@ -361,10 +366,18 @@ func dispatchPatchOperation(
 
 	proc, _ := processorFinder(ctx.request.Identity)
 
-	if _, ok := proc.(PatchProcessor); !ok {
-		err = notImplementedErr(ctx.request)
-		audit(auditer, ctx, err)
-		return err
+	if identifiableRetriever != nil {
+		if _, ok := proc.(UpdateProcessor); !ok {
+			err = notImplementedErr(ctx.request)
+			audit(auditer, ctx, err)
+			return err
+		}
+	} else {
+		if _, ok := proc.(PatchProcessor); !ok {
+			err = notImplementedErr(ctx.request)
+			audit(auditer, ctx, err)
+			return err
+		}
 	}
 	var sparse elemental.Identifiable
 
@@ -381,11 +394,32 @@ func dispatchPatchOperation(
 		}
 	}
 
-	ctx.inputData = sparse
+	if identifiableRetriever != nil {
+		identifiable, err := identifiableRetriever(ctx.Request())
+		if err != nil {
+			audit(auditer, ctx, err)
+			return err
+		}
 
-	if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
-		audit(auditer, ctx, err)
-		return err
+		patchable, ok := identifiable.(elemental.Patchable)
+		if !ok {
+			audit(auditer, ctx, err)
+			return elemental.NewError("Bad Request", "Idenfiable is not patchable", "bahamut", http.StatusBadRequest)
+		}
+
+		patchable.Patch(sparse.(elemental.SparseIdentifiable))
+		ctx.inputData = patchable
+
+		if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
+			audit(auditer, ctx, err)
+			return err
+		}
+	} else {
+		ctx.inputData = sparse
+		if err = proc.(PatchProcessor).ProcessPatch(ctx); err != nil {
+			audit(auditer, ctx, err)
+			return err
+		}
 	}
 
 	if len(ctx.events) > 0 {

@@ -30,7 +30,7 @@ import (
 type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
-	events             chan *elemental.Event
+	dataCh             chan []byte
 	filter             *elemental.PushFilter
 	currentFilterLock  sync.RWMutex
 	parametersLock     sync.RWMutex
@@ -65,7 +65,7 @@ func newWSPushSession(
 	ctx, cancel := context.WithCancel(request.Context())
 
 	return &wsPushSession{
-		events:             make(chan *elemental.Event, 1024),
+		dataCh:             make(chan []byte, 64),
 		id:                 id,
 		claims:             []string{},
 		claimsMap:          map[string]string{},
@@ -92,16 +92,31 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
-		select {
-		case s.events <- event:
-		default:
-			zap.L().Warn("Slow consumer. event dropped",
-				zap.String("sessionID", s.id),
-				zap.Strings("claims", s.claims),
-				zap.String("eventType", string(event.Type)),
-				zap.String("eventIdentity", event.Identity),
-			)
+		f := s.currentFilter()
+		if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
+			continue
 		}
+
+		// We convert the inner Entity to the requested encoding. We don't need additional
+		// check as elemental.Convert will do anything if the EncodingTypes are identical.
+		if err := event.Convert(s.encodingWrite); err != nil {
+			zap.L().Error("Unable to convert event",
+				zap.Stringer("event", event),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		data, err := elemental.Encode(s.encodingWrite, event)
+		if err != nil {
+			zap.L().Error("Unable to encode event",
+				zap.Stringer("event", event),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		s.send(data)
 	}
 }
 
@@ -140,18 +155,11 @@ func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remot
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }
 func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsConnectionState = st }
-
+func (s *wsPushSession) Header(key string) string                      { return s.headers.Get(key) }
 func (s *wsPushSession) Parameter(key string) string {
-
 	s.parametersLock.RLock()
 	defer s.parametersLock.RUnlock()
-
 	return s.parameters.Get(key)
-}
-
-func (s *wsPushSession) Header(key string) string {
-
-	return s.headers.Get(key)
 }
 
 func (s *wsPushSession) currentFilter() *elemental.PushFilter {
@@ -172,52 +180,44 @@ func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
 	defer s.currentFilterLock.Unlock()
 
 	s.filter = f
-	if s.filter == nil {
+	if f == nil {
 		return
 	}
 
 	s.parametersLock.Lock()
-	defer s.parametersLock.Unlock()
-
-	for k, v := range s.filter.Parameters() {
+	for k, v := range f.Parameters() {
 		s.parameters[k] = v
+	}
+	s.parametersLock.Unlock()
+}
+
+// send sends the given bytes as is, with no
+// additional checks.
+func (s *wsPushSession) send(data []byte) {
+
+	select {
+	case s.dataCh <- data:
+	default:
+		zap.L().Warn("Slow consumer. event dropped",
+			zap.String("sessionID", s.id),
+			zap.Strings("claims", s.claims),
+		)
 	}
 }
 
 func (s *wsPushSession) listen() {
 
-	filter := elemental.NewPushFilter()
-
 	defer s.unregister(s)
 
 	for {
 		select {
-		case event := <-s.events:
-
-			f := s.currentFilter()
-			if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
-				break
-			}
-
-			// We convert the inner Entity to the requested encoding. We don't need additional
-			// check as elemental.Convert will do anything if the EncodingTypes are identical.
-			if err := event.Convert(s.encodingWrite); err != nil {
-				zap.L().Error("Unable to convert event", zap.Error(err))
-				s.close(websocket.CloseInternalServerErr)
-				return
-			}
-
-			data, err := elemental.Encode(s.encodingWrite, event)
-			if err != nil {
-				zap.L().Error("Unable to encode event", zap.Error(err))
-				s.close(websocket.CloseInternalServerErr)
-				return
-			}
+		case data := <-s.dataCh:
 
 			s.conn.Write(data)
 
 		case data := <-s.conn.Read():
 
+			filter := elemental.NewPushFilter()
 			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return

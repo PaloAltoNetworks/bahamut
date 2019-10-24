@@ -44,7 +44,7 @@ func TestWSPushSession_newPushSession(t *testing.T) {
 		s := newWSPushSession(req, conf, unregister, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		Convey("Then it should be correctly initialized", func() {
-			So(s.events, ShouldHaveSameTypeAs, make(chan *elemental.Event))
+			So(s.dataCh, ShouldHaveSameTypeAs, make(chan []byte))
 			So(s.Claims(), ShouldResemble, []string{})
 			So(s.claimsMap, ShouldResemble, map[string]string{})
 			So(s.cfg, ShouldResemble, conf)
@@ -73,17 +73,116 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 
 		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
 
-		Convey("When I call directPush and pull from the event channel", func() {
+		msgpack, _, err := prepareEventData(evt)
+		if err != nil {
+			panic(err)
+		}
+
+		Convey("When I call directPush", func() {
 
 			go s.DirectPush(evt, evt)
-			evt1 := <-s.events
-			evt2 := <-s.events
+			data1 := <-s.dataCh
+			data2 := <-s.dataCh
 
-			Convey("Then evt1 should be correct", func() {
-				So(evt1, ShouldEqual, evt)
+			Convey("Then data1 should be correct", func() {
+				So(string(data1), ShouldEqual, string(msgpack))
 			})
-			Convey("Then evt2 should be correct", func() {
-				So(evt2, ShouldEqual, evt)
+			Convey("Then data2 should be correct", func() {
+				So(string(data2), ShouldEqual, string(msgpack))
+			})
+		})
+
+		Convey("When I call directPush but event is filtered", func() {
+
+			f := elemental.NewPushFilter()
+			f.FilterIdentity("not-list")
+
+			s.setCurrentFilter(f)
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
+			})
+		})
+
+		Convey("When I call directPush but event is before session", func() {
+
+			s.startTime = time.Now().Add(1 * time.Second)
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
+			})
+		})
+
+		Convey("When I call directPush with a bad event", func() {
+
+			evt.Encoding = elemental.EncodingTypeJSON
+			evt.RawData = []byte("{brodken")
+
+			go s.DirectPush(evt)
+
+			var data []byte
+			select {
+			case data = <-s.dataCh:
+			case <-time.After(1 * time.Second):
+			}
+
+			Convey("Then data should be correct", func() {
+				So(data, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestWSPushSession_send(t *testing.T) {
+
+	Convey("Given I have a session and an event", t, func() {
+
+		req, _ := http.NewRequest("GET", "bla", nil)
+		cfg := config{}
+		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
+
+		Convey("When I call directPush and pull from the event channel", func() {
+
+			s.send([]byte("hello"))
+			data := <-s.dataCh
+
+			Convey("Then data should be correct", func() {
+				So(string(data), ShouldEqual, "hello")
+			})
+		})
+
+		Convey("When I call directPush and overflow it", func() {
+
+			for i := 0; i < 2000; i++ {
+				s.send([]byte("hello"))
+			}
+
+			var total int
+			for i := 0; i < 2000; i++ {
+				select {
+				case <-s.dataCh:
+					total++
+				default:
+				}
+
+			}
+
+			Convey("Then we should get 64 data", func() {
+				So(total, ShouldEqual, 64)
 			})
 		})
 	})
@@ -110,30 +209,32 @@ func TestWSPushSession_String(t *testing.T) {
 
 func TestWSPushSession_Filtering(t *testing.T) {
 
-	Convey("Given I have a session and a filter", t, func() {
+	Convey("Given I call setCurrentFilter", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
 		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
 		f := elemental.NewPushFilter()
+		f.SetParameter("hello", "world")
 
-		Convey("When I call setCurrentFilter", func() {
+		s.setCurrentFilter(f)
 
-			s.setCurrentFilter(f)
+		Convey("Then the filter should be installed", func() {
+			So(s.currentFilter(), ShouldNotEqual, f)
+			So(s.currentFilter(), ShouldResemble, f)
+		})
 
-			Convey("Then the filter should be installed", func() {
-				So(s.currentFilter(), ShouldNotEqual, f)
-				So(s.currentFilter(), ShouldResemble, f)
-			})
+		Convey("Then the parameters have benn installed", func() {
+			So(s.Parameter("hello"), ShouldEqual, "world")
+		})
 
-			Convey("When I reset the filter to nil", func() {
+		Convey("When I reset the filter to nil", func() {
 
-				s.setCurrentFilter(nil)
+			s.setCurrentFilter(nil)
 
-				Convey("Then the filter should be uninstalled", func() {
-					So(s.currentFilter(), ShouldBeNil)
-				})
+			Convey("Then the filter should be uninstalled", func() {
+				So(s.currentFilter(), ShouldBeNil)
 			})
 		})
 	})
