@@ -33,9 +33,8 @@ func TestBahamut_New(t *testing.T) {
 
 		Convey("Then some warnings should be printed", func() {
 			logs := obs.AllUntimed()
-			So(len(logs), ShouldEqual, 2)
-			So(logs[0].Message, ShouldEqual, "No rest server or push server configured. Use bahamut.OptRestServer() and/or bahamaut.OptPushServer()")
-			So(logs[1].Message, ShouldEqual, "No elemental.ModelManager is defined. Use bahamut.OptModel()")
+			So(len(logs), ShouldEqual, 1)
+			So(logs[0].Message, ShouldEqual, "No server configured. Enable some servers through options")
 		})
 	})
 
@@ -50,6 +49,20 @@ func TestBahamut_New(t *testing.T) {
 			logs := obs.AllUntimed()
 			So(len(logs), ShouldEqual, 1)
 			So(logs[0].Message, ShouldEqual, "Push server is enabled but neither dispatching or publishing is. Use bahamut.OptPushPublishHandler() and/or bahamut.OptPushDispatchHandler()")
+		})
+	})
+
+	Convey("Given I create a bahamut with a rest server, but no model manager", t, func() {
+
+		zc, obs := observer.New(zapcore.WarnLevel)
+		zap.ReplaceGlobals(zap.New(zc))
+
+		New(OptRestServer(":123"))
+
+		Convey("Then some warnings should be printed", func() {
+			logs := obs.AllUntimed()
+			So(len(logs), ShouldEqual, 1)
+			So(logs[0].Message, ShouldEqual, "No elemental.ModelManager is defined. Use bahamut.OptModel()")
 		})
 	})
 }
