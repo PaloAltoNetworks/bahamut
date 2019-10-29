@@ -3,12 +3,11 @@ module go.aporeto.io/bahamut
 go 1.12
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20191011202922-1850db852060
+	go.aporeto.io/elemental v1.100.1-0.20191029162424-2a683806acaa
 	go.aporeto.io/wsc v1.36.1-0.20191011180831-23743fa5722b
 )
 
 require (
-	cloud.google.com/go v0.40.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v3.2.0+incompatible
@@ -25,5 +24,6 @@ require (
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
 	go.uber.org/zap v1.10.0
+	golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
