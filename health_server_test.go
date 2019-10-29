@@ -60,7 +60,7 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d", port))
 
@@ -82,7 +82,7 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", port))
 
@@ -104,7 +104,7 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/something", port))
 
@@ -126,7 +126,7 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
 
@@ -136,7 +136,7 @@ func TestHealthServer(t *testing.T) {
 		})
 	})
 
-	Convey("Given I have a health server with no custom handlers and I get stop it", t, func() {
+	Convey("Given I have a health server with no custom handlers and I stop it", t, func() {
 
 		port := freePort()
 		cfg := config{}
@@ -148,9 +148,9 @@ func TestHealthServer(t *testing.T) {
 		defer cancel()
 
 		go hs.start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
-		hs.stop()
+		<-hs.stop().Done()
 
 		resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/something", port), "", nil)
 
@@ -184,7 +184,7 @@ func TestHealthServerWithCustomHandler(t *testing.T) {
 		go hs.start(ctx)
 		defer hs.stop()
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		Convey("When I get / with", func() {
 
