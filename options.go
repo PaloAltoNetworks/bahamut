@@ -52,6 +52,15 @@ func OptCustomListener(listener net.Listener) Option {
 	}
 }
 
+// OptMaxConnection sets the maximum number of concurrent
+// connection to the server. 0, which is the default, means
+// no limit.
+func OptMaxConnection(n int) Option {
+	return func(c *config) {
+		c.restServer.maxConnection = n
+	}
+}
+
 // OptTimeouts configures the timeouts of the server.
 func OptTimeouts(read, write, idle time.Duration) Option {
 	return func(c *config) {

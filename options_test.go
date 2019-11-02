@@ -46,6 +46,11 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.restServer.customListener, ShouldEqual, listener)
 	})
 
+	Convey("Calling OptMaxConnection should work", t, func() {
+		OptMaxConnection(3)(&c)
+		So(c.restServer.maxConnection, ShouldEqual, 3)
+	})
+
 	Convey("Calling OptTimeouts should work", t, func() {
 		OptTimeouts(1*time.Second, 2*time.Second, 3*time.Second)(&c)
 		So(c.restServer.readTimeout, ShouldEqual, 1*time.Second)

@@ -196,6 +196,8 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 			}
 		}
 
+		listener = NewListener(listener, a.cfg.restServer.maxConnection, a.cfg.healthServer.metricsManager)
+
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
 			err = a.server.ServeTLS(listener, "", "")
 		} else {
@@ -253,9 +255,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		defer finishTracing(ctx)
 
 		if a.cfg.rateLimiting.rateLimiter != nil {
-			rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
-			defer cancel()
-			if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
+			if !a.cfg.rateLimiting.rateLimiter.Allow() {
 				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))

@@ -25,5 +25,7 @@ type MetricsManager interface {
 	MeasureRequest(method string, url string) FinishMeasurementFunc
 	RegisterWSConnection()
 	UnregisterWSConnection()
+	RegisterTCPConnection()
+	UnregisterTCPConnection()
 	Write(w http.ResponseWriter, r *http.Request)
 }

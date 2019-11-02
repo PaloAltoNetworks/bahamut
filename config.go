@@ -57,6 +57,7 @@ type config struct {
 		enabled               bool
 		customRootHandlerFunc http.HandlerFunc
 		customListener        net.Listener
+		maxConnection         int
 	}
 
 	pushServer struct {
