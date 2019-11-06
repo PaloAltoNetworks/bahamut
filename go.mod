@@ -3,7 +3,7 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20191025225333-48d6efebe8c5
+	go.aporeto.io/elemental v1.100.1-0.20191106210659-e203ff490472
 	go.aporeto.io/wsc v1.36.1-0.20191011180831-23743fa5722b
 )
 
@@ -14,7 +14,7 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/gorilla/websocket v1.4.1
-	github.com/nats-io/gnatsd v1.4.1
+	github.com/nats-io/gnatsd v1.4.1 // indirect
 	github.com/nats-io/go-nats v1.7.2
 	github.com/nats-io/nats-server v1.4.1
 	github.com/nats-io/nkeys v0.0.2 // indirect
@@ -24,7 +24,6 @@ require (
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
