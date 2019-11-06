@@ -196,7 +196,7 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 			}
 		}
 
-		listener = NewListener(listener, a.cfg.restServer.maxConnection, a.cfg.healthServer.metricsManager)
+		listener = newListener(listener, a.cfg.restServer.maxConnection, a.cfg.healthServer.metricsManager)
 
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
 			err = a.server.ServeTLS(listener, "", "")

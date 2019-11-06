@@ -9,23 +9,17 @@ import (
 	"sync/atomic"
 )
 
-type negociation struct {
-	conn net.Conn
-	err  error
-}
-
 type limitListener struct {
 	net.Listener
-	connCh        chan negociation
 	metricManager MetricsManager
 	nConn         int64
 	maxConn       int64
 }
 
-// NewListener returns a Listener that uses the given semaphore to accept at most
+// newListener returns a Listener that uses the given semaphore to accept at most
 // n simultaneous connections from the provided Listener where n is the size of
 // the given channel.
-func NewListener(l net.Listener, n int, metricManager MetricsManager) *limitListener {
+func newListener(l net.Listener, n int, metricManager MetricsManager) *limitListener {
 
 	return &limitListener{
 		Listener:      l,
@@ -62,7 +56,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		}
 
 		if new > l.maxConn {
-			c.Close()
+			c.Close() // nolint: errcheck
 			l.release()
 			continue
 		}

@@ -32,7 +32,7 @@ func TestLimitListener(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer l.Close() // nolint
-	l = NewListener(l, max, nil)
+	l = newListener(l, max, nil)
 
 	var open int32
 	// nolint
@@ -87,7 +87,7 @@ func TestLimitListenerError(t *testing.T) {
 
 	go func() {
 		const n = 2
-		ll := NewListener(errorListener{}, 2, nil)
+		ll := newListener(errorListener{}, 2, nil)
 		for i := 0; i < n+1; i++ {
 			_, err := ll.Accept()
 			if err != errFake {
@@ -109,7 +109,7 @@ func TestLimitListenerClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ln.Close() // nolint
-	ln = NewListener(ln, 1, nil)
+	ln = newListener(ln, 1, nil)
 
 	doneCh := make(chan struct{})
 	defer close(doneCh)
