@@ -39,11 +39,13 @@ func sanitizeURL(url string) string {
 }
 
 type prometheusMetricsManager struct {
-	reqDurationMetric   *prometheus.SummaryVec
-	reqTotalMetric      *prometheus.CounterVec
-	errorMetric         *prometheus.CounterVec
-	wsConnTotalMetric   prometheus.Counter
-	wsConnCurrentMetric prometheus.Gauge
+	reqDurationMetric    *prometheus.SummaryVec
+	reqTotalMetric       *prometheus.CounterVec
+	errorMetric          *prometheus.CounterVec
+	tcpConnTotalMetric   prometheus.Counter
+	tcpConnCurrentMetric prometheus.Gauge
+	wsConnTotalMetric    prometheus.Counter
+	wsConnCurrentMetric  prometheus.Gauge
 
 	handler http.Handler
 }
@@ -72,6 +74,18 @@ func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManage
 			},
 			[]string{"method", "url"},
 		),
+		tcpConnTotalMetric: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "tcp_connections_total",
+				Help: "The total number of TCP connection.",
+			},
+		),
+		tcpConnCurrentMetric: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "tcp_connections_current",
+				Help: "The current number of TCP connection.",
+			},
+		),
 		wsConnTotalMetric: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "http_ws_connections_total",
@@ -93,6 +107,8 @@ func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManage
 		),
 	}
 
+	registerer.MustRegister(mc.tcpConnCurrentMetric)
+	registerer.MustRegister(mc.tcpConnTotalMetric)
 	registerer.MustRegister(mc.reqTotalMetric)
 	registerer.MustRegister(mc.reqDurationMetric)
 	registerer.MustRegister(mc.wsConnTotalMetric)
@@ -148,6 +164,15 @@ func (c *prometheusMetricsManager) RegisterWSConnection() {
 
 func (c *prometheusMetricsManager) UnregisterWSConnection() {
 	c.wsConnCurrentMetric.Dec()
+}
+
+func (c *prometheusMetricsManager) RegisterTCPConnection() {
+	c.tcpConnTotalMetric.Inc()
+	c.tcpConnCurrentMetric.Inc()
+}
+
+func (c *prometheusMetricsManager) UnregisterTCPConnection() {
+	c.tcpConnCurrentMetric.Dec()
 }
 
 func (c *prometheusMetricsManager) Write(w http.ResponseWriter, r *http.Request) {
