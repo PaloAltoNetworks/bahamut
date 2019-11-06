@@ -186,6 +186,17 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 
 	a.server.Handler = a.multiplexer
 
+	if metricManager := a.cfg.healthServer.metricsManager; metricManager != nil {
+		a.server.ConnState = func(conn net.Conn, state http.ConnState) {
+			switch state {
+			case http.StateNew:
+				metricManager.RegisterTCPConnection()
+			case http.StateClosed, http.StateHijacked:
+				metricManager.UnregisterTCPConnection()
+			}
+		}
+	}
+
 	go func() {
 
 		listener := a.cfg.restServer.customListener
@@ -196,7 +207,7 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 			}
 		}
 
-		listener = newListener(listener, a.cfg.restServer.maxConnection, a.cfg.healthServer.metricsManager)
+		listener = newListener(listener, a.cfg.restServer.maxConnection)
 
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
 			err = a.server.ServeTLS(listener, "", "")

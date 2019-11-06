@@ -14,7 +14,7 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f // indirect
 	github.com/gorilla/websocket v1.4.1
-	github.com/nats-io/gnatsd v1.4.1 // indirect
+	github.com/nats-io/gnatsd v1.4.1
 	github.com/nats-io/go-nats v1.7.2
 	github.com/nats-io/nats-server v1.4.1
 	github.com/nats-io/nkeys v0.0.2 // indirect

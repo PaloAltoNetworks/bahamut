@@ -11,30 +11,24 @@ import (
 
 type limitListener struct {
 	net.Listener
-	metricManager MetricsManager
-	nConn         int64
-	maxConn       int64
+	nConn   int64
+	maxConn int64
 }
 
 // newListener returns a Listener that uses the given semaphore to accept at most
 // n simultaneous connections from the provided Listener where n is the size of
 // the given channel.
-func newListener(l net.Listener, n int, metricManager MetricsManager) *limitListener {
+func newListener(l net.Listener, n int) *limitListener {
 
 	return &limitListener{
-		Listener:      l,
-		maxConn:       int64(n),
-		metricManager: metricManager,
+		Listener: l,
+		maxConn:  int64(n),
 	}
 }
 
 func (l *limitListener) release() {
 
 	atomic.AddInt64(&l.nConn, -1)
-
-	if l.metricManager != nil {
-		l.metricManager.UnregisterTCPConnection()
-	}
 }
 
 func (l *limitListener) Accept() (net.Conn, error) {
@@ -49,10 +43,6 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		var new int64
 		if l.maxConn > 0 {
 			new = atomic.AddInt64(&l.nConn, 1)
-		}
-
-		if l.metricManager != nil {
-			l.metricManager.RegisterTCPConnection()
 		}
 
 		if new > l.maxConn {
