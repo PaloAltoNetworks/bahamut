@@ -62,13 +62,11 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		}
 
 		if new > l.maxConn {
-			// fmt.Println("rejected connection", new)
 			c.Close()
 			l.release()
 			continue
 		}
 
-		// fmt.Println("new connection", new)
 		return &limitListenerConn{Conn: c, release: l.release}, nil
 	}
 }
