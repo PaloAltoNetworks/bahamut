@@ -54,8 +54,10 @@ func TestLimitListener(t *testing.T) {
 			c := http.Client{Timeout: 3 * time.Second}
 			r, err := c.Get("http://" + l.Addr().String())
 			if err != nil {
-				t.Log(err)
-				atomic.AddInt32(&failed, 1)
+				if err == io.EOF {
+					t.Log(err)
+					atomic.AddInt32(&failed, 1)
+				}
 				return
 			}
 			defer r.Body.Close()            // nolint
