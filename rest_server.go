@@ -82,6 +82,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		ReadTimeout:  a.cfg.restServer.readTimeout,
 		WriteTimeout: a.cfg.restServer.writeTimeout,
 		IdleTimeout:  a.cfg.restServer.idleTimeout,
+		ErrorLog:     a.cfg.restServer.httpLogger,
 	}
 
 	server.SetKeepAlivesEnabled(!a.cfg.restServer.disableKeepalive)
@@ -95,7 +96,11 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 
 	return &http.Server{
-		Addr: address,
+		Addr:         address,
+		ReadTimeout:  a.cfg.restServer.readTimeout,
+		WriteTimeout: a.cfg.restServer.writeTimeout,
+		IdleTimeout:  a.cfg.restServer.idleTimeout,
+		ErrorLog:     a.cfg.restServer.httpLogger,
 	}
 }
 
@@ -184,6 +189,7 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 		a.server = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
 	}
 
+	// This is just noise.
 	a.server.Handler = a.multiplexer
 
 	if metricManager := a.cfg.healthServer.metricsManager; metricManager != nil {

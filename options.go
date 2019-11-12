@@ -15,6 +15,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -94,6 +95,14 @@ func OptDisableCompression() Option {
 func OptCustomRootHandler(handler http.HandlerFunc) Option {
 	return func(c *config) {
 		c.restServer.customRootHandlerFunc = handler
+	}
+}
+
+// OptHTTPLogger sets the logger to be used internally
+// by the underlying Go HTTP server.
+func OptHTTPLogger(l *log.Logger) Option {
+	return func(c *config) {
+		c.restServer.httpLogger = l
 	}
 }
 

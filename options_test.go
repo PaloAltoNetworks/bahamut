@@ -14,6 +14,8 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"testing"
@@ -278,5 +280,11 @@ func TestBahamut_Options(t *testing.T) {
 		f := func(*elemental.Request) (elemental.Identifiable, error) { return nil, nil }
 		OptIdentifiableRetriever(f)(&c)
 		So(c.model.retriever, ShouldEqual, f)
+	})
+
+	Convey("Calling OptHTTPLogger should work", t, func() {
+		l := log.New(ioutil.Discard, "", 0)
+		OptHTTPLogger(l)(&c)
+		So(c.restServer.httpLogger, ShouldEqual, l)
 	})
 }
