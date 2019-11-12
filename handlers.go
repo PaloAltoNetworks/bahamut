@@ -19,6 +19,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.aporeto.io/elemental"
+	"go.uber.org/zap"
 )
 
 type handlerFunc func(*bcontext, config, processorFinderFunc, eventPusherFunc) *elemental.Response
@@ -107,6 +108,10 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 
 	outError := processError(ctx, err)
 	response.StatusCode = outError.Code()
+
+	if response.StatusCode == http.StatusInternalServerError {
+		zap.L().Error("Internal Server Error", zap.Error(err))
+	}
 
 	if m, ok := marshallers[response.Request.Identity]; ok {
 		data, err := m(response, nil, outError)

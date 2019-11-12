@@ -425,7 +425,7 @@ func TestHandlers_handleEventualPanic(t *testing.T) {
 			err := <-c
 
 			Convey("Then err should be correct", func() {
-				So(err.Error(), ShouldEqual, "error 500 (bahamut): Internal Server Error: Noooooooooooooooooo")
+				So(err.Error(), ShouldEqual, "error 500 (bahamut): Internal Server Error: panic: Noooooooooooooooooo")
 			})
 		})
 
