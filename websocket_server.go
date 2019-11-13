@@ -348,7 +348,9 @@ func (n *pushServer) start(ctx context.Context) {
 					if n.cfg.pushServer.dispatchHandler != nil {
 						ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
 						if err != nil {
-							zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
+							if err != context.Canceled {
+								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
+							}
 							continue
 						}
 

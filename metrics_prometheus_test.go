@@ -157,3 +157,41 @@ func TestRegisterWSConnection(t *testing.T) {
 		})
 	})
 }
+
+func TestRegisterTCPConnection(t *testing.T) {
+
+	Convey("Given I have a PrometheusMetricsManager", t, func() {
+
+		r := prometheus.NewRegistry()
+		pmm := newPrometheusMetricsManager(r).(*prometheusMetricsManager)
+
+		Convey("When I call RegisterTCPConnection twice", func() {
+
+			pmm.RegisterTCPConnection()
+			pmm.RegisterTCPConnection()
+
+			data, _ := r.Gather()
+
+			Convey("Then the total should increase", func() {
+				So(data[2].GetName(), ShouldEqual, "tcp_connections_current")
+				So(data[2].GetMetric()[0].String(), ShouldEqual, "gauge:<value:2 > ")
+				So(data[3].GetName(), ShouldEqual, "tcp_connections_total")
+				So(data[3].GetMetric()[0].String(), ShouldEqual, "counter:<value:2 > ")
+			})
+
+			Convey("When I call UnregisterTCPConnection", func() {
+
+				pmm.UnregisterTCPConnection()
+
+				data, _ := r.Gather()
+
+				Convey("Then the total should increase", func() {
+					So(data[2].GetName(), ShouldEqual, "tcp_connections_current")
+					So(data[2].GetMetric()[0].String(), ShouldEqual, "gauge:<value:1 > ")
+					So(data[3].GetName(), ShouldEqual, "tcp_connections_total")
+					So(data[3].GetMetric()[0].String(), ShouldEqual, "counter:<value:2 > ")
+				})
+			})
+		})
+	})
+}

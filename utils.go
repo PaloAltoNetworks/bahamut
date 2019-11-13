@@ -22,7 +22,6 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 	"go.aporeto.io/elemental"
-	"go.uber.org/zap"
 )
 
 func handleRecoveredPanic(ctx context.Context, r interface{}, disablePanicRecovery bool) error {
@@ -31,10 +30,9 @@ func handleRecoveredPanic(ctx context.Context, r interface{}, disablePanicRecove
 		return nil
 	}
 
-	err := elemental.NewError("Internal Server Error", fmt.Sprintf("%v", r), "bahamut", http.StatusInternalServerError)
+	err := elemental.NewError("Internal Server Error", fmt.Sprintf("panic: %v", r), "bahamut", http.StatusInternalServerError)
 
 	st := string(debug.Stack())
-	zap.L().Error("panic", zap.String("stacktrace", st))
 
 	// Print the panic as it would have happened
 	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck

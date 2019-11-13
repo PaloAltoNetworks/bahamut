@@ -82,6 +82,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		ReadTimeout:  a.cfg.restServer.readTimeout,
 		WriteTimeout: a.cfg.restServer.writeTimeout,
 		IdleTimeout:  a.cfg.restServer.idleTimeout,
+		ErrorLog:     a.cfg.restServer.httpLogger,
 	}
 
 	server.SetKeepAlivesEnabled(!a.cfg.restServer.disableKeepalive)
@@ -95,7 +96,11 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 
 	return &http.Server{
-		Addr: address,
+		Addr:         address,
+		ReadTimeout:  a.cfg.restServer.readTimeout,
+		WriteTimeout: a.cfg.restServer.writeTimeout,
+		IdleTimeout:  a.cfg.restServer.idleTimeout,
+		ErrorLog:     a.cfg.restServer.httpLogger,
 	}
 }
 
@@ -184,7 +189,19 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 		a.server = a.createUnsecureHTTPServer(a.cfg.restServer.listenAddress)
 	}
 
+	// This is just noise.
 	a.server.Handler = a.multiplexer
+
+	if metricManager := a.cfg.healthServer.metricsManager; metricManager != nil {
+		a.server.ConnState = func(conn net.Conn, state http.ConnState) {
+			switch state {
+			case http.StateNew:
+				metricManager.RegisterTCPConnection()
+			case http.StateClosed, http.StateHijacked:
+				metricManager.UnregisterTCPConnection()
+			}
+		}
+	}
 
 	go func() {
 
@@ -195,6 +212,8 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 				zap.L().Fatal("Unable to dial", zap.Error(err))
 			}
 		}
+
+		listener = newListener(listener, a.cfg.restServer.maxConnection)
 
 		if a.cfg.tls.serverCertificates != nil || a.cfg.tls.serverCertificatesRetrieverFunc != nil {
 			err = a.server.ServeTLS(listener, "", "")
@@ -253,9 +272,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		defer finishTracing(ctx)
 
 		if a.cfg.rateLimiting.rateLimiter != nil {
-			rctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
-			defer cancel()
-			if err = a.cfg.rateLimiting.rateLimiter.Wait(rctx); err != nil {
+			if !a.cfg.rateLimiting.rateLimiter.Allow() {
 				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))

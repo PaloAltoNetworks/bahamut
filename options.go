@@ -15,6 +15,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -52,6 +53,15 @@ func OptCustomListener(listener net.Listener) Option {
 	}
 }
 
+// OptMaxConnection sets the maximum number of concurrent
+// connection to the server. 0, which is the default, means
+// no limit.
+func OptMaxConnection(n int) Option {
+	return func(c *config) {
+		c.restServer.maxConnection = n
+	}
+}
+
 // OptTimeouts configures the timeouts of the server.
 func OptTimeouts(read, write, idle time.Duration) Option {
 	return func(c *config) {
@@ -85,6 +95,14 @@ func OptDisableCompression() Option {
 func OptCustomRootHandler(handler http.HandlerFunc) Option {
 	return func(c *config) {
 		c.restServer.customRootHandlerFunc = handler
+	}
+}
+
+// OptHTTPLogger sets the logger to be used internally
+// by the underlying Go HTTP server.
+func OptHTTPLogger(l *log.Logger) Option {
+	return func(c *config) {
+		c.restServer.httpLogger = l
 	}
 }
 

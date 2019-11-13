@@ -14,6 +14,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -57,6 +58,8 @@ type config struct {
 		enabled               bool
 		customRootHandlerFunc http.HandlerFunc
 		customListener        net.Listener
+		maxConnection         int
+		httpLogger            *log.Logger
 	}
 
 	pushServer struct {

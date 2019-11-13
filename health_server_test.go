@@ -40,8 +40,10 @@ type testMetricsManager struct{}
 func (m *testMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
 	return nil
 }
-func (m *testMetricsManager) RegisterWSConnection()   {}
-func (m *testMetricsManager) UnregisterWSConnection() {}
+func (m *testMetricsManager) RegisterWSConnection()    {}
+func (m *testMetricsManager) UnregisterWSConnection()  {}
+func (m *testMetricsManager) RegisterTCPConnection()   {}
+func (m *testMetricsManager) UnregisterTCPConnection() {}
 func (m *testMetricsManager) Write(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 }

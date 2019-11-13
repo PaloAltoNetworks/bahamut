@@ -3,7 +3,7 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20191029162424-2a683806acaa
+	go.aporeto.io/elemental v1.100.1-0.20191106210659-e203ff490472
 	go.aporeto.io/wsc v1.36.1-0.20191011180831-23743fa5722b
 )
 
