@@ -15,6 +15,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -348,7 +349,8 @@ func (n *pushServer) start(ctx context.Context) {
 					if n.cfg.pushServer.dispatchHandler != nil {
 						ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
 						if err != nil {
-							if err != context.Canceled {
+							// temp before we move to error wrapping
+							if err != context.Canceled && !strings.Contains(err.Error(), "context canceled") {
 								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
 							}
 							continue
