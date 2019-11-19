@@ -326,7 +326,7 @@ func (n *pushServer) start(ctx context.Context) {
 
 					// If the event identity (or related identities) are filtered out
 					// we don't send it.
-					if f := session.currentFilter(); f != nil {
+					if f := session.currentPushConfig(); f != nil {
 
 						identities := []string{event.Identity}
 						if n.cfg.pushServer.dispatchHandler != nil {

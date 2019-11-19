@@ -9,3 +9,5 @@ vendor
 *.cov
 .idea/*
 artifacts
+remod.dev
+.remod

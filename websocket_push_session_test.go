@@ -97,7 +97,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 			f := elemental.NewPushConfig()
 			f.FilterIdentity("not-list")
 
-			s.setCurrentFilter(f)
+			s.setCurrentPushConfig(f)
 			go s.DirectPush(evt)
 
 			var data []byte
@@ -209,20 +209,20 @@ func TestWSPushSession_String(t *testing.T) {
 
 func TestWSPushSession_Filtering(t *testing.T) {
 
-	Convey("Given I call setCurrentFilter", t, func() {
+	Convey("Given I call setCurrentPushConfig", t, func() {
 
 		req, _ := http.NewRequest("GET", "bla", nil)
 		cfg := config{}
 		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
-		f := elemental.NewPushConfig()
-		f.SetParameter("hello", "world")
+		pc := elemental.NewPushConfig()
+		pc.SetParameter("hello", "world")
 
-		s.setCurrentFilter(f)
+		s.setCurrentPushConfig(pc)
 
 		Convey("Then the filter should be installed", func() {
-			So(s.currentFilter(), ShouldNotEqual, f)
-			So(s.currentFilter(), ShouldResemble, f)
+			So(s.currentPushConfig(), ShouldNotEqual, pc)
+			So(s.currentPushConfig(), ShouldResemble, pc)
 		})
 
 		Convey("Then the parameters have benn installed", func() {
@@ -231,10 +231,10 @@ func TestWSPushSession_Filtering(t *testing.T) {
 
 		Convey("When I reset the filter to nil", func() {
 
-			s.setCurrentFilter(nil)
+			s.setCurrentPushConfig(nil)
 
 			Convey("Then the filter should be uninstalled", func() {
-				So(s.currentFilter(), ShouldBeNil)
+				So(s.currentPushConfig(), ShouldBeNil)
 			})
 		})
 	})
@@ -408,7 +408,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			f := elemental.NewPushConfig()
 			f.FilterIdentity("not-list")
-			s.setCurrentFilter(f)
+			s.setCurrentPushConfig(f)
 
 			s.DirectPush(testEvent)
 
@@ -470,7 +470,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			<-time.After(300 * time.Millisecond)
 
 			Convey("Then the filter should be correctly set", func() {
-				So(s.currentFilter().String(), ShouldEqual, `<pushconfig identities:map[not-list:[]] identityfilters:map[]>`)
+				So(s.currentPushConfig().String(), ShouldEqual, `<pushconfig identities:map[not-list:[]] identityfilters:map[]>`)
 			})
 		})
 
@@ -488,7 +488,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			}
 
 			Convey("Then the filter should be nil", func() {
-				So(s.currentFilter(), ShouldBeNil)
+				So(s.currentPushConfig(), ShouldBeNil)
 				So(doneErr, ShouldNotBeNil)
 				So(doneErr.Error(), ShouldEqual, "1003")
 			})

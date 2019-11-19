@@ -591,11 +591,11 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
-		s1.setCurrentFilter(filter)
+		s1.setCurrentPushConfig(filter)
 
 		filter = elemental.NewPushConfig()
 		filter.FilterIdentity("list")
-		s2.setCurrentFilter(filter)
+		s2.setCurrentPushConfig(filter)
 
 		pushHandler.shouldDispatchOK = true
 
@@ -649,7 +649,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
-		s1.setCurrentFilter(filter)
+		s1.setCurrentPushConfig(filter)
 
 		pushHandler.shouldDispatchOK = true
 

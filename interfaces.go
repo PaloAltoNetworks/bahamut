@@ -248,9 +248,9 @@ type PushDispatchHandler interface {
 	RelatedEventIdentities(string) []string
 
 	// SummarizeEvent is called once per event and allows the implementation
-	// to return am intenface that will be passed to ShouldDispatch.
+	// to return an interface that will be passed to ShouldDispatch.
 	// If you need to decode an event to read some information to make a
-	// dispatch decision, this is a good place as it will allow to only
+	// dispatch decision, this is a good place as it will allow you to only
 	// do this once.
 	SummarizeEvent(event *elemental.Event) (interface{}, error)
 }
@@ -278,6 +278,7 @@ type Session interface {
 	Identifier() string
 	Parameter(string) string
 	Header(string) string
+	PushConfig() *elemental.PushConfig
 	SetClaims([]string)
 	Claims() []string
 	ClaimsMap() map[string]string
