@@ -57,7 +57,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		ClientAuth:               a.cfg.tls.authType,
 		ClientCAs:                a.cfg.tls.clientCAPool,
 		MinVersion:               tls.VersionTLS12,
-		SessionTicketsDisabled:   true,
+		SessionTicketsDisabled:   a.cfg.tls.disableSessionTicket,
 		PreferServerCipherSuites: true,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		CipherSuites: []uint16{

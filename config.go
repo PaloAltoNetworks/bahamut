@@ -94,6 +94,7 @@ type config struct {
 		authType                        tls.ClientAuthType
 		serverCertificates              []tls.Certificate
 		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+		disableSessionTicket            bool
 	}
 
 	security struct {
