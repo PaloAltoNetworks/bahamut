@@ -251,6 +251,14 @@ func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
 	}
 }
 
+// OptTLSDisableSessionTicket controls if the TLS session tickets should
+// be disabled.
+func OptTLSDisableSessionTicket(disabled bool) Option {
+	return func(c *config) {
+		c.tls.disableSessionTicket = disabled
+	}
+}
+
 // OptAuthenticators configures the authenticators.
 //
 // RequestAuthenticators defines the list the RequestAuthenticator to use to authenticate the requests.

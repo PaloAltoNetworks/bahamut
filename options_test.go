@@ -176,6 +176,11 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.tls.authType, ShouldEqual, authType)
 	})
 
+	Convey("Calling OptTLSDisableSessionTicket should work", t, func() {
+		OptTLSDisableSessionTicket(true)(&c)
+		So(c.tls.disableSessionTicket, ShouldEqual, true)
+	})
+
 	Convey("Calling OptAuthenticators should work", t, func() {
 		ra := []RequestAuthenticator{&mockAuth{}}
 		rs := []SessionAuthenticator{&mockSessionAuthenticator{}}
