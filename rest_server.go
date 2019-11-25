@@ -23,6 +23,7 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/go-zoo/bone"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/valyala/tcplisten"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
@@ -56,7 +57,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		ClientAuth:               a.cfg.tls.authType,
 		ClientCAs:                a.cfg.tls.clientCAPool,
 		MinVersion:               tls.VersionTLS12,
-		SessionTicketsDisabled:   true,
+		SessionTicketsDisabled:   a.cfg.tls.disableSessionTicket,
 		PreferServerCipherSuites: true,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		CipherSuites: []uint16{
@@ -207,7 +208,11 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 
 		listener := a.cfg.restServer.customListener
 		if listener == nil {
-			listener, err = net.Listen("tcp", a.server.Addr)
+			listener, err = (&tcplisten.Config{
+				ReusePort:   true,
+				DeferAccept: true,
+				FastOpen:    true,
+			}).NewListener("tcp4", a.server.Addr)
 			if err != nil {
 				zap.L().Fatal("Unable to dial", zap.Error(err))
 			}
