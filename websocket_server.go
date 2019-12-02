@@ -349,11 +349,11 @@ func (n *pushServer) start(ctx context.Context) {
 					if n.cfg.pushServer.dispatchHandler != nil {
 						dispatch, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
 						if err != nil {
-							//if 'ShouldDispatch' returns an error type that has the method 'ShouldCloseSocket() (bool, int)'
-							//then it can inform whether the socket should be closed along with a code to use in the
-							//close message. This is useful in cases where it makes no sense to continue serving the client
-							//(e.g. the client configured a semantically invalid push config, for example: they used a comparator
-							//that is not yet supported/implemented).
+							// if 'ShouldDispatch' returns an error type that has the method 'ShouldCloseSocket() (bool, int)'
+							// then it can inform whether the socket should be closed along with a code to use in the
+							// close message. This is useful in cases where it makes no sense to continue serving the client
+							// (e.g. the client configured a semantically invalid push config, for example: they used a comparator
+							// that is not yet supported/implemented).
 							if closer, ok := err.(interface {
 								ShouldCloseSocket() (bool, int)
 							}); ok {
