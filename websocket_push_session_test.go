@@ -21,7 +21,9 @@ import (
 	"testing"
 	"time"
 
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/gorilla/websocket"
+
+	"github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
@@ -362,7 +364,7 @@ func TestWSPushSession_accessors(t *testing.T) {
 
 func TestWSPushSession_listen(t *testing.T) {
 
-	Convey("Given I have a push session", t, func() {
+	Convey("Given I have a push session", t, FailureHalts, func() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
@@ -399,6 +401,153 @@ func TestWSPushSession_listen(t *testing.T) {
 			Convey("Then the websocket should send the event", func() {
 				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
 				So(data, ShouldResemble, r)
+			})
+		})
+
+		Convey("When the client sends a push config with a filter that cannot be parsed", func() {
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				testIdentity: "this-will-not-parse",
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			Convey("should be able to encode a semantically invalid push config", func() {
+				So(err, ShouldBeNil)
+			})
+
+			conn.NextRead(rawPushConfig)
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			Convey("Then an error should be received from the channel returned from the connection's Done() method", func() {
+				So(closeErr, ShouldNotBeNil)
+
+				Convey("error copy should include the close code indicating why the socket was closed", func() {
+					So(closeErr.Error(), ShouldContainSubstring, fmt.Sprintf("%d", websocket.CloseUnsupportedData))
+				})
+
+				Convey("the current push config should be nil", func() {
+					So(s.currentPushConfig(), ShouldBeNil)
+				})
+			})
+
+			Convey("The unregister func should have been called", func() {
+				var ok bool
+				select {
+				case ok = <-unregistered:
+				case <-time.After(500 * time.Millisecond):
+				}
+
+				So(ok, ShouldBeTrue)
+			})
+		})
+
+		Convey("When the client sends a push config with a filter on an identity that is NOT declared", func() {
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			identityFilter := elemental.NewFilterComposer().
+				WithKey("environment").
+				Equals("production").
+				Done()
+
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				// notice how the identity filter below is on an identity that is not declared in the PushConfig's 'Identities'
+				// attribute - it only contains "identity-one"
+				"undeclared-identity": identityFilter.String(),
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			Convey("should be able to encode the push config", func() {
+				So(err, ShouldBeNil)
+			})
+
+			conn.NextRead(rawPushConfig)
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			Convey("Then an error should be received from the channel returned from the connection's Done() method", func() {
+				So(closeErr, ShouldNotBeNil)
+
+				Convey("error copy should include the close code indicating why the socket was closed", func() {
+					So(closeErr.Error(), ShouldContainSubstring, fmt.Sprintf("%d", websocket.CloseUnsupportedData))
+				})
+
+				Convey("the current push config should be nil", func() {
+					So(s.currentPushConfig(), ShouldBeNil)
+				})
+			})
+
+			Convey("The unregister func should have been called", func() {
+				var ok bool
+				select {
+				case ok = <-unregistered:
+				case <-time.After(500 * time.Millisecond):
+				}
+
+				So(ok, ShouldBeTrue)
+			})
+		})
+
+		Convey("When the client sends a push config with a valid identity filter", func() {
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			identityFilter := elemental.NewFilterComposer().
+				WithKey("environment").
+				Equals("production").
+				Done()
+
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				testIdentity: identityFilter.String(),
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			Convey("should be able to encode the push config used in the test", func() {
+				So(err, ShouldBeNil)
+			})
+
+			conn.NextRead(rawPushConfig)
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			Convey("Then no error should be returned from the channel returned by calling the connection's Done() method", func() {
+				So(closeErr, ShouldBeNil)
+
+				Convey("the current push config should not be nil", func() {
+					pc := s.currentPushConfig()
+					So(pc, ShouldNotBeNil)
+					So(pc.String(), ShouldEqual, `<pushconfig identities:map[identity-one:[]] identityfilters:map[identity-one:environment == "production"]>`)
+
+					Convey("the push config should contain the parsed identity filter", func() {
+						filter, found := pc.FilterForIdentity(testIdentity)
+						So(found, ShouldBeTrue)
+						So(filter.String(), ShouldEqual, identityFilter.String())
+					})
+				})
 			})
 		})
 
