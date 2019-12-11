@@ -94,7 +94,7 @@ func TestWSPushSession_DirectPush(t *testing.T) {
 
 		Convey("When I call directPush but event is filtered", func() {
 
-			f := elemental.NewPushFilter()
+			f := elemental.NewPushConfig()
 			f.FilterIdentity("not-list")
 
 			s.setCurrentFilter(f)
@@ -215,7 +215,7 @@ func TestWSPushSession_Filtering(t *testing.T) {
 		cfg := config{}
 		s := newWSPushSession(req, cfg, nil, elemental.EncodingTypeMSGPACK, elemental.EncodingTypeMSGPACK)
 
-		f := elemental.NewPushFilter()
+		f := elemental.NewPushConfig()
 		f.SetParameter("hello", "world")
 
 		s.setCurrentFilter(f)
@@ -406,7 +406,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			go s.listen()
 
-			f := elemental.NewPushFilter()
+			f := elemental.NewPushConfig()
 			f.FilterIdentity("not-list")
 			s.setCurrentFilter(f)
 

@@ -589,11 +589,11 @@ func TestWebsocketServer_start(t *testing.T) {
 		conn1 := s1.conn.(wsc.MockWebsocket)
 		conn2 := s2.conn.(wsc.MockWebsocket)
 
-		filter := elemental.NewPushFilter()
+		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
 		s1.setCurrentFilter(filter)
 
-		filter = elemental.NewPushFilter()
+		filter = elemental.NewPushConfig()
 		filter.FilterIdentity("list")
 		s2.setCurrentFilter(filter)
 
@@ -647,7 +647,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		pushHandler.relatedIdentities = []string{"something-else"}
 
-		filter := elemental.NewPushFilter()
+		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
 		s1.setCurrentFilter(filter)
 

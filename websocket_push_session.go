@@ -31,7 +31,7 @@ type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
 	dataCh             chan []byte
-	filter             *elemental.PushFilter
+	filter             *elemental.PushConfig
 	currentFilterLock  sync.RWMutex
 	parametersLock     sync.RWMutex
 	claims             []string
@@ -162,7 +162,7 @@ func (s *wsPushSession) Parameter(key string) string {
 	return s.parameters.Get(key)
 }
 
-func (s *wsPushSession) currentFilter() *elemental.PushFilter {
+func (s *wsPushSession) currentFilter() *elemental.PushConfig {
 
 	s.currentFilterLock.RLock()
 	defer s.currentFilterLock.RUnlock()
@@ -174,7 +174,7 @@ func (s *wsPushSession) currentFilter() *elemental.PushFilter {
 	return s.filter.Duplicate()
 }
 
-func (s *wsPushSession) setCurrentFilter(f *elemental.PushFilter) {
+func (s *wsPushSession) setCurrentFilter(f *elemental.PushConfig) {
 
 	s.currentFilterLock.Lock()
 	defer s.currentFilterLock.Unlock()
@@ -217,7 +217,7 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
-			filter := elemental.NewPushFilter()
+			filter := elemental.NewPushConfig()
 			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
