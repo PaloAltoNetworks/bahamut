@@ -842,12 +842,19 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		var dataA, dataB []byte
 		ready := make(chan struct{})
+		var l sync.Mutex
 		go func() {
 			defer close(ready)
 			for {
 				select {
-				case dataA = <-connectionA.LastWrite():
-				case dataB = <-connectionB.LastWrite():
+				case d := <-connectionA.LastWrite():
+					l.Lock()
+					dataA = d
+					l.Unlock()
+				case d := <-connectionB.LastWrite():
+					l.Lock()
+					dataB = d
+					l.Unlock()
 				case <-time.After(1 * time.Second):
 					return
 				}
@@ -856,11 +863,15 @@ func TestWebsocketServer_start(t *testing.T) {
 		<-ready
 
 		// nothing should have been dispatched
+		l.Lock()
 		So(dataA, ShouldBeNil)
 		So(dataB, ShouldBeNil)
+		l.Unlock()
 
 		// both sessions should have been unregistered
+		pushServer.sessionsLock.Lock()
 		So(pushServer.sessions, ShouldBeEmpty)
+		pushServer.sessionsLock.Unlock()
 	})
 
 	Convey("Given the callback 'ShouldDispatch' returns an error indicating the socket should NOT BE closed, then no event should be dispatched and the sessions should still be present", t, func() {
@@ -890,12 +901,19 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		var dataA, dataB []byte
 		ready := make(chan struct{})
+		var l sync.Mutex
 		go func() {
 			defer close(ready)
 			for {
 				select {
-				case dataA = <-connectionA.LastWrite():
-				case dataB = <-connectionB.LastWrite():
+				case d := <-connectionA.LastWrite():
+					l.Lock()
+					dataA = d
+					l.Unlock()
+				case d := <-connectionB.LastWrite():
+					l.Lock()
+					dataB = d
+					l.Unlock()
 				case <-time.After(1 * time.Second):
 					return
 				}
@@ -904,11 +922,15 @@ func TestWebsocketServer_start(t *testing.T) {
 		<-ready
 
 		// nothing should have been dispatched because an error was returned by the callback
+		l.Lock()
 		So(dataA, ShouldBeNil)
 		So(dataB, ShouldBeNil)
+		l.Unlock()
 
 		// both sessions should still be present because the callback error said NOT to close the socket
+		pushServer.sessionsLock.Lock()
 		So(pushServer.sessions, ShouldHaveLength, 2)
+		pushServer.sessionsLock.Unlock()
 	})
 
 	Convey("Given I push an event that is that older than session connection time", t, func() {
