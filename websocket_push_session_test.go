@@ -470,7 +470,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			<-time.After(300 * time.Millisecond)
 
 			Convey("Then the filter should be correctly set", func() {
-				So(s.currentFilter().String(), ShouldEqual, `<pushfilter identities:map[not-list:[]]>`)
+				So(s.currentFilter().String(), ShouldEqual, `<pushconfig identities:map[not-list:[]] identityfilters:map[]>`)
 			})
 		})
 
