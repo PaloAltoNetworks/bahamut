@@ -943,6 +943,7 @@ type mockSession struct {
 func (s *mockSession) Identifier() string                       { return "" }
 func (s *mockSession) Parameter(string) string                  { return "" }
 func (s *mockSession) Header(string) string                     { return "" }
+func (s *mockSession) PushConfig() *elemental.PushConfig        { return nil }
 func (s *mockSession) SetClaims(c []string)                     { s.claims = c }
 func (s *mockSession) Claims() []string                         { return s.claims }
 func (s *mockSession) ClaimsMap() map[string]string             { return nil }

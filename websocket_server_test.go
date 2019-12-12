@@ -521,6 +521,23 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 	})
 }
 
+// notifierError is an error type that satisfies bahamut.CloserNotifierError interface which can be returned from a dispatch
+// handler 'ShouldDispatch' callback in a push server. This allows the callback to make a decision with respect to whether
+// the session should be closed (along with the close code)
+type notifierError struct {
+	err         error
+	shouldClose bool
+	code        int
+}
+
+func (ne *notifierError) Error() string {
+	return ne.err.Error()
+}
+
+func (ne *notifierError) ShouldCloseSocket() (bool, int) {
+	return ne.shouldClose, ne.code
+}
+
 func TestWebsocketServer_start(t *testing.T) {
 
 	pf := func(identity elemental.Identity) (Processor, error) {
@@ -591,11 +608,11 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
-		s1.setCurrentFilter(filter)
+		s1.setCurrentPushConfig(filter)
 
 		filter = elemental.NewPushConfig()
 		filter.FilterIdentity("list")
-		s2.setCurrentFilter(filter)
+		s2.setCurrentPushConfig(filter)
 
 		pushHandler.shouldDispatchOK = true
 
@@ -649,7 +666,7 @@ func TestWebsocketServer_start(t *testing.T) {
 
 		filter := elemental.NewPushConfig()
 		filter.FilterIdentity("something-else")
-		s1.setCurrentFilter(filter)
+		s1.setCurrentPushConfig(filter)
 
 		pushHandler.shouldDispatchOK = true
 
@@ -796,6 +813,124 @@ func TestWebsocketServer_start(t *testing.T) {
 		So(msg1, ShouldBeNil)
 		So(msg2, ShouldBeNil)
 		l.Unlock()
+	})
+
+	Convey("Given the callback 'ShouldDispatch' returns an error indicating the socket should be closed, then no event should be dispatched and the sessions are unregistered", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, sessionA, sessionB := makePubsub(ctx, "")
+		connectionA, connectionB := sessionA.conn.(wsc.MockWebsocket), sessionB.conn.(wsc.MockWebsocket)
+
+		// notice how we are making the should dispatch callback return an error that satisfies the 'CloserNotifierError' interface
+		// in this case, we make the error indicate that it should close the socket along with a custom close code
+		pushHandler.shouldDispatchOK = false
+		pushHandler.shouldDispatchErr = &notifierError{
+			err:         fmt.Errorf("oops, some error occurred"),
+			shouldClose: true,
+			code:        4001,
+		}
+
+		event := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		publication := NewPublication("")
+		if err := publication.Encode(event); err != nil {
+			panic(fmt.Errorf("test setup failed - error encoding publication: %v", err))
+		}
+
+		pushServer.publications <- publication
+
+		var dataA, dataB []byte
+		ready := make(chan struct{})
+		var l sync.Mutex
+		go func() {
+			defer close(ready)
+			for {
+				select {
+				case d := <-connectionA.LastWrite():
+					l.Lock()
+					dataA = d
+					l.Unlock()
+				case d := <-connectionB.LastWrite():
+					l.Lock()
+					dataB = d
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-ready
+
+		// nothing should have been dispatched
+		l.Lock()
+		So(dataA, ShouldBeNil)
+		So(dataB, ShouldBeNil)
+		l.Unlock()
+
+		// both sessions should have been unregistered
+		pushServer.sessionsLock.Lock()
+		So(pushServer.sessions, ShouldBeEmpty)
+		pushServer.sessionsLock.Unlock()
+	})
+
+	Convey("Given the callback 'ShouldDispatch' returns an error indicating the socket should NOT BE closed, then no event should be dispatched and the sessions should still be present", t, func() {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		pushServer, pushHandler, sessionA, sessionB := makePubsub(ctx, "")
+		connectionA, connectionB := sessionA.conn.(wsc.MockWebsocket), sessionB.conn.(wsc.MockWebsocket)
+
+		// notice how we are making the should dispatch callback return an error that satisfies the 'CloserNotifierError' interface
+		pushHandler.shouldDispatchOK = false
+		pushHandler.shouldDispatchErr = &notifierError{
+			err: fmt.Errorf("oops, some error occurred"),
+			// notice how we are NOT closing the socket here - this is the main difference between this test and the one above
+			shouldClose: false,
+			code:        4001,
+		}
+
+		event := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		publication := NewPublication("")
+		if err := publication.Encode(event); err != nil {
+			panic(fmt.Errorf("test setup failed - error encoding publication: %v", err))
+		}
+
+		pushServer.publications <- publication
+
+		var dataA, dataB []byte
+		ready := make(chan struct{})
+		var l sync.Mutex
+		go func() {
+			defer close(ready)
+			for {
+				select {
+				case d := <-connectionA.LastWrite():
+					l.Lock()
+					dataA = d
+					l.Unlock()
+				case d := <-connectionB.LastWrite():
+					l.Lock()
+					dataB = d
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-ready
+
+		// nothing should have been dispatched because an error was returned by the callback
+		l.Lock()
+		So(dataA, ShouldBeNil)
+		So(dataB, ShouldBeNil)
+		l.Unlock()
+
+		// both sessions should still be present because the callback error said NOT to close the socket
+		pushServer.sessionsLock.Lock()
+		So(pushServer.sessions, ShouldHaveLength, 2)
+		pushServer.sessionsLock.Unlock()
 	})
 
 	Convey("Given I push an event that is that older than session connection time", t, func() {

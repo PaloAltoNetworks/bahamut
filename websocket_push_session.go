@@ -30,27 +30,27 @@ import (
 type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
-	dataCh             chan []byte
-	filter             *elemental.PushConfig
-	currentFilterLock  sync.RWMutex
-	parametersLock     sync.RWMutex
-	claims             []string
-	claimsMap          map[string]string
-	cfg                config
-	headers            http.Header
-	id                 string
-	metadata           interface{}
-	parameters         url.Values
-	remoteAddr         string
-	conn               wsc.Websocket
-	startTime          time.Time
-	unregister         unregisterFunc
-	tlsConnectionState *tls.ConnectionState
-	ctx                context.Context
-	cancel             context.CancelFunc
-	closeCh            chan struct{}
-	encodingRead       elemental.EncodingType
-	encodingWrite      elemental.EncodingType
+	dataCh                chan []byte
+	pushConfig            *elemental.PushConfig
+	currentPushConfigLock sync.RWMutex
+	parametersLock        sync.RWMutex
+	claims                []string
+	claimsMap             map[string]string
+	cfg                   config
+	headers               http.Header
+	id                    string
+	metadata              interface{}
+	parameters            url.Values
+	remoteAddr            string
+	conn                  wsc.Websocket
+	startTime             time.Time
+	unregister            unregisterFunc
+	tlsConnectionState    *tls.ConnectionState
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	closeCh               chan struct{}
+	encodingRead          elemental.EncodingType
+	encodingWrite         elemental.EncodingType
 }
 
 func newWSPushSession(
@@ -92,7 +92,7 @@ func (s *wsPushSession) DirectPush(events ...*elemental.Event) {
 			continue
 		}
 
-		f := s.currentFilter()
+		f := s.currentPushConfig()
 		if f != nil && f.IsFilteredOut(event.Identity, event.Type) {
 			continue
 		}
@@ -156,30 +156,30 @@ func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn 
 func (s *wsPushSession) close(code int)                                { s.conn.Close(code) }
 func (s *wsPushSession) setTLSConnectionState(st *tls.ConnectionState) { s.tlsConnectionState = st }
 func (s *wsPushSession) Header(key string) string                      { return s.headers.Get(key) }
+func (s *wsPushSession) PushConfig() *elemental.PushConfig             { return s.currentPushConfig() }
 func (s *wsPushSession) Parameter(key string) string {
 	s.parametersLock.RLock()
 	defer s.parametersLock.RUnlock()
 	return s.parameters.Get(key)
 }
 
-func (s *wsPushSession) currentFilter() *elemental.PushConfig {
+func (s *wsPushSession) currentPushConfig() *elemental.PushConfig {
+	s.currentPushConfigLock.RLock()
+	defer s.currentPushConfigLock.RUnlock()
 
-	s.currentFilterLock.RLock()
-	defer s.currentFilterLock.RUnlock()
-
-	if s.filter == nil {
+	if s.pushConfig == nil {
 		return nil
 	}
 
-	return s.filter.Duplicate()
+	return s.pushConfig.Duplicate()
 }
 
-func (s *wsPushSession) setCurrentFilter(f *elemental.PushConfig) {
+func (s *wsPushSession) setCurrentPushConfig(f *elemental.PushConfig) {
 
-	s.currentFilterLock.Lock()
-	defer s.currentFilterLock.Unlock()
+	s.currentPushConfigLock.Lock()
+	defer s.currentPushConfigLock.Unlock()
 
-	s.filter = f
+	s.pushConfig = f
 	if f == nil {
 		return
 	}
@@ -217,13 +217,23 @@ func (s *wsPushSession) listen() {
 
 		case data := <-s.conn.Read():
 
-			filter := elemental.NewPushConfig()
-			if err := elemental.Decode(s.encodingRead, data, filter); err != nil {
+			pushConfig := elemental.NewPushConfig()
+			if err := elemental.Decode(s.encodingRead, data, pushConfig); err != nil {
 				s.close(websocket.CloseUnsupportedData)
 				return
 			}
 
-			s.setCurrentFilter(filter)
+			if err := pushConfig.ParseIdentityFilters(); err != nil {
+				zap.L().Debug("error parsing filter(s) in the received *elemental.PushConfig",
+					zap.Error(err),
+					zap.String("sessionID", s.id),
+					zap.String("pushConfig", pushConfig.String()),
+				)
+				s.close(websocket.CloseUnsupportedData)
+				return
+			}
+
+			s.setCurrentPushConfig(pushConfig)
 
 		case err := <-s.conn.Error():
 			zap.L().Error("Error received from websocket", zap.String("session", s.id), zap.Error(err))

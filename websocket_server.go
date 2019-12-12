@@ -326,7 +326,7 @@ func (n *pushServer) start(ctx context.Context) {
 
 					// If the event identity (or related identities) are filtered out
 					// we don't send it.
-					if f := session.currentFilter(); f != nil {
+					if f := session.currentPushConfig(); f != nil {
 
 						identities := []string{event.Identity}
 						if n.cfg.pushServer.dispatchHandler != nil {
@@ -347,16 +347,29 @@ func (n *pushServer) start(ctx context.Context) {
 					}
 
 					if n.cfg.pushServer.dispatchHandler != nil {
-						ok, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
+						dispatch, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
 						if err != nil {
+							// if 'ShouldDispatch' returns an error type that satisfies the 'CloserNotifierError' interface
+							// then it can inform whether the socket should be closed along with a code to use in the
+							// close message. This is useful in cases where it makes no sense to continue serving the client
+							// (e.g. the client configured a semantically invalid push config by using a comparator
+							// that is not yet supported/implemented).
+							if closer, ok := err.(CloserNotifierError); ok {
+								if close, code := closer.ShouldCloseSocket(); close {
+									session.close(code)
+									session.unregister(session)
+								}
+							}
+
 							// temp before we move to error wrapping
 							if err != context.Canceled && !strings.Contains(err.Error(), "context canceled") {
 								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))
 							}
+
 							continue
 						}
 
-						if !ok {
+						if !dispatch {
 							continue
 						}
 					}
