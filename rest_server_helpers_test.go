@@ -37,7 +37,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "http://toto.com:8443")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Accept, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
+				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
 			})
 		})
@@ -52,7 +52,7 @@ func TestRestServerHelpers_commonHeaders(t *testing.T) {
 				So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "*")
 				So(w.Header().Get("Access-Control-Expose-Headers"), ShouldEqual, "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
 				So(w.Header().Get("Access-Control-Allow-Methods"), ShouldEqual, "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Accept, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
+				So(w.Header().Get("Access-Control-Allow-Headers"), ShouldEqual, "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
 				So(w.Header().Get("Access-Control-Allow-Credentials"), ShouldEqual, "true")
 			})
 		})
@@ -237,6 +237,30 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 			Convey("Then the code should be http.StatusNoContent", func() {
 				So(code, ShouldEqual, http.StatusOK)
+			})
+		})
+	})
+
+	Convey("Given I have a some cookies", t, func() {
+
+		w := httptest.NewRecorder()
+		r := elemental.NewResponse(elemental.NewRequest())
+		r.Cookies = []*http.Cookie{
+			&http.Cookie{
+				Name:  "ca",
+				Value: "ca",
+			}, &http.Cookie{
+				Name:  "cb",
+				Value: "cb",
+			},
+		}
+
+		Convey("When I call writeHTTPResponse", func() {
+
+			writeHTTPResponse("", w, r)
+
+			Convey("Then the should header message should be set", func() {
+				So(w.Header()["Set-Cookie"], ShouldResemble, []string{"ca=ca", "cb=cb"})
 			})
 		})
 	})

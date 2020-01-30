@@ -45,7 +45,7 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
@@ -81,6 +81,10 @@ func writeHTTPResponse(CORSOrigin string, w http.ResponseWriter, r *elemental.Re
 	origin := r.Request.Headers.Get("Origin")
 	if CORSOrigin != "" {
 		origin = CORSOrigin
+	}
+
+	for _, cookie := range r.Cookies {
+		http.SetCookie(w, cookie)
 	}
 
 	setCommonHeader(w, origin, r.Request.Accept)

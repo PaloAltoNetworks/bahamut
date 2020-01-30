@@ -69,6 +69,10 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 		return response
 	}
 
+	if len(ctx.outputCookies) > 0 {
+		response.Cookies = ctx.outputCookies
+	}
+
 	var requestedFields []string
 	if ctx.Request().Headers != nil {
 		requestedFields = ctx.Request().Headers["X-Fields"]
