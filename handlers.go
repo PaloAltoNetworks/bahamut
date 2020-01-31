@@ -64,13 +64,13 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 		response.Next = ctx.next
 	}
 
+	if len(ctx.outputCookies) > 0 {
+		response.Cookies = ctx.outputCookies
+	}
+
 	if ctx.outputData == nil {
 		response.StatusCode = http.StatusNoContent
 		return response
-	}
-
-	if len(ctx.outputCookies) > 0 {
-		response.Cookies = ctx.outputCookies
 	}
 
 	var requestedFields []string
