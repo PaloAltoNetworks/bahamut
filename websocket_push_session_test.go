@@ -359,6 +359,28 @@ func TestWSPushSession_accessors(t *testing.T) {
 				So(s.conn, ShouldEqual, ws)
 			})
 		})
+
+		Convey("When I call Cookie()", func() {
+
+			s.cookies = []*http.Cookie{
+				&http.Cookie{
+					Name:  "toto",
+					Value: "hey",
+				},
+			}
+
+			Convey("Then Cookie on existing key should be correct", func() {
+				v, err := s.Cookie("toto")
+				So(v.Value, ShouldEqual, "hey")
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Then Cookie on existing non existing should be correct", func() {
+				v, err := s.Cookie("titi")
+				So(v, ShouldBeNil)
+				So(err, ShouldEqual, http.ErrNoCookie)
+			})
+		})
 	})
 }
 

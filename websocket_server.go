@@ -214,6 +214,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 		clientIP = r.RemoteAddr
 	}
 	session.setRemoteAddress(clientIP)
+	session.cookies = r.Cookies()
 
 	if err := n.authSession(session); err != nil {
 		writeHTTPResponse(n.cfg.security.CORSOrigin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
