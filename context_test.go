@@ -125,6 +125,8 @@ func TestContext_Duplicate(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
+		cookies := []*http.Cookie{&http.Cookie{}, &http.Cookie{}}
+
 		ctx := newContext(context.Background(), req)
 		ctx.SetCount(10)
 		ctx.SetInputData("input")
@@ -136,6 +138,7 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.SetMetadata("hello", "world")
 		ctx.SetClaims([]string{"ouais=yes"})
 		ctx.SetNext("next")
+		ctx.AddOutputCookies(cookies[0], cookies[1])
 
 		Convey("When I call the Duplicate method", func() {
 
@@ -154,6 +157,8 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.redirect, ShouldEqual, ctx2.Redirect())
 				So(ctx.next, ShouldEqual, ctx2.(*bcontext).next)
 				So(ctx.messages, ShouldResemble, ctx2.(*bcontext).messages)
+				So(ctx.outputCookies, ShouldResemble, ctx2.(*bcontext).outputCookies)
+				So(ctx.outputCookies, ShouldResemble, cookies)
 			})
 		})
 	})

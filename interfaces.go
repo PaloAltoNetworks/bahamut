@@ -155,6 +155,10 @@ type Context interface {
 
 	// Metadata returns the opaque data set by using SetMetadata().
 	Metadata(key interface{}) interface{}
+
+	// outputCookies adds cookies to the response that
+	// will be returned to the client.
+	AddOutputCookies(cookies ...*http.Cookie)
 }
 
 // Processor is the interface for a Processor Unit

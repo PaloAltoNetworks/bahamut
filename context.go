@@ -13,6 +13,7 @@ package bahamut
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"github.com/gofrs/uuid"
@@ -20,22 +21,23 @@ import (
 )
 
 type bcontext struct {
-	claims       []string
-	claimsMap    map[string]string
-	count        int
-	ctx          context.Context
-	events       elemental.Events
-	eventsLock   *sync.Mutex
-	id           string
-	inputData    interface{}
-	messages     []string
-	messagesLock *sync.Mutex
-	metadata     map[interface{}]interface{}
-	outputData   interface{}
-	redirect     string
-	request      *elemental.Request
-	statusCode   int
-	next         string
+	claims        []string
+	claimsMap     map[string]string
+	count         int
+	ctx           context.Context
+	events        elemental.Events
+	eventsLock    *sync.Mutex
+	id            string
+	inputData     interface{}
+	messages      []string
+	messagesLock  *sync.Mutex
+	metadata      map[interface{}]interface{}
+	outputData    interface{}
+	redirect      string
+	request       *elemental.Request
+	statusCode    int
+	next          string
+	outputCookies []*http.Cookie
 }
 
 // NewContext creates a new *Context.
@@ -174,6 +176,10 @@ func (c *bcontext) AddMessage(msg string) {
 	c.messagesLock.Unlock()
 }
 
+func (c *bcontext) AddOutputCookies(cookies ...*http.Cookie) {
+	c.outputCookies = append(c.outputCookies, cookies...)
+}
+
 func (c *bcontext) Duplicate() Context {
 
 	c2 := newContext(c.ctx, c.request.Duplicate())
@@ -186,6 +192,7 @@ func (c *bcontext) Duplicate() Context {
 	c2.redirect = c.redirect
 	c2.messages = append(c2.messages, c.messages...)
 	c2.next = c.next
+	c2.outputCookies = append(c2.outputCookies, c.outputCookies...)
 
 	for k, v := range c.claimsMap {
 		c2.claimsMap[k] = v

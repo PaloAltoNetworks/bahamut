@@ -71,6 +71,25 @@ func TestHandlers_makeResponse(t *testing.T) {
 			})
 		})
 
+		Convey("When I call makeResponse on with a cookie", func() {
+
+			ctx.request.Operation = elemental.OperationInfo
+			ctx.outputCookies = []*http.Cookie{
+				&http.Cookie{
+					Name: "a",
+				},
+				&http.Cookie{
+					Name: "b",
+				},
+			}
+
+			makeResponse(ctx, response, nil)
+
+			Convey("Then response.Cookie should be set", func() {
+				So(len(response.Cookies), ShouldEqual, 2)
+			})
+		})
+
 		Convey("When I call makeResponse on a create operation", func() {
 
 			ctx.request.Operation = elemental.OperationCreate
