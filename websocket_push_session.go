@@ -51,6 +51,7 @@ type wsPushSession struct {
 	closeCh               chan struct{}
 	encodingRead          elemental.EncodingType
 	encodingWrite         elemental.EncodingType
+	cookies               []*http.Cookie
 }
 
 func newWSPushSession(
@@ -189,6 +190,15 @@ func (s *wsPushSession) setCurrentPushConfig(f *elemental.PushConfig) {
 		s.parameters[k] = v
 	}
 	s.parametersLock.Unlock()
+}
+
+func (s *wsPushSession) Cookie(name string) (*http.Cookie, error) {
+	for _, cookie := range s.cookies {
+		if cookie.Name == name {
+			return cookie, nil
+		}
+	}
+	return nil, http.ErrNoCookie
 }
 
 // send sends the given bytes as is, with no

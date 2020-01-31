@@ -940,6 +940,7 @@ type mockSession struct {
 	claims []string
 }
 
+func (s *mockSession) Cookie(string) (*http.Cookie, error)      { return nil, nil }
 func (s *mockSession) Identifier() string                       { return "" }
 func (s *mockSession) Parameter(string) string                  { return "" }
 func (s *mockSession) Header(string) string                     { return "" }

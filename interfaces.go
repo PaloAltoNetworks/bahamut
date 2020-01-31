@@ -300,6 +300,7 @@ type Session interface {
 	SetMetadata(interface{})
 	Context() context.Context
 	ClientIP() string
+	Cookie(string) (*http.Cookie, error)
 }
 
 // PushSession is a Push Session
