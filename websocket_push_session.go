@@ -27,6 +27,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// supportsErrorEventsQueryParam contains the name of the query parameter that can be passed in by the client to declare that
+	// it can handle error events
+	supportsErrorEventsQueryParam = "supportsErrors"
+)
+
 type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
@@ -34,6 +40,8 @@ type wsPushSession struct {
 	pushConfig            *elemental.PushConfig
 	currentPushConfigLock sync.RWMutex
 	parametersLock        sync.RWMutex
+	errorStateActive      bool
+	errorStateLock        sync.RWMutex
 	claims                []string
 	claimsMap             map[string]string
 	cfg                   config
@@ -164,6 +172,25 @@ func (s *wsPushSession) Parameter(key string) string {
 	return s.parameters.Get(key)
 }
 
+func (s *wsPushSession) inErrorState() bool {
+	s.errorStateLock.RLock()
+	defer s.errorStateLock.RUnlock()
+
+	return s.errorStateActive
+}
+
+func (s *wsPushSession) setErrorState(on bool) {
+	s.errorStateLock.RLock()
+	defer s.errorStateLock.RUnlock()
+
+	s.errorStateActive = on
+}
+
+func (s *wsPushSession) handlesErrorEvents() bool {
+	_, ok := s.parameters[supportsErrorEventsQueryParam]
+	return ok
+}
+
 func (s *wsPushSession) currentPushConfig() *elemental.PushConfig {
 	s.currentPushConfigLock.RLock()
 	defer s.currentPushConfigLock.RUnlock()
@@ -229,8 +256,32 @@ func (s *wsPushSession) listen() {
 
 			pushConfig := elemental.NewPushConfig()
 			if err := elemental.Decode(s.encodingRead, data, pushConfig); err != nil {
-				s.close(websocket.CloseUnsupportedData)
-				return
+				if s.handlesErrorEvents() {
+					s.setErrorState(true)
+					msgpack, json, err := prepareEventData(elemental.NewErrorEvent(elemental.Error{
+						Description: fmt.Sprintf("could not decode message into %T: %s", pushConfig, err),
+						Subject:     "bahamut",
+						Title:       "Bad request",
+					}, s.encodingWrite))
+
+					if err != nil {
+						zap.L().Error("unable to prepare error event encoding, closing socket", zap.Error(err))
+						s.close(websocket.CloseInternalServerErr)
+						return
+					}
+
+					switch s.encodingWrite {
+					case elemental.EncodingTypeMSGPACK:
+						s.send(msgpack)
+					case elemental.EncodingTypeJSON:
+						s.send(json)
+					}
+
+					continue
+				} else {
+					s.close(websocket.CloseUnsupportedData)
+					return
+				}
 			}
 
 			if err := pushConfig.ParseIdentityFilters(); err != nil {
@@ -239,10 +290,39 @@ func (s *wsPushSession) listen() {
 					zap.String("sessionID", s.id),
 					zap.String("pushConfig", pushConfig.String()),
 				)
-				s.close(websocket.CloseUnsupportedData)
-				return
+
+				if s.handlesErrorEvents() {
+					s.setErrorState(true)
+					msgpack, json, err := prepareEventData(elemental.NewErrorEvent(elemental.Error{
+						Title:       "Bad request",
+						Subject:     "bahamut",
+						Description: fmt.Sprintf("unable to parse identity filters: %s", err),
+						Data: map[string]interface{}{
+							"attribute": "filters",
+						},
+					}, s.encodingWrite))
+
+					if err != nil {
+						zap.L().Error("unable to prepare error event encoding, closing socket", zap.Error(err))
+						s.close(websocket.CloseInternalServerErr)
+						return
+					}
+
+					switch s.encodingWrite {
+					case elemental.EncodingTypeMSGPACK:
+						s.send(msgpack)
+					case elemental.EncodingTypeJSON:
+						s.send(json)
+					}
+
+					continue
+				} else {
+					s.close(websocket.CloseUnsupportedData)
+					return
+				}
 			}
 
+			s.setErrorState(false)
 			s.setCurrentPushConfig(pushConfig)
 
 		case err := <-s.conn.Error():
