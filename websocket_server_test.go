@@ -580,6 +580,62 @@ func TestWebsocketServer_start(t *testing.T) {
 		return wss, pushHandler, s1, s2
 	}
 
+	Convey("Given a session is in an error state, it should not receive any events", t, func() {
+
+		// verify that the session that is NOT in an error state DOES get the event and the one
+		// that IS in the error state, DOES NOT get it.
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+
+		// let's put session 1 in an error state
+		s1.setErrorState(true)
+
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		evt.Timestamp = time.Now().Add(time.Second)
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
+
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		// note: session one was in an error state so it should NOT have received the message hence the nil assertion
+		So(msg1, ShouldBeNil)
+		So(msg2, ShouldNotBeNil)
+	})
+
 	Convey("Given I push an event that is filtered out by one session", t, func() {
 
 		ctx, cancel := context.WithCancel(context.Background())
