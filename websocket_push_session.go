@@ -180,8 +180,8 @@ func (s *wsPushSession) inErrorState() bool {
 }
 
 func (s *wsPushSession) setErrorState(on bool) {
-	s.errorStateLock.RLock()
-	defer s.errorStateLock.RUnlock()
+	s.errorStateLock.Lock()
+	defer s.errorStateLock.Unlock()
 
 	s.errorStateActive = on
 }
