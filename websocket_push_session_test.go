@@ -388,7 +388,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 	Convey("Given I have a push session", t, FailureHalts, func() {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		unregistered := make(chan bool, 10)
@@ -424,6 +424,363 @@ func TestWSPushSession_listen(t *testing.T) {
 				r, _ := elemental.Encode(elemental.EncodingTypeMSGPACK, testEvent)
 				So(data, ShouldResemble, r)
 			})
+		})
+
+		Convey("Verify error event - when the client sends a push config which declares a filter on an undeclared identity", func() {
+
+			// TL;DR
+			//
+			// This test ensures that the server does NOT the socket connection in the event that the:
+			// • client connects to the push server with 'supportsErrors' query param to indicate it can handle error events
+			// • client sends an invalid push config message - in this case, they declare an identity filter on an
+			//   undeclared identity.
+			//
+			// In such a scenario, the push server should emit an error event with a clear description of the error.
+
+			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
+			// to indicate to the server that it can handle error events.
+
+			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				// notice how identity-two has NOT been declared
+				"identity-two": elemental.NewFilterComposer().
+					WithKey("someAttr").
+					Exists().
+					Done().
+					String(),
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			So(err, ShouldBeNil)
+
+			conn.NextRead(rawPushConfig)
+
+			// When the client is connected to the push server w/ error event support mode, in the event of an error the server
+			// should NOT close the socket. Let's verify that the socket was not closed...
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var unregisterWasCalled bool
+			select {
+			case unregisterWasCalled = <-unregistered:
+			default:
+			}
+
+			So(closeErr, ShouldBeNil)
+			So(unregisterWasCalled, ShouldBeFalse)
+			So(s.inErrorState(), ShouldBeTrue)
+
+			// An error event should be sent to the client notifying them what was wrong with their push config message
+
+			var rawEvent []byte
+			select {
+			case rawEvent = <-conn.LastWrite():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var event elemental.Event
+			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
+			So(event.Type, ShouldEqual, elemental.EventError)
+			So(event.Identity, ShouldEqual, string(elemental.EventError))
+
+			var eventData []byte
+			switch event.Encoding {
+			case elemental.EncodingTypeMSGPACK:
+				eventData = event.RawData
+				So(event.JSONData, ShouldBeNil)
+			case elemental.EncodingTypeJSON:
+				eventData = event.JSONData
+				So(event.RawData, ShouldBeNil)
+			}
+
+			var elemErr elemental.Error
+			So(elemental.Decode(event.Encoding, eventData, &elemErr), ShouldBeNil)
+			So(elemErr.Title, ShouldEqual, "Bad request")
+			So(elemErr.Description, ShouldContainSubstring, "elemental: cannot declare an identity filter on \"identity-two\" as that was not declared in 'Identities'")
+			So(elemErr.Data, ShouldResemble, map[string]interface{}{
+				"attribute": "filters",
+			})
+		})
+
+		Convey("Verify error event - when the client sends a push config with a filter that cannot be parsed", func() {
+
+			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
+			// to indicate to the server that it can handle error events.
+			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				testIdentity: "this-will-not-parse",
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			So(err, ShouldBeNil)
+
+			conn.NextRead(rawPushConfig)
+
+			// When the client is connected to the push server w/ error event support mode, in the event of an error the server
+			// should NOT close the socket. Let's verify that the socket was not closed...
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var unregisterWasCalled bool
+			select {
+			case unregisterWasCalled = <-unregistered:
+			default:
+			}
+
+			So(closeErr, ShouldBeNil)
+			So(unregisterWasCalled, ShouldBeFalse)
+			So(s.inErrorState(), ShouldBeTrue)
+
+			// An error event should be sent to the client notifying them what was wrong with their push config message
+
+			var rawEvent []byte
+			select {
+			case rawEvent = <-conn.LastWrite():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var event elemental.Event
+			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
+			So(event.Type, ShouldEqual, elemental.EventError)
+			So(event.Identity, ShouldEqual, string(elemental.EventError))
+
+			var eventData []byte
+			switch event.Encoding {
+			case elemental.EncodingTypeMSGPACK:
+				eventData = event.RawData
+				So(event.JSONData, ShouldBeNil)
+			case elemental.EncodingTypeJSON:
+				eventData = event.JSONData
+				So(event.RawData, ShouldBeNil)
+			}
+
+			var elemErr elemental.Error
+			So(elemental.Decode(event.Encoding, eventData, &elemErr), ShouldBeNil)
+			So(elemErr.Title, ShouldEqual, "Bad request")
+			So(elemErr.Description, ShouldContainSubstring, "elemental: unable to parse filter \"this-will-not-parse\": invalid operator")
+			So(elemErr.Data, ShouldResemble, map[string]interface{}{
+				"attribute": "filters",
+			})
+		})
+
+		Convey("Verify error event - when the client sends a push config with a filter utilizing an unsupported comparator", func() {
+
+			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
+			// to indicate to the server that it can handle error events.
+			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+
+			go s.listen()
+
+			testIdentity := "identity-one"
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			pc.IdentityFilters = map[string]string{
+				testIdentity: elemental.NewFilterComposer().
+					WithKey("someAttr").
+					Contains(1, 2, 3).
+					Done().
+					String(),
+			}
+
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			So(err, ShouldBeNil)
+
+			conn.NextRead(rawPushConfig)
+
+			// When the client is connected to the push server w/ error event support mode, in the event of an error the server
+			// should NOT close the socket. Let's verify that the socket was not closed...
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			So(closeErr, ShouldBeNil)
+
+			var unregisterWasCalled bool
+			select {
+			case unregisterWasCalled = <-unregistered:
+			default:
+			}
+
+			So(unregisterWasCalled, ShouldBeFalse)
+			So(s.inErrorState(), ShouldBeTrue)
+
+			// An error event should be sent to the client notifying them what was wrong with their push config message
+
+			var rawEvent []byte
+			select {
+			case rawEvent = <-conn.LastWrite():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var event elemental.Event
+			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
+			So(event.Type, ShouldEqual, elemental.EventError)
+			So(event.Identity, ShouldEqual, string(elemental.EventError))
+
+			var eventData []byte
+			switch event.Encoding {
+			case elemental.EncodingTypeMSGPACK:
+				eventData = event.RawData
+				So(event.JSONData, ShouldBeNil)
+			case elemental.EncodingTypeJSON:
+				eventData = event.JSONData
+				So(event.RawData, ShouldBeNil)
+			}
+
+			var elemErr elemental.Error
+			So(elemental.Decode(event.Encoding, eventData, &elemErr), ShouldBeNil)
+			So(elemErr.Title, ShouldEqual, "Bad request")
+			So(elemErr.Description, ShouldContainSubstring, "unsupported comparator: CONTAINS")
+			So(elemErr.Data, ShouldResemble, map[string]interface{}{
+				"attribute": "filters",
+			})
+		})
+
+		Convey("Verify error event - when the client sends a message that cannot be de-serialized into an elemental.PushConfig", func() {
+
+			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
+			// to indicate to the server that it can handle error events.
+			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+
+			go s.listen()
+
+			conn.NextRead([]byte("THIS WON'T DE-SERIALIZE INTO AN PUSH CONFIG MESSAGE"))
+
+			// When the client is connected to the push server w/ error event support mode, in the event of an error the server
+			// should NOT close the socket. Let's verify that the socket was not closed...
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			So(closeErr, ShouldBeNil)
+
+			var unregisterWasCalled bool
+			select {
+			case unregisterWasCalled = <-unregistered:
+			default:
+			}
+
+			So(unregisterWasCalled, ShouldBeFalse)
+			So(s.inErrorState(), ShouldBeTrue)
+
+			// An error event should be sent to the client notifying them what was wrong with their message
+
+			var rawEvent []byte
+			select {
+			case rawEvent = <-conn.LastWrite():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var event elemental.Event
+			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
+			So(event.Type, ShouldEqual, elemental.EventError)
+			So(event.Identity, ShouldEqual, string(elemental.EventError))
+
+			var eventData []byte
+			switch event.Encoding {
+			case elemental.EncodingTypeMSGPACK:
+				eventData = event.RawData
+				So(event.JSONData, ShouldBeNil)
+			case elemental.EncodingTypeJSON:
+				eventData = event.JSONData
+				So(event.RawData, ShouldBeNil)
+			}
+
+			var err elemental.Error
+			So(elemental.Decode(event.Encoding, eventData, &err), ShouldBeNil)
+			So(err.Title, ShouldEqual, "Bad request")
+			So(err.Description, ShouldContainSubstring, "could not decode message into *elemental.PushConfig")
+			So(err.Data, ShouldBeNil)
+		})
+
+		Convey("Verify client can get out of error state if they pass in another valid (push config) message", func() {
+
+			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
+			// to indicate to the server that it can handle error events.
+			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+
+			go s.listen()
+
+			// STEP 1: let's get the client into an error state first
+
+			conn.NextRead([]byte("THIS WON'T DE-SERIALIZE INTO AN PUSH CONFIG MESSAGE"))
+
+			// When the client is connected to the push server w/ error event support mode, in the event of an error the server
+			// should NOT close the socket. Let's verify that the socket was not closed...
+
+			var closeErr error
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			So(closeErr, ShouldBeNil)
+
+			var unregisterWasCalled bool
+			select {
+			case unregisterWasCalled = <-unregistered:
+			default:
+			}
+
+			So(unregisterWasCalled, ShouldBeFalse)
+			So(s.inErrorState(), ShouldBeTrue)
+
+			// An error event should be sent to the client notifying them what was wrong with their message
+
+			var rawEvent []byte
+			select {
+			case rawEvent = <-conn.LastWrite():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			var event elemental.Event
+			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
+			So(event.Type, ShouldEqual, elemental.EventError)
+
+			// STEP 2: now let's send another message to the push server that is valid
+
+			testIdentity := "identity-one"
+			pc := elemental.NewPushConfig()
+			pc.FilterIdentity(testIdentity)
+			rawPushConfig, err := elemental.Encode(elemental.EncodingTypeMSGPACK, pc)
+			So(err, ShouldBeNil)
+
+			conn.NextRead(rawPushConfig)
+
+			select {
+			case closeErr = <-conn.Done():
+			case <-time.After(500 * time.Millisecond):
+			}
+
+			// STEP 3: the session should be happy again \o/ yay
+			So(closeErr, ShouldBeNil)
+			So(s.inErrorState(), ShouldBeFalse)
 		})
 
 		Convey("When the client sends a push config with a filter that cannot be parsed", func() {
