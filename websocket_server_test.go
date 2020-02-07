@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tidwall/sjson"
+
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
@@ -1422,4 +1424,47 @@ func Test_prepareEventData(t *testing.T) {
 			}
 		})
 	}
+}
+
+var rawEventJSON []byte = []byte(`{"encoding":"application/json","entity":{"ID":"","creationOnly":"","date":null,"description":"","name":"","parentID":"","parentType":"","readOnly":"","secret":"","slice":[]},"identity":"list","timestamp":"2020-02-07T13:11:56.928668-08:00","type":"create"}`)
+var result []byte
+
+func BenchmarkDecodeEncodeJSON_AddPushConfigIDForEvent(b *testing.B) {
+	b.ReportAllocs()
+	var err error
+	var tmp []byte
+
+	for n := 0; n < b.N; n++ {
+		// now I need to add an ID, so I decode the event again
+		var event elemental.Event
+		if err = elemental.Decode(elemental.EncodingTypeJSON, rawEventJSON, &event); err != nil {
+			b.Fatalf("benchmark setup failed decoding event fixture: %s", err)
+		}
+
+		// add ID and encode it again
+		event.PushConfigID = "123-456-789"
+		if tmp, err = elemental.Encode(elemental.EncodingTypeJSON, event); err != nil {
+			b.Fatalf("benchmark setup failed encoding event fixture: %s", err)
+		}
+	}
+
+	// avoid compiler optimizations by assigning result to a package level var to avoid ruining the benchmark.
+	result = tmp
+}
+
+func BenchmarkDecodeEncodeJSON_AddPushConfigIDForEvent_SJSON(b *testing.B) {
+	b.ReportAllocs()
+	var err error
+	var tmp string
+
+	for n := 0; n < b.N; n++ {
+		// now I need to add the pushconfigid field as a root attribute, but instead of decoding the JSON again,
+		// I will use the `github.com/tidwall/sjson` package which traverses the raw bytes
+		if tmp, err = sjson.Set(string(rawEventJSON), "pushconfigid", "123-456-789"); err != nil {
+			b.Fatalf("Error adding field 'pushconfigid' in already serialized JSON event: %s", err)
+		}
+	}
+
+	// avoid compiler optimizations by assigning result to a package level var to avoid ruining the benchmark.
+	result = []byte(tmp)
 }
