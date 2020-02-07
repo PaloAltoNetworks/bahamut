@@ -23,10 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tidwall/sjson"
-
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/tidwall/sjson"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
 	"go.aporeto.io/wsc"
