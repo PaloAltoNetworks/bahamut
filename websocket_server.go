@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-zoo/bone"
 	"github.com/gorilla/websocket"
+	"github.com/tidwall/sjson"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/wsc"
 	"go.uber.org/zap"
@@ -369,11 +370,20 @@ func (n *pushServer) start(ctx context.Context) {
 						}
 					}
 
+					id, setID := session.currentPushConfigID()
 					switch session.encodingWrite {
 					case elemental.EncodingTypeMSGPACK:
 						session.send(dataMSGPACK)
 					case elemental.EncodingTypeJSON:
-						session.send(dataJSON)
+						data := dataJSON
+						if setID {
+							if withID, err := sjson.Set(string(data), "pushconfigid", id); err != nil {
+								zap.L().Error("Error setting 'pushconfigid' in already serialized JSON event", zap.Error(err))
+							} else {
+								data = []byte(withID)
+							}
+						}
+						session.send(data)
 					}
 				}
 			}(p)

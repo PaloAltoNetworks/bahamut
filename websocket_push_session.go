@@ -211,6 +211,17 @@ func (s *wsPushSession) sendWSError(ee elemental.Error) {
 	}
 }
 
+func (s *wsPushSession) currentPushConfigID() (string, bool) {
+	s.currentPushConfigLock.RLock()
+	defer s.currentPushConfigLock.RUnlock()
+
+	if s.pushConfig == nil || s.pushConfig.ID == "" {
+		return "", false
+	}
+
+	return s.pushConfig.ID, true
+}
+
 func (s *wsPushSession) currentPushConfig() *elemental.PushConfig {
 	s.currentPushConfigLock.RLock()
 	defer s.currentPushConfigLock.RUnlock()
