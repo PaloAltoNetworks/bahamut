@@ -637,7 +637,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		So(msg2, ShouldNotBeNil)
 	})
 
-	Convey("Given a session has set the push config ID, events that are pushed for that session should contain the ID", t, func() {
+	Convey("Given a session has set the push config ID, events that are pushed for that session should contain the ID - JSON", t, func() {
 
 		// In this test, we have two sessions, one of which sent a push config with an ID. We shall verify that the session
 		// that did send an ID will receive events containing their configured ID. The one that did not configure an ID,
@@ -695,8 +695,73 @@ func TestWebsocketServer_start(t *testing.T) {
 		So(msg1, ShouldNotBeNil)
 		So(msg2, ShouldNotBeNil)
 
-		var e1 elemental.Event
-		var e2 elemental.Event
+		var e1, e2 elemental.Event
+		So(elemental.Decode(s1.encodingWrite, msg1, &e1), ShouldBeNil)
+		So(elemental.Decode(s2.encodingWrite, msg2, &e2), ShouldBeNil)
+
+		So(e1.PushConfigID, ShouldEqual, "a411eb29-412e-4518-9423-37e6a2e6c239")
+		So(e2.PushConfigID, ShouldBeEmpty)
+	})
+
+	Convey("Given a session has set the push config ID, events that are pushed for that session should contain the ID - MSGPACK", t, func() {
+
+		// In this test, we have two sessions, one of which sent a push config with an ID. We shall verify that the session
+		// that did send an ID will receive events containing their configured ID. The one that did not configure an ID,
+		// will not receive events containing an ID.
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pushServer, pushHandler, s1, s2 := makePubsub(ctx, "")
+
+		pc := elemental.NewPushConfig()
+		pc.ID = "a411eb29-412e-4518-9423-37e6a2e6c239"
+		s1.setCurrentPushConfig(pc)
+		s1.encodingWrite = elemental.EncodingTypeMSGPACK
+		s1.encodingRead = elemental.EncodingTypeMSGPACK
+
+		conn1 := s1.conn.(wsc.MockWebsocket)
+		conn2 := s2.conn.(wsc.MockWebsocket)
+
+		pushHandler.shouldDispatchOK = true
+
+		evt := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+		evt.Timestamp = time.Now().Add(time.Second)
+		pub := NewPublication("")
+		if err := pub.Encode(evt); err != nil {
+			panic(err)
+		}
+
+		pushServer.publications <- pub
+
+		var msg1 []byte
+		var msg2 []byte
+		var l sync.Mutex
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+
+			for {
+				select {
+				case data := <-conn1.LastWrite():
+					l.Lock()
+					msg1 = data
+					l.Unlock()
+				case data := <-conn2.LastWrite():
+					l.Lock()
+					msg2 = data
+					l.Unlock()
+				case <-time.After(1 * time.Second):
+					return
+				}
+			}
+		}()
+		<-finished
+
+		So(msg1, ShouldNotBeNil)
+		So(msg2, ShouldNotBeNil)
+
+		var e1, e2 elemental.Event
 		So(elemental.Decode(s1.encodingWrite, msg1, &e1), ShouldBeNil)
 		So(elemental.Decode(s2.encodingWrite, msg2, &e2), ShouldBeNil)
 
