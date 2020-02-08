@@ -373,7 +373,20 @@ func (n *pushServer) start(ctx context.Context) {
 					id, setID := session.currentPushConfigID()
 					switch session.encodingWrite {
 					case elemental.EncodingTypeMSGPACK:
-						session.send(dataMSGPACK)
+						data := dataMSGPACK
+						if setID {
+							var event elemental.Event
+							if err := elemental.Decode(elemental.EncodingTypeMSGPACK, dataMSGPACK, &event); err != nil {
+								zap.L().Error("Error adding 'pushconfigid' to event, decoding failed", zap.Error(err))
+							} else {
+								event.PushConfigID = id
+								if data, err = elemental.Encode(elemental.EncodingTypeMSGPACK, event); err != nil {
+									zap.L().Error("Error adding 'pushconfigid' to event, encoding failed", zap.Error(err))
+									data = dataMSGPACK
+								}
+							}
+						}
+						session.send(data)
 					case elemental.EncodingTypeJSON:
 						data := dataJSON
 						if setID {
