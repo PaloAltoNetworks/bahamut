@@ -490,7 +490,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			var event elemental.Event
 			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
 			So(event.Type, ShouldEqual, elemental.EventError)
-			So(event.Identity, ShouldEqual, string(elemental.EventError))
+			So(event.Identity, ShouldEqual, "")
 
 			var eventData []byte
 			switch event.Encoding {
@@ -561,7 +561,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			var event elemental.Event
 			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
 			So(event.Type, ShouldEqual, elemental.EventError)
-			So(event.Identity, ShouldEqual, string(elemental.EventError))
+			So(event.Identity, ShouldEqual, "")
 
 			var eventData []byte
 			switch event.Encoding {
@@ -637,7 +637,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			var event elemental.Event
 			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
 			So(event.Type, ShouldEqual, elemental.EventError)
-			So(event.Identity, ShouldEqual, string(elemental.EventError))
+			So(event.Identity, ShouldEqual, "")
 
 			var eventData []byte
 			switch event.Encoding {
@@ -699,7 +699,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			var event elemental.Event
 			So(elemental.Decode(s.encodingWrite, rawEvent, &event), ShouldBeNil)
 			So(event.Type, ShouldEqual, elemental.EventError)
-			So(event.Identity, ShouldEqual, string(elemental.EventError))
+			So(event.Identity, ShouldEqual, "")
 
 			var eventData []byte
 			switch event.Encoding {
