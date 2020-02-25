@@ -507,7 +507,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			So(elemErr.Title, ShouldEqual, "Bad request")
 			So(elemErr.Description, ShouldContainSubstring, "elemental: cannot declare an identity filter on \"identity-two\" as that was not declared in 'Identities'")
 			So(elemErr.Data, ShouldResemble, map[string]interface{}{
-				"attribute": "filters",
+				"pushconfig": "filters",
 			})
 		})
 
@@ -578,7 +578,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			So(elemErr.Title, ShouldEqual, "Bad request")
 			So(elemErr.Description, ShouldContainSubstring, "elemental: unable to parse filter \"this-will-not-parse\": invalid operator")
 			So(elemErr.Data, ShouldResemble, map[string]interface{}{
-				"attribute": "filters",
+				"pushconfig": "filters",
 			})
 		})
 
@@ -654,7 +654,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			So(elemErr.Title, ShouldEqual, "Bad request")
 			So(elemErr.Description, ShouldContainSubstring, "unsupported comparator: CONTAINS")
 			So(elemErr.Data, ShouldResemble, map[string]interface{}{
-				"attribute": "filters",
+				"pushconfig": "filters",
 			})
 		})
 

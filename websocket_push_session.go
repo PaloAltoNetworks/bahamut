@@ -302,7 +302,7 @@ func (s *wsPushSession) listen() {
 					Subject:     "bahamut",
 					Description: fmt.Sprintf("unable to parse identity filters: %s", err),
 					Data: map[string]interface{}{
-						"attribute": "filters",
+						"pushconfig": "filters",
 					},
 				}, s.encodingWrite))
 
