@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	// supportsErrorEventsQueryParam contains the name of the query parameter that can be passed in by the client to declare that
+	// enableErrorsQueryParam contains the name of the query parameter that can be passed in by the client to declare that
 	// it can handle error events
-	supportsErrorEventsQueryParam = "supportsErrors"
+	enableErrorsQueryParam = "enableErrors"
 )
 
 type unregisterFunc func(*wsPushSession)
@@ -187,7 +187,7 @@ func (s *wsPushSession) setErrorState(on bool) {
 }
 
 func (s *wsPushSession) handlesErrorEvents() bool {
-	_, ok := s.parameters[supportsErrorEventsQueryParam]
+	_, ok := s.parameters[enableErrorsQueryParam]
 	return ok
 }
 

@@ -430,7 +430,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			// TL;DR
 			//
 			// This test ensures that the server does NOT the socket connection in the event that the:
-			// • client connects to the push server with 'supportsErrors' query param to indicate it can handle error events
+			// • client connects to the push server with 'enableErrors' query param to indicate it can handle error events
 			// • client sends an invalid push config message - in this case, they declare an identity filter on an
 			//   undeclared identity.
 			//
@@ -439,7 +439,7 @@ func TestWSPushSession_listen(t *testing.T) {
 			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
 			// to indicate to the server that it can handle error events.
 
-			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+			s.parameters.Add(enableErrorsQueryParam, "true")
 
 			go s.listen()
 
@@ -515,7 +515,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
 			// to indicate to the server that it can handle error events.
-			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+			s.parameters.Add(enableErrorsQueryParam, "true")
 
 			go s.listen()
 
@@ -586,7 +586,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
 			// to indicate to the server that it can handle error events.
-			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+			s.parameters.Add(enableErrorsQueryParam, "true")
 
 			go s.listen()
 
@@ -662,7 +662,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
 			// to indicate to the server that it can handle error events.
-			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+			s.parameters.Add(enableErrorsQueryParam, "true")
 
 			go s.listen()
 
@@ -722,7 +722,7 @@ func TestWSPushSession_listen(t *testing.T) {
 
 			// IMPORTANT: adjust the test session to make it look like the client connected to the server w/ the special query param
 			// to indicate to the server that it can handle error events.
-			s.parameters.Add(supportsErrorEventsQueryParam, "true")
+			s.parameters.Add(enableErrorsQueryParam, "true")
 
 			go s.listen()
 
