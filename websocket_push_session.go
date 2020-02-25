@@ -191,13 +191,16 @@ func (s *wsPushSession) handlesErrorEvents() bool {
 	return ok
 }
 
-func (s *wsPushSession) sendWSError(ee elemental.Error) error {
+func (s *wsPushSession) sendWSError(ee elemental.Error) {
 
 	s.setErrorState(true)
 	msgpack, json, err := prepareEventData(elemental.NewErrorEvent(ee, s.encodingWrite))
 	if err != nil {
+		zap.L().Error("elemental: unable to prepare error event - closing socket",
+			zap.String("sessionID", s.id),
+			zap.Error(err))
 		s.close(websocket.CloseInternalServerErr)
-		return fmt.Errorf("elemental: unable to prepare error event %w", err)
+		return
 	}
 
 	switch s.encodingWrite {
@@ -206,8 +209,6 @@ func (s *wsPushSession) sendWSError(ee elemental.Error) error {
 	case elemental.EncodingTypeJSON:
 		s.send(json)
 	}
-
-	return nil
 }
 
 func (s *wsPushSession) currentPushConfig() *elemental.PushConfig {
@@ -280,16 +281,11 @@ func (s *wsPushSession) listen() {
 					return
 				}
 
-				if err := s.sendWSError(elemental.Error{
+				s.sendWSError(elemental.Error{
 					Title:       "Bad request",
 					Subject:     "bahamut",
 					Description: fmt.Sprintf("could not decode message into %T: %s", pushConfig, err),
-				}); err != nil {
-					zap.L().Error("failed to send error event - closing socket",
-						zap.String("sessionID", s.id),
-						zap.String("pushConfig", pushConfig.String()),
-						zap.Error(err))
-				}
+				})
 
 				continue
 			}
@@ -306,18 +302,14 @@ func (s *wsPushSession) listen() {
 					return
 				}
 
-				if err := s.sendWSError(elemental.Error{
+				s.sendWSError(elemental.Error{
 					Title:       "Bad request",
 					Subject:     "bahamut",
 					Description: fmt.Sprintf("unable to parse identity filters: %s", err),
 					Data: map[string]interface{}{
 						"pushconfig": "filters",
-					}}); err != nil {
-					zap.L().Error("failed to send error event - closing socket",
-						zap.String("sessionID", s.id),
-						zap.String("pushConfig", pushConfig.String()),
-						zap.Error(err))
-				}
+					},
+				})
 
 				continue
 			}
