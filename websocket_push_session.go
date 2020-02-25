@@ -191,6 +191,25 @@ func (s *wsPushSession) handlesErrorEvents() bool {
 	return ok
 }
 
+func (s *wsPushSession) sendWSError(ee elemental.Error) error {
+
+	s.setErrorState(true)
+	msgpack, json, err := prepareEventData(elemental.NewErrorEvent(ee, s.encodingWrite))
+	if err != nil {
+		s.close(websocket.CloseInternalServerErr)
+		return fmt.Errorf("elemental: unable to prepare error event %w", err)
+	}
+
+	switch s.encodingWrite {
+	case elemental.EncodingTypeMSGPACK:
+		s.send(msgpack)
+	case elemental.EncodingTypeJSON:
+		s.send(json)
+	}
+
+	return nil
+}
+
 func (s *wsPushSession) currentPushConfig() *elemental.PushConfig {
 	s.currentPushConfigLock.RLock()
 	defer s.currentPushConfigLock.RUnlock()
@@ -261,24 +280,15 @@ func (s *wsPushSession) listen() {
 					return
 				}
 
-				s.setErrorState(true)
-				msgpack, json, err := prepareEventData(elemental.NewErrorEvent(elemental.Error{
-					Description: fmt.Sprintf("could not decode message into %T: %s", pushConfig, err),
-					Subject:     "bahamut",
+				if err := s.sendWSError(elemental.Error{
 					Title:       "Bad request",
-				}, s.encodingWrite))
-
-				if err != nil {
-					zap.L().Error("unable to prepare error event encoding, closing socket", zap.Error(err))
-					s.close(websocket.CloseInternalServerErr)
-					return
-				}
-
-				switch s.encodingWrite {
-				case elemental.EncodingTypeMSGPACK:
-					s.send(msgpack)
-				case elemental.EncodingTypeJSON:
-					s.send(json)
+					Subject:     "bahamut",
+					Description: fmt.Sprintf("could not decode message into %T: %s", pushConfig, err),
+				}); err != nil {
+					zap.L().Error("failed to send error event - closing socket",
+						zap.String("sessionID", s.id),
+						zap.String("pushConfig", pushConfig.String()),
+						zap.Error(err))
 				}
 
 				continue
@@ -296,27 +306,17 @@ func (s *wsPushSession) listen() {
 					return
 				}
 
-				s.setErrorState(true)
-				msgpack, json, err := prepareEventData(elemental.NewErrorEvent(elemental.Error{
+				if err := s.sendWSError(elemental.Error{
 					Title:       "Bad request",
 					Subject:     "bahamut",
 					Description: fmt.Sprintf("unable to parse identity filters: %s", err),
 					Data: map[string]interface{}{
 						"pushconfig": "filters",
-					},
-				}, s.encodingWrite))
-
-				if err != nil {
-					zap.L().Error("unable to prepare error event encoding, closing socket", zap.Error(err))
-					s.close(websocket.CloseInternalServerErr)
-					return
-				}
-
-				switch s.encodingWrite {
-				case elemental.EncodingTypeMSGPACK:
-					s.send(msgpack)
-				case elemental.EncodingTypeJSON:
-					s.send(json)
+					}}); err != nil {
+					zap.L().Error("failed to send error event - closing socket",
+						zap.String("sessionID", s.id),
+						zap.String("pushConfig", pushConfig.String()),
+						zap.Error(err))
 				}
 
 				continue
