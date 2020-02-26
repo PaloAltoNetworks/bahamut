@@ -6,9 +6,10 @@ package mocks
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
-	go_nats "github.com/nats-io/go-nats"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	go_nats "github.com/nats-io/nats.go"
 )
 
 // MockNATSClient is a mock of NATSClient interface

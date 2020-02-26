@@ -3,7 +3,7 @@ package bahamut
 import (
 	"context"
 
-	nats "github.com/nats-io/go-nats"
+	nats "github.com/nats-io/nats.go"
 )
 
 // natsClient is an interface for objects that can act as a NATS client

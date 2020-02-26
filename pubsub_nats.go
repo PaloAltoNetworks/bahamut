@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
