@@ -320,6 +320,12 @@ func (n *pushServer) start(ctx context.Context) {
 				// Dispatch the event to all sessions
 				for _, session := range sessions {
 
+					// Client sent an invalid push config, this is a noop as it makes no sense to continue processing;
+					// wait until they send another message that is valid.
+					if session.inErrorState() {
+						continue
+					}
+
 					// If event happened before session, we don't send it.
 					if event.Timestamp.Before(session.startTime) {
 						continue
@@ -350,18 +356,6 @@ func (n *pushServer) start(ctx context.Context) {
 					if n.cfg.pushServer.dispatchHandler != nil {
 						dispatch, err := n.cfg.pushServer.dispatchHandler.ShouldDispatch(session, event, eventSummary)
 						if err != nil {
-							// if 'ShouldDispatch' returns an error type that satisfies the 'CloserNotifierError' interface
-							// then it can inform whether the socket should be closed along with a code to use in the
-							// close message. This is useful in cases where it makes no sense to continue serving the client
-							// (e.g. the client configured a semantically invalid push config by using a comparator
-							// that is not yet supported/implemented).
-							if closer, ok := err.(CloserNotifierError); ok {
-								if close, code := closer.ShouldCloseSocket(); close {
-									session.close(code)
-									session.unregister(session)
-								}
-							}
-
 							// temp before we move to error wrapping
 							if err != context.Canceled && !strings.Contains(err.Error(), "context canceled") {
 								zap.L().Error("Error while calling dispatchHandler.ShouldDispatch", zap.Error(err))

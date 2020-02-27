@@ -259,14 +259,6 @@ type PushDispatchHandler interface {
 	SummarizeEvent(event *elemental.Event) (interface{}, error)
 }
 
-// CloserNotifierError is an error type that can optionally be returned by the callback, ShouldDispatch(PushSession, *elemental.Event, interface{}),
-// defined in the PushDispatchHandler interface. If the callback returns an error that satisfies the CloserNotifierError,
-// bahamut will call the `ShouldCloseSocket()` to determine whether the socket connection should be closed. Useful in situations where
-// it makes no sense keeping the socket alive anymore (e.g. client sent a push config that contains an unsupported filter comparator)
-type CloserNotifierError interface {
-	ShouldCloseSocket() (bool, int)
-}
-
 // PushPublishHandler is the interface that must be implemented in order to
 // to be used as the Bahamut Push Publish handler.
 type PushPublishHandler interface {
