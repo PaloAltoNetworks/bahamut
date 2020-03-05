@@ -59,6 +59,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		MinVersion:               tls.VersionTLS12,
 		SessionTicketsDisabled:   a.cfg.tls.disableSessionTicket,
 		PreferServerCipherSuites: true,
+		NextProtos:               a.cfg.tls.nextProtos,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -74,8 +75,6 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 	} else {
 		tlsConfig.Certificates = a.cfg.tls.serverCertificates
 	}
-
-	tlsConfig.BuildNameToCertificate()
 
 	server := &http.Server{
 		Addr:         address,

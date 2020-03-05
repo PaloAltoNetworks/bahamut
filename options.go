@@ -240,6 +240,16 @@ func OptTLS(certs []tls.Certificate, certRetriever func(*tls.ClientHelloInfo) (*
 	}
 }
 
+// OptTLSNextProtos configures server TLS next protocols.
+//
+// You can use it to set it to []string{'h2'} for instance to
+// enable http2
+func OptTLSNextProtos(nextProtos []string) Option {
+	return func(c *config) {
+		c.tls.nextProtos = nextProtos
+	}
+}
+
 // OptMTLS configures the tls client authentication mechanism.
 //
 // ClientCAPool is the *x509.CertPool to use for the authentifying client.

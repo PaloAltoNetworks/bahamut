@@ -168,6 +168,11 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.tls.serverCertificatesRetrieverFunc, ShouldEqual, r)
 	})
 
+	Convey("Calling OptTLSNextProtos should work", t, func() {
+		OptTLSNextProtos([]string{"h2"})(&c)
+		So(c.tls.nextProtos, ShouldResemble, []string{"h2"})
+	})
+
 	Convey("Calling OptMTLS should work", t, func() {
 		pool := x509.NewCertPool()
 		authType := tls.RequestClientCert

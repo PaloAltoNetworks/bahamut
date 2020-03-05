@@ -95,6 +95,7 @@ type config struct {
 		serverCertificates              []tls.Certificate
 		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 		disableSessionTicket            bool
+		nextProtos                      []string
 	}
 
 	security struct {

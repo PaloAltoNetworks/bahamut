@@ -220,7 +220,7 @@ func TestServer_Start(t *testing.T) {
 				Certificates: []tls.Certificate{cert},
 				RootCAs:      pool,
 			}
-			tlsConfig.BuildNameToCertificate()
+
 			transport := &http.Transport{TLSClientConfig: tlsConfig}
 			client := &http.Client{Transport: transport}
 
