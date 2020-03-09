@@ -117,7 +117,7 @@ func TestGateway(t *testing.T) {
 				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionUpstreamConfig(0, 0, 0, 0, 0, "NetworkErrorRatio() > 0.5", false),
-				// OptionEnableTrace(true),
+				OptionEnableTrace(true),
 				OptionMetricsManager(mm),
 			)
 			defer gw.Stop()
