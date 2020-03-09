@@ -12,6 +12,7 @@
 package bahamut
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -468,12 +469,20 @@ func TestHandlers_runDispatcher(t *testing.T) {
 
 		calledCounter := &counter{}
 
+		hreq, err := http.NewRequest(http.MethodGet, "https://127.0.0.1/list", bytes.NewBuffer([]byte("hello")))
+		if err != nil {
+			panic(err)
+		}
 		gctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancel()
 
 		ctx := newContext(context.Background(), elemental.NewRequest())
-		ctx.request = elemental.NewRequest()
 		ctx.ctx = gctx
+
+		ctx.request, err = elemental.NewRequestFromHTTPRequest(hreq, testmodel.Manager())
+		if err != nil {
+			panic(err)
+		}
 
 		response := elemental.NewResponse(elemental.NewRequest())
 

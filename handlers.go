@@ -14,6 +14,8 @@ package bahamut
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"runtime/debug"
 
@@ -145,6 +147,20 @@ func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery
 }
 
 func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
+
+	defer func() {
+
+		// It seems it is necessary to drain the request body
+		// in some situations when using http/2 otherwise it can cause stream errors.
+		// See https://github.com/golang/go/issues/26338 and associated issues.
+
+		if ctx.Request() == nil || ctx.Request().HTTPRequest() == nil {
+			return
+		}
+
+		_, _ = io.Copy(ioutil.Discard, ctx.Request().HTTPRequest().Body)
+		_ = ctx.Request().HTTPRequest().Body.Close() // nolint
+	}()
 
 	e := make(chan error)
 
