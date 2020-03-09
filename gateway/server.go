@@ -79,16 +79,27 @@ func NewGateway(
 			return nil, fmt.Errorf("unable build proxy protocol source checker: %s", err)
 		}
 
-		listener = tls.NewListener(
-			&proxyproto.Listener{
+		if serverTLSConfig != nil {
+			listener = tls.NewListener(
+				&proxyproto.Listener{
+					Listener:    rootListener,
+					SourceCheck: sc,
+				},
+				serverTLSConfig,
+			)
+		} else {
+			listener = &proxyproto.Listener{
 				Listener:    rootListener,
 				SourceCheck: sc,
-			},
-			serverTLSConfig,
-		)
+			}
+		}
 
 	} else {
-		listener = tls.NewListener(rootListener, serverTLSConfig)
+		if serverTLSConfig != nil {
+			listener = tls.NewListener(rootListener, serverTLSConfig)
+		} else {
+			listener = rootListener
+		}
 	}
 
 	if cfg.tcpRateLimitingEnabled {

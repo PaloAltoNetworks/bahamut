@@ -41,7 +41,7 @@ func (s *requestRewriter) Rewrite(r *http.Request) {
 	r.Header.Del("X-Forwarded-For")
 	r.Header.Del("X-Real-IP")
 
-	if len(r.TLS.PeerCertificates) == 1 {
+	if r.TLS != nil && len(r.TLS.PeerCertificates) == 1 {
 
 		block, err := tglib.CertToPEM(r.TLS.PeerCertificates[0])
 		if err != nil {

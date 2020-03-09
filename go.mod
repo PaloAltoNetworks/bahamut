@@ -29,5 +29,6 @@ require (
 	go.uber.org/zap v1.14.0
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 )
