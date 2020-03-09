@@ -91,13 +91,11 @@ func TestGateway(t *testing.T) {
 
 			w.WriteHeader(601)
 		}))
-		ups1.EnableHTTP2 = true
 		defer ups1.Close()
 
 		ups2 := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(602)
 		}))
-		ups2.EnableHTTP2 = true
 		defer ups2.Close()
 
 		u := &simpleUpstreamer{
