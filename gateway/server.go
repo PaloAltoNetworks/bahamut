@@ -40,21 +40,13 @@ type gateway struct {
 	upstreamer    Upstreamer
 	forwarder     *forward.Forwarder
 	proxyHandler  http.Handler
-	corsOrigin    string
 	listener      net.Listener
 	goodbyeServer *http.Server
 	gatewayConfig *gwconfig
 }
 
-// NewGateway returns a new Gateway.
-func NewGateway(
-	listenAddr string,
-	serverTLSConfig *tls.Config,
-	clientTLSConfig *tls.Config,
-	allowedOrigin string,
-	upstreamer Upstreamer,
-	options ...Option,
-) (Gateway, error) {
+// New returns a new Gateway.
+func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, error) {
 
 	cfg := newGatewayConfig()
 	for _, o := range options {
@@ -79,13 +71,13 @@ func NewGateway(
 			return nil, fmt.Errorf("unable build proxy protocol source checker: %s", err)
 		}
 
-		if serverTLSConfig != nil {
+		if cfg.serverTLSConfig != nil {
 			listener = tls.NewListener(
 				&proxyproto.Listener{
 					Listener:    rootListener,
 					SourceCheck: sc,
 				},
-				serverTLSConfig,
+				cfg.serverTLSConfig,
 			)
 		} else {
 			listener = &proxyproto.Listener{
@@ -95,8 +87,8 @@ func NewGateway(
 		}
 
 	} else {
-		if serverTLSConfig != nil {
-			listener = tls.NewListener(rootListener, serverTLSConfig)
+		if cfg.serverTLSConfig != nil {
+			listener = tls.NewListener(rootListener, cfg.serverTLSConfig)
 		} else {
 			listener = rootListener
 		}
@@ -121,10 +113,9 @@ func NewGateway(
 	}
 
 	s := &gateway{
-		goodbyeServer: makeGoodbyeServer(listenAddr, serverTLSConfig),
+		goodbyeServer: makeGoodbyeServer(listenAddr, cfg.serverTLSConfig),
 		listener:      listener,
 		upstreamer:    upstreamer,
-		corsOrigin:    allowedOrigin,
 		gatewayConfig: cfg,
 	}
 
@@ -152,7 +143,7 @@ func NewGateway(
 
 	if s.forwarder, err = forward.New(
 		forward.BufferPool(newPool(1024*1024)),
-		forward.WebsocketTLSClientConfig(clientTLSConfig),
+		forward.WebsocketTLSClientConfig(cfg.upstreamTLSConfig),
 		forward.ErrorHandler(&errorHandler{}),
 		forward.Rewriter(
 			&requestRewriter{
@@ -166,7 +157,7 @@ func NewGateway(
 				injectGeneralHeader(r.Header)
 				// @TODO: This should be taken from bahamut
 				// and bahamut should not care about the CORS header anymore.
-				injectCORSHeader(r.Header, s.corsOrigin, r.Request.Header.Get("origin"))
+				injectCORSHeader(r.Header, cfg.corsOrigin, r.Request.Header.Get("origin"))
 
 				if s.gatewayConfig.responseRewriter != nil {
 					if err := s.gatewayConfig.responseRewriter(r); err != nil {
@@ -177,7 +168,6 @@ func NewGateway(
 			},
 		),
 		forward.RoundTripper(
-			// transport,
 			func() http.RoundTripper {
 
 				switch cfg.upstreamUseHTTP2 {
@@ -185,7 +175,7 @@ func NewGateway(
 				case true:
 
 					return &http2.Transport{
-						TLSClientConfig:    clientTLSConfig,
+						TLSClientConfig:    cfg.upstreamTLSConfig,
 						DisableCompression: cfg.exposePrivateAPIs,
 						AllowHTTP:          true,
 					}
@@ -198,7 +188,7 @@ func NewGateway(
 							KeepAlive: 30 * time.Second,
 							DualStack: true,
 						}).DialContext,
-						TLSClientConfig:     clientTLSConfig,
+						TLSClientConfig:     cfg.upstreamTLSConfig,
 						DisableCompression:  cfg.exposePrivateAPIs,
 						MaxConnsPerHost:     cfg.upstreamMaxConnsPerHost,
 						MaxIdleConns:        cfg.upstreamMaxIdleConns,
@@ -359,13 +349,13 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodOptions:
 			h := w.Header()
 			h.Set("Content-Type", "application/msgpack, application/json")
-			injectCORSHeader(h, s.corsOrigin, r.Header.Get("Origin"))
+			injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
 			w.WriteHeader(http.StatusOK) // nolint: errcheck
 			return
 
 		default:
 			h := w.Header()
-			injectCORSHeader(h, s.corsOrigin, r.Header.Get("Origin"))
+			injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
 			writeError(w, r, errLocked)
 			return
 		}
@@ -400,7 +390,7 @@ HANDLE_INTERCEPTION:
 		return
 	}
 	if interceptAction == InterceptorActionStop {
-		injectCORSHeader(r.Header, s.corsOrigin, r.Header.Get("Origin"))
+		injectCORSHeader(r.Header, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
 		return
 	}
 

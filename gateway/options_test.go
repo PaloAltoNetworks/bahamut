@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"crypto/tls"
 	"net/http"
 	"testing"
 	"time"
@@ -109,5 +110,22 @@ func Test_Options(t *testing.T) {
 		mm := bahamut.MetricsManager(nil)
 		OptionMetricsManager(mm)(c)
 		So(c.metricsManager, ShouldEqual, mm)
+	})
+
+	Convey("Calling OptionUpstreamTLSConfig should work", t, func() {
+		tlscfg := &tls.Config{}
+		OptionUpstreamTLSConfig(tlscfg)(c)
+		So(c.upstreamTLSConfig, ShouldEqual, tlscfg)
+	})
+
+	Convey("Calling OptionServerTLSConfig should work", t, func() {
+		tlscfg := &tls.Config{}
+		OptionServerTLSConfig(tlscfg)(c)
+		So(c.serverTLSConfig, ShouldEqual, tlscfg)
+	})
+
+	Convey("Calling OptionAllowedCORSOrigin should work", t, func() {
+		OptionAllowedCORSOrigin("dog")(c)
+		So(c.corsOrigin, ShouldEqual, "dog")
 	})
 }

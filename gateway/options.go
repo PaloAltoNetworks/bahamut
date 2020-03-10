@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -79,10 +80,14 @@ type gwconfig struct {
 	upstreamMaxIdleConns        int
 	upstreamMaxIdleConnsPerHost int
 	upstreamTLSHandshakeTimeout time.Duration
+	upstreamTLSConfig           *tls.Config
+	serverTLSConfig             *tls.Config
+	corsOrigin                  string
 }
 
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
+		corsOrigin:                  "*",
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		exactInterceptors:           map[string]InterceptorFunc{},
 		tcpRateLimitingBurst:        100,
@@ -225,5 +230,34 @@ func OptionSetCustomRequestRewriter(r RequestRewriter) Option {
 func OptionSetCustomResponseRewriter(r ResponseRewriter) Option {
 	return func(cfg *gwconfig) {
 		cfg.responseRewriter = r
+	}
+}
+
+// OptionServerTLSConfig sets the tls.Config to use for the
+// front end server.
+func OptionServerTLSConfig(tlsConfig *tls.Config) Option {
+	return func(cfg *gwconfig) {
+		cfg.serverTLSConfig = tlsConfig
+	}
+}
+
+// OptionUpstreamTLSConfig sets the tls.Config to use for the
+// upstream servers.
+func OptionUpstreamTLSConfig(tlsConfig *tls.Config) Option {
+	return func(cfg *gwconfig) {
+		cfg.upstreamTLSConfig = tlsConfig
+	}
+}
+
+// OptionAllowedCORSOrigin sets allowed CORS origin.
+// If set to empty, or "*", the gateway will mirror
+// whatever is set in the upcoming request Origin header.
+// This is not secure to be used in production
+// when a browser is calling the gateway.
+//
+// By default, it is set to "*"
+func OptionAllowedCORSOrigin(origin string) Option {
+	return func(cfg *gwconfig) {
+		cfg.corsOrigin = origin
 	}
 }

@@ -107,12 +107,10 @@ func TestGateway(t *testing.T) {
 
 			mm := &fakeMetricManager{}
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
@@ -167,12 +165,10 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway in maintenance", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 				OptionRateLimiting(true, 100, 1000),
 				OptionEnableMaintenance(true),
@@ -209,12 +205,10 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with a custom request rewriter and response rewriter", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 				OptionRateLimiting(true, 100, 1000),
 				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
@@ -253,12 +247,10 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with a custom exact handler that handles the request", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRegisterExactInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
 					w.WriteHeader(604)
 					return InterceptorActionStop, "", nil
@@ -289,12 +281,10 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with a custom exact handler that modifies the request", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRegisterExactInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
 					return InterceptorActionForward, strings.Replace(u.ups2.URL, "https://", "", 1), nil
 				}),
@@ -324,12 +314,10 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with a custom exact handler that returns an error", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				nil,
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRegisterPrefixInterceptor("/ohnows", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
 					return InterceptorActionForward, "", fmt.Errorf("boom")
 				}),
@@ -362,14 +350,11 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with front end TLS config with proxyprotocol enabled", func() {
 
-			tlsCert := makeServerCert()
-
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				&tls.Config{Certificates: []tls.Certificate{tlsCert}},
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
@@ -406,12 +391,11 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with front end TLS config without proxyprotocol enabled", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				&tls.Config{Certificates: []tls.Certificate{makeServerCert()}},
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 			)
@@ -447,12 +431,11 @@ func TestGateway(t *testing.T) {
 
 		Convey("When I start the gateway with front end TLS config with proxyprotocol enabled and a bad subnet", func() {
 
-			gw, err := NewGateway(
+			gw, err := New(
 				"127.0.0.1:7765",
-				&tls.Config{Certificates: []tls.Certificate{makeServerCert()}},
-				&tls.Config{InsecureSkipVerify: true},
-				"*",
 				u,
+				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionEnableProxyProtocol(true, "oopsy"),
