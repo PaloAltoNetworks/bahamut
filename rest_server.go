@@ -23,7 +23,6 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/go-zoo/bone"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/valyala/tcplisten"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
@@ -207,11 +206,15 @@ func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) 
 
 		listener := a.cfg.restServer.customListener
 		if listener == nil {
-			listener, err = (&tcplisten.Config{
-				ReusePort:   true,
-				DeferAccept: true,
-				FastOpen:    true,
-			}).NewListener("tcp4", a.server.Addr)
+			// listener, err = (&tcplisten.Config{
+			// 	ReusePort:   true,
+			// 	DeferAccept: true,
+			// 	FastOpen:    true,
+			// }).NewListener("tcp4", a.server.Addr)
+			// if err != nil {
+			// 	zap.L().Fatal("Unable to dial", zap.Error(err))
+			// }
+			listener, err = net.Listen("tcp", a.server.Addr)
 			if err != nil {
 				zap.L().Fatal("Unable to dial", zap.Error(err))
 			}
