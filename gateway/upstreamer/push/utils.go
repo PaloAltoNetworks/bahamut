@@ -31,6 +31,10 @@ func getTargetIdentity(path string) string {
 
 func pick(len int) (int, int) {
 
+	if len < 2 {
+		panic("pick: len must be greater than 2")
+	}
+
 	idxs := make([]int, len)
 	for i := 0; i < len; i++ {
 		idxs[i] = i

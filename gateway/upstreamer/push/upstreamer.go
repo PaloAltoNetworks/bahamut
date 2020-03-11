@@ -2,7 +2,6 @@ package push
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -95,23 +94,23 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 }
 
 // Start starts for new backend services.
-func (c *Upstreamer) Start(ctx context.Context, zone int, required []string) chan struct{} {
+func (c *Upstreamer) Start(ctx context.Context, required []string) chan struct{} {
 
 	ready := make(chan struct{})
 
-	go c.listenService(ctx, zone, required, ready)
+	go c.listenService(ctx, required, ready)
 
 	return ready
 }
 
-func (c *Upstreamer) listenService(ctx context.Context, zone int, required []string, ready chan struct{}) {
+func (c *Upstreamer) listenService(ctx context.Context, required []string, ready chan struct{}) {
 
 	var err error
 
 	pubs := make(chan *bahamut.Publication, 1024)
 	errs := make(chan error, 1024)
 
-	unsub := c.pubsub.Subscribe(pubs, errs, fmt.Sprintf("%s-%d", c.serviceStatusTopic, zone))
+	unsub := c.pubsub.Subscribe(pubs, errs, c.serviceStatusTopic)
 	defer unsub()
 
 	var requiredReady int

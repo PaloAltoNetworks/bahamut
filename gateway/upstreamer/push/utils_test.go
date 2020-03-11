@@ -91,12 +91,51 @@ func TestHandleServicePings(t *testing.T) {
 
 		Convey("When I send a hello ping from an instance of a service", func() {
 
+			routes11 := map[int][]bahamut.RouteInfo{
+				0: []bahamut.RouteInfo{
+					{
+						Identity: "kittens",
+						URL:      "/kittens",
+						Verbs:    []string{http.MethodDelete},
+						Private:  false,
+					},
+				},
+			}
+
+			routes12 := map[int][]bahamut.RouteInfo{
+				0: []bahamut.RouteInfo{
+					{
+						Identity: "cats",
+						URL:      "/cats",
+						Verbs:    []string{http.MethodGet},
+						Private:  false,
+					},
+				},
+			}
+
+			routes2 := map[int][]bahamut.RouteInfo{
+				0: []bahamut.RouteInfo{
+					{
+						Identity: "dogs",
+						URL:      "/dogs",
+						Verbs:    []string{http.MethodPost},
+						Private:  false,
+					},
+				},
+			}
+
+			versions11 := map[string]interface{}{"a": 1}
+			versions12 := map[string]interface{}{"a": 2}
+			versions2 := map[string]interface{}{"b": 2}
+
 			handled := handleAddServicePing(scfg, ping{
 				Name:         "srv1",
 				Endpoint:     "1.1.1.1:1",
 				PushEndpoint: "push1",
 				Status:       serviceStatusHello,
 				Load:         0.1,
+				Routes:       routes11,
+				Versions:     versions11,
 			})
 
 			Convey("Then it should have registered a new service config", func() {
@@ -109,6 +148,8 @@ func TestHandleServicePings(t *testing.T) {
 
 				So(srv1.name, ShouldEqual, "srv1")
 				So(srv1.hasEndpoint("1.1.1.1:1"), ShouldBeTrue)
+				So(srv1.routes, ShouldResemble, routes11)
+				So(srv1.versions, ShouldResemble, versions11)
 				So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
 				So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 			})
@@ -121,6 +162,8 @@ func TestHandleServicePings(t *testing.T) {
 					PushEndpoint: "push1",
 					Status:       serviceStatusHello,
 					Load:         0.1,
+					Routes:       routes12,
+					Versions:     versions12,
 				})
 
 				Convey("Then it should have registered a second endpoint in the service config", func() {
@@ -134,6 +177,8 @@ func TestHandleServicePings(t *testing.T) {
 					So(srv1.name, ShouldEqual, "srv1")
 					So(srv1.hasEndpoint("1.1.1.1:1"), ShouldBeTrue)
 					So(srv1.hasEndpoint("1.1.1.1:2"), ShouldBeTrue)
+					So(srv1.routes, ShouldResemble, routes12)
+					So(srv1.versions, ShouldResemble, versions12)
 					So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
 					So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 2)
 				})
@@ -146,6 +191,8 @@ func TestHandleServicePings(t *testing.T) {
 						PushEndpoint: "push2",
 						Status:       serviceStatusHello,
 						Load:         0.2,
+						Routes:       routes2,
+						Versions:     versions2,
 					})
 
 					Convey("Then it should have registered a new service", func() {
@@ -160,12 +207,16 @@ func TestHandleServicePings(t *testing.T) {
 
 						So(srv2.name, ShouldEqual, "srv2")
 						So(srv2.hasEndpoint("2.2.2.2:1"), ShouldBeTrue)
+						So(srv2.routes, ShouldResemble, routes2)
+						So(srv2.versions, ShouldResemble, versions2)
 						So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
 						So(len(srv2.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 
 						// quick check on srv1
 						So(srv1.hasEndpoint("1.1.1.1:1"), ShouldBeTrue)
 						So(srv1.hasEndpoint("1.1.1.1:2"), ShouldBeTrue)
+						So(srv1.routes, ShouldResemble, routes12)
+						So(srv1.versions, ShouldResemble, versions12)
 						So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
 						So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 2)
 					})
@@ -604,4 +655,37 @@ func Test_resyncRoutes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPick(t *testing.T) {
+
+	Convey("calling pick with len lesser than 2 should panic", t, func() {
+		So(func() { pick(-1) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(0) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(1) }, ShouldPanicWith, "pick: len must be greater than 2")
+	})
+
+	// Since this function is random by nature, these tests
+	// ar just ensuring very basic behavior
+	Convey("Given have a len of 2", t, func() {
+
+		i1, i2 := pick(2)
+
+		Convey("Then i1 and i2 should be correct", func() {
+			So(i1, ShouldBeBetweenOrEqual, 0, 1)
+			So(i2, ShouldBeBetweenOrEqual, 0, 1)
+			So(i2, ShouldNotEqual, i1)
+		})
+	})
+
+	Convey("Given have a len of 2", t, func() {
+
+		i1, i2 := pick(10)
+
+		Convey("Then i1 and i2 should be correct", func() {
+			So(i1, ShouldBeBetweenOrEqual, 0, 9)
+			So(i2, ShouldBeBetweenOrEqual, 0, 9)
+			So(i2, ShouldNotEqual, i1)
+		})
+	})
 }

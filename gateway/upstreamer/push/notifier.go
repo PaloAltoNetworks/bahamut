@@ -2,8 +2,6 @@ package push
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"os"
 	"time"
 
@@ -21,50 +19,18 @@ type Notifier struct {
 }
 
 // NewNotifier returns a new Wutai notifier.
-func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, serviceName string, listenAddress string) (*Notifier, error) {
-
-	_, port, err := net.SplitHostPort(listenAddress)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse listen address: %s", err)
-	}
-
-	host, err := os.Hostname()
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve hostname: %s", err)
-	}
-
-	addrs, err := net.LookupHost(host)
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve hostname: %s", err)
-	}
-
-	if len(addrs) == 0 {
-		return nil, fmt.Errorf("unable to find any IP in resolved hostname")
-	}
-
-	var endpoint string
-	for _, addr := range addrs {
-		ip := net.ParseIP(addr)
-		if len(ip.To4()) == net.IPv4len {
-			endpoint = addr
-			break
-		}
-	}
-
-	if endpoint == "" {
-		endpoint = addrs[0]
-	}
+func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, serviceName string, endpoint string) *Notifier {
 
 	return &Notifier{
 		pubsub:             pubsub,
 		serviceName:        serviceName,
-		endpoint:           fmt.Sprintf("%s:%s", endpoint, port),
+		endpoint:           endpoint,
 		serviceStatusTopic: serviceStatusTopic,
-	}, nil
+	}
 }
 
 // MakeStartHook returns a bahamut start hook that sends the hello message to the Upstreamer periodically.
-func (w *Notifier) MakeStartHook(ctx context.Context, zone int) func(server bahamut.Server) error {
+func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) func(server bahamut.Server) error {
 
 	return func(server bahamut.Server) error {
 
@@ -86,7 +52,7 @@ func (w *Notifier) MakeStartHook(ctx context.Context, zone int) func(server baha
 			return err
 		}
 
-		pub := bahamut.NewPublication(fmt.Sprintf("%s-%d", w.serviceStatusTopic, zone))
+		pub := bahamut.NewPublication(w.serviceStatusTopic)
 		if err := pub.Encode(sp); err != nil {
 			return err
 		}
@@ -98,7 +64,7 @@ func (w *Notifier) MakeStartHook(ctx context.Context, zone int) func(server baha
 		go func() {
 			for {
 				select {
-				case <-time.After(5 * time.Second):
+				case <-time.After(frequency):
 
 					if sp.Load, err = p.Percent(0); err != nil {
 						zap.L().Error("Unable to retrieve cpu usage", zap.Error(err))
@@ -124,11 +90,11 @@ func (w *Notifier) MakeStartHook(ctx context.Context, zone int) func(server baha
 }
 
 // MakeStopHook returns a bahamut stop hook that sends the goodbye message to the Upstreamer.
-func (w *Notifier) MakeStopHook(zone int) func(server bahamut.Server) error {
+func (w *Notifier) MakeStopHook() func(server bahamut.Server) error {
 
 	return func(server bahamut.Server) error {
 
-		pub := bahamut.NewPublication(fmt.Sprintf("%s-%d", w.serviceStatusTopic, zone))
+		pub := bahamut.NewPublication(w.serviceStatusTopic)
 		if err := pub.Encode(ping{
 			Name:     w.serviceName,
 			Status:   serviceStatusGoodbye,
