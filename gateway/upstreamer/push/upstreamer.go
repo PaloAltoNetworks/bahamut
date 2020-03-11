@@ -1,4 +1,4 @@
-package pushupstreamer
+package push
 
 import (
 	"context"
@@ -23,8 +23,8 @@ type Upstreamer struct {
 	config upstreamConfig
 }
 
-// New returns a new Nats backend upstreamer.
-func New(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) (*Upstreamer, error) {
+// New NewUpstreamer a new push backed upstreamer.
+func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) (*Upstreamer, error) {
 
 	cfg := newUpstreamConfig()
 	for _, opt := range options {

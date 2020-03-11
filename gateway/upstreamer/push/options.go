@@ -1,4 +1,4 @@
-package pushupstreamer
+package push
 
 // An Option represents a configuration option
 // for the Upstreamer.

@@ -1,4 +1,4 @@
-package pushupstreamer
+package push
 
 import (
 	"testing"
