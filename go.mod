@@ -22,6 +22,7 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prometheus/client_golang v1.5.0
 	github.com/prometheus/procfs v0.0.10 // indirect
+	github.com/shirou/gopsutil v2.20.2+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
