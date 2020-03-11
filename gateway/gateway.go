@@ -25,7 +25,7 @@ import (
 
 // An Upstreamer is the interface that can conpute upstreams.
 type Upstreamer interface {
-	Upstream(path string) (upstream string, load float64)
+	Upstream(req *http.Request) (upstream string, load float64)
 }
 
 // A Gateway can be used as an api gateway.
@@ -398,7 +398,7 @@ HANDLE_INTERCEPTION:
 	// we find it as usual.
 	if upstream == "" {
 
-		upstream, load = s.upstreamer.Upstream(r.URL.Path)
+		upstream, load = s.upstreamer.Upstream(r)
 		if upstream == "" {
 			writeError(w, r, errServiceUnavailable)
 			return

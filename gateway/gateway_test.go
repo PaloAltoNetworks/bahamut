@@ -23,6 +23,18 @@ type simpleUpstreamer struct {
 	ups2 *httptest.Server
 }
 
+func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load float64) {
+
+	switch req.URL.Path {
+	case "/ups1":
+		return strings.Replace(u.ups1.URL, "https://", "", 1), 0.2
+	case "/ups2":
+		return strings.Replace(u.ups2.URL, "https://", "", 1), 0.1
+	default:
+		return "", 0.0
+	}
+}
+
 type fakeMetricManager struct {
 	registerWSConnectionCalled    int64
 	unregisterWSConnectionCalled  int64
@@ -65,18 +77,6 @@ func makeServerCert() tls.Certificate {
 	}
 
 	return tlsCert
-}
-
-func (u *simpleUpstreamer) Upstream(path string) (upstream string, load float64) {
-
-	switch path {
-	case "/ups1":
-		return strings.Replace(u.ups1.URL, "https://", "", 1), 0.2
-	case "/ups2":
-		return strings.Replace(u.ups2.URL, "https://", "", 1), 0.1
-	default:
-		return "", 0.0
-	}
 }
 
 func TestGateway(t *testing.T) {
