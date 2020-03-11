@@ -23,7 +23,7 @@ type Upstreamer struct {
 	config upstreamConfig
 }
 
-// New NewUpstreamer a new push backed upstreamer.
+// NewUpstreamer returns a new push backed upstreamer.
 func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) (*Upstreamer, error) {
 
 	cfg := newUpstreamConfig()
