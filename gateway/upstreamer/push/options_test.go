@@ -2,6 +2,7 @@ package push
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -26,6 +27,17 @@ func Test_Options(t *testing.T) {
 		So(len(c.eventsAPIs), ShouldEqual, 2)
 		So(c.eventsAPIs["srva"], ShouldEqual, "events")
 		So(c.eventsAPIs["srvb"], ShouldEqual, "hello")
+	})
+
+	Convey("Calling OptionRequiredServices should work", t, func() {
+		OptionRequiredServices([]string{"srv1"})(&c)
+		So(c.requiredServices, ShouldResemble, []string{"srv1"})
+	})
+
+	Convey("Calling OptionServiceTimeout should work", t, func() {
+		OptionServiceTimeout(time.Hour, time.Minute)(&c)
+		So(c.serviceTimeout, ShouldEqual, time.Hour)
+		So(c.serviceTimeoutCheckInterval, ShouldEqual, time.Minute)
 	})
 
 }

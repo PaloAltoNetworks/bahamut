@@ -18,12 +18,11 @@ type Upstreamer struct {
 	apis               map[string][]*endpointInfo
 	lock               sync.RWMutex
 	serviceStatusTopic string
-
-	config upstreamConfig
+	config             upstreamConfig
 }
 
 // NewUpstreamer returns a new push backed upstreamer.
-func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) (*Upstreamer, error) {
+func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) *Upstreamer {
 
 	cfg := newUpstreamConfig()
 	for _, opt := range options {
@@ -35,7 +34,7 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 		apis:               map[string][]*endpointInfo{},
 		serviceStatusTopic: serviceStatusTopic,
 		config:             cfg,
-	}, nil
+	}
 }
 
 // Upstream returns the upstream to go for the given path
@@ -94,16 +93,16 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 }
 
 // Start starts for new backend services.
-func (c *Upstreamer) Start(ctx context.Context, required []string) chan struct{} {
+func (c *Upstreamer) Start(ctx context.Context) chan struct{} {
 
 	ready := make(chan struct{})
 
-	go c.listenService(ctx, required, ready)
+	go c.listenService(ctx, ready)
 
 	return ready
 }
 
-func (c *Upstreamer) listenService(ctx context.Context, required []string, ready chan struct{}) {
+func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 
 	var err error
 
@@ -116,9 +115,9 @@ func (c *Upstreamer) listenService(ctx context.Context, required []string, ready
 	var requiredReady int
 	var requiredNotifSent bool
 
-	requiredCount := len(required)
+	requiredCount := len(c.config.requiredServices)
 	requiredServices := map[string]bool{}
-	for _, srv := range required {
+	for _, srv := range c.config.requiredServices {
 		requiredServices[srv] = false
 	}
 
@@ -129,7 +128,7 @@ func (c *Upstreamer) listenService(ctx context.Context, required []string, ready
 
 	services := servicesConfig{}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(c.config.serviceTimeoutCheckInterval)
 	defer ticker.Stop()
 
 	for {
@@ -137,7 +136,7 @@ func (c *Upstreamer) listenService(ctx context.Context, required []string, ready
 
 		case <-ticker.C:
 
-			since := time.Now().Add(-30 * time.Second)
+			since := time.Now().Add(-c.config.serviceTimeout)
 
 			var foundOutdated bool
 			for _, srv := range services {
