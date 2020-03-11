@@ -43,6 +43,10 @@ func pick(len int) (int, int) {
 
 func handleAddServicePing(services servicesConfig, sp ping) bool {
 
+	if sp.Status == serviceStatusGoodbye {
+		panic("handleAddServicePing received a goodbye service ping")
+	}
+
 	srv, ok := services[sp.Name]
 	if !ok {
 		srv = newService(sp.Name)
@@ -70,6 +74,10 @@ func handleAddServicePing(services servicesConfig, sp ping) bool {
 
 func handleRemoveServicePing(services servicesConfig, sp ping) bool {
 
+	if sp.Status == serviceStatusHello {
+		panic("handleRemoveServicePing received a hello service ping")
+	}
+
 	srv, ok := services[sp.Name]
 	if !ok {
 		return false
@@ -90,7 +98,7 @@ func handleRemoveServicePing(services servicesConfig, sp ping) bool {
 	return true
 }
 
-func updateRoutes(services servicesConfig, includePrivate bool, events map[string]string) map[string][]*endpointInfo {
+func resyncRoutes(services servicesConfig, includePrivate bool, events map[string]string) map[string][]*endpointInfo {
 
 	apis := map[string][]*endpointInfo{}
 

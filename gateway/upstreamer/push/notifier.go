@@ -21,25 +21,25 @@ type Notifier struct {
 }
 
 // NewNotifier returns a new Wutai notifier.
-func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, serviceName string, listenAddress string) *Notifier {
+func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, serviceName string, listenAddress string) (*Notifier, error) {
 
 	_, port, err := net.SplitHostPort(listenAddress)
 	if err != nil {
-		zap.L().Fatal("Unable to parse listen address", zap.Error(err))
+		return nil, fmt.Errorf("unable to parse listen address: %s", err)
 	}
 
 	host, err := os.Hostname()
 	if err != nil {
-		zap.L().Fatal("Unable to retrieve hostname", zap.Error(err))
+		return nil, fmt.Errorf("unable to retrieve hostname: %s", err)
 	}
 
 	addrs, err := net.LookupHost(host)
 	if err != nil {
-		zap.L().Fatal("Unable to resolve hostname", zap.Error(err))
+		return nil, fmt.Errorf("unable to resolve hostname: %s", err)
 	}
 
 	if len(addrs) == 0 {
-		zap.L().Fatal("Unable to find any IP in resolved hostname", zap.Error(err))
+		return nil, fmt.Errorf("unable to find any IP in resolved hostname")
 	}
 
 	var endpoint string
@@ -60,7 +60,7 @@ func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, service
 		serviceName:        serviceName,
 		endpoint:           fmt.Sprintf("%s:%s", endpoint, port),
 		serviceStatusTopic: serviceStatusTopic,
-	}
+	}, nil
 }
 
 // MakeStartHook returns a bahamut start hook that sends the hello message to the Upstreamer periodically.

@@ -150,7 +150,7 @@ func (c *Upstreamer) listenService(ctx context.Context, zone int, required []str
 
 			if foundOutdated {
 				c.lock.Lock()
-				c.apis = updateRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+				c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 				c.lock.Unlock()
 			}
 
@@ -175,7 +175,7 @@ func (c *Upstreamer) listenService(ctx context.Context, zone int, required []str
 
 				if handleAddServicePing(services, sp) {
 					c.lock.Lock()
-					c.apis = updateRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
 					zap.L().Debug("Handled service hello", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
@@ -197,7 +197,7 @@ func (c *Upstreamer) listenService(ctx context.Context, zone int, required []str
 
 				if handleRemoveServicePing(services, sp) {
 					c.lock.Lock()
-					c.apis = updateRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
 					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
