@@ -202,40 +202,40 @@ func TestUpstreamer(t *testing.T) {
 
 func TestUpstreamUpstreamer(t *testing.T) {
 
-	// Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
+	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
-	// 	u := NewUpstreamer(nil, "topic")
-	// 	u.apis = map[string][]*endpointInfo{
-	// 		"cats": []*endpointInfo{
-	// 			&endpointInfo{
-	// 				address:  "1.1.1.1:1",
-	// 				lastLoad: 0.1,
-	// 			},
-	// 			&endpointInfo{
-	// 				address:  "2.2.2.2:1",
-	// 				lastLoad: 0.2,
-	// 			},
-	// 			&endpointInfo{
-	// 				address:  "3.3.3.3:1",
-	// 				lastLoad: 0.9,
-	// 			},
-	// 		},
-	// 	}
+		u := NewUpstreamer(nil, "topic")
+		u.apis = map[string][]*endpointInfo{
+			"cats": []*endpointInfo{
+				&endpointInfo{
+					address:  "1.1.1.1:1",
+					lastLoad: 0.1,
+				},
+				&endpointInfo{
+					address:  "2.2.2.2:1",
+					lastLoad: 0.2,
+				},
+				&endpointInfo{
+					address:  "3.3.3.3:1",
+					lastLoad: 0.9,
+				},
+			},
+		}
 
-	// 	Convey("When I call upstream on /cats", func() {
+		Convey("When I call upstream on /cats", func() {
 
-	// 		upstream, load := u.Upstream(&http.Request{
-	// 			URL: &url.URL{Path: "/cats"},
-	// 		})
+			upstream, load := u.Upstream(&http.Request{
+				URL: &url.URL{Path: "/cats"},
+			})
 
-	// 		Convey("Then upstream should be correct", func() {
-	// 			So(upstream, ShouldNotBeEmpty)
-	// 			So(upstream, ShouldNotEqual, "3.3.3.3:1")
-	// 			So(load, ShouldNotEqual, 0)
-	// 			So(load, ShouldNotEqual, 0.9)
-	// 		})
-	// 	})
-	// })
+			Convey("Then upstream should be correct", func() {
+				So(upstream, ShouldNotBeEmpty)
+				So(upstream, ShouldNotEqual, "3.3.3.3:1")
+				So(load, ShouldNotEqual, 0)
+				So(load, ShouldNotEqual, 0.9)
+			})
+		})
+	})
 
 	Convey("Given I have an upstreamer with 3 registered apis with same loads", t, func() {
 
