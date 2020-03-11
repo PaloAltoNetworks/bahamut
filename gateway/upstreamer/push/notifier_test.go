@@ -75,7 +75,6 @@ func TestNotifier(t *testing.T) {
 					So(sping.Name, ShouldEqual, "srv1")
 					So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
 					So(sping.Status, ShouldEqual, serviceStatusHello)
-					So(sping.Load, ShouldBeGreaterThan, 0.0)
 
 					Convey("Then I wait 1.5sec and I should get another pusb", func() {
 
@@ -93,7 +92,6 @@ func TestNotifier(t *testing.T) {
 						So(sping.Name, ShouldEqual, "srv1")
 						So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
 						So(sping.Status, ShouldEqual, serviceStatusHello)
-						// So(sping.Load, ShouldBeGreaterThan, 0.0) //no sure about this
 					})
 				})
 			})
