@@ -150,7 +150,7 @@ func TestHandleServicePings(t *testing.T) {
 				So(srv1.hasEndpoint("1.1.1.1:1"), ShouldBeTrue)
 				So(srv1.routes, ShouldResemble, routes11)
 				So(srv1.versions, ShouldResemble, versions11)
-				So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+				So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 				So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 			})
 
@@ -179,7 +179,7 @@ func TestHandleServicePings(t *testing.T) {
 					So(srv1.hasEndpoint("1.1.1.1:2"), ShouldBeTrue)
 					So(srv1.routes, ShouldResemble, routes12)
 					So(srv1.versions, ShouldResemble, versions12)
-					So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+					So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 					So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 2)
 				})
 
@@ -209,7 +209,7 @@ func TestHandleServicePings(t *testing.T) {
 						So(srv2.hasEndpoint("2.2.2.2:1"), ShouldBeTrue)
 						So(srv2.routes, ShouldResemble, routes2)
 						So(srv2.versions, ShouldResemble, versions2)
-						So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+						So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 						So(len(srv2.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 
 						// quick check on srv1
@@ -217,7 +217,7 @@ func TestHandleServicePings(t *testing.T) {
 						So(srv1.hasEndpoint("1.1.1.1:2"), ShouldBeTrue)
 						So(srv1.routes, ShouldResemble, routes12)
 						So(srv1.versions, ShouldResemble, versions12)
-						So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+						So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 						So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 2)
 					})
 
@@ -244,13 +244,13 @@ func TestHandleServicePings(t *testing.T) {
 
 							So(srv1.hasEndpoint("1.1.1.1:1"), ShouldBeFalse)
 							So(srv1.hasEndpoint("1.1.1.1:2"), ShouldBeTrue)
-							So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+							So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 							So(len(srv1.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 
 							// quick check on srv2
 							So(srv2.name, ShouldEqual, "srv2")
 							So(srv2.hasEndpoint("2.2.2.2:1"), ShouldBeTrue)
-							So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+							So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 							So(len(srv2.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 						})
 
@@ -274,7 +274,7 @@ func TestHandleServicePings(t *testing.T) {
 								// quick check on srv2
 								So(srv2.name, ShouldEqual, "srv2")
 								So(srv2.hasEndpoint("2.2.2.2:1"), ShouldBeTrue)
-								So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Millisecond))), ShouldEqual, 0)
+								So(len(srv2.outdatedEndpoints(time.Now().Add(-time.Second))), ShouldEqual, 0)
 								So(len(srv2.outdatedEndpoints(time.Now().Add(time.Hour))), ShouldEqual, 1)
 							})
 						})
