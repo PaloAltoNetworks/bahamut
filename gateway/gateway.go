@@ -20,7 +20,6 @@ import (
 	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 )
 
 // An Upstreamer is the interface that can conpute upstreams.
@@ -168,36 +167,21 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			},
 		),
 		forward.RoundTripper(
-			func() http.RoundTripper {
-
-				switch cfg.upstreamUseHTTP2 {
-
-				case true:
-
-					return &http2.Transport{
-						TLSClientConfig:    cfg.upstreamTLSConfig,
-						DisableCompression: cfg.exposePrivateAPIs,
-						AllowHTTP:          true,
-					}
-
-				default:
-
-					return &http.Transport{
-						DialContext: (&net.Dialer{
-							Timeout:   30 * time.Second,
-							KeepAlive: 30 * time.Second,
-							DualStack: true,
-						}).DialContext,
-						TLSClientConfig:     cfg.upstreamTLSConfig,
-						DisableCompression:  cfg.exposePrivateAPIs,
-						MaxConnsPerHost:     cfg.upstreamMaxConnsPerHost,
-						MaxIdleConns:        cfg.upstreamMaxIdleConns,
-						MaxIdleConnsPerHost: cfg.upstreamMaxIdleConnsPerHost,
-						TLSHandshakeTimeout: cfg.upstreamTLSHandshakeTimeout,
-						IdleConnTimeout:     cfg.upstreamIdleConnTimeout,
-					}
-				}
-			}(),
+			&http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+					DualStack: true,
+				}).DialContext,
+				ForceAttemptHTTP2:   cfg.upstreamUseHTTP2,
+				TLSClientConfig:     cfg.upstreamTLSConfig,
+				DisableCompression:  cfg.exposePrivateAPIs,
+				MaxConnsPerHost:     cfg.upstreamMaxConnsPerHost,
+				MaxIdleConns:        cfg.upstreamMaxIdleConns,
+				MaxIdleConnsPerHost: cfg.upstreamMaxIdleConnsPerHost,
+				TLSHandshakeTimeout: cfg.upstreamTLSHandshakeTimeout,
+				IdleConnTimeout:     cfg.upstreamIdleConnTimeout,
+			},
 		),
 	); err != nil {
 		return nil, fmt.Errorf("unable to initialize forwarder: %s", err)
