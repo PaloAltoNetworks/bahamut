@@ -31,7 +31,6 @@ require (
 	github.com/vulcand/oxy v1.0.0
 	go.uber.org/zap v1.14.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
