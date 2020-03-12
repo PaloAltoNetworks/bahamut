@@ -258,7 +258,6 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-		fmt.Println("proto:", req.Proto)
 		var measure FinishMeasurementFunc
 		if a.cfg.healthServer.metricsManager != nil {
 			measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
