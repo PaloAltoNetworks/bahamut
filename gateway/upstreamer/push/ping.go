@@ -7,8 +7,8 @@ import (
 type serviceStatus int
 
 const (
-	serviceStatusGoodbye = 0
-	serviceStatusHello   = 1
+	serviceStatusGoodbye serviceStatus = iota
+	serviceStatusHello
 )
 
 type ping struct {
