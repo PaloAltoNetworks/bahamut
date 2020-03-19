@@ -82,6 +82,14 @@ func Test_Options(t *testing.T) {
 		So(c.prefixInterceptors["/prefix"], ShouldEqual, f)
 	})
 
+	Convey("Calling OptionRegisterSuffixInterceptor should work", t, func() {
+		f := func(http.ResponseWriter, *http.Request, ErrorWriter) (InterceptorAction, string, error) {
+			return InterceptorActionForward, "", nil
+		}
+		OptionRegisterSuffixInterceptor("/suffix", f)(c)
+		So(c.suffixInterceptors["/suffix"], ShouldEqual, f)
+	})
+
 	Convey("Calling OptionRegisterExactInterceptor should work", t, func() {
 		f := func(http.ResponseWriter, *http.Request, ErrorWriter) (InterceptorAction, string, error) {
 			return InterceptorActionForward, "", nil
