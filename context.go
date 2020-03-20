@@ -21,23 +21,24 @@ import (
 )
 
 type bcontext struct {
-	claims        []string
-	claimsMap     map[string]string
-	count         int
-	ctx           context.Context
-	events        elemental.Events
-	eventsLock    *sync.Mutex
-	id            string
-	inputData     interface{}
-	messages      []string
-	messagesLock  *sync.Mutex
-	metadata      map[interface{}]interface{}
-	outputData    interface{}
-	redirect      string
-	request       *elemental.Request
-	statusCode    int
-	next          string
-	outputCookies []*http.Cookie
+	claims         []string
+	claimsMap      map[string]string
+	count          int
+	ctx            context.Context
+	events         elemental.Events
+	eventsLock     *sync.Mutex
+	id             string
+	inputData      interface{}
+	messages       []string
+	messagesLock   *sync.Mutex
+	metadata       map[interface{}]interface{}
+	next           string
+	outputCookies  []*http.Cookie
+	outputData     interface{}
+	redirect       string
+	request        *elemental.Request
+	responseWriter ResponseWriter
+	statusCode     int
 }
 
 // NewContext creates a new *Context.
@@ -95,7 +96,21 @@ func (c *bcontext) OutputData() interface{} {
 }
 
 func (c *bcontext) SetOutputData(data interface{}) {
+
+	if c.responseWriter != nil {
+		panic("you cannot use SetOutputData after using SetResponseWriter")
+	}
+
 	c.outputData = data
+}
+
+func (c *bcontext) SetResponseWriter(writer ResponseWriter) {
+
+	if c.outputData != nil {
+		panic("you cannot use SetResponseWriter after using SetOutputData")
+	}
+
+	c.responseWriter = writer
 }
 
 func (c *bcontext) StatusCode() int {
@@ -193,6 +208,7 @@ func (c *bcontext) Duplicate() Context {
 	c2.messages = append(c2.messages, c.messages...)
 	c2.next = c.next
 	c2.outputCookies = append(c2.outputCookies, c.outputCookies...)
+	c2.responseWriter = c.responseWriter
 
 	for k, v := range c.claimsMap {
 		c2.claimsMap[k] = v

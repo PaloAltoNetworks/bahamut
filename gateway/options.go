@@ -45,6 +45,11 @@ const (
 	// the HTTP response writer.
 	InterceptorActionForwardWS
 
+	// InterceptorActionForwardDirect means the Gateway will continue forwarding the request directly.
+	// In that case the Interceptor must only modify the request, and MUST NOT use
+	// the HTTP response writer.
+	InterceptorActionForwardDirect
+
 	// InterceptorActionStop means the interceptor handled the request
 	// and the gateway will not do anything more.
 	InterceptorActionStop
@@ -63,6 +68,7 @@ type gwconfig struct {
 	maintenance                 bool
 	metricsManager              bahamut.MetricsManager
 	prefixInterceptors          map[string]InterceptorFunc
+	suffixInterceptors          map[string]InterceptorFunc
 	proxyProtocolEnabled        bool
 	proxyProtocolSubnet         string
 	rateLimitingBurst           int64
@@ -89,6 +95,7 @@ func newGatewayConfig() *gwconfig {
 	return &gwconfig{
 		corsOrigin:                  "*",
 		prefixInterceptors:          map[string]InterceptorFunc{},
+		suffixInterceptors:          map[string]InterceptorFunc{},
 		exactInterceptors:           map[string]InterceptorFunc{},
 		tcpRateLimitingBurst:        100,
 		tcpRateLimitingCPS:          200.0,
@@ -209,6 +216,13 @@ func OptionMetricsManager(metricsManager bahamut.MetricsManager) Option {
 func OptionRegisterPrefixInterceptor(prefix string, f InterceptorFunc) Option {
 	return func(cfg *gwconfig) {
 		cfg.prefixInterceptors[prefix] = f
+	}
+}
+
+// OptionRegisterSuffixInterceptor registers a given InterceptorFunc for the given path suffix.
+func OptionRegisterSuffixInterceptor(prefix string, f InterceptorFunc) Option {
+	return func(cfg *gwconfig) {
+		cfg.suffixInterceptors[prefix] = f
 	}
 }
 

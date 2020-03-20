@@ -126,6 +126,7 @@ func TestContext_Duplicate(t *testing.T) {
 		}
 
 		cookies := []*http.Cookie{&http.Cookie{}, &http.Cookie{}}
+		rwriter := func(http.ResponseWriter) int { return 0 }
 
 		ctx := newContext(context.Background(), req)
 		ctx.SetCount(10)
@@ -139,6 +140,7 @@ func TestContext_Duplicate(t *testing.T) {
 		ctx.SetClaims([]string{"ouais=yes"})
 		ctx.SetNext("next")
 		ctx.AddOutputCookies(cookies[0], cookies[1])
+		ctx.SetResponseWriter(rwriter)
 
 		Convey("When I call the Duplicate method", func() {
 
@@ -159,6 +161,7 @@ func TestContext_Duplicate(t *testing.T) {
 				So(ctx.messages, ShouldResemble, ctx2.(*bcontext).messages)
 				So(ctx.outputCookies, ShouldResemble, ctx2.(*bcontext).outputCookies)
 				So(ctx.outputCookies, ShouldResemble, cookies)
+				So(ctx.responseWriter, ShouldEqual, rwriter)
 			})
 		})
 	})
@@ -214,6 +217,33 @@ func TestContext_GetClaims(t *testing.T) {
 
 			Convey("Then claims should be correct", func() {
 				So(claimsMap, ShouldResemble, map[string]string{})
+			})
+		})
+	})
+}
+
+func TestOutputDataVSResponseWriter(t *testing.T) {
+
+	Convey("Given I have a bcontext", t, func() {
+
+		rwriter := func(http.ResponseWriter) int { return 0 }
+		ctx := newContext(context.Background(), elemental.NewRequest())
+
+		Convey("When I call SetResponseWriter after SetOutputData", func() {
+
+			ctx.SetOutputData("hello")
+
+			Convey("Then it should panic", func() {
+				So(func() { ctx.SetResponseWriter(rwriter) }, ShouldPanicWith, "you cannot use SetResponseWriter after using SetOutputData")
+			})
+		})
+
+		Convey("When I call SetOutputData after SetResponseWriter", func() {
+
+			ctx.SetResponseWriter(rwriter)
+
+			Convey("Then it should panic", func() {
+				So(func() { ctx.SetOutputData("hello") }, ShouldPanicWith, "you cannot use SetOutputData after using SetResponseWriter")
 			})
 		})
 	})

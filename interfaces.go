@@ -80,6 +80,12 @@ type Server interface {
 	Run(context.Context)
 }
 
+// A ResponseWriter is a function you can use in
+// the Context to handle the writing of the response by
+// yourself. You are responsible for the full handling of the response,
+// including encoding, setting the CORS headers etc.
+type ResponseWriter func(w http.ResponseWriter) int
+
 // A Context contains all information about a current operation.
 type Context interface {
 
@@ -102,7 +108,21 @@ type Context interface {
 	OutputData() interface{}
 
 	// SetOutputData sets the data that will be returned to the client.
+	//
+	// If you use SetOutputData after having already used SetResponseWriter,
+	// the call will panic.
 	SetOutputData(interface{})
+
+	// SetResponseWriter sets the ResponseWriter function to use to write the response back to the client.
+	//
+	// No additional operation or check will be performed by Bahamut. You are responsible
+	// for correctly encoding the response, setting the header etc. This is useful when
+	// you want to handle a route that is note really fitting in the handling of an elemental Model
+	// like for instance handling file download, response streaming etc.
+	//
+	// If you use SetResponseWriter after having already used SetOutputData,
+	// the call will panic.
+	SetResponseWriter(ResponseWriter)
 
 	// Set count sets the count.
 	SetCount(int)

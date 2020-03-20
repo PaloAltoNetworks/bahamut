@@ -284,9 +284,10 @@ func TestGateway(t *testing.T) {
 			gw, err := New(
 				"127.0.0.1:7765",
 				u,
+				OptionMetricsManager(&fakeMetricManager{}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionRegisterExactInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
-					return InterceptorActionForward, strings.Replace(u.ups2.URL, "https://", "", 1), nil
+					return InterceptorActionForwardWS, strings.Replace(u.ups2.URL, "https://", "", 1), nil
 				}),
 			)
 			defer gw.Stop()
@@ -312,7 +313,75 @@ func TestGateway(t *testing.T) {
 			})
 		})
 
-		Convey("When I start the gateway with a custom exact handler that returns an error", func() {
+		Convey("When I start the gateway with a custom suffix handler that handles the request", func() {
+
+			gw, err := New(
+				"127.0.0.1:7765",
+				u,
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
+				OptionRegisterSuffixInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+					w.WriteHeader(604)
+					return InterceptorActionStop, "", nil
+				}),
+			)
+			defer gw.Stop()
+
+			So(err, ShouldBeNil)
+			So(gw, ShouldNotBeNil)
+
+			testclient := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				},
+			}
+
+			gw.Start(context.Background())
+
+			Convey("Then we I call existing ep 1", func() {
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/hello", nil)
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, 604)
+			})
+		})
+
+		Convey("When I start the gateway with a custom suffix handler that modifies the request", func() {
+
+			gw, err := New(
+				"127.0.0.1:7765",
+				u,
+				OptionMetricsManager(&fakeMetricManager{}),
+				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
+				OptionRegisterSuffixInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+					return InterceptorActionForwardDirect, strings.Replace(u.ups2.URL, "https://", "", 1), nil
+				}),
+			)
+			defer gw.Stop()
+
+			So(err, ShouldBeNil)
+			So(gw, ShouldNotBeNil)
+
+			testclient := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				},
+			}
+
+			gw.Start(context.Background())
+
+			Convey("Then we I call existing ep 1", func() {
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/ups1", nil)
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, 602)
+			})
+		})
+
+		Convey("When I start the gateway with a custom prefix handler that returns an error", func() {
 
 			gw, err := New(
 				"127.0.0.1:7765",
@@ -341,7 +410,7 @@ func TestGateway(t *testing.T) {
 			gw.Start(context.Background())
 
 			Convey("Then we I call existing ep 1", func() {
-				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1/chien", nil)
 				resp, err := testclient.Do(req)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 500)

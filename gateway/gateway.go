@@ -368,6 +368,15 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		goto HANDLE_INTERCEPTION
 	}
 
+	// If we reach here, we check for suffix match
+	if interceptAction, upstream, err = s.checkInterceptor(
+		s.gatewayConfig.suffixInterceptors,
+		func(path string, key string) bool { return strings.HasSuffix(path, key) },
+		w, r, path,
+	); interceptAction != 0 {
+		goto HANDLE_INTERCEPTION
+	}
+
 HANDLE_INTERCEPTION:
 	if err != nil {
 		writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", fmt.Sprintf("unable to run interceptor: %s", err)))
@@ -414,7 +423,22 @@ HANDLE_INTERCEPTION:
 			mm.UnregisterWSConnection()
 		}
 
+	case InterceptorActionForwardDirect:
+
+		var finish bahamut.FinishMeasurementFunc
+
+		if mm := s.gatewayConfig.metricsManager; mm != nil {
+			finish = mm.MeasureRequest(r.Method, path)
+		}
+
+		s.forwarder.ServeHTTP(w, r)
+
+		if finish != nil {
+			finish(0, nil)
+		}
+
 	default:
+
 		var finish bahamut.FinishMeasurementFunc
 
 		if mm := s.gatewayConfig.metricsManager; mm != nil {

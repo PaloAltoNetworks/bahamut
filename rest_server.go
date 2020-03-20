@@ -285,7 +285,17 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			}
 		}
 
-		code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, handler(newContext(ctx, request), a.cfg, a.processorFinder, a.pusher))
+		bctx := newContext(ctx, request)
+		resp := handler(bctx, a.cfg, a.processorFinder, a.pusher)
+		var code int
+
+		switch {
+		case bctx.responseWriter != nil:
+			code = bctx.responseWriter(w)
+		default:
+			code = writeHTTPResponse(a.cfg.security.CORSOrigin, w, resp)
+		}
+
 		if measure != nil {
 			measure(code, opentracing.SpanFromContext(ctx))
 		}
