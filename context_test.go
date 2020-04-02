@@ -125,7 +125,7 @@ func TestContext_Duplicate(t *testing.T) {
 			Operation:      elemental.OperationCreate,
 		}
 
-		cookies := []*http.Cookie{&http.Cookie{}, &http.Cookie{}}
+		cookies := []*http.Cookie{{}, {}}
 		rwriter := func(http.ResponseWriter) int { return 0 }
 
 		ctx := newContext(context.Background(), req)

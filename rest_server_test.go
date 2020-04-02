@@ -120,13 +120,13 @@ func TestServer_RouteInstallation(t *testing.T) {
 	Convey("Given I create a new api server with routes", t, func() {
 
 		routes := map[int][]RouteInfo{
-			1: []RouteInfo{
+			1: {
 				{
 					URL:   "/a",
 					Verbs: []string{"GET"},
 				},
 			},
-			2: []RouteInfo{
+			2: {
 				{
 					URL:   "/b",
 					Verbs: []string{"POST"},

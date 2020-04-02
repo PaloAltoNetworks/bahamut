@@ -362,7 +362,7 @@ func TestWSPushSession_accessors(t *testing.T) {
 		Convey("When I call Cookie()", func() {
 
 			s.cookies = []*http.Cookie{
-				&http.Cookie{
+				{
 					Name:  "toto",
 					Value: "hey",
 				},

@@ -92,7 +92,7 @@ func TestHandleServicePings(t *testing.T) {
 		Convey("When I send a hello ping from an instance of a service", func() {
 
 			routes11 := map[int][]bahamut.RouteInfo{
-				0: []bahamut.RouteInfo{
+				0: {
 					{
 						Identity: "kittens",
 						URL:      "/kittens",
@@ -103,7 +103,7 @@ func TestHandleServicePings(t *testing.T) {
 			}
 
 			routes12 := map[int][]bahamut.RouteInfo{
-				0: []bahamut.RouteInfo{
+				0: {
 					{
 						Identity: "cats",
 						URL:      "/cats",
@@ -114,7 +114,7 @@ func TestHandleServicePings(t *testing.T) {
 			}
 
 			routes2 := map[int][]bahamut.RouteInfo{
-				0: []bahamut.RouteInfo{
+				0: {
 					{
 						Identity: "dogs",
 						URL:      "/dogs",
@@ -441,7 +441,7 @@ func Test_resyncRoutes(t *testing.T) {
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
-							0: []bahamut.RouteInfo{
+							0: {
 								{
 									Identity: "cats",
 									URL:      "/cats",
@@ -477,7 +477,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{},
 			},
 			map[string][]*endpointInfo{
-				"cats": []*endpointInfo{
+				"cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -489,7 +489,7 @@ func Test_resyncRoutes(t *testing.T) {
 						lastLoad: 0.0,
 					},
 				},
-				"kittens": []*endpointInfo{
+				"kittens": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -511,7 +511,7 @@ func Test_resyncRoutes(t *testing.T) {
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
-							0: []bahamut.RouteInfo{
+							0: {
 								{
 									Identity: "cats",
 									URL:      "/cats",
@@ -547,7 +547,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{},
 			},
 			map[string][]*endpointInfo{
-				"cats": []*endpointInfo{
+				"cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -569,7 +569,7 @@ func Test_resyncRoutes(t *testing.T) {
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
-							0: []bahamut.RouteInfo{
+							0: {
 								{
 									Identity: "cats",
 									URL:      "/cats",
@@ -605,7 +605,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{"srv1": "evt1"},
 			},
 			map[string][]*endpointInfo{
-				"cats": []*endpointInfo{
+				"cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -617,7 +617,7 @@ func Test_resyncRoutes(t *testing.T) {
 						lastLoad: 0.0,
 					},
 				},
-				"evt1": []*endpointInfo{
+				"evt1": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,

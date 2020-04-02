@@ -39,7 +39,7 @@ func Test_buildVersionedRoutes(t *testing.T) {
 				},
 			},
 			map[int][]RouteInfo{
-				0: []RouteInfo{
+				0: {
 					{
 						URL:      "/lists",
 						Identity: "lists",
@@ -106,7 +106,7 @@ func Test_buildVersionedRoutes(t *testing.T) {
 						},
 					},
 				},
-				1: []RouteInfo{
+				1: {
 					{
 						URL:      "/lists",
 						Identity: "lists",
@@ -183,7 +183,7 @@ func Test_buildVersionedRoutes(t *testing.T) {
 					return nil, fmt.Errorf("boom")
 				},
 			},
-			map[int][]RouteInfo{0: []RouteInfo{}, 1: []RouteInfo{}},
+			map[int][]RouteInfo{0: {}, 1: {}},
 		},
 	}
 

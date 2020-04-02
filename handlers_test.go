@@ -76,10 +76,10 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			ctx.request.Operation = elemental.OperationInfo
 			ctx.outputCookies = []*http.Cookie{
-				&http.Cookie{
+				{
 					Name: "a",
 				},
-				&http.Cookie{
+				{
 					Name: "b",
 				},
 			}
