@@ -177,6 +177,7 @@ func TestServer_Start(t *testing.T) {
 			cfg.restServer.listenAddress = "127.0.0.1:" + port1
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
+			defer c.stop()
 
 			go c.start(context.TODO(), nil)
 			time.Sleep(30 * time.Millisecond)
@@ -207,6 +208,7 @@ func TestServer_Start(t *testing.T) {
 			cfg.tls.authType = tls.RequireAndVerifyClientCert
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
+			defer c.stop()
 
 			go c.start(context.TODO(), nil)
 			time.Sleep(30 * time.Millisecond)
