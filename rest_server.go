@@ -107,18 +107,19 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
-	a.multiplexer.Options("*", http.HandlerFunc(makeCORSHandler(a.cfg.security.CORSOrigin)))
-	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler(a.cfg.security.CORSOrigin)))
+	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler()))
 
 	if a.cfg.restServer.customRootHandlerFunc != nil {
 		a.multiplexer.Handle("/", a.cfg.restServer.customRootHandlerFunc)
 	} else {
-		a.multiplexer.Get("/", http.HandlerFunc(makeCORSHandler(a.cfg.security.CORSOrigin)))
+		a.multiplexer.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
 	}
 
 	if a.cfg.meta.serviceName != "" {
 		a.multiplexer.Get("/_meta/name", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"), "text/plain")
+			setCommonHeader(w, "text/plain")
 			w.WriteHeader(200)
 			_, _ = w.Write([]byte(a.cfg.meta.serviceName)) // nolint: errcheck
 		}))
@@ -132,7 +133,7 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 		}
 
 		a.multiplexer.Get("/_meta/routes", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"), elemental.EncodingTypeJSON)
+			setCommonHeader(w, elemental.EncodingTypeJSON)
 			w.WriteHeader(200)
 			_, _ = w.Write(encodedRoutesInfo) // nolint: errcheck
 		}))
@@ -146,7 +147,7 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 		}
 
 		a.multiplexer.Get("/_meta/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			setCommonHeader(w, r.Header.Get("Origin"), elemental.EncodingTypeJSON)
+			setCommonHeader(w, elemental.EncodingTypeJSON)
 			w.WriteHeader(200)
 			_, _ = w.Write(encodedVersionInfo) // nolint: errcheck
 		}))
@@ -265,7 +266,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
 		if err != nil {
-			code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -277,7 +278,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		if a.cfg.rateLimiting.rateLimiter != nil {
 			if !a.cfg.rateLimiting.rateLimiter.Allow() {
-				code := writeHTTPResponse(a.cfg.security.CORSOrigin, w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
@@ -293,7 +294,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		case bctx.responseWriter != nil:
 			code = bctx.responseWriter(w)
 		default:
-			code = writeHTTPResponse(a.cfg.security.CORSOrigin, w, resp)
+			code = writeHTTPResponse(w, resp)
 		}
 
 		if measure != nil {

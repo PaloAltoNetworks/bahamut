@@ -26,11 +26,7 @@ var (
 	ErrRateLimit = elemental.NewError("Rate Limit", "You have exceeded your rate limit", "bahamut", http.StatusTooManyRequests)
 )
 
-func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.EncodingType) {
-
-	if origin == "" {
-		origin = "*"
-	}
+func setCommonHeader(w http.ResponseWriter, encoding elemental.EncodingType) {
 
 	w.Header().Set("Accept", "application/msgpack,application/json")
 	if encoding == elemental.EncodingTypeJSON {
@@ -38,38 +34,16 @@ func setCommonHeader(w http.ResponseWriter, origin string, encoding elemental.En
 	} else {
 		w.Header().Set("Content-Type", string(encoding))
 	}
-
-	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	w.Header().Set("Cache-control", "private, no-transform")
-	w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func makeCORSHandler(origin string) func(w http.ResponseWriter, r *http.Request) {
+func makeNotFoundHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		o := r.Header.Get("Origin")
-		if origin != "" {
-			o = origin
-		}
-		_, writeEncoding, _ := elemental.EncodingFromHeaders(r.Header)
-		setCommonHeader(w, o, writeEncoding)
-		w.Header().Set("Access-Control-Max-Age", "1500")
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func makeNotFoundHandler(origin string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		writeHTTPResponse(origin, w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil))
 	}
 }
 
 // writeHTTPResponse writes the response into the given http.ResponseWriter.
-func writeHTTPResponse(CORSOrigin string, w http.ResponseWriter, r *elemental.Response) int {
+func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 
 	// If r is nil, we simply stop.
 	// It mostly means the client closed the connection and
@@ -78,16 +52,11 @@ func writeHTTPResponse(CORSOrigin string, w http.ResponseWriter, r *elemental.Re
 		return 0
 	}
 
-	origin := r.Request.Headers.Get("Origin")
-	if CORSOrigin != "" {
-		origin = CORSOrigin
-	}
-
 	for _, cookie := range r.Cookies {
 		http.SetCookie(w, cookie)
 	}
 
-	setCommonHeader(w, origin, r.Request.Accept)
+	setCommonHeader(w, r.Request.Accept)
 
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)

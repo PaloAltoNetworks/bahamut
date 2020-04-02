@@ -10,6 +10,7 @@ import (
 )
 
 func injectGeneralHeader(h http.Header) http.Header {
+
 	h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("X-Content-Type-Options", "nosniff")
@@ -19,16 +20,20 @@ func injectGeneralHeader(h http.Header) http.Header {
 	return h
 }
 
-func injectCORSHeader(h http.Header, corsOrigin string, origin string) http.Header {
+func injectCORSHeader(h http.Header, corsOrigin string, origin string, method string) http.Header {
 
 	if corsOrigin == "*" && origin != "" {
 		corsOrigin = origin
 	}
 
+	if method == http.MethodOptions {
+		h.Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
+		h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
+		h.Set("Access-Control-Max-Age", "1500")
+	}
+
 	h.Set("Access-Control-Allow-Origin", corsOrigin)
 	h.Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
-	h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-	h.Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
 	h.Set("Access-Control-Allow-Credentials", "true")
 
 	return h

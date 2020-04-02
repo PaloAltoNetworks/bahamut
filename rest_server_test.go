@@ -157,7 +157,6 @@ func TestServer_RouteInstallation(t *testing.T) {
 				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 3)
 				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 5)
 				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 3)
-				So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 2)
 			})
 		})
 	})
