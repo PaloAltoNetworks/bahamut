@@ -258,7 +258,7 @@ func TestBahamut_Options(t *testing.T) {
 
 	Convey("Calling OptOpentracingTracer should work", t, func() {
 		OptOpentracingExcludedIdentities([]elemental.Identity{testmodel.UserIdentity, testmodel.ListIdentity})(&c)
-		So(c.opentracing.excludedIdentities, ShouldResemble, map[string]struct{}{"user": struct{}{}, "list": struct{}{}})
+		So(c.opentracing.excludedIdentities, ShouldResemble, map[string]struct{}{"user": {}, "list": {}})
 	})
 
 	Convey("Calling OptPostStartHook should work", t, func() {

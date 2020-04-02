@@ -65,7 +65,7 @@ func TestUpstreamer(t *testing.T) {
 				Endpoint: "1.1.1.1:1",
 				Status:   serviceStatusHello,
 				Routes: map[int][]bahamut.RouteInfo{
-					0: []bahamut.RouteInfo{
+					0: {
 						{
 							Identity: "cats",
 							URL:      "/cats",
@@ -206,16 +206,16 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic")
 		u.apis = map[string][]*endpointInfo{
-			"cats": []*endpointInfo{
-				&endpointInfo{
+			"cats": {
+				{
 					address:  "1.1.1.1:1",
 					lastLoad: 0.1,
 				},
-				&endpointInfo{
+				{
 					address:  "2.2.2.2:1",
 					lastLoad: 0.2,
 				},
-				&endpointInfo{
+				{
 					address:  "3.3.3.3:1",
 					lastLoad: 0.9,
 				},
@@ -241,16 +241,16 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic")
 		u.apis = map[string][]*endpointInfo{
-			"cats": []*endpointInfo{
-				&endpointInfo{
+			"cats": {
+				{
 					address:  "1.1.1.1:1",
 					lastLoad: 0.1,
 				},
-				&endpointInfo{
+				{
 					address:  "2.2.2.2:1",
 					lastLoad: 0.1,
 				},
-				&endpointInfo{
+				{
 					address:  "3.3.3.3:1",
 					lastLoad: 0.1,
 				},
@@ -292,8 +292,8 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic")
 		u.apis = map[string][]*endpointInfo{
-			"cats": []*endpointInfo{
-				&endpointInfo{
+			"cats": {
+				{
 					address:  "1.1.1.1:1",
 					lastLoad: 0.1,
 				},
@@ -317,12 +317,12 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic")
 		u.apis = map[string][]*endpointInfo{
-			"cats": []*endpointInfo{
-				&endpointInfo{
+			"cats": {
+				{
 					address:  "1.1.1.1:1",
 					lastLoad: 0.2,
 				},
-				&endpointInfo{
+				{
 					address:  "2.2.2.2:1",
 					lastLoad: 0.1,
 				},

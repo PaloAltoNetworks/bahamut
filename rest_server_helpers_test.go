@@ -246,10 +246,11 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
 		r.Cookies = []*http.Cookie{
-			&http.Cookie{
+			{
 				Name:  "ca",
 				Value: "ca",
-			}, &http.Cookie{
+			},
+			{
 				Name:  "cb",
 				Value: "cb",
 			},
