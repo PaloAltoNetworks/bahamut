@@ -157,7 +157,6 @@ func TestServer_RouteInstallation(t *testing.T) {
 				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 3)
 				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 5)
 				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 3)
-				So(len(c.multiplexer.Routes[http.MethodOptions]), ShouldEqual, 2)
 			})
 		})
 	})
@@ -178,6 +177,7 @@ func TestServer_Start(t *testing.T) {
 			cfg.restServer.listenAddress = "127.0.0.1:" + port1
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
+			defer c.stop()
 
 			go c.start(context.TODO(), nil)
 			time.Sleep(30 * time.Millisecond)
@@ -208,6 +208,7 @@ func TestServer_Start(t *testing.T) {
 			cfg.tls.authType = tls.RequireAndVerifyClientCert
 
 			c := newRestServer(cfg, bone.New(), nil, nil)
+			defer c.stop()
 
 			go c.start(context.TODO(), nil)
 			time.Sleep(30 * time.Millisecond)

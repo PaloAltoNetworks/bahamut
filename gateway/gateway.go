@@ -153,10 +153,9 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		),
 		forward.ResponseModifier(
 			func(r *http.Response) error {
+
 				injectGeneralHeader(r.Header)
-				// @TODO: This should be taken from bahamut
-				// and bahamut should not care about the CORS header anymore.
-				injectCORSHeader(r.Header, cfg.corsOrigin, r.Request.Header.Get("origin"))
+				injectCORSHeader(r.Header, cfg.corsOrigin, r.Request.Header.Get("origin"), r.Request.Method)
 
 				if s.gatewayConfig.responseRewriter != nil {
 					if err := s.gatewayConfig.responseRewriter(r); err != nil {
@@ -326,24 +325,22 @@ func (s *gateway) checkInterceptor(
 
 func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	path := r.URL.Path
+	if r.Method == http.MethodOptions {
+		h := w.Header()
+		injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		w.WriteHeader(http.StatusOK) // nolint: errcheck
+		return
+	}
 
 	if s.gatewayConfig.maintenance {
-		switch r.Method {
-		case http.MethodOptions:
-			h := w.Header()
-			h.Set("Content-Type", "application/msgpack, application/json")
-			injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
-			w.WriteHeader(http.StatusOK) // nolint: errcheck
-			return
-
-		default:
-			h := w.Header()
-			injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
-			writeError(w, r, errLocked)
-			return
-		}
+		h := w.Header()
+		h.Set("Content-Type", "application/msgpack, application/json")
+		injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		writeError(w, r, errLocked)
+		return
 	}
+
+	path := r.URL.Path
 
 	var upstream string
 	var load float64
@@ -383,7 +380,7 @@ HANDLE_INTERCEPTION:
 		return
 	}
 	if interceptAction == InterceptorActionStop {
-		injectCORSHeader(r.Header, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"))
+		injectCORSHeader(r.Header, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
 		return
 	}
 
