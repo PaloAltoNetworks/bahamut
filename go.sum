@@ -277,8 +277,8 @@ github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:
 go.aporeto.io/elemental v1.100.1-0.20200507181306-04bb5d99c40b h1:4qCgUQTl/SliFu8tTRjLsG1E9X/sQpiOqcB9bRPLZzM=
 go.aporeto.io/elemental v1.100.1-0.20200507181306-04bb5d99c40b/go.mod h1:Sy/SOOvxrPrk0KfDH0393Dw58GvstAsipd9afF80BUw=
 go.aporeto.io/regolithe v1.50.1-0.20200507173956-ac0245f292d1/go.mod h1:+CaUtk6vhi0QJKdW6rabnCbqXUUBzQeQb6uMUNzmqZE=
-go.aporeto.io/tg v1.34.1-0.20200407170614-39186fcd83e1 h1:gZRQLrqkLHnkgfzNNEPN6CcQwauI1YVj+NFqTp7Cl4k=
-go.aporeto.io/tg v1.34.1-0.20200407170614-39186fcd83e1/go.mod h1:tj9qQdWdzoQDz6pn1vJVCkpUAEOuUZGnP7DBdwBLfXs=
+go.aporeto.io/tg v1.34.1-0.20200515195223-79e45f8c54f8 h1:fdB5OZc4xnjqKYX1FKt8FKjPK4zB++yYvlgyAYt4F2Y=
+go.aporeto.io/tg v1.34.1-0.20200515195223-79e45f8c54f8/go.mod h1:tj9qQdWdzoQDz6pn1vJVCkpUAEOuUZGnP7DBdwBLfXs=
 go.aporeto.io/wsc v1.36.1-0.20200407170617-67536038420e h1:x/ivqUrykGmMqkhP0sHS8XH6gSpWyKQugdUDJph8y8A=
 go.aporeto.io/wsc v1.36.1-0.20200407170617-67536038420e/go.mod h1:cYMosMNU+0KRwUe7VirIv6+Ak1gHcYPKlEFBG8d3XgU=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
