@@ -431,7 +431,7 @@ func dispatchPatchOperation(
 
 	return err
 }
-[]
+
 func dispatchInfoOperation(
 	ctx *bcontext,
 	processorFinder processorFinderFunc,
