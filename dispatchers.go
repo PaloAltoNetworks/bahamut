@@ -189,8 +189,7 @@ func dispatchCreateOperation(
 		pusher(ctx.events...)
 	}
 
-	switch o := ctx.outputData.(type) {
-	case elemental.Identifiable:
+	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
 		pusher(elemental.NewEvent(elemental.EventCreate, o))
 	}
 
@@ -270,8 +269,7 @@ func dispatchUpdateOperation(
 		pusher(ctx.events...)
 	}
 
-	switch o := ctx.outputData.(type) {
-	case elemental.Identifiable:
+	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
 		pusher(elemental.NewEvent(elemental.EventUpdate, o))
 	}
 
@@ -324,8 +322,7 @@ func dispatchDeleteOperation(
 		pusher(ctx.events...)
 	}
 
-	switch o := ctx.outputData.(type) {
-	case elemental.Identifiable:
+	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
 		pusher(elemental.NewEvent(elemental.EventDelete, o))
 	}
 
@@ -426,8 +423,7 @@ func dispatchPatchOperation(
 		pusher(ctx.events...)
 	}
 
-	switch o := ctx.outputData.(type) {
-	case elemental.Identifiable:
+	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
 		pusher(elemental.NewEvent(elemental.EventUpdate, o))
 	}
 

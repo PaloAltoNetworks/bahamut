@@ -387,6 +387,29 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 
 		})
 
+		Convey("Given a processor that can handle ProcessCreate function with a context that disables output data push", func() {
+
+			var err error
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					output: testmodel.NewList(),
+				}, nil
+			}
+
+			ctx.SetDisableOutputDataPush(true)
+
+			Convey("Then I should not panic no events should be pushed", func() {
+				So(func() {
+					err = dispatchCreateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
+				So(len(pusher.events), ShouldEqual, 0)
+			})
+
+		})
+
 		Convey("Given a processor that can handle ProcessCreate function with a context output that contains a nil elemental.Identifiable", func() {
 
 			// notice how this is a type that satisfies the elemental.Identifiable interface, but it is not a nil interface!
@@ -613,7 +636,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 		})
 	})
 
-	Convey("Given I have a processor that does not handle ProcessCreate function and an authorizer that is not authorize", t, func() {
+	Convey("Given I have a processor that does not handle ProcessCreate function and an authorizer that is not authorized", t, func() {
 		request := elemental.NewRequest()
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
@@ -717,6 +740,28 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 				So(ctx.InputData, ShouldNotBeNil)
 				So(auditer.GetCallCount(), ShouldEqual, 1)
 				So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+				So(len(pusher.events), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Given I have a processor that handle ProcessUpdate function with a context that disables output data push", func() {
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					output: testmodel.NewList(),
+				}, nil
+			}
+
+			ctx.SetDisableOutputDataPush(true)
+
+			Convey("Then I should not panic no events should be pushed", func() {
+				var err error
+				So(func() {
+					err = dispatchUpdateOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
 				So(len(pusher.events), ShouldEqual, 0)
 			})
 		})
@@ -1052,6 +1097,28 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			})
 		})
 
+		Convey("Given I have a processor that handle ProcessDelete function with a context that disables output data push", func() {
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					output: testmodel.NewList(),
+				}, nil
+			}
+
+			ctx.SetDisableOutputDataPush(true)
+
+			Convey("Then I should not panic no events should be pushed", func() {
+				var err error
+				So(func() {
+					err = dispatchDeleteOperation(ctx, processorFinder, nil, nil, pusher.Push, auditer, false, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
+				So(len(pusher.events), ShouldEqual, 0)
+			})
+		})
+
 		Convey("Given I have a processor that handle ProcessDelete function with a context output that contains a nil elemental.Identifiable", func() {
 
 			// notice how this is a type that satisfies the elemental.Identifiable interface, but it is not a nil interface!
@@ -1281,6 +1348,28 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(auditer.GetCallCount(), ShouldEqual, 1)
 				So(ctx.outputData, ShouldResemble, json.RawMessage("some random bytes!"))
+				So(len(pusher.events), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Given I have a processor that handle ProcessPatch function with a context that disables output data push", func() {
+
+			processorFinder := func(identity elemental.Identity) (Processor, error) {
+				return &mockProcessor{
+					output: testmodel.NewList(),
+				}, nil
+			}
+
+			ctx.SetDisableOutputDataPush(true)
+
+			Convey("Then I should not panic no events should be pushed", func() {
+				var err error
+				So(func() {
+					err = dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, nil)
+				}, ShouldNotPanic)
+				So(err, ShouldBeNil)
+				So(ctx.InputData, ShouldNotBeNil)
+				So(auditer.GetCallCount(), ShouldEqual, 1)
 				So(len(pusher.events), ShouldEqual, 0)
 			})
 		})
