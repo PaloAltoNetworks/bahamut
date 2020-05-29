@@ -44,6 +44,21 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 	}
 }
 
+// RegisterCustomHandlerOrDie will register a handler for a given
+// path. This is just a helper for the Server.Register
+// Identity and will exit in case of errors. This is just a helper for
+// Server.RegisterCustomRouteHandler function.
+func RegisterCustomHandlerOrDie(server Server, handler http.HandlerFunc, path string) {
+
+	if server == nil {
+		panic("bahamut server must not be nil")
+	}
+
+	if err := server.RegisterCustomRouteHandler(path, handler); err != nil {
+		panic(fmt.Sprintf("cannot register processor: %s", err))
+	}
+}
+
 // InstallSIGINTHandler installs signal handlers for graceful shutdown.
 func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 
@@ -102,9 +117,10 @@ func NewServer(cfg config) Server {
 
 	mux := bone.New()
 	srv := &server{
-		multiplexer: mux,
-		processors:  make(map[string]Processor),
-		cfg:         cfg,
+		multiplexer:          mux,
+		processors:           make(map[string]Processor),
+		customRoutesHandlers: make(map[string]http.HandlerFunc),
+		cfg:                  cfg,
 	}
 
 	if cfg.restServer.enabled {
@@ -149,6 +165,17 @@ func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 }
 
 func (b *server) RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error {
+
+	if !(b.restServer != nil &&
+		b.restServer.cfg.restServer.apiPrefix != "" &&
+		b.restServer.cfg.restServer.customRoutePrefix != "" &&
+		b.restServer.cfg.restServer.apiPrefix != b.restServer.cfg.restServer.customRoutePrefix) {
+		return fmt.Errorf(
+			"API root path '%s' and custom handler path '%s' must not overlap",
+			b.restServer.cfg.restServer.apiPrefix,
+			b.restServer.cfg.restServer.customRoutePrefix,
+		)
+	}
 
 	if _, ok := b.customRoutesHandlers[path]; ok {
 		return fmt.Errorf("path %s has a registered handler already", path)

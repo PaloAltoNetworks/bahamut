@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
@@ -267,6 +268,13 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		var measure FinishMeasurementFunc
 		if a.cfg.healthServer.metricsManager != nil {
 			measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
+		}
+
+		// Trim our custom prefix out of the request URI.
+		// TODO: The elemental function needs to moved in here
+		// and potentially find a cleaner way rather than triming the prefix here.
+		if a.cfg.restServer.apiPrefix != "" {
+			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
