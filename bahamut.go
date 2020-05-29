@@ -14,6 +14,7 @@ package bahamut
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -58,13 +59,14 @@ func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 }
 
 type server struct {
-	multiplexer     *bone.Mux
-	processors      map[string]Processor
-	cfg             config
-	restServer      *restServer
-	pushServer      *pushServer
-	healthServer    *healthServer
-	profilingServer *profilingServer
+	multiplexer          *bone.Mux
+	processors           map[string]Processor
+	customRoutesHandlers map[string]http.HandlerFunc
+	cfg                  config
+	restServer           *restServer
+	pushServer           *pushServer
+	healthServer         *healthServer
+	profilingServer      *profilingServer
 }
 
 // New returns a new bahamut Server configured with
@@ -106,7 +108,7 @@ func NewServer(cfg config) Server {
 	}
 
 	if cfg.restServer.enabled {
-		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push)
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push, srv.CustomHandlers)
 	}
 
 	if cfg.pushServer.enabled {
@@ -146,6 +148,28 @@ func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 	return nil
 }
 
+func (b *server) RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error {
+
+	if _, ok := b.customRoutesHandlers[path]; ok {
+		return fmt.Errorf("path %s has a registered handler already", path)
+	}
+
+	b.customRoutesHandlers[path] = handler
+
+	return nil
+}
+
+func (b *server) UnregisterCustomRouteHandler(path string) error {
+
+	if _, ok := b.customRoutesHandlers[path]; !ok {
+		return fmt.Errorf("path %s has no existing handler", path)
+	}
+
+	delete(b.customRoutesHandlers, path)
+
+	return nil
+}
+
 func (b *server) ProcessorForIdentity(identity elemental.Identity) (Processor, error) {
 
 	if _, ok := b.processors[identity.Name]; !ok {
@@ -153,6 +177,11 @@ func (b *server) ProcessorForIdentity(identity elemental.Identity) (Processor, e
 	}
 
 	return b.processors[identity.Name], nil
+}
+
+func (b *server) CustomHandlers() map[string]http.HandlerFunc {
+
+	return b.customRoutesHandlers
 }
 
 func (b *server) ProcessorsCount() int {

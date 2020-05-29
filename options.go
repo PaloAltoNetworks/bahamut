@@ -106,6 +106,25 @@ func OptHTTPLogger(l *log.Logger) Option {
 	}
 }
 
+// OptEnableCustomRoutePathPrefix enables custom routes in the server that
+// start with the given prefix. A user must also provide an API
+// prefix in this case and the two must not overlap. Otherwise,
+// the configuration will be rejected.
+func OptEnableCustomRoutePathPrefix(prefix string) Option {
+	return func(c *config) {
+		c.restServer.customRoutePrefix = prefix
+	}
+}
+
+// OptEnableAPIPathPrefix enables a path prefix for all API resources
+// other than root. This enables customization of the paths of the API
+// endpoints.
+func OptEnableAPIPathPrefix(prefix string) Option {
+	return func(c *config) {
+		c.restServer.apiPrefix = prefix
+	}
+}
+
 // OptPushServer enables and configures the push server.
 //
 // Service defines the pubsub server to use.

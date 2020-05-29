@@ -297,4 +297,14 @@ func TestBahamut_Options(t *testing.T) {
 		OptHTTPLogger(l)(&c)
 		So(c.restServer.httpLogger, ShouldEqual, l)
 	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix should work", t, func() {
+		OptEnableCustomRoutePathPrefix("/custom")(&c)
+		So(c.restServer.customRoutePrefix, ShouldEqual, "/custom")
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix should work", t, func() {
+		OptEnableAPIPathPrefix("/custom")(&c)
+		So(c.restServer.apiPrefix, ShouldEqual, "/custom")
+	})
 }
