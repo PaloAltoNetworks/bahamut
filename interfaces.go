@@ -23,7 +23,7 @@ type processorFinderFunc func(identity elemental.Identity) (Processor, error)
 
 type eventPusherFunc func(...*elemental.Event)
 
-type customHandlerFunc func() map[string]http.HandlerFunc
+type retrieveHandlersFunc func() map[string]http.HandlerFunc
 
 // AuthAction is the type of action an Authenticator or an Authorizer can return.
 type AuthAction int

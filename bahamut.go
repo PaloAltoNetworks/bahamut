@@ -124,7 +124,7 @@ func NewServer(cfg config) Server {
 	}
 
 	if cfg.restServer.enabled {
-		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push, srv.CustomHandlers)
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.CustomHandlers, srv.Push)
 	}
 
 	if cfg.pushServer.enabled {
@@ -167,13 +167,13 @@ func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 func (b *server) RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error {
 
 	if !(b.restServer != nil &&
-		b.restServer.cfg.restServer.apiPrefix != "" &&
-		b.restServer.cfg.restServer.customRoutePrefix != "" &&
-		b.restServer.cfg.restServer.apiPrefix != b.restServer.cfg.restServer.customRoutePrefix) {
+		b.cfg.restServer.apiPrefix != "" &&
+		b.cfg.restServer.customRoutePrefix != "" &&
+		b.cfg.restServer.apiPrefix != b.cfg.restServer.customRoutePrefix) {
 		return fmt.Errorf(
 			"API root path '%s' and custom handler path '%s' must not overlap",
-			b.restServer.cfg.restServer.apiPrefix,
-			b.restServer.cfg.restServer.customRoutePrefix,
+			b.cfg.restServer.apiPrefix,
+			b.cfg.restServer.customRoutePrefix,
 		)
 	}
 

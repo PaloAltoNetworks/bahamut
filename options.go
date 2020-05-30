@@ -18,6 +18,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -112,7 +114,16 @@ func OptHTTPLogger(l *log.Logger) Option {
 // the configuration will be rejected.
 func OptEnableCustomRoutePathPrefix(prefix string) Option {
 	return func(c *config) {
-		c.restServer.customRoutePrefix = prefix
+		u, err := url.ParseRequestURI(path.Clean(prefix))
+
+		if err != nil {
+			panic(fmt.Sprintf("Invalid custom route prefix provided: %s error: %s", prefix, err))
+		}
+		if u.Host != "" || u.Scheme != "" {
+			panic(fmt.Sprintf("Custom route prefix must not include host or scheme"))
+		}
+
+		c.restServer.customRoutePrefix = u.Path
 	}
 }
 
@@ -121,7 +132,16 @@ func OptEnableCustomRoutePathPrefix(prefix string) Option {
 // endpoints.
 func OptEnableAPIPathPrefix(prefix string) Option {
 	return func(c *config) {
-		c.restServer.apiPrefix = prefix
+		u, err := url.ParseRequestURI(path.Clean(prefix))
+
+		if err != nil {
+			panic(fmt.Sprintf("Invalid API prefix provided: %s error: %s", prefix, err))
+		}
+		if u.Host != "" || u.Scheme != "" {
+			panic(fmt.Sprintf("API route prefix must not include host or scheme"))
+		}
+
+		c.restServer.apiPrefix = u.Path
 	}
 }
 
