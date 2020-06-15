@@ -120,7 +120,7 @@ func OptEnableCustomRoutePathPrefix(prefix string) Option {
 			panic(fmt.Sprintf("Invalid custom route prefix provided: %s error: %s", prefix, err))
 		}
 		if u.Host != "" || u.Scheme != "" {
-			panic(fmt.Sprintf("Custom route prefix must not include host or scheme"))
+			panic(fmt.Sprintf("Custom route prefix must not include host or scheme: host: %s, scheme: %s", u.Host, u.Scheme))
 		}
 
 		c.restServer.customRoutePrefix = u.Path
