@@ -21,24 +21,25 @@ import (
 )
 
 type bcontext struct {
-	claims         []string
-	claimsMap      map[string]string
-	count          int
-	ctx            context.Context
-	events         elemental.Events
-	eventsLock     *sync.Mutex
-	id             string
-	inputData      interface{}
-	messages       []string
-	messagesLock   *sync.Mutex
-	metadata       map[interface{}]interface{}
-	next           string
-	outputCookies  []*http.Cookie
-	outputData     interface{}
-	redirect       string
-	request        *elemental.Request
-	responseWriter ResponseWriter
-	statusCode     int
+	claims                []string
+	claimsMap             map[string]string
+	count                 int
+	ctx                   context.Context
+	events                elemental.Events
+	eventsLock            *sync.Mutex
+	id                    string
+	inputData             interface{}
+	messages              []string
+	messagesLock          *sync.Mutex
+	metadata              map[interface{}]interface{}
+	next                  string
+	outputCookies         []*http.Cookie
+	outputData            interface{}
+	redirect              string
+	request               *elemental.Request
+	responseWriter        ResponseWriter
+	statusCode            int
+	disableOutputDataPush bool
 }
 
 // NewContext creates a new *Context.
@@ -93,6 +94,10 @@ func (c *bcontext) SetInputData(data interface{}) {
 
 func (c *bcontext) OutputData() interface{} {
 	return c.outputData
+}
+
+func (c *bcontext) SetDisableOutputDataPush(disabled bool) {
+	c.disableOutputDataPush = disabled
 }
 
 func (c *bcontext) SetOutputData(data interface{}) {
@@ -209,6 +214,7 @@ func (c *bcontext) Duplicate() Context {
 	c2.next = c.next
 	c2.outputCookies = append(c2.outputCookies, c.outputCookies...)
 	c2.responseWriter = c.responseWriter
+	c2.disableOutputDataPush = c.disableOutputDataPush
 
 	for k, v := range c.claimsMap {
 		c2.claimsMap[k] = v

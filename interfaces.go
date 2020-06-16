@@ -125,6 +125,10 @@ type Context interface {
 	// the call will panic.
 	SetOutputData(interface{})
 
+	// SetDisableOutputDataPush will instruct the bahamut server to
+	// not automatically push the content of OutputData.
+	SetDisableOutputDataPush(bool)
+
 	// SetResponseWriter sets the ResponseWriter function to use to write the response back to the client.
 	//
 	// No additional operation or check will be performed by Bahamut. You are responsible
