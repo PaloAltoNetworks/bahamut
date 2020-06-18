@@ -12,6 +12,7 @@
 package bahamut
 
 import (
+	"net/http"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -311,6 +312,83 @@ func TestBahamut_ProcessorRegistration(t *testing.T) {
 
 			Convey("Then err should not be nil", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestBahamut_RegisterCustomRouteHandlers(t *testing.T) {
+	Convey("Given I have a bahamut server", t, func() {
+
+		Convey("When I try to register a new custom handler", func() {
+
+			Convey("If rest server is not enabled, it should fail", func() {
+				b := NewServer(config{})
+				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
+			})
+
+			Convey("if the rest server is enabled, but the API prefix is empty is empty it should fail", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				b := NewServer(cfg)
+				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
+			})
+
+			Convey("if the customRoute prefix is empty, it should fail", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				cfg.restServer.apiPrefix = "/api"
+				b := NewServer(cfg)
+				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
+			})
+
+			Convey("When both prefixes are set, I should be able to register it", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				cfg.restServer.apiPrefix = "/api"
+				cfg.restServer.customRoutePrefix = "/custom"
+				b := NewServer(cfg)
+
+				h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+				So(b.RegisterCustomRouteHandler("/saml", h), ShouldBeNil)
+				So(b.(*server).customRoutesHandlers["/saml"], ShouldEqual, h)
+			})
+
+			Convey("When I try to register it twice, it should fail the second time", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				cfg.restServer.apiPrefix = "/api"
+				cfg.restServer.customRoutePrefix = "/custom"
+				b := NewServer(cfg)
+
+				h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+				So(b.RegisterCustomRouteHandler("/saml", h), ShouldBeNil)
+				So(b.RegisterCustomRouteHandler("/saml", h), ShouldNotBeNil)
+				So(b.(*server).customRoutesHandlers["/saml"], ShouldEqual, h)
+			})
+		})
+
+		Convey("When I try to unregister a handler", func() {
+
+			Convey("If the handler is present, it should succeed", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				cfg.restServer.apiPrefix = "/api"
+				cfg.restServer.customRoutePrefix = "/custom"
+				b := NewServer(cfg)
+				h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+				So(b.RegisterCustomRouteHandler("/saml", h), ShouldBeNil)
+				So(b.UnregisterCustomRouteHandler("/saml"), ShouldBeNil)
+				So(len(b.(*server).customRoutesHandlers), ShouldEqual, 0)
+			})
+
+			Convey("If the handler is not present, I should get an error", func() {
+				cfg := config{}
+				cfg.restServer.enabled = true
+				cfg.restServer.apiPrefix = "/api"
+				cfg.restServer.customRoutePrefix = "/custom"
+				b := NewServer(cfg)
+				So(b.UnregisterCustomRouteHandler("/saml"), ShouldNotBeNil)
 			})
 		})
 	})
