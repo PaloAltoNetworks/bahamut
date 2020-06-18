@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -157,6 +158,67 @@ func TestServer_RouteInstallation(t *testing.T) {
 				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 3)
 				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 5)
 				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 3)
+			})
+		})
+	})
+
+	Convey("Given I create a new api server with API and custom routes", t, func() {
+
+		routes := map[int][]RouteInfo{
+			1: {
+				{
+					URL:   "/a",
+					Verbs: []string{"GET"},
+				},
+			},
+			2: {
+				{
+					URL:   "/b",
+					Verbs: []string{"POST"},
+				},
+				{
+					URL:   "/c/d",
+					Verbs: []string{"POST", "GET"},
+				},
+			},
+		}
+
+		cfg := config{}
+		cfg.restServer.apiPrefix = "/api"
+		cfg.restServer.customRoutePrefix = "/custom"
+		cfg.restServer.customRootHandlerFunc = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+		cfg.restServer.listenAddress = "address:80"
+		cfg.meta.serviceName = "hello"
+		cfg.meta.version = map[string]interface{}{}
+		customHandlerFunc := func() map[string]http.HandlerFunc {
+			return map[string]http.HandlerFunc{
+				"/saml": http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			}
+		}
+
+		c := newRestServer(cfg, bone.New(), nil, customHandlerFunc, nil)
+
+		Convey("When I install the routes", func() {
+
+			c.installRoutes(routes)
+
+			Convey("Then the bone Multiplexer should have correct number of handlers", func() {
+				So(len(c.multiplexer.Routes[http.MethodPost]), ShouldEqual, 6)
+				So(len(c.multiplexer.Routes[http.MethodGet]), ShouldEqual, 11)
+				So(len(c.multiplexer.Routes[http.MethodDelete]), ShouldEqual, 4)
+				So(len(c.multiplexer.Routes[http.MethodPatch]), ShouldEqual, 4)
+				So(len(c.multiplexer.Routes[http.MethodHead]), ShouldEqual, 6)
+				So(len(c.multiplexer.Routes[http.MethodPut]), ShouldEqual, 4)
+			})
+
+			Convey("The routes must have the correct prefix", func() {
+				routes := c.multiplexer.Routes[http.MethodGet]
+				for _, route := range routes {
+					if route.Path == "/" || strings.HasPrefix(route.Path, "/_meta") {
+						continue
+					}
+					So(strings.HasPrefix(route.Path, "/api") || strings.HasPrefix(route.Path, "/custom"), ShouldBeTrue)
+				}
 			})
 		})
 	})
