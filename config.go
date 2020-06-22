@@ -60,6 +60,8 @@ type config struct {
 		customListener        net.Listener
 		maxConnection         int
 		httpLogger            *log.Logger
+		customRoutePrefix     string
+		apiPrefix             string
 	}
 
 	pushServer struct {

@@ -18,6 +18,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -103,6 +105,43 @@ func OptCustomRootHandler(handler http.HandlerFunc) Option {
 func OptHTTPLogger(l *log.Logger) Option {
 	return func(c *config) {
 		c.restServer.httpLogger = l
+	}
+}
+
+// OptEnableCustomRoutePathPrefix enables custom routes in the server that
+// start with the given prefix. A user must also provide an API
+// prefix in this case and the two must not overlap. Otherwise,
+// the configuration will be rejected.
+func OptEnableCustomRoutePathPrefix(prefix string) Option {
+	return func(c *config) {
+		u, err := url.ParseRequestURI(path.Clean(prefix))
+
+		if err != nil {
+			panic(fmt.Sprintf("Invalid custom route prefix provided: %s error: %s", prefix, err))
+		}
+		if u.Host != "" || u.Scheme != "" {
+			panic(fmt.Sprintf("Custom route prefix must not include host or scheme: host: %s, scheme: %s", u.Host, u.Scheme))
+		}
+
+		c.restServer.customRoutePrefix = u.Path
+	}
+}
+
+// OptEnableAPIPathPrefix enables a path prefix for all API resources
+// other than root. This enables customization of the paths of the API
+// endpoints.
+func OptEnableAPIPathPrefix(prefix string) Option {
+	return func(c *config) {
+		u, err := url.ParseRequestURI(path.Clean(prefix))
+
+		if err != nil {
+			panic(fmt.Sprintf("Invalid API prefix provided: %s error: %s", prefix, err))
+		}
+		if u.Host != "" || u.Scheme != "" {
+			panic(fmt.Sprintf("API route prefix must not include host or scheme"))
+		}
+
+		c.restServer.apiPrefix = u.Path
 	}
 }
 

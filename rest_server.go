@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
@@ -35,16 +37,18 @@ type restServer struct {
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
+	customHandlers  retrieveHandlersFunc
 }
 
 // newRestServer returns a new apiServer.
-func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, pusher eventPusherFunc) *restServer {
+func newRestServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc, customHandlers retrieveHandlersFunc, pusher eventPusherFunc) *restServer {
 
 	return &restServer{
 		cfg:             cfg,
 		multiplexer:     multiplexer,
 		processorFinder: processorFinder,
 		pusher:          pusher,
+		customHandlers:  customHandlers,
 	}
 }
 
@@ -154,29 +158,34 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 	}
 
 	// non versioned routes
-	a.multiplexer.Get("/:category/:id", a.makeHandler(handleRetrieve))
-	a.multiplexer.Put("/:category/:id", a.makeHandler(handleUpdate))
-	a.multiplexer.Patch("/:category/:id", a.makeHandler(handlePatch))
-	a.multiplexer.Delete("/:category/:id", a.makeHandler(handleDelete))
-	a.multiplexer.Get("/:category", a.makeHandler(handleRetrieveMany))
-	a.multiplexer.Get("/:parentcategory/:id/:category", a.makeHandler(handleRetrieveMany))
-	a.multiplexer.Post("/:category", a.makeHandler(handleCreate))
-	a.multiplexer.Post("/:parentcategory/:id/:category", a.makeHandler(handleCreate))
-	a.multiplexer.Head("/:category", a.makeHandler(handleInfo))
-	a.multiplexer.Head("/:parentcategory/:id/:category", a.makeHandler(handleInfo))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handleRetrieve))
+	a.multiplexer.Put(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handleUpdate))
+	a.multiplexer.Patch(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handlePatch))
+	a.multiplexer.Delete(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handleDelete))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/:category"), a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/:parentcategory/:id/:category"), a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Post(path.Join(a.cfg.restServer.apiPrefix, "/:category"), a.makeHandler(handleCreate))
+	a.multiplexer.Post(path.Join(a.cfg.restServer.apiPrefix, "/:parentcategory/:id/:category"), a.makeHandler(handleCreate))
+	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/:category"), a.makeHandler(handleInfo))
+	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
 	// versioned routes
-	a.multiplexer.Get("/v/:version/:category/:id", a.makeHandler(handleRetrieve))
-	a.multiplexer.Put("/v/:version/:category/:id", a.makeHandler(handleUpdate))
-	a.multiplexer.Patch("/v/:version/:category/:id", a.makeHandler(handlePatch))
-	a.multiplexer.Delete("/v/:version/:category/:id", a.makeHandler(handleDelete))
-	a.multiplexer.Get("/v/:version/:category", a.makeHandler(handleRetrieveMany))
-	a.multiplexer.Get("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleRetrieveMany))
-	a.multiplexer.Post("/v/:version/:category", a.makeHandler(handleCreate))
-	a.multiplexer.Post("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleCreate))
-	a.multiplexer.Head("/v/:version/:category", a.makeHandler(handleInfo))
-	a.multiplexer.Head("/v/:version/:parentcategory/:id/:category", a.makeHandler(handleInfo))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category/:id"), a.makeHandler(handleRetrieve))
+	a.multiplexer.Put(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category/:id"), a.makeHandler(handleUpdate))
+	a.multiplexer.Patch(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category/:id"), a.makeHandler(handlePatch))
+	a.multiplexer.Delete(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category/:id"), a.makeHandler(handleDelete))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleRetrieveMany))
+	a.multiplexer.Post(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleCreate))
+	a.multiplexer.Post(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleCreate))
+	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleInfo))
+	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
+	if a.customHandlers != nil {
+		for customRoute, f := range a.customHandlers() {
+			a.multiplexer.Handle(path.Join(a.cfg.restServer.customRoutePrefix, customRoute), f)
+		}
+	}
 }
 
 func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) {
@@ -262,6 +271,13 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		var measure FinishMeasurementFunc
 		if a.cfg.healthServer.metricsManager != nil {
 			measure = a.cfg.healthServer.metricsManager.MeasureRequest(req.Method, req.URL.Path)
+		}
+
+		// Trim our custom prefix out of the request URI.
+		// TODO: The elemental function needs to moved in here
+		// and potentially find a cleaner way rather than triming the prefix here.
+		if a.cfg.restServer.apiPrefix != "" {
+			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
