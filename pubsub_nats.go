@@ -199,11 +199,17 @@ func (p *natsPubSub) Connect() Waiter {
 
 			var err error
 
+			opts := []nats.Option{}
+
 			if p.username != "" || p.password != "" {
-				p.client, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(p.tlsConfig))
-			} else {
-				p.client, err = nats.Connect(p.natsURL, nats.Secure(p.tlsConfig))
+				opts = append(opts, nats.UserInfo(p.username, p.password))
 			}
+
+			if p.tlsConfig != nil {
+				opts = append(opts, nats.Secure(p.tlsConfig))
+			}
+
+			p.client, err = nats.Connect(p.natsURL, opts...)
 			if err == nil {
 				// Install error handler
 				nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, natsErr error) {
