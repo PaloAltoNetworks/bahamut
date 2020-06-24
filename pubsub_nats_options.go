@@ -16,6 +16,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"time"
+
+	nats "github.com/nats-io/nats.go"
 )
 
 // A NATSOption represents an option to the pubsub backed by nats
@@ -54,6 +56,13 @@ func NATSOptClientID(clientID string) NATSOption {
 func NATSOptTLS(tlsConfig *tls.Config) NATSOption {
 	return func(n *natsPubSub) {
 		n.tlsConfig = tlsConfig
+	}
+}
+
+// NATSErrorHandler sets the error handler to install in nats client.
+func NATSErrorHandler(handler func(*nats.Conn, *nats.Subscription, error)) NATSOption {
+	return func(n *natsPubSub) {
+		n.errorHandleFunc = handler
 	}
 }
 

@@ -12,6 +12,7 @@
 package bahamut
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -38,10 +39,10 @@ func TestLocalPubSub_ConnectDisconnect(t *testing.T) {
 
 		Convey("When I connect", func() {
 
-			connected := ps.Connect().Wait(1 * time.Millisecond)
+			err := ps.Connect(context.Background())
 
-			Convey("Then call Connect should connect right away", func() {
-				So(connected, ShouldBeTrue)
+			Convey("then err should be nil", func() {
+				So(err, ShouldBeNil)
 			})
 		})
 
@@ -56,7 +57,9 @@ func TestLocalPubSub_RegisterUnregister(t *testing.T) {
 	Convey("Given I create a new PubSubServer", t, func() {
 
 		ps := newlocalPubSub()
-		ps.Connect()
+		if err := ps.Connect(context.Background()); err != nil {
+			panic(err)
+		}
 		defer func() { _ = ps.Disconnect() }()
 
 		Convey("When I register a channel to a topic", func() {
@@ -97,7 +100,9 @@ func TestLocalPubSub_PublishSubscribe(t *testing.T) {
 	Convey("Given I create a new PubSubServer", t, func() {
 
 		ps := newlocalPubSub()
-		ps.Connect()
+		if err := ps.Connect(context.Background()); err != nil {
+			panic(err)
+		}
 		defer func() { _ = ps.Disconnect() }()
 
 		Convey("When I register a 2 channels to a topic 'topic' and a another one to 'nottopic'", func() {
