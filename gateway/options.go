@@ -85,6 +85,7 @@ type gwconfig struct {
 	upstreamMaxConnsPerHost     int
 	upstreamMaxIdleConns        int
 	upstreamMaxIdleConnsPerHost int
+	upstreamURLScheme           string
 	upstreamTLSHandshakeTimeout time.Duration
 	upstreamTLSConfig           *tls.Config
 	serverTLSConfig             *tls.Config
@@ -104,6 +105,7 @@ func newGatewayConfig() *gwconfig {
 		upstreamMaxIdleConns:        32000,
 		upstreamMaxIdleConnsPerHost: 64,
 		upstreamTLSHandshakeTimeout: 10 * time.Second,
+		upstreamURLScheme:           "https",
 		upstreamUseHTTP2:            false,
 		httpIdleTimeout:             240 * time.Second,
 		httpReadTimeout:             120 * time.Second,
@@ -202,6 +204,14 @@ func OptionUpstreamConfig(
 		cfg.upstreamIdleConnTimeout = upstreamIdleConnTimeout
 		cfg.upstreamCircuitBreakerCond = upstreamCircuitBreakerCond
 		cfg.upstreamUseHTTP2 = useHTTP2
+	}
+}
+
+// OptionUpstreamURLScheme sets the URL scheme to use
+// to connect to the upstreams. default is https.
+func OptionUpstreamURLScheme(scheme string) Option {
+	return func(cfg *gwconfig) {
+		cfg.upstreamURLScheme = scheme
 	}
 }
 

@@ -2,6 +2,7 @@ package push
 
 import (
 	"context"
+	"math/rand"
 	"net"
 	"net/http"
 	"sync"
@@ -78,7 +79,15 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	epi2.RLock()
 
 	switch {
-	case epi1.lastLoad <= epi2.lastLoad:
+	case epi1.lastLoad == epi2.lastLoad:
+		if rand.Intn(2) == 0 {
+			address = epi1.address
+			load = epi1.lastLoad
+		} else {
+			address = epi2.address
+			load = epi2.lastLoad
+		}
+	case epi1.lastLoad < epi2.lastLoad:
 		address = epi1.address
 		load = epi1.lastLoad
 	default:
