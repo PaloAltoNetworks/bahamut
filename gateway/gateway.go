@@ -403,10 +403,11 @@ HANDLE_INTERCEPTION:
 		zap.String("ns", r.Header.Get("X-Namespace")),
 		zap.String("routed", upstream),
 		zap.Float64("load", load),
+		zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
 	)
 
 	r.URL.Host = upstream
-	r.URL.Scheme = "https"
+	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
 	switch interceptAction {
 	case InterceptorActionForwardWS:
