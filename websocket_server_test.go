@@ -35,8 +35,8 @@ type mockPubSubServer struct {
 	PublishErr   error
 }
 
-func (p *mockPubSubServer) Connect() Waiter   { return nil }
-func (p *mockPubSubServer) Disconnect() error { return nil }
+func (p *mockPubSubServer) Connect(context.Context) error { return nil }
+func (p *mockPubSubServer) Disconnect() error             { return nil }
 
 func (p *mockPubSubServer) Publish(publication *Publication, opts ...PubSubOptPublish) error {
 	p.publications = append(p.publications, publication)
@@ -530,8 +530,8 @@ func TestWebsocketServer_start(t *testing.T) {
 	makePubsub := func(ctx context.Context, idprefix string) (*pushServer, *mockSessionHandler, *wsPushSession, *wsPushSession) {
 
 		pubsub := NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(3 * time.Second) {
-			panic("could not connect to local pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		pushHandler := &mockSessionHandler{}

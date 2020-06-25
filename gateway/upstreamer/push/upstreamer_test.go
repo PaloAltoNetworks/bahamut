@@ -16,8 +16,8 @@ func TestUpstreamer(t *testing.T) {
 	Convey("Given I have a pubsub client and an upstreamer with required services", t, func() {
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(time.Second) {
-			panic("cannot start pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		u := NewUpstreamer(
@@ -175,8 +175,8 @@ func TestUpstreamer(t *testing.T) {
 	Convey("Given I have a pubsub client and an upstreamer with no required services", t, func() {
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(time.Second) {
-			panic("cannot start pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		u := NewUpstreamer(

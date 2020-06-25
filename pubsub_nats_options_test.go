@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	nats "github.com/nats-io/nats.go"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -46,10 +47,10 @@ func TestBahamut_NATSOption(t *testing.T) {
 		So(n.tlsConfig, ShouldEqual, tlscfg)
 	})
 
-	Convey("Calling NATSOptConnectRetryInterval should set the connection retry interval", t, func() {
-		desiredRetryInternal := 1 * time.Second
-		NATSOptConnectRetryInterval(desiredRetryInternal)(n)
-		So(n.retryInterval, ShouldEqual, desiredRetryInternal)
+	Convey("Calling NATSErrorHandler should work", t, func() {
+		f := func(*nats.Conn, *nats.Subscription, error) {}
+		NATSErrorHandler(f)(n)
+		So(n.errorHandleFunc, ShouldEqual, f)
 	})
 }
 
