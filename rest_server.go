@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -280,7 +281,28 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
-		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
+		// Get the version to use the model manager correctly
+		var version int
+		var err error
+		components := strings.Split(req.URL.Path, "/")
+
+		// We remove the first element as it's always empty
+		components = append(components[:0], components[1:]...)
+
+		// If the first one is "v" it means the next one has to be a int for the version number.
+		if components[0] == "v" {
+			version, err = strconv.Atoi(components[1])
+		}
+		if err != nil {
+			newError := elemental.NewError("Bad Request", fmt.Sprintf("Invalid api version number '%s'", components[1]), "elemental", http.StatusBadRequest)
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), newError, nil))
+			if measure != nil {
+				measure(code, nil)
+			}
+			return
+		}
+
+		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[version])
 		if err != nil {
 			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
 			if measure != nil {
