@@ -13,6 +13,8 @@ type upstreamConfig struct {
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
+	loadBasedBalancerFunc       LoadBasedBalancerFunc
+	loadBasedBalancerThreshold  int
 }
 
 func newUpstreamConfig() upstreamConfig {
@@ -20,6 +22,8 @@ func newUpstreamConfig() upstreamConfig {
 		eventsAPIs:                  map[string]string{},
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
+		loadBasedBalancerThreshold:  6,
+		loadBasedBalancerFunc:       DefaulLoadBasedBalancerFunc,
 	}
 }
 
@@ -68,5 +72,36 @@ func OptionServiceTimeout(timeout time.Duration, checkInterval time.Duration) Op
 	return func(cfg *upstreamConfig) {
 		cfg.serviceTimeout = timeout
 		cfg.serviceTimeoutCheckInterval = checkInterval
+	}
+}
+
+// OptionLoadBasedBalancerThreshold to set the threshold when
+// to enable load based endpoint selection.
+func OptionLoadBasedBalancerThreshold(loadBasedBalancerThreshold int) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.loadBasedBalancerThreshold = loadBasedBalancerThreshold
+	}
+}
+
+// LoadBasedBalancerFunc is a function that implement the load
+// based balancing.
+type LoadBasedBalancerFunc func(load1, load2 float64) bool
+
+// DefaulLoadBasedBalancerFunc is the default function implenting the
+// load based balancing.
+var DefaulLoadBasedBalancerFunc LoadBasedBalancerFunc = func(load1, load2 float64) bool { return load1 < load2 }
+
+// OptionLoadBasedBalancerFunc to pass use a custom
+// load based balancer LoadBasedBalancerFunc.
+//
+// Important: Load is updated every ping interval set through
+// the bahamut option OptPostStartHook it might not be reflecting
+// the current load of the service.
+func OptionLoadBasedBalancerFunc(loadBasedBalancerFunc LoadBasedBalancerFunc) Option {
+	return func(cfg *upstreamConfig) {
+		if loadBasedBalancerFunc == nil {
+			panic("LoadBasedBalancerFunc must not be nil")
+		}
+		cfg.loadBasedBalancerFunc = loadBasedBalancerFunc
 	}
 }
