@@ -7,23 +7,23 @@ import "time"
 type Option func(*upstreamConfig)
 
 type upstreamConfig struct {
-	overrideEndpointAddress          string
-	exposePrivateAPIs                bool
-	eventsAPIs                       map[string]string
-	requiredServices                 []string
-	serviceTimeout                   time.Duration
-	serviceTimeoutCheckInterval      time.Duration
-	loadThresholdFunc                func(a, b float64) bool
-	minimumEndpointsForLoadSelection int
+	overrideEndpointAddress     string
+	exposePrivateAPIs           bool
+	eventsAPIs                  map[string]string
+	requiredServices            []string
+	serviceTimeout              time.Duration
+	serviceTimeoutCheckInterval time.Duration
+	loadBasedBalancerFunc       LoadBasedBalancerFunc
+	loadBasedBalancerThreshold  int
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
-		eventsAPIs:                       map[string]string{},
-		serviceTimeout:                   30 * time.Second,
-		serviceTimeoutCheckInterval:      5 * time.Second,
-		minimumEndpointsForLoadSelection: 6,
-		loadThresholdFunc:                func(a, b float64) bool { return a < b },
+		eventsAPIs:                  map[string]string{},
+		serviceTimeout:              30 * time.Second,
+		serviceTimeoutCheckInterval: 5 * time.Second,
+		loadBasedBalancerThreshold:  6,
+		loadBasedBalancerFunc:       DefaulLoadBasedBalancerFunc,
 	}
 }
 
@@ -75,22 +75,34 @@ func OptionServiceTimeout(timeout time.Duration, checkInterval time.Duration) Op
 	}
 }
 
-// OptionLoadBasedBalancer to enable load based balancing between
-// the power of two candidates.
-// It takes two args:
-// - an int which is the miniumn number of endpoints from where
-//   the load check will be done (default 6)
-// - an optional func that takes 2 floats and return a boolean
-//   to use the first one or not. (default return the less loaded)
+// OptionLoadBasedBalancerThreshold to set the threshold when
+// to enable load based endpoint selection.
+func OptionLoadBasedBalancerThreshold(loadBasedBalancerThreshold int) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.loadBasedBalancerThreshold = loadBasedBalancerThreshold
+	}
+}
+
+// LoadBasedBalancerFunc is a function that implement the load
+// based balancing.
+type LoadBasedBalancerFunc func(load1, load2 float64) bool
+
+// DefaulLoadBasedBalancerFunc is the default function implenting the
+// load based balancing.
+var DefaulLoadBasedBalancerFunc LoadBasedBalancerFunc = func(load1, load2 float64) bool { return load1 < load2 }
+
+// OptionLoadBasedBalancerFunc to pass use a custom
+// load based balancer LoadBasedBalancerFunc.
 //
 // Important: Load is updated every ping interval set through
 // the bahamut option OptPostStartHook it might not be reflecting
 // the current load of the service.
-func OptionLoadBasedBalancer(minimumEndpointsForLoadSelection int, loadThresholdFunc func(a, b float64) bool) Option {
+func OptionLoadBasedBalancerFunc(loadBasedBalancerFunc LoadBasedBalancerFunc) Option {
 	return func(cfg *upstreamConfig) {
-		cfg.minimumEndpointsForLoadSelection = minimumEndpointsForLoadSelection
-		if loadThresholdFunc != nil {
-			cfg.loadThresholdFunc = loadThresholdFunc
+		if loadBasedBalancerFunc != nil {
+			cfg.loadBasedBalancerFunc = loadBasedBalancerFunc
+		} else {
+			cfg.loadBasedBalancerFunc = DefaulLoadBasedBalancerFunc
 		}
 	}
 }

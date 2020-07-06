@@ -72,32 +72,36 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	epi1 := c.apis[identity][n1]
 	epi2 := c.apis[identity][n2]
 
-	epi1.RLock()
-	epi2.RLock()
-	defer epi1.RUnlock()
-	defer epi2.RUnlock()
-
-	// use load based seletion
-	if l >= c.config.minimumEndpointsForLoadSelection {
-
-		if c.config.loadThresholdFunc(epi1.lastLoad, epi2.lastLoad) {
-			return epi1.address, epi1.lastLoad
-		}
-		return epi2.address, epi2.lastLoad
-
-	}
-
-	// or use a random one
 	var address string
 	var load float64
 
-	if rand.Intn(2) == 0 {
-		address = epi1.address
-		load = epi1.lastLoad
-	} else {
-		address = epi2.address
-		load = epi2.lastLoad
+	epi1.RLock()
+	epi2.RLock()
+
+	switch {
+
+	case l >= c.config.loadBasedBalancerThreshold:
+		if c.config.loadBasedBalancerFunc(epi1.lastLoad, epi2.lastLoad) {
+			address = epi1.address
+			load = epi1.lastLoad
+		} else {
+			address = epi2.address
+			load = epi2.lastLoad
+		}
+
+	default:
+		if rand.Intn(2) == 0 {
+			address = epi1.address
+			load = epi1.lastLoad
+		} else {
+			address = epi2.address
+			load = epi2.lastLoad
+		}
+
 	}
+
+	epi1.RUnlock()
+	epi2.RUnlock()
 
 	return address, load
 }

@@ -204,7 +204,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
-		u := NewUpstreamer(nil, "topic", OptionLoadBasedBalancer(3, nil))
+		u := NewUpstreamer(nil, "topic", OptionLoadBasedBalancerThreshold(3))
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -315,7 +315,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 2 registered apis", t, func() {
 
-		u := NewUpstreamer(nil, "topic", OptionLoadBasedBalancer(2, nil))
+		u := NewUpstreamer(nil, "topic", OptionLoadBasedBalancerThreshold(2))
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
