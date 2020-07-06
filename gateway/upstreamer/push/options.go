@@ -7,19 +7,23 @@ import "time"
 type Option func(*upstreamConfig)
 
 type upstreamConfig struct {
-	overrideEndpointAddress     string
-	exposePrivateAPIs           bool
-	eventsAPIs                  map[string]string
-	requiredServices            []string
-	serviceTimeout              time.Duration
-	serviceTimeoutCheckInterval time.Duration
+	overrideEndpointAddress          string
+	exposePrivateAPIs                bool
+	eventsAPIs                       map[string]string
+	requiredServices                 []string
+	serviceTimeout                   time.Duration
+	serviceTimeoutCheckInterval      time.Duration
+	loadThresholdFunc                func(a, b float64) bool
+	minimumEndpointsForLoadSelection int
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
-		eventsAPIs:                  map[string]string{},
-		serviceTimeout:              30 * time.Second,
-		serviceTimeoutCheckInterval: 5 * time.Second,
+		eventsAPIs:                       map[string]string{},
+		serviceTimeout:                   30 * time.Second,
+		serviceTimeoutCheckInterval:      5 * time.Second,
+		minimumEndpointsForLoadSelection: 6,
+		loadThresholdFunc:                func(a, b float64) bool { return a < b },
 	}
 }
 
@@ -68,5 +72,25 @@ func OptionServiceTimeout(timeout time.Duration, checkInterval time.Duration) Op
 	return func(cfg *upstreamConfig) {
 		cfg.serviceTimeout = timeout
 		cfg.serviceTimeoutCheckInterval = checkInterval
+	}
+}
+
+// OptionLoadBasedBalancer to enable load based balancing between
+// the power of two candidates.
+// It takes two args:
+// - an int which is the miniumn number of endpoints from where
+//   the load check will be done (default 6)
+// - an optional func that takes 2 floats and return a boolean
+//   to use the first one or not. (default return the less loaded)
+//
+// Important: Load is updated every ping interval set through
+// the bahamut option OptPostStartHook it might not be reflecting
+// the current load of the service.
+func OptionLoadBasedBalancer(minimumEndpointsForLoadSelection int, loadThresholdFunc func(a, b float64) bool) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.minimumEndpointsForLoadSelection = minimumEndpointsForLoadSelection
+		if loadThresholdFunc != nil {
+			cfg.loadThresholdFunc = loadThresholdFunc
+		}
 	}
 }

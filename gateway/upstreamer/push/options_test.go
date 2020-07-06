@@ -40,4 +40,10 @@ func Test_Options(t *testing.T) {
 		So(c.serviceTimeoutCheckInterval, ShouldEqual, time.Minute)
 	})
 
+	Convey("Calling OptionLoadBasedBalancer should work", t, func() {
+		OptionLoadBasedBalancer(5, nil)(&c)
+		So(c.minimumEndpointsForLoadSelection, ShouldEqual, 5)
+		So(c.loadThresholdFunc, ShouldNotBeNil)
+	})
+
 }
