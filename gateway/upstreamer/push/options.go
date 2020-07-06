@@ -99,10 +99,9 @@ var DefaulLoadBasedBalancerFunc LoadBasedBalancerFunc = func(load1, load2 float6
 // the current load of the service.
 func OptionLoadBasedBalancerFunc(loadBasedBalancerFunc LoadBasedBalancerFunc) Option {
 	return func(cfg *upstreamConfig) {
-		if loadBasedBalancerFunc != nil {
-			cfg.loadBasedBalancerFunc = loadBasedBalancerFunc
-		} else {
-			cfg.loadBasedBalancerFunc = DefaulLoadBasedBalancerFunc
+		if loadBasedBalancerFunc == nil {
+			panic("LoadBasedBalancerFunc must not be nil")
 		}
+		cfg.loadBasedBalancerFunc = loadBasedBalancerFunc
 	}
 }

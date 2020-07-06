@@ -51,4 +51,8 @@ func Test_Options(t *testing.T) {
 		So(c.loadBasedBalancerFunc, ShouldEqual, fn)
 	})
 
+	Convey("Calling OptionLoadBasedBalancerFunc without func should panic", t, func() {
+		So(func() { OptionLoadBasedBalancerFunc(nil)(&c) }, ShouldPanicWith, "LoadBasedBalancerFunc must not be nil")
+	})
+
 }
