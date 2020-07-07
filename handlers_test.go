@@ -427,42 +427,6 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 	})
 }
 
-func TestHandlers_handleEventualPanic(t *testing.T) {
-
-	Convey("Given I have a response and a channel", t, func() {
-
-		c := make(chan error)
-
-		Convey("When I call my function that panics with handleEventualPanic installed with recover", func() {
-
-			f := func() {
-				defer handleEventualPanic(context.Background(), c, false)
-				panic("Noooooooooooooooooo")
-			}
-
-			go f()
-
-			err := <-c
-
-			Convey("Then err should be correct", func() {
-				So(err.Error(), ShouldEqual, "error 500 (bahamut): Internal Server Error: panic: Noooooooooooooooooo")
-			})
-		})
-
-		Convey("When I call my function that panics with handleEventualPanic installed with no recover", func() {
-
-			f := func() {
-				defer handleEventualPanic(context.Background(), c, true)
-				panic("Noooooooooooooooooo")
-			}
-
-			Convey("Then it should panic", func() {
-				So(f, ShouldPanic)
-			})
-		})
-	})
-}
-
 func TestHandlers_runDispatcher(t *testing.T) {
 
 	Convey("When I call runDispatcher", t, func() {
@@ -529,6 +493,59 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		Convey("Then the dispatcher should have been called once", func() {
 			So(calledCounter.Value(), ShouldEqual, 1)
 		})
+	})
+
+	Convey("When I call runDispatcher and it panics with recovery", t, func() {
+
+		calledCounter := &counter{}
+
+		gctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		response := elemental.NewResponse(elemental.NewRequest())
+
+		d := func() error {
+			calledCounter.Add(1)
+			panic("booom!")
+		}
+
+		r := runDispatcher(ctx, response, d, false, nil)
+
+		Convey("Then the code should be 500", func() {
+			So(r.StatusCode, ShouldEqual, 500)
+		})
+
+		Convey("Then the dispatcher should have been called once", func() {
+			So(calledCounter.Value(), ShouldEqual, 1)
+		})
+	})
+
+	Convey("When I call runDispatcher and it panics with no recovery", t, func() {
+
+		calledCounter := &counter{}
+
+		gctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		ctx := newContext(context.Background(), elemental.NewRequest())
+		ctx.request = elemental.NewRequest()
+		ctx.ctx = gctx
+
+		response := elemental.NewResponse(elemental.NewRequest())
+
+		d := func() error {
+			calledCounter.Add(1)
+			panic("booom!")
+		}
+
+		Convey("Then the code should be 500", func() {
+			So(func() { runDispatcher(ctx, response, d, true, nil) }, ShouldPanic)
+		})
+
 	})
 
 	Convey("When I call runDispatcher and cancel the context", t, func() {
