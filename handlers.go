@@ -137,26 +137,16 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	return response
 }
 
-func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery bool) {
-
-	if err := handleRecoveredPanic(ctx, recover(), disablePanicRecovery); err != nil {
-		c <- err
-	}
-}
-
-func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
-
-	var err error
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller) (out *elemental.Response) {
 
 	defer func() {
 		if err := handleRecoveredPanic(ctx.ctx, recover(), disablePanicRecovery); err != nil {
-			makeErrorResponse(ctx.ctx, r, err, marshallers)
+			// out is the named returned value. This switches the output of the function.
+			out = makeErrorResponse(ctx.ctx, r, err, marshallers)
 		}
 	}()
 
-	err = d()
-
-	if err != nil {
+	if err := d(); err != nil {
 		return makeErrorResponse(ctx.ctx, r, err, marshallers)
 	}
 
