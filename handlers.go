@@ -14,8 +14,6 @@ package bahamut
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime/debug"
 
@@ -109,7 +107,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 
 func makeErrorResponse(ctx context.Context, response *elemental.Response, err error, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
 
-	if err == context.Canceled {
+	if err == context.Canceled || err == context.DeadlineExceeded {
 		return nil
 	}
 
@@ -148,42 +146,21 @@ func handleEventualPanic(ctx context.Context, c chan error, disablePanicRecovery
 
 func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
 
+	var err error
+
 	defer func() {
-
-		// It seems it is necessary to drain the request body
-		// in some situations when using http/2 otherwise it can cause stream errors.
-		// See https://github.com/golang/go/issues/26338 and associated issues.
-
-		if ctx.Request() == nil || ctx.Request().HTTPRequest() == nil {
-			return
-		}
-
-		_, _ = io.Copy(ioutil.Discard, ctx.Request().HTTPRequest().Body)
-		_ = ctx.Request().HTTPRequest().Body.Close() // nolint
-	}()
-
-	e := make(chan error)
-
-	go func() {
-		defer handleEventualPanic(ctx.ctx, e, disablePanicRecovery)
-		select {
-		case e <- d():
-		default:
+		if err := handleRecoveredPanic(ctx.ctx, recover(), disablePanicRecovery); err != nil {
+			makeErrorResponse(ctx.ctx, r, err, marshallers)
 		}
 	}()
 
-	select {
+	err = d()
 
-	case <-ctx.ctx.Done():
-		return makeErrorResponse(ctx.ctx, r, ctx.ctx.Err(), marshallers)
-
-	case err := <-e:
-		if err != nil {
-			return makeErrorResponse(ctx.ctx, r, err, marshallers)
-		}
-
-		return makeResponse(ctx, r, marshallers)
+	if err != nil {
+		return makeErrorResponse(ctx.ctx, r, err, marshallers)
 	}
+
+	return makeResponse(ctx, r, marshallers)
 }
 
 func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFinderFunc, pusherFunc eventPusherFunc) (response *elemental.Response) {
