@@ -8,9 +8,10 @@ import (
 )
 
 type endpointInfo struct {
-	address  string
-	lastSeen time.Time
-	lastLoad float64
+	address   string
+	frequency time.Duration
+	lastSeen  time.Time
+	lastLoad  float64
 
 	sync.RWMutex
 }
@@ -60,7 +61,11 @@ func (b *service) pokeEndpoint(ep string, load float64) {
 
 	if epi, ok := b.endpoints[ep]; ok {
 		epi.Lock()
-		epi.lastSeen = time.Now()
+		now := time.Now()
+		if !epi.lastSeen.IsZero() {
+			epi.frequency = now.Sub(epi.lastSeen)
+		}
+		epi.lastSeen = now
 		epi.lastLoad = load
 		epi.Unlock()
 	}
