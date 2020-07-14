@@ -2,7 +2,7 @@ package push
 
 import (
 	"context"
-	"math/rand"
+	"math"
 	"net"
 	"net/http"
 	"sync"
@@ -66,44 +66,64 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 		n1, n2 = 0, 1
 
 	default:
-		n1, n2 = pick(l)
+		c.config.lock.Lock()
+		n1, n2 = pick(c.config.randomizer, l)
+		c.config.lock.Unlock()
 	}
 
 	epi1 := c.apis[identity][n1]
 	epi2 := c.apis[identity][n2]
 
-	var address string
-	var load float64
+	addresses := [2]string{}
+	loads := [2]float64{}
+	lastseen := [2]time.Time{}
+	frequency := [2]time.Duration{}
 
 	epi1.RLock()
 	epi2.RLock()
-
-	switch {
-
-	case l >= c.config.loadBasedBalancerThreshold:
-		if c.config.loadBasedBalancerFunc(epi1.lastLoad, epi2.lastLoad) {
-			address = epi1.address
-			load = epi1.lastLoad
-		} else {
-			address = epi2.address
-			load = epi2.lastLoad
-		}
-
-	default:
-		if rand.Intn(2) == 0 {
-			address = epi1.address
-			load = epi1.lastLoad
-		} else {
-			address = epi2.address
-			load = epi2.lastLoad
-		}
-
-	}
-
+	addresses[0], addresses[1] = epi1.address, epi2.address
+	loads[0], loads[1] = epi1.lastLoad, epi2.lastLoad
+	lastseen[0], lastseen[1] = epi1.lastSeen, epi2.lastSeen
+	frequency[0], frequency[1] = epi1.frequency, epi2.frequency
 	epi1.RUnlock()
 	epi2.RUnlock()
 
-	return address, load
+	// Transform load to weigh
+	w := [2]float64{loads[0], loads[1]}
+	w[0] = (100 - w[0])
+	w[1] = (100 - w[1])
+
+	// Adjust the weight based on the staleness load
+	// of the candidates to avoid a drain/load cycles
+	if frequency[0] > 0 && frequency[1] > 0 {
+		deltaTime := math.Abs(float64(lastseen[0].UnixNano() - lastseen[1].UnixNano()))
+		deltaLoad := math.Abs(loads[0] - loads[1])
+		if lastseen[0].After(lastseen[1]) {
+			w[0] = w[0] + deltaLoad*deltaTime/(float64(frequency[0].Nanoseconds()))
+		} else {
+			w[1] = w[1] + deltaLoad*deltaTime/(float64(frequency[1].Nanoseconds()))
+		}
+	}
+
+	// sort
+	if w[0] > w[1] {
+		addresses[1], addresses[0] = addresses[0], addresses[1]
+		loads[1], loads[0] = loads[0], loads[1]
+		w[1], w[0] = w[0], w[1]
+	}
+
+	// Compute cummulative distribution
+	w[1] = w[0] + w[1]
+
+	// "binary tree search" from a random choice
+	c.config.lock.Lock()
+	defer c.config.lock.Unlock()
+	if float64(c.config.randomizer.Intn(int(w[1])+1)) <= w[0] {
+		return addresses[0], loads[0]
+	}
+
+	return addresses[1], loads[1]
+
 }
 
 // Start starts for new backend services.

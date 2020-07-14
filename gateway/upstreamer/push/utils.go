@@ -1,7 +1,6 @@
 package push
 
 import (
-	"math/rand"
 	"regexp"
 	"strings"
 )
@@ -29,7 +28,7 @@ func getTargetIdentity(path string) string {
 	}
 }
 
-func pick(len int) (int, int) {
+func pick(randomizer Randomizer, len int) (int, int) {
 
 	if len < 2 {
 		panic("pick: len must be greater than 2")
@@ -40,7 +39,7 @@ func pick(len int) (int, int) {
 		idxs[i] = i
 	}
 
-	rand.Shuffle(len, func(i, j int) { idxs[i], idxs[j] = idxs[j], idxs[i] })
+	randomizer.Shuffle(len, func(i, j int) { idxs[i], idxs[j] = idxs[j], idxs[i] })
 
 	return idxs[0], idxs[1]
 }
