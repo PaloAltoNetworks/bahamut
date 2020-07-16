@@ -1,6 +1,7 @@
 package push
 
 import (
+	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
@@ -658,18 +659,20 @@ func Test_resyncRoutes(t *testing.T) {
 }
 
 func TestPick(t *testing.T) {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
 
 	Convey("calling pick with len lesser than 2 should panic", t, func() {
-		So(func() { pick(-1) }, ShouldPanicWith, "pick: len must be greater than 2")
-		So(func() { pick(0) }, ShouldPanicWith, "pick: len must be greater than 2")
-		So(func() { pick(1) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(r1, -1) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(r1, 0) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(r1, 1) }, ShouldPanicWith, "pick: len must be greater than 2")
 	})
 
 	// Since this function is random by nature, these tests
 	// ar just ensuring very basic behavior
 	Convey("Given have a len of 2", t, func() {
 
-		i1, i2 := pick(2)
+		i1, i2 := pick(r1, 2)
 
 		Convey("Then i1 and i2 should be correct", func() {
 			So(i1, ShouldBeBetweenOrEqual, 0, 1)
@@ -680,7 +683,7 @@ func TestPick(t *testing.T) {
 
 	Convey("Given have a len of 2", t, func() {
 
-		i1, i2 := pick(10)
+		i1, i2 := pick(r1, 10)
 
 		Convey("Then i1 and i2 should be correct", func() {
 			So(i1, ShouldBeBetweenOrEqual, 0, 9)

@@ -215,7 +215,8 @@ func OptionUpstreamURLScheme(scheme string) Option {
 	}
 }
 
-// OptionMetricsManager registers a given PrefixInterceptorFunc for the given path prefix.
+// OptionMetricsManager registers set the MetricsManager to use.
+// This will enable response time load balancing of endpoints.
 func OptionMetricsManager(metricsManager bahamut.MetricsManager) Option {
 	return func(cfg *gwconfig) {
 		cfg.metricsManager = metricsManager

@@ -22,9 +22,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// An Upstreamer is the interface that can conpute upstreams.
+// An Upstreamer is the interface that can compute upstreams.
 type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, load float64)
+}
+
+// A FeedBackLoop is the interface that can circle back
+// reponse time as an input for Upstreamer decision.
+type FeedBackLoop interface {
+	Collect(address string, responseTime time.Duration)
+	Measure(address string) float64
 }
 
 // A Gateway can be used as an api gateway.
@@ -432,7 +439,11 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			finish(0, nil)
+			rt := finish(0, nil)
+			if f, ok := s.upstreamer.(FeedBackLoop); ok {
+				f.Collect(upstream, rt)
+			}
+
 		}
 
 	default:
@@ -446,7 +457,10 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			finish(0, nil)
+			rt := finish(0, nil)
+			if f, ok := s.upstreamer.(FeedBackLoop); ok {
+				f.Collect(upstream, rt)
+			}
 		}
 	}
 }

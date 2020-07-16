@@ -1,6 +1,10 @@
 package push
 
-import "time"
+import (
+	"math/rand"
+	"sync"
+	"time"
+)
 
 // An Option represents a configuration option
 // for the Upstreamer.
@@ -10,20 +14,35 @@ type upstreamConfig struct {
 	overrideEndpointAddress     string
 	exposePrivateAPIs           bool
 	eventsAPIs                  map[string]string
+	feedbackLoopSamples         int
+	lock                        sync.Mutex
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
-	loadBasedBalancerFunc       LoadBasedBalancerFunc
-	loadBasedBalancerThreshold  int
+	randomizer                  Randomizer
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
+		feedbackLoopSamples:         100,
+		lock:                        sync.Mutex{},
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
-		loadBasedBalancerThreshold:  6,
-		loadBasedBalancerFunc:       DefaulLoadBasedBalancerFunc,
+		randomizer:                  rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
+}
+
+// A Randomizer reprensents an interface to randomize
+type Randomizer interface {
+	Intn(int) int
+	Shuffle(n int, swap func(i, j int))
+}
+
+// OptionRandomizer set a custom Randomizer
+func OptionRandomizer(randomizer Randomizer) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.randomizer = randomizer
 	}
 }
 
@@ -32,6 +51,15 @@ func newUpstreamConfig() upstreamConfig {
 func OptionExposePrivateAPIs(enabled bool) Option {
 	return func(cfg *upstreamConfig) {
 		cfg.exposePrivateAPIs = enabled
+	}
+}
+
+// OptionFeedBackLoopSamples configures the size of
+// the response time moving average sampling.
+// Default is 100.
+func OptionFeedBackLoopSamples(samples int) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.feedbackLoopSamples = samples
 	}
 }
 
@@ -72,36 +100,5 @@ func OptionServiceTimeout(timeout time.Duration, checkInterval time.Duration) Op
 	return func(cfg *upstreamConfig) {
 		cfg.serviceTimeout = timeout
 		cfg.serviceTimeoutCheckInterval = checkInterval
-	}
-}
-
-// OptionLoadBasedBalancerThreshold to set the threshold when
-// to enable load based endpoint selection.
-func OptionLoadBasedBalancerThreshold(loadBasedBalancerThreshold int) Option {
-	return func(cfg *upstreamConfig) {
-		cfg.loadBasedBalancerThreshold = loadBasedBalancerThreshold
-	}
-}
-
-// LoadBasedBalancerFunc is a function that implement the load
-// based balancing.
-type LoadBasedBalancerFunc func(load1, load2 float64) bool
-
-// DefaulLoadBasedBalancerFunc is the default function implenting the
-// load based balancing.
-var DefaulLoadBasedBalancerFunc LoadBasedBalancerFunc = func(load1, load2 float64) bool { return load1 < load2 }
-
-// OptionLoadBasedBalancerFunc to pass use a custom
-// load based balancer LoadBasedBalancerFunc.
-//
-// Important: Load is updated every ping interval set through
-// the bahamut option OptPostStartHook it might not be reflecting
-// the current load of the service.
-func OptionLoadBasedBalancerFunc(loadBasedBalancerFunc LoadBasedBalancerFunc) Option {
-	return func(cfg *upstreamConfig) {
-		if loadBasedBalancerFunc == nil {
-			panic("LoadBasedBalancerFunc must not be nil")
-		}
-		cfg.loadBasedBalancerFunc = loadBasedBalancerFunc
 	}
 }
