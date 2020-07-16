@@ -85,7 +85,7 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	epi2.RUnlock()
 
 	// fill our weight from the Feedbackloop
-	w := [2]float64{c.Measure(addresses[0]), c.Measure(addresses[1])}
+	w := [2]float64{c.measure(addresses[0]), c.measure(addresses[1])}
 
 	// Make sure we got an average for both
 	// otherwise default to loads
@@ -260,7 +260,7 @@ func (c *Upstreamer) Collect(address string, responseTime time.Duration) {
 
 // Measure implement the FeedBackLoop interface to measure the
 // average of the samples
-func (c *Upstreamer) Measure(address string) float64 {
+func (c *Upstreamer) measure(address string) float64 {
 
 	if ma, ok := c.feedbackLoop.Load(address); ok {
 		return ma.(*MovingAverage).Average()

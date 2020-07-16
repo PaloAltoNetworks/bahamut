@@ -1,5 +1,7 @@
 package push
 
+// MovingAverage represent a moving average
+// give an number of samples.
 type MovingAverage struct {
 	samples int
 	ring    []float64

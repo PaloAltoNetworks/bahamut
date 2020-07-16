@@ -38,12 +38,7 @@ func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load fl
 
 // Implement FeedbackLoop interface
 func (u *simpleUpstreamer) Collect(address string, rt time.Duration) {
-
-}
-
-// Implement FeedbackLoop interface
-func (u *simpleUpstreamer) Measure(address string) float64 {
-	return 0
+	// noop
 }
 
 type fakeMetricManager struct {

@@ -28,10 +28,9 @@ type Upstreamer interface {
 }
 
 // A FeedBackLoop is the interface that can circle back
-// reponse time as an input for Upstreamer decision.
+// response time as an input for Upstreamer decision.
 type FeedBackLoop interface {
 	Collect(address string, responseTime time.Duration)
-	Measure(address string) float64
 }
 
 // A Gateway can be used as an api gateway.
