@@ -19,7 +19,7 @@ type Upstreamer struct {
 	lock               sync.RWMutex
 	serviceStatusTopic string
 	config             *upstreamConfig
-	feedbackLoop       sync.Map
+	responseTimes      *responseTimes
 }
 
 // NewUpstreamer returns a new push backed upstreamer.
@@ -35,6 +35,7 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 		apis:               map[string][]*endpointInfo{},
 		serviceStatusTopic: serviceStatusTopic,
 		config:             &cfg,
+		responseTimes:      newResponseTimes(cfg.responseTimeSamples),
 	}
 }
 
@@ -66,9 +67,7 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 		n1, n2 = 0, 1
 
 	default:
-		c.config.lock.Lock()
 		n1, n2 = pick(c.config.randomizer, l)
-		c.config.lock.Unlock()
 	}
 
 	epi1 := c.apis[identity][n1]
@@ -84,8 +83,16 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	epi1.RUnlock()
 	epi2.RUnlock()
 
+	w := [2]float64{.0, .0}
+
 	// fill our weight from the Feedbackloop
-	w := [2]float64{c.measure(addresses[0]), c.measure(addresses[1])}
+	if v, err := c.responseTimes.getResponseTime(addresses[0]); err != nil {
+		w[0] = v
+	}
+
+	if v, err := c.responseTimes.getResponseTime(addresses[1]); err != nil {
+		w[1] = v
+	}
 
 	// Make sure we got an average for both
 	// otherwise default to loads
@@ -105,9 +112,9 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	w[1] = w[0] + w[1]
 
 	// Given a random choice from 0 to w[1]+1
-	c.config.lock.Lock()
+	c.config.randomizer.lock.Lock()
 	draw := float64(c.config.randomizer.Intn(int(w[1]) + 1))
-	c.config.lock.Unlock()
+	c.config.randomizer.lock.Unlock()
 
 	// We pick the fastest/less loaded candidate
 	if draw <= w[0] {
@@ -168,7 +175,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			for _, srv := range services {
 				for _, ep := range srv.outdatedEndpoints(since) {
 					foundOutdated = foundOutdated || handleRemoveServicePing(services, ping{Name: srv.name, Endpoint: ep})
-					c.feedbackLoop.Delete(ep)
+					c.responseTimes.deleteResponseTimes(ep)
 					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
 				}
 			}
@@ -224,7 +231,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 					c.lock.Lock()
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
-					c.feedbackLoop.Delete(sp.Endpoint)
+					c.responseTimes.deleteResponseTimes(sp.Endpoint)
 					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
 			}
@@ -239,33 +246,4 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			return
 		}
 	}
-}
-
-// Collect implement the FeedBackLoop interface to add new
-// samples into the feedbackloop
-func (c *Upstreamer) Collect(address string, responseTime time.Duration) {
-
-	v := float64(responseTime.Microseconds())
-	if v == 0 {
-		return
-	}
-
-	if values, ok := c.feedbackLoop.Load(address); ok {
-		values.(*MovingAverage).Add(v)
-	} else {
-		c.feedbackLoop.Store(address, NewMovingAverage(c.config.feedbackLoopSamples))
-	}
-
-}
-
-// Measure implement the FeedBackLoop interface to measure the
-// average of the samples
-func (c *Upstreamer) measure(address string) float64 {
-
-	if ma, ok := c.feedbackLoop.Load(address); ok {
-		return ma.(*MovingAverage).Average()
-	}
-
-	return 0
-
 }

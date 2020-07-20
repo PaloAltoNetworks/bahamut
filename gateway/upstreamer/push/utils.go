@@ -28,7 +28,7 @@ func getTargetIdentity(path string) string {
 	}
 }
 
-func pick(randomizer Randomizer, len int) (int, int) {
+func pick(randomizer *Randomize, len int) (int, int) {
 
 	if len < 2 {
 		panic("pick: len must be greater than 2")
@@ -39,7 +39,9 @@ func pick(randomizer Randomizer, len int) (int, int) {
 		idxs[i] = i
 	}
 
+	randomizer.lock.Lock()
 	randomizer.Shuffle(len, func(i, j int) { idxs[i], idxs[j] = idxs[j], idxs[i] })
+	randomizer.lock.Unlock()
 
 	return idxs[0], idxs[1]
 }

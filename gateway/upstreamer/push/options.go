@@ -14,22 +14,22 @@ type upstreamConfig struct {
 	overrideEndpointAddress     string
 	exposePrivateAPIs           bool
 	eventsAPIs                  map[string]string
-	feedbackLoopSamples         int
+	responseTimeSamples         int
 	lock                        sync.Mutex
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
-	randomizer                  Randomizer
+	randomizer                  *Randomize
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
-		feedbackLoopSamples:         100,
+		responseTimeSamples:         100,
 		lock:                        sync.Mutex{},
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
-		randomizer:                  rand.New(rand.NewSource(time.Now().UnixNano())),
+		randomizer:                  NewRandomizer(rand.New(rand.NewSource(time.Now().UnixNano()))),
 	}
 }
 
@@ -39,10 +39,26 @@ type Randomizer interface {
 	Shuffle(n int, swap func(i, j int))
 }
 
+// Randomize is a struct holding a randomizer
+type Randomize struct {
+	lock sync.Mutex
+	Randomizer
+}
+
+// NewRandomizer return a new Randomizer
+func NewRandomizer(r Randomizer) *Randomize {
+	return &Randomize{
+		Randomizer: r,
+	}
+}
+
 // OptionRandomizer set a custom Randomizer
+// that must implement the following functions
+// - Intn(int) int
+// - Shuffle(n int, swap func(i, j int))
 func OptionRandomizer(randomizer Randomizer) Option {
 	return func(cfg *upstreamConfig) {
-		cfg.randomizer = randomizer
+		cfg.randomizer = NewRandomizer(randomizer)
 	}
 }
 
@@ -54,12 +70,15 @@ func OptionExposePrivateAPIs(enabled bool) Option {
 	}
 }
 
-// OptionFeedBackLoopSamples configures the size of
+// OptionResponseTimeSamples configures the size of
 // the response time moving average sampling.
 // Default is 100.
-func OptionFeedBackLoopSamples(samples int) Option {
+func OptionResponseTimeSamples(samples int) Option {
 	return func(cfg *upstreamConfig) {
-		cfg.feedbackLoopSamples = samples
+		if samples <= 0 {
+			panic("responseTimeSamples must be greater than 0")
+		}
+		cfg.responseTimeSamples = samples
 	}
 }
 

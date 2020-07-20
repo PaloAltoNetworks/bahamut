@@ -27,10 +27,10 @@ type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, load float64)
 }
 
-// A FeedBackLoop is the interface that can circle back
+// A ResponseTimeCollector is the interface that can circle back
 // response time as an input for Upstreamer decision.
-type FeedBackLoop interface {
-	Collect(address string, responseTime time.Duration)
+type ResponseTimeCollector interface {
+	StoreResponseTime(address string, responseTime time.Duration)
 }
 
 // A Gateway can be used as an api gateway.
@@ -41,13 +41,14 @@ type Gateway interface {
 
 // An gateway is cool
 type gateway struct {
-	server        *http.Server
-	upstreamer    Upstreamer
-	forwarder     *forward.Forwarder
-	proxyHandler  http.Handler
-	listener      net.Listener
-	goodbyeServer *http.Server
-	gatewayConfig *gwconfig
+	server                         *http.Server
+	upstreamer                     Upstreamer
+	forwarder                      *forward.Forwarder
+	proxyHandler                   http.Handler
+	listener                       net.Listener
+	goodbyeServer                  *http.Server
+	gatewayConfig                  *gwconfig
+	implementResponseTimeCollector bool
 }
 
 // New returns a new Gateway.
@@ -122,6 +123,10 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		listener:      listener,
 		upstreamer:    upstreamer,
 		gatewayConfig: cfg,
+	}
+
+	if _, ok := s.upstreamer.(ResponseTimeCollector); ok {
+		s.implementResponseTimeCollector = true
 	}
 
 	s.server = &http.Server{
@@ -439,10 +444,9 @@ HANDLE_INTERCEPTION:
 
 		if finish != nil {
 			rt := finish(0, nil)
-			if f, ok := s.upstreamer.(FeedBackLoop); ok {
-				f.Collect(upstream, rt)
+			if s.implementResponseTimeCollector {
+				s.upstreamer.(ResponseTimeCollector).StoreResponseTime(upstream, rt)
 			}
-
 		}
 
 	default:
@@ -457,8 +461,8 @@ HANDLE_INTERCEPTION:
 
 		if finish != nil {
 			rt := finish(0, nil)
-			if f, ok := s.upstreamer.(FeedBackLoop); ok {
-				f.Collect(upstream, rt)
+			if s.implementResponseTimeCollector {
+				s.upstreamer.(ResponseTimeCollector).StoreResponseTime(upstream, rt)
 			}
 		}
 	}
