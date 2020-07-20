@@ -19,7 +19,7 @@ type Upstreamer struct {
 	lock               sync.RWMutex
 	serviceStatusTopic string
 	config             *upstreamConfig
-	responseTimes      *responseTimes
+	*responseTimes
 }
 
 // NewUpstreamer returns a new push backed upstreamer.
@@ -86,11 +86,13 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	w := [2]float64{.0, .0}
 
 	// fill our weight from the Feedbackloop
-	if v, err := c.responseTimes.getResponseTime(addresses[0]); err != nil {
+	if v, err := c.getResponseTime(addresses[0]); err == nil {
+		zap.L().Info("got rt", zap.Float64("w0", v))
 		w[0] = v
 	}
 
-	if v, err := c.responseTimes.getResponseTime(addresses[1]); err != nil {
+	if v, err := c.getResponseTime(addresses[1]); err == nil {
+		zap.L().Info("got rt", zap.Float64("w1", v))
 		w[1] = v
 	}
 
