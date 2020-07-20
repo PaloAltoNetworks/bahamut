@@ -36,8 +36,8 @@ func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load fl
 	}
 }
 
-// Implement FeedbackLoop interface
-func (u *simpleUpstreamer) Collect(address string, rt time.Duration) {
+// Implement LatencyBasedUpstreamer interface
+func (u *simpleUpstreamer) CollectLatency(address string, rt time.Duration) {
 	// noop
 }
 
