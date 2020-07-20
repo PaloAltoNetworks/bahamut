@@ -659,7 +659,7 @@ func Test_resyncRoutes(t *testing.T) {
 }
 
 func TestPick(t *testing.T) {
-	r1 := NewRandomizer(rand.New(rand.NewSource(time.Now().UnixNano())))
+	r1 := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	Convey("calling pick with len lesser than 2 should panic", t, func() {
 		So(func() { pick(r1, -1) }, ShouldPanicWith, "pick: len must be greater than 2")

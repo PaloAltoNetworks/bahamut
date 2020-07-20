@@ -44,7 +44,7 @@ func Test_Options(t *testing.T) {
 	Convey("Calling OptionRandomizer should work", t, func() {
 		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
 		OptionRandomizer(rn)(&c)
-		So(c.randomizer, ShouldResemble, NewRandomizer(rn))
+		So(c.randomizer, ShouldResemble, rn)
 	})
 
 }

@@ -27,10 +27,11 @@ type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, load float64)
 }
 
-// A ResponseTimeCollector is the interface that can circle back
+// A LatencyBasedUpstreamer is the interface that can circle back
 // response time as an input for Upstreamer decision.
-type ResponseTimeCollector interface {
-	StoreResponseTime(address string, responseTime time.Duration)
+type LatencyBasedUpstreamer interface {
+	CollectLatency(address string, responseTime time.Duration)
+	Upstreamer
 }
 
 // A Gateway can be used as an api gateway.
@@ -41,14 +42,14 @@ type Gateway interface {
 
 // An gateway is cool
 type gateway struct {
-	server                         *http.Server
-	upstreamer                     Upstreamer
-	forwarder                      *forward.Forwarder
-	proxyHandler                   http.Handler
-	listener                       net.Listener
-	goodbyeServer                  *http.Server
-	gatewayConfig                  *gwconfig
-	implementResponseTimeCollector bool
+	server            *http.Server
+	upstreamer        Upstreamer
+	upstreamerLatency LatencyBasedUpstreamer
+	forwarder         *forward.Forwarder
+	proxyHandler      http.Handler
+	listener          net.Listener
+	goodbyeServer     *http.Server
+	gatewayConfig     *gwconfig
 }
 
 // New returns a new Gateway.
@@ -125,8 +126,8 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		gatewayConfig: cfg,
 	}
 
-	if _, ok := s.upstreamer.(ResponseTimeCollector); ok {
-		s.implementResponseTimeCollector = true
+	if u, ok := s.upstreamer.(LatencyBasedUpstreamer); ok {
+		s.upstreamerLatency = u
 	}
 
 	s.server = &http.Server{
@@ -444,8 +445,8 @@ HANDLE_INTERCEPTION:
 
 		if finish != nil {
 			rt := finish(0, nil)
-			if s.implementResponseTimeCollector {
-				s.upstreamer.(ResponseTimeCollector).StoreResponseTime(upstream, rt)
+			if s.upstreamerLatency != nil {
+				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
 		}
 
@@ -461,8 +462,8 @@ HANDLE_INTERCEPTION:
 
 		if finish != nil {
 			rt := finish(0, nil)
-			if s.implementResponseTimeCollector {
-				s.upstreamer.(ResponseTimeCollector).StoreResponseTime(upstream, rt)
+			if s.upstreamerLatency != nil {
+				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
 		}
 	}

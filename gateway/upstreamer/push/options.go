@@ -1,8 +1,6 @@
 package push
 
 import (
-	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -14,39 +12,20 @@ type upstreamConfig struct {
 	overrideEndpointAddress     string
 	exposePrivateAPIs           bool
 	eventsAPIs                  map[string]string
-	responseTimeSamples         int
+	latencySampleSize           int
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
-	randomizer                  *Randomize
+	randomizer                  Randomizer
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
-		responseTimeSamples:         100,
+		latencySampleSize:           100,
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
-		randomizer:                  NewRandomizer(rand.New(rand.NewSource(time.Now().UnixNano()))),
-	}
-}
-
-// A Randomizer reprensents an interface to randomize
-type Randomizer interface {
-	Intn(int) int
-	Shuffle(n int, swap func(i, j int))
-}
-
-// Randomize is a struct holding a randomizer
-type Randomize struct {
-	lock sync.Mutex
-	Randomizer
-}
-
-// NewRandomizer return a new Randomizer
-func NewRandomizer(r Randomizer) *Randomize {
-	return &Randomize{
-		Randomizer: r,
+		randomizer:                  NewRandomizer(),
 	}
 }
 
@@ -54,9 +33,10 @@ func NewRandomizer(r Randomizer) *Randomize {
 // that must implement the following functions
 // - Intn(int) int
 // - Shuffle(n int, swap func(i, j int))
+// and must be thread safe.
 func OptionRandomizer(randomizer Randomizer) Option {
 	return func(cfg *upstreamConfig) {
-		cfg.randomizer = NewRandomizer(randomizer)
+		cfg.randomizer = randomizer
 	}
 }
 
@@ -68,15 +48,15 @@ func OptionExposePrivateAPIs(enabled bool) Option {
 	}
 }
 
-// OptionResponseTimeSamples configures the size of
+// OptionLatencySampleSize configures the size of
 // the response time moving average sampling.
 // Default is 100.
-func OptionResponseTimeSamples(samples int) Option {
+func OptionLatencySampleSize(samples int) Option {
 	return func(cfg *upstreamConfig) {
 		if samples <= 0 {
-			panic("responseTimeSamples must be greater than 0")
+			panic("OptionLatencySampleSize must be greater than 0")
 		}
-		cfg.responseTimeSamples = samples
+		cfg.latencySampleSize = samples
 	}
 }
 
