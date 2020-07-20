@@ -87,12 +87,10 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 
 	// fill our weight from the Feedbackloop
 	if v, err := c.getResponseTime(addresses[0]); err == nil {
-		zap.L().Info("got rt", zap.Float64("w0", v))
 		w[0] = v
 	}
 
 	if v, err := c.getResponseTime(addresses[1]); err == nil {
-		zap.L().Info("got rt", zap.Float64("w1", v))
 		w[1] = v
 	}
 
