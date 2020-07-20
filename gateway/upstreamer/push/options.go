@@ -15,7 +15,6 @@ type upstreamConfig struct {
 	exposePrivateAPIs           bool
 	eventsAPIs                  map[string]string
 	responseTimeSamples         int
-	lock                        sync.Mutex
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
@@ -26,7 +25,6 @@ func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
 		responseTimeSamples:         100,
-		lock:                        sync.Mutex{},
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
 		randomizer:                  NewRandomizer(rand.New(rand.NewSource(time.Now().UnixNano()))),
