@@ -13,12 +13,13 @@ package bahamut
 
 import (
 	"net/http"
+	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
 // FinishMeasurementFunc is the kind of functinon returned by MetricsManager.MeasureRequest().
-type FinishMeasurementFunc func(code int, span opentracing.Span)
+type FinishMeasurementFunc func(code int, span opentracing.Span) time.Duration
 
 // A MetricsManager handles Prometheus Metrics Management
 type MetricsManager interface {

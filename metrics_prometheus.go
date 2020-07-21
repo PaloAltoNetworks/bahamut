@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -135,7 +136,7 @@ func (c *prometheusMetricsManager) MeasureRequest(method string, url string) Fin
 		),
 	)
 
-	return func(code int, span opentracing.Span) {
+	return func(code int, span opentracing.Span) time.Duration {
 
 		c.reqTotalMetric.With(prometheus.Labels{
 			"method": method,
@@ -153,7 +154,7 @@ func (c *prometheusMetricsManager) MeasureRequest(method string, url string) Fin
 			}).Inc()
 		}
 
-		timer.ObserveDuration()
+		return timer.ObserveDuration()
 	}
 }
 

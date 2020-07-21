@@ -2,7 +2,6 @@ package push
 
 import (
 	"context"
-	"math/rand"
 	"net"
 	"net/http"
 	"sync"
@@ -20,9 +19,10 @@ type Upstreamer struct {
 	lock               sync.RWMutex
 	serviceStatusTopic string
 	config             upstreamConfig
+	latencies          sync.Map
 }
 
-// NewUpstreamer returns a new push backed upstreamer.
+// NewUpstreamer returns a new push backed upstreamer latency based
 func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) *Upstreamer {
 
 	cfg := newUpstreamConfig()
@@ -66,44 +66,64 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 		n1, n2 = 0, 1
 
 	default:
-		n1, n2 = pick(l)
+		n1, n2 = pick(c.config.randomizer, l)
 	}
 
 	epi1 := c.apis[identity][n1]
 	epi2 := c.apis[identity][n2]
 
-	var address string
-	var load float64
+	addresses := [2]string{}
+	loads := [2]float64{}
 
 	epi1.RLock()
 	epi2.RLock()
-
-	switch {
-
-	case l >= c.config.loadBasedBalancerThreshold:
-		if c.config.loadBasedBalancerFunc(epi1.lastLoad, epi2.lastLoad) {
-			address = epi1.address
-			load = epi1.lastLoad
-		} else {
-			address = epi2.address
-			load = epi2.lastLoad
-		}
-
-	default:
-		if rand.Intn(2) == 0 {
-			address = epi1.address
-			load = epi1.lastLoad
-		} else {
-			address = epi2.address
-			load = epi2.lastLoad
-		}
-
-	}
-
+	addresses[0], addresses[1] = epi1.address, epi2.address
+	loads[0], loads[1] = epi1.lastLoad, epi2.lastLoad
 	epi1.RUnlock()
 	epi2.RUnlock()
 
-	return address, load
+	w := [2]float64{.0, .0}
+
+	// fill our weight from the Feedbackloop
+	if ma, ok := c.latencies.Load(addresses[0]); ok {
+		if v, err := ma.(*movingAverage).average(); err == nil {
+			w[0] = v
+		}
+	}
+
+	if ma, ok := c.latencies.Load(addresses[1]); ok {
+		if v, err := ma.(*movingAverage).average(); err == nil {
+			w[1] = v
+		}
+	}
+
+	// Make sure we got an average for both
+	// otherwise default to loads
+	if w[0] == 0 || w[1] == 0 {
+		w[0] = loads[0]
+		w[1] = loads[1]
+	}
+
+	// sort
+	if w[0] > w[1] {
+		addresses[1], addresses[0] = addresses[0], addresses[1]
+		loads[1], loads[0] = loads[0], loads[1]
+		w[1], w[0] = w[0], w[1]
+	}
+
+	// Compute cummulative distribution
+	w[1] = w[0] + w[1]
+
+	// Given a random choice from 0 to w[1]+1
+	draw := float64(c.config.randomizer.Intn(int(w[1]) + 1))
+
+	// We pick the fastest/less loaded candidate
+	if draw <= w[0] {
+		return addresses[1], loads[1]
+	}
+
+	return addresses[0], loads[0]
+
 }
 
 // Start starts for new backend services.
@@ -156,6 +176,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			for _, srv := range services {
 				for _, ep := range srv.outdatedEndpoints(since) {
 					foundOutdated = foundOutdated || handleRemoveServicePing(services, ping{Name: srv.name, Endpoint: ep})
+					c.latencies.Delete(ep)
 					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
 				}
 			}
@@ -211,6 +232,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 					c.lock.Lock()
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
+					c.latencies.Delete(sp.Endpoint)
 					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
 			}
@@ -224,5 +246,17 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+// CollectLatency implement the LatencyBasedUpstreamer interface to add new
+// samples into the latencies sync map
+func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) {
+
+	if values, ok := c.latencies.Load(address); ok {
+		values.(*movingAverage).insertValue(float64(responseTime.Microseconds()))
+	} else {
+		c.latencies.Store(address, newMovingAverage(c.config.latencySampleSize))
+		c.CollectLatency(address, responseTime)
 	}
 }

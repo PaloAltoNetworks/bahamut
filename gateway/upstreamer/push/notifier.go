@@ -3,6 +3,7 @@ package push
 import (
 	"context"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/process"
@@ -48,9 +49,15 @@ func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) f
 			PushEndpoint: server.PushEndpoint(),
 		}
 
-		if sp.Load, err = p.CPUPercent(); err != nil {
+		pct, err := p.CPUPercent()
+		if err != nil {
 			return err
 		}
+
+		// Use the maxproc to get a percentage between 0 and 100
+		cores := float64(runtime.GOMAXPROCS(0))
+
+		sp.Load = pct / cores
 
 		pub := bahamut.NewPublication(w.serviceStatusTopic)
 		if err := pub.Encode(sp); err != nil {
@@ -66,10 +73,12 @@ func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) f
 				select {
 				case <-time.After(frequency):
 
-					if sp.Load, err = p.Percent(0); err != nil {
+					if pct, err = p.Percent(0); err != nil {
 						zap.L().Error("Unable to retrieve cpu usage", zap.Error(err))
 						continue
 					}
+
+					sp.Load = pct / cores
 
 					if err := pub.Encode(sp); err != nil {
 						zap.L().Error("Unable to encode service ping", zap.Error(err))

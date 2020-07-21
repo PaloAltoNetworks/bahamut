@@ -1,6 +1,7 @@
 package push
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 
@@ -40,19 +41,10 @@ func Test_Options(t *testing.T) {
 		So(c.serviceTimeoutCheckInterval, ShouldEqual, time.Minute)
 	})
 
-	Convey("Calling OptionLoadBasedBalancerThreshold should work", t, func() {
-		OptionLoadBasedBalancerThreshold(5)(&c)
-		So(c.loadBasedBalancerThreshold, ShouldEqual, 5)
-	})
-
-	Convey("Calling OptionLoadBasedBalancerFunc should work", t, func() {
-		var fn LoadBasedBalancerFunc = func(a, b float64) bool { return a > b }
-		OptionLoadBasedBalancerFunc(fn)(&c)
-		So(c.loadBasedBalancerFunc, ShouldEqual, fn)
-	})
-
-	Convey("Calling OptionLoadBasedBalancerFunc without func should panic", t, func() {
-		So(func() { OptionLoadBasedBalancerFunc(nil)(&c) }, ShouldPanicWith, "LoadBasedBalancerFunc must not be nil")
+	Convey("Calling OptionRandomizer should work", t, func() {
+		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
+		OptionRandomizer(rn)(&c)
+		So(c.randomizer, ShouldResemble, rn)
 	})
 
 }
