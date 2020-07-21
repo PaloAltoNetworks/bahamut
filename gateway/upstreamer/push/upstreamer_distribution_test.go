@@ -57,14 +57,28 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 		u.config.latencySampleSize = 2
 
 		Convey("When I there is no entries the average is not available", func() {
-			v, err := u.average("foo")
+
+			var v float64
+			var err error
+
+			if ma, ok := u.latencies.Load("foo"); ok {
+				v, err = ma.(*movingAverage).average()
+			}
+
 			So(v, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("When I add one entry the average is not yet available", func() {
 			u.CollectLatency("bar", 1*time.Microsecond)
-			v, err := u.average("bar")
+
+			var v float64
+			var err error
+
+			if ma, ok := u.latencies.Load("bar"); ok {
+				v, err = ma.(*movingAverage).average()
+			}
+
 			So(v, ShouldEqual, 0)
 			So(err, ShouldNotBeNil)
 		})
@@ -72,16 +86,29 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 		Convey("When I add two entries the average is not yet available", func() {
 			u.CollectLatency("bar", 1*time.Microsecond)
 			u.CollectLatency("bar", 1*time.Microsecond)
-			v, err := u.average("bar")
+
+			var v float64
+			var err error
+
+			if ma, ok := u.latencies.Load("bar"); ok {
+				v, err = ma.(*movingAverage).average()
+			}
+
 			So(v, ShouldEqual, 1)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("When I delete an entry a values the average is not available", func() {
-			u.delete("bar")
-			v, err := u.average("bar")
+			u.latencies.Delete("bar")
+			var v float64
+			var err error
+
+			if ma, ok := u.latencies.Load("bar"); ok {
+				v, err = ma.(*movingAverage).average()
+			}
+
 			So(v, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 
 	})

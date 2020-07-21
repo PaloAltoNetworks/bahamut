@@ -2,7 +2,6 @@ package push
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -86,12 +85,16 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	w := [2]float64{.0, .0}
 
 	// fill our weight from the Feedbackloop
-	if v, err := c.average(addresses[0]); err == nil {
-		w[0] = v
+	if ma, ok := c.latencies.Load(addresses[0]); ok {
+		if v, err := ma.(*movingAverage).average(); err == nil {
+			w[0] = v
+		}
 	}
 
-	if v, err := c.average(addresses[1]); err == nil {
-		w[1] = v
+	if ma, ok := c.latencies.Load(addresses[1]); ok {
+		if v, err := ma.(*movingAverage).average(); err == nil {
+			w[1] = v
+		}
 	}
 
 	// Make sure we got an average for both
@@ -173,7 +176,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			for _, srv := range services {
 				for _, ep := range srv.outdatedEndpoints(since) {
 					foundOutdated = foundOutdated || handleRemoveServicePing(services, ping{Name: srv.name, Endpoint: ep})
-					c.delete(ep)
+					c.latencies.Delete(ep)
 					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
 				}
 			}
@@ -229,7 +232,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 					c.lock.Lock()
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
-					c.delete(sp.Endpoint)
+					c.latencies.Delete(sp.Endpoint)
 					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
 			}
@@ -256,19 +259,4 @@ func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) 
 		c.latencies.Store(address, newMovingAverage(c.config.latencySampleSize))
 		c.CollectLatency(address, responseTime)
 	}
-}
-
-// delete remove the latency tracking for a give address
-func (c *Upstreamer) delete(address string) {
-	c.latencies.Delete(address)
-}
-
-// average return the average latency for a give address
-func (c *Upstreamer) average(address string) (float64, error) {
-
-	if ma, ok := c.latencies.Load(address); ok {
-		return ma.(*movingAverage).average()
-	}
-
-	return 0, fmt.Errorf("latency is not tracked for %v", address)
 }
