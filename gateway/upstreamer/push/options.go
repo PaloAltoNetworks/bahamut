@@ -22,7 +22,7 @@ type upstreamConfig struct {
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
-		latencySampleSize:           100,
+		latencySampleSize:           20,
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
 		randomizer:                  NewRandomizer(),
@@ -50,7 +50,7 @@ func OptionExposePrivateAPIs(enabled bool) Option {
 
 // OptionLatencySampleSize configures the size of
 // the response time moving average sampling.
-// Default is 100.
+// Default is 20.
 func OptionLatencySampleSize(samples int) Option {
 	return func(cfg *upstreamConfig) {
 		if samples <= 0 {

@@ -19,7 +19,7 @@ type Upstreamer struct {
 	apis               map[string][]*endpointInfo
 	lock               sync.RWMutex
 	serviceStatusTopic string
-	config             *upstreamConfig
+	config             upstreamConfig
 	latencies          sync.Map
 }
 
@@ -35,7 +35,7 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 		pubsub:             pubsub,
 		apis:               map[string][]*endpointInfo{},
 		serviceStatusTopic: serviceStatusTopic,
-		config:             &cfg,
+		config:             cfg,
 	}
 }
 
