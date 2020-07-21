@@ -25,15 +25,13 @@ func newUpstreamConfig() upstreamConfig {
 		latencySampleSize:           20,
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
-		randomizer:                  NewRandomizer(),
+		randomizer:                  newRandomizer(),
 	}
 }
 
 // OptionRandomizer set a custom Randomizer
-// that must implement the following functions
-// - Intn(int) int
-// - Shuffle(n int, swap func(i, j int))
-// and must be thread safe.
+// that must implement the Randomizer interface
+// and be safe for concurrent use by multiple goroutines.
 func OptionRandomizer(randomizer Randomizer) Option {
 	return func(cfg *upstreamConfig) {
 		cfg.randomizer = randomizer

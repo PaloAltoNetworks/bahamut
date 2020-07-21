@@ -86,11 +86,11 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	w := [2]float64{.0, .0}
 
 	// fill our weight from the Feedbackloop
-	if v, err := c.latency(addresses[0]); err == nil {
+	if v, err := c.average(addresses[0]); err == nil {
 		w[0] = v
 	}
 
-	if v, err := c.latency(addresses[1]); err == nil {
+	if v, err := c.average(addresses[1]); err == nil {
 		w[1] = v
 	}
 
@@ -173,7 +173,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			for _, srv := range services {
 				for _, ep := range srv.outdatedEndpoints(since) {
 					foundOutdated = foundOutdated || handleRemoveServicePing(services, ping{Name: srv.name, Endpoint: ep})
-					c.purgeLatency(ep)
+					c.delete(ep)
 					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
 				}
 			}
@@ -229,7 +229,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 					c.lock.Lock()
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
-					c.purgeLatency(sp.Endpoint)
+					c.delete(sp.Endpoint)
 					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
 				}
 			}
@@ -258,66 +258,17 @@ func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) 
 	}
 }
 
-// purgeLatency remove the latency tracking for a give address
-func (c *Upstreamer) purgeLatency(address string) {
+// delete remove the latency tracking for a give address
+func (c *Upstreamer) delete(address string) {
 	c.latencies.Delete(address)
 }
 
-// latency return the average latency for a give address
-func (c *Upstreamer) latency(address string) (float64, error) {
+// average return the average latency for a give address
+func (c *Upstreamer) average(address string) (float64, error) {
 
 	if ma, ok := c.latencies.Load(address); ok {
-		v, err := ma.(*movingAverage).average()
-		if err != nil {
-			return 0, err
-		}
-		return v, nil
+		return ma.(*movingAverage).average()
 	}
 
-	return 0, fmt.Errorf("Response time is not tracked for %v", address)
-}
-
-// MovingAverage represent a moving average
-// give an number of samples.
-type movingAverage struct {
-	samples          int
-	ring             []float64
-	nextIdx          int
-	samplingComplete bool
-}
-
-// newMovingAverage return a new movingAverage
-func newMovingAverage(samples int) *movingAverage {
-	return &movingAverage{
-		samples: samples,
-		ring:    make([]float64, samples),
-		nextIdx: 0,
-	}
-}
-
-// average return the average of the samples
-// If samples are not compplete it returns 0
-func (m *movingAverage) average() (float64, error) {
-
-	var sum = .0
-
-	if !m.samplingComplete {
-		return sum, fmt.Errorf("Cannot compute average without a full sampling")
-	}
-
-	for _, value := range m.ring {
-		sum += value
-	}
-
-	return sum / float64(len(m.ring)), nil
-}
-
-// insertValue will insert a new value to the ring.
-func (m *movingAverage) insertValue(value float64) {
-
-	m.ring[m.nextIdx] = value
-	m.nextIdx = (m.nextIdx + 1) % m.samples
-	if m.nextIdx == 0 {
-		m.samplingComplete = true
-	}
+	return 0, fmt.Errorf("latency is not tracked for %v", address)
 }

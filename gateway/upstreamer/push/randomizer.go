@@ -12,27 +12,27 @@ type Randomizer interface {
 	Shuffle(n int, swap func(i, j int))
 }
 
-// NewRandomizer return a new Randomizer
-func NewRandomizer() Randomizer {
-	return &randomize{random: rand.New(rand.NewSource(time.Now().UnixNano()))}
+// newRandomizer return a new Randomizer
+func newRandomizer() Randomizer {
+	return &defaultRandomizer{random: rand.New(rand.NewSource(time.Now().UnixNano()))}
 }
 
-// randomize is the default Randomizer
-type randomize struct {
+// defaultRandomizer is the default Randomizer
+type defaultRandomizer struct {
 	sync.Mutex
 	random *rand.Rand
 }
 
 // Intn implement Randomizer interface
-func (r *randomize) Intn(n int) int {
+func (r *defaultRandomizer) Intn(n int) int {
 	r.Lock()
 	defer r.Unlock()
 	return r.random.Intn(n)
 }
 
 // Shuffle implement Randomizer interface
-func (r *randomize) Shuffle(n int, swap func(i, j int)) {
+func (r *defaultRandomizer) Shuffle(n int, swap func(i, j int)) {
 	r.Lock()
-	defer r.Unlock()
 	r.random.Shuffle(n, swap)
+	r.Unlock()
 }
