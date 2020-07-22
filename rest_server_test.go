@@ -19,12 +19,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-zoo/bone"
+	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
@@ -301,6 +303,19 @@ func TestServer_Start(t *testing.T) {
 	})
 }
 
+type mockMetricsManager struct {
+	measureFunc FinishMeasurementFunc
+}
+
+func (m *mockMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+	return m.measureFunc
+}
+func (m *mockMetricsManager) RegisterWSConnection()                        {}
+func (m *mockMetricsManager) UnregisterWSConnection()                      {}
+func (m *mockMetricsManager) RegisterTCPConnection()                       {}
+func (m *mockMetricsManager) UnregisterTCPConnection()                     {}
+func (m *mockMetricsManager) Write(w http.ResponseWriter, r *http.Request) {}
+
 func TestServer_Handlers_RateLimiters(t *testing.T) {
 
 	mm := map[int]elemental.ModelManager{
@@ -308,13 +323,38 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 		1: testmodel.Manager(),
 	}
 
-	Convey("Given I create a server without rate limiters", t, func() {
+	Convey("Given I create a handler with a bad url", t, func() {
 
-		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+		var measuredCode int
 
 		cfg := config{}
-		cfg.restServer.listenAddress = "127.0.0.1:" + port1
 		cfg.model.modelManagers = mm
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+		}
+
+		c := newRestServer(cfg, bone.New(), nil, nil, nil)
+
+		h := c.makeHandler(handleRetrieve)
+
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+		r.URL = &url.URL{}
+		h(w, r)
+
+		So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+		So(measuredCode, ShouldEqual, http.StatusBadRequest)
+	})
+
+	Convey("Given I create a handler without rate limiters", t, func() {
+
+		var measuredCode int
+
+		cfg := config{}
+		cfg.model.modelManagers = mm
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+		}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
 
@@ -326,16 +366,19 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 		h(w, r)
 
 		So(w.Result().StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
+		So(measuredCode, ShouldEqual, http.StatusMethodNotAllowed)
 	})
 
-	Convey("Given I create a server with global rate limiters", t, func() {
+	Convey("Given I create a handler with global rate limiters", t, func() {
 
-		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+		var measuredCode int
 
 		cfg := config{}
-		cfg.restServer.listenAddress = "127.0.0.1:" + port1
 		cfg.model.modelManagers = mm
 		cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+		}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
 
@@ -350,17 +393,21 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 		h(w, r)
 
 		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+		So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
 	})
 
-	Convey("Given I create a server with per api rate limiters", t, func() {
+	Convey("Given I create a handler with per api rate limiters", t, func() {
 
-		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+		var measuredCode int
 
 		cfg := config{}
-		cfg.restServer.listenAddress = "127.0.0.1:" + port1
 		cfg.model.modelManagers = mm
+		cfg.restServer.disableCompression = true // every percent...
 		cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{
 			testmodel.ListIdentity: rate.NewLimiter(rate.Limit(1), 1),
+		}
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
 		}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
@@ -376,5 +423,6 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 		h(w, r)
 
 		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+		So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
 	})
 }
