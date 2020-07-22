@@ -164,13 +164,13 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			},
 		),
 		forward.ResponseModifier(
-			func(r *http.Response) error {
+			func(resp *http.Response) error {
 
-				injectGeneralHeader(r.Header)
-				injectCORSHeader(r.Header, cfg.corsOrigin, r.Request.Header.Get("origin"), r.Request.Method)
+				injectGeneralHeader(resp.Header)
+				injectCORSHeader(resp.Header, cfg.corsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
 
 				if s.gatewayConfig.responseRewriter != nil {
-					if err := s.gatewayConfig.responseRewriter(r); err != nil {
+					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
 						return fmt.Errorf("unable to execute response rewriter: %s", err)
 					}
 				}
@@ -392,7 +392,7 @@ HANDLE_INTERCEPTION:
 		return
 	}
 	if interceptAction == InterceptorActionStop {
-		injectCORSHeader(r.Header, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(w.Header(), s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
 		return
 	}
 
