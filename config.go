@@ -109,7 +109,8 @@ type config struct {
 	}
 
 	rateLimiting struct {
-		rateLimiter *rate.Limiter
+		rateLimiter     *rate.Limiter
+		apiRateLimiters map[elemental.Identity]*rate.Limiter
 	}
 
 	model struct {

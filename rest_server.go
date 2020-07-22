@@ -292,6 +292,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
 		defer finishTracing(ctx)
 
+		// Global rate limiting
 		if a.cfg.rateLimiting.rateLimiter != nil {
 			if !a.cfg.rateLimiting.rateLimiter.Allow() {
 				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
@@ -299,6 +300,19 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
 				return
+			}
+		}
+
+		// Per api rate limiting
+		if a.cfg.rateLimiting.apiRateLimiters != nil {
+			if rlm, ok := a.cfg.rateLimiting.apiRateLimiters[request.Identity]; ok {
+				if !rlm.Allow() {
+					code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+					if measure != nil {
+						measure(code, opentracing.SpanFromContext(ctx))
+					}
+					return
+				}
 			}
 		}
 

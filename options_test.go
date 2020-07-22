@@ -212,6 +212,15 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.rateLimiting.rateLimiter, ShouldResemble, rlm)
 	})
 
+	Convey("Calling OptAPIRateLimiting should work", t, func() {
+		rlm := rate.NewLimiter(rate.Limit(10), 20)
+		ident := elemental.MakeIdentity("thing", "things")
+		OptAPIRateLimiting(ident, 10, 20)(&c)
+		So(c.rateLimiting.apiRateLimiters, ShouldResemble, map[elemental.Identity]*rate.Limiter{
+			ident: rlm,
+		})
+	})
+
 	Convey("Calling OptModel should work", t, func() {
 		m := map[int]elemental.ModelManager{0: testmodel.Manager()}
 		OptModel(m)(&c)

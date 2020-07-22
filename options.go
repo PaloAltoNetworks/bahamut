@@ -348,10 +348,21 @@ func OptAuditer(auditer Auditer) Option {
 	}
 }
 
-// OptRateLimiting configures the rate limiting.
+// OptRateLimiting configures the global rate limiting.
 func OptRateLimiting(limit float64, burst int) Option {
 	return func(c *config) {
 		c.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(limit), burst)
+	}
+}
+
+// OptAPIRateLimiting configures the per-api rate limiting.
+func OptAPIRateLimiting(identity elemental.Identity, limit float64, burst int) Option {
+	return func(c *config) {
+		if c.rateLimiting.apiRateLimiters == nil {
+			c.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{}
+		}
+
+		c.rateLimiting.apiRateLimiters[identity] = rate.NewLimiter(rate.Limit(limit), burst)
 	}
 }
 
