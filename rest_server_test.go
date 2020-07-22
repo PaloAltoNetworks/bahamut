@@ -323,18 +323,16 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 		1: testmodel.Manager(),
 	}
 
+	var measuredCode int
+	cfg := config{}
+	cfg.model.modelManagers = mm
+	cfg.healthServer.metricsManager = &mockMetricsManager{
+		measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+	}
+
 	Convey("Given I create a handler with a bad url", t, func() {
 
-		var measuredCode int
-
-		cfg := config{}
-		cfg.model.modelManagers = mm
-		cfg.healthServer.metricsManager = &mockMetricsManager{
-			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
-		}
-
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-
 		h := c.makeHandler(handleRetrieve)
 
 		w := httptest.NewRecorder()
@@ -348,16 +346,7 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 
 	Convey("Given I create a handler without rate limiters", t, func() {
 
-		var measuredCode int
-
-		cfg := config{}
-		cfg.model.modelManagers = mm
-		cfg.healthServer.metricsManager = &mockMetricsManager{
-			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
-		}
-
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-
 		h := c.makeHandler(handleRetrieve)
 
 		w := httptest.NewRecorder()
@@ -371,17 +360,9 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 
 	Convey("Given I create a handler with global rate limiters", t, func() {
 
-		var measuredCode int
-
-		cfg := config{}
-		cfg.model.modelManagers = mm
 		cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
-		cfg.healthServer.metricsManager = &mockMetricsManager{
-			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
-		}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-
 		h := c.makeHandler(handleRetrieve)
 
 		w := httptest.NewRecorder()
@@ -398,20 +379,11 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 
 	Convey("Given I create a handler with per api rate limiters", t, func() {
 
-		var measuredCode int
-
-		cfg := config{}
-		cfg.model.modelManagers = mm
-		cfg.restServer.disableCompression = true // every percent...
 		cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{
 			testmodel.ListIdentity: rate.NewLimiter(rate.Limit(1), 1),
 		}
-		cfg.healthServer.metricsManager = &mockMetricsManager{
-			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
-		}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-
 		h := c.makeHandler(handleRetrieve)
 
 		w := httptest.NewRecorder()
