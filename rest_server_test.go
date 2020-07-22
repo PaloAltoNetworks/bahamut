@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,6 +26,9 @@ import (
 
 	"github.com/go-zoo/bone"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
+	testmodel "go.aporeto.io/elemental/test/model"
+	"golang.org/x/time/rate"
 )
 
 func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificate) {
@@ -294,5 +298,83 @@ func TestServer_Start(t *testing.T) {
 				So(resp.StatusCode, ShouldEqual, 200)
 			})
 		})
+	})
+}
+
+func TestServer_Handlers_RateLimiters(t *testing.T) {
+
+	mm := map[int]elemental.ModelManager{
+		0: testmodel.Manager(),
+		1: testmodel.Manager(),
+	}
+
+	Convey("Given I create a server without rate limiters", t, func() {
+
+		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+
+		cfg := config{}
+		cfg.restServer.listenAddress = "127.0.0.1:" + port1
+		cfg.model.modelManagers = mm
+
+		c := newRestServer(cfg, bone.New(), nil, nil, nil)
+
+		h := c.makeHandler(handleRetrieve)
+
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+
+		h(w, r)
+
+		So(w.Result().StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
+	})
+
+	Convey("Given I create a server with global rate limiters", t, func() {
+
+		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+
+		cfg := config{}
+		cfg.restServer.listenAddress = "127.0.0.1:" + port1
+		cfg.model.modelManagers = mm
+		cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
+
+		c := newRestServer(cfg, bone.New(), nil, nil, nil)
+
+		h := c.makeHandler(handleRetrieve)
+
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+		h(w, r)
+
+		w = httptest.NewRecorder()
+		r, _ = http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+		h(w, r)
+
+		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+	})
+
+	Convey("Given I create a server with per api rate limiters", t, func() {
+
+		port1 := strconv.Itoa(rand.Intn(10000) + 20000)
+
+		cfg := config{}
+		cfg.restServer.listenAddress = "127.0.0.1:" + port1
+		cfg.model.modelManagers = mm
+		cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{
+			testmodel.ListIdentity: rate.NewLimiter(rate.Limit(1), 1),
+		}
+
+		c := newRestServer(cfg, bone.New(), nil, nil, nil)
+
+		h := c.makeHandler(handleRetrieve)
+
+		w := httptest.NewRecorder()
+		r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+		h(w, r)
+
+		w = httptest.NewRecorder()
+		r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+		h(w, r)
+
+		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
 	})
 }
