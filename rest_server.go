@@ -306,12 +306,14 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Per api rate limiting
 		if a.cfg.rateLimiting.apiRateLimiters != nil {
 			if rlm, ok := a.cfg.rateLimiting.apiRateLimiters[request.Identity]; ok {
-				if !rlm.Allow() {
-					code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
-					if measure != nil {
-						measure(code, opentracing.SpanFromContext(ctx))
+				if rlm.condition == nil || rlm.condition(request) {
+					if !rlm.limiter.Allow() {
+						code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+						if measure != nil {
+							measure(code, opentracing.SpanFromContext(ctx))
+						}
+						return
 					}
-					return
 				}
 			}
 		}

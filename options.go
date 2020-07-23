@@ -356,13 +356,19 @@ func OptRateLimiting(limit float64, burst int) Option {
 }
 
 // OptAPIRateLimiting configures the per-api rate limiting.
-func OptAPIRateLimiting(identity elemental.Identity, limit float64, burst int) Option {
+// The optional parameter condition is a function that can be provided
+// to decide if the rate limiter should apply based on the custom computation
+// iof the incoming request.
+func OptAPIRateLimiting(identity elemental.Identity, limit float64, burst int, condition func(*elemental.Request) bool) Option {
 	return func(c *config) {
 		if c.rateLimiting.apiRateLimiters == nil {
-			c.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{}
+			c.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{}
 		}
 
-		c.rateLimiting.apiRateLimiters[identity] = rate.NewLimiter(rate.Limit(limit), burst)
+		c.rateLimiting.apiRateLimiters[identity] = apiRateLimit{
+			limiter:   rate.NewLimiter(rate.Limit(limit), burst),
+			condition: condition,
+		}
 	}
 }
 

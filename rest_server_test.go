@@ -318,83 +318,111 @@ func (m *mockMetricsManager) Write(w http.ResponseWriter, r *http.Request) {}
 
 func TestServer_Handlers_RateLimiters(t *testing.T) {
 
-	mm := map[int]elemental.ModelManager{
-		0: testmodel.Manager(),
-		1: testmodel.Manager(),
-	}
+	Convey("Given I have some config", t, func() {
 
-	var measuredCode int
-	cfg := config{}
-	cfg.model.modelManagers = mm
-	cfg.healthServer.metricsManager = &mockMetricsManager{
-		measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
-	}
-
-	Convey("Given I create a handler with a bad url", t, func() {
-
-		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-		h := c.makeHandler(handleRetrieve)
-
-		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
-		r.URL = &url.URL{}
-		h(w, r)
-
-		So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
-		So(measuredCode, ShouldEqual, http.StatusBadRequest)
-	})
-
-	Convey("Given I create a handler without rate limiters", t, func() {
-
-		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-		h := c.makeHandler(handleRetrieve)
-
-		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
-
-		h(w, r)
-
-		So(w.Result().StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
-		So(measuredCode, ShouldEqual, http.StatusMethodNotAllowed)
-	})
-
-	Convey("Given I create a handler with global rate limiters", t, func() {
-
-		cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
-
-		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-		h := c.makeHandler(handleRetrieve)
-
-		w := httptest.NewRecorder()
-		r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
-		h(w, r)
-
-		w = httptest.NewRecorder()
-		r, _ = http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
-		h(w, r)
-
-		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
-		So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
-	})
-
-	Convey("Given I create a handler with per api rate limiters", t, func() {
-
-		cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]*rate.Limiter{
-			testmodel.ListIdentity: rate.NewLimiter(rate.Limit(1), 1),
+		mm := map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
 		}
 
-		c := newRestServer(cfg, bone.New(), nil, nil, nil)
-		h := c.makeHandler(handleRetrieve)
+		var measuredCode int
+		cfg := config{}
+		cfg.model.modelManagers = mm
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+		}
 
-		w := httptest.NewRecorder()
-		r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
-		h(w, r)
+		Convey("When I create a handler with a bad url", func() {
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
 
-		w = httptest.NewRecorder()
-		r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
-		h(w, r)
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			r.URL = &url.URL{}
+			h(w, r)
 
-		So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
-		So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
+			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(measuredCode, ShouldEqual, http.StatusBadRequest)
+		})
+
+		Convey("When I create a handler without rate limiters", func() {
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
+			So(measuredCode, ShouldEqual, http.StatusMethodNotAllowed)
+		})
+
+		Convey("When I create a handler with global rate limiters", func() {
+
+			cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
+		})
+
+		Convey("When I create a handler with per api rate limiters", func() {
+
+			cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{
+				testmodel.ListIdentity: {
+					limiter: rate.NewLimiter(rate.Limit(1), 1),
+				},
+			}
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
+		})
+
+		Convey("When I create a handler with per api rate limiters and ignore condition", func() {
+
+			cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{
+				testmodel.ListIdentity: {
+					limiter:   rate.NewLimiter(rate.Limit(1), 1),
+					condition: func(*elemental.Request) bool { return false },
+				},
+			}
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusInternalServerError) //  this happens be
+			So(measuredCode, ShouldEqual, http.StatusInternalServerError)
+		})
 	})
 }

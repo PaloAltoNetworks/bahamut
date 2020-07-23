@@ -215,10 +215,11 @@ func TestBahamut_Options(t *testing.T) {
 	Convey("Calling OptAPIRateLimiting should work", t, func() {
 		rlm := rate.NewLimiter(rate.Limit(10), 20)
 		ident := elemental.MakeIdentity("thing", "things")
-		OptAPIRateLimiting(ident, 10, 20)(&c)
-		So(c.rateLimiting.apiRateLimiters, ShouldResemble, map[elemental.Identity]*rate.Limiter{
-			ident: rlm,
-		})
+		cond := func(*elemental.Request) bool { return true }
+		OptAPIRateLimiting(ident, 10, 20, cond)(&c)
+		So(c.rateLimiting.apiRateLimiters, ShouldContainKey, ident)
+		So(c.rateLimiting.apiRateLimiters[ident].limiter, ShouldResemble, rlm)
+		So(c.rateLimiting.apiRateLimiters[ident].condition, ShouldEqual, cond)
 	})
 
 	Convey("Calling OptModel should work", t, func() {
