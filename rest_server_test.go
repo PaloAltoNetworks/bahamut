@@ -18,13 +18,19 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-zoo/bone"
+	opentracing "github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
+	testmodel "go.aporeto.io/elemental/test/model"
+	"golang.org/x/time/rate"
 )
 
 func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificate) {
@@ -293,6 +299,130 @@ func TestServer_Start(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
 			})
+		})
+	})
+}
+
+type mockMetricsManager struct {
+	measureFunc FinishMeasurementFunc
+}
+
+func (m *mockMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+	return m.measureFunc
+}
+func (m *mockMetricsManager) RegisterWSConnection()                        {}
+func (m *mockMetricsManager) UnregisterWSConnection()                      {}
+func (m *mockMetricsManager) RegisterTCPConnection()                       {}
+func (m *mockMetricsManager) UnregisterTCPConnection()                     {}
+func (m *mockMetricsManager) Write(w http.ResponseWriter, r *http.Request) {}
+
+func TestServer_Handlers_RateLimiters(t *testing.T) {
+
+	Convey("Given I have some config", t, func() {
+
+		mm := map[int]elemental.ModelManager{
+			0: testmodel.Manager(),
+			1: testmodel.Manager(),
+		}
+
+		var measuredCode int
+		cfg := config{}
+		cfg.model.modelManagers = mm
+		cfg.healthServer.metricsManager = &mockMetricsManager{
+			measureFunc: func(code int, span opentracing.Span) time.Duration { measuredCode = code; return 0 },
+		}
+
+		Convey("When I create a handler with a bad url", func() {
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			r.URL = &url.URL{}
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(measuredCode, ShouldEqual, http.StatusBadRequest)
+		})
+
+		Convey("When I create a handler without rate limiters", func() {
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusMethodNotAllowed)
+			So(measuredCode, ShouldEqual, http.StatusMethodNotAllowed)
+		})
+
+		Convey("When I create a handler with global rate limiters", func() {
+
+			cfg.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(1), 1)
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest(http.MethodGet, "http://toto.com/identity", nil)
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
+		})
+
+		Convey("When I create a handler with per api rate limiters", func() {
+
+			cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{
+				testmodel.ListIdentity: {
+					limiter: rate.NewLimiter(rate.Limit(1), 1),
+				},
+			}
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			So(measuredCode, ShouldEqual, http.StatusTooManyRequests)
+		})
+
+		Convey("When I create a handler with per api rate limiters and ignore condition", func() {
+
+			cfg.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{
+				testmodel.ListIdentity: {
+					limiter:   rate.NewLimiter(rate.Limit(1), 1),
+					condition: func(*elemental.Request) bool { return false },
+				},
+			}
+
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			w = httptest.NewRecorder()
+			r, _ = http.NewRequest("DOG", "http://toto.com/lists", nil) // trick to not go any further
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusInternalServerError) //  this happens be
+			So(measuredCode, ShouldEqual, http.StatusInternalServerError)
 		})
 	})
 }
