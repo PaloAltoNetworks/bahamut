@@ -24,8 +24,8 @@ func TestNotifier(t *testing.T) {
 		)
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(time.Second) {
-			panic("cannot start pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		errCh := make(chan error, 10)

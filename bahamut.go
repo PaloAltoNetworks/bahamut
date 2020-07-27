@@ -14,6 +14,7 @@ package bahamut
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,6 +44,21 @@ func RegisterProcessorOrDie(server Server, processor Processor, identity element
 	}
 }
 
+// RegisterCustomHandlerOrDie will register a handler for a given
+// path. This is just a helper for the Server.Register
+// Identity and will exit in case of errors. This is just a helper for
+// Server.RegisterCustomRouteHandler function.
+func RegisterCustomHandlerOrDie(server Server, handler http.HandlerFunc, path string) {
+
+	if server == nil {
+		panic("bahamut server must not be nil")
+	}
+
+	if err := server.RegisterCustomRouteHandler(path, handler); err != nil {
+		panic(fmt.Sprintf("cannot register processor: %s", err))
+	}
+}
+
 // InstallSIGINTHandler installs signal handlers for graceful shutdown.
 func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 
@@ -58,13 +74,14 @@ func InstallSIGINTHandler(cancelFunc context.CancelFunc) {
 }
 
 type server struct {
-	multiplexer     *bone.Mux
-	processors      map[string]Processor
-	cfg             config
-	restServer      *restServer
-	pushServer      *pushServer
-	healthServer    *healthServer
-	profilingServer *profilingServer
+	multiplexer          *bone.Mux
+	processors           map[string]Processor
+	customRoutesHandlers map[string]http.HandlerFunc
+	cfg                  config
+	restServer           *restServer
+	pushServer           *pushServer
+	healthServer         *healthServer
+	profilingServer      *profilingServer
 }
 
 // New returns a new bahamut Server configured with
@@ -100,13 +117,14 @@ func NewServer(cfg config) Server {
 
 	mux := bone.New()
 	srv := &server{
-		multiplexer: mux,
-		processors:  make(map[string]Processor),
-		cfg:         cfg,
+		multiplexer:          mux,
+		processors:           make(map[string]Processor),
+		customRoutesHandlers: make(map[string]http.HandlerFunc),
+		cfg:                  cfg,
 	}
 
 	if cfg.restServer.enabled {
-		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.Push)
+		srv.restServer = newRestServer(cfg, mux, srv.ProcessorForIdentity, srv.CustomHandlers, srv.Push)
 	}
 
 	if cfg.pushServer.enabled {
@@ -146,6 +164,39 @@ func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 	return nil
 }
 
+func (b *server) RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error {
+
+	if !(b.restServer != nil &&
+		b.cfg.restServer.apiPrefix != "" &&
+		b.cfg.restServer.customRoutePrefix != "" &&
+		b.cfg.restServer.apiPrefix != b.cfg.restServer.customRoutePrefix) {
+		return fmt.Errorf(
+			"API root path '%s' and custom handler path '%s' must not overlap",
+			b.cfg.restServer.apiPrefix,
+			b.cfg.restServer.customRoutePrefix,
+		)
+	}
+
+	if _, ok := b.customRoutesHandlers[path]; ok {
+		return fmt.Errorf("path %s has a registered handler already", path)
+	}
+
+	b.customRoutesHandlers[path] = handler
+
+	return nil
+}
+
+func (b *server) UnregisterCustomRouteHandler(path string) error {
+
+	if _, ok := b.customRoutesHandlers[path]; !ok {
+		return fmt.Errorf("path %s has no existing handler", path)
+	}
+
+	delete(b.customRoutesHandlers, path)
+
+	return nil
+}
+
 func (b *server) ProcessorForIdentity(identity elemental.Identity) (Processor, error) {
 
 	if _, ok := b.processors[identity.Name]; !ok {
@@ -153,6 +204,11 @@ func (b *server) ProcessorForIdentity(identity elemental.Identity) (Processor, e
 	}
 
 	return b.processors[identity.Name], nil
+}
+
+func (b *server) CustomHandlers() map[string]http.HandlerFunc {
+
+	return b.customRoutesHandlers
 }
 
 func (b *server) ProcessorsCount() int {

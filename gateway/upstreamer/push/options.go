@@ -1,6 +1,8 @@
 package push
 
-import "time"
+import (
+	"time"
+)
 
 // An Option represents a configuration option
 // for the Upstreamer.
@@ -10,16 +12,29 @@ type upstreamConfig struct {
 	overrideEndpointAddress     string
 	exposePrivateAPIs           bool
 	eventsAPIs                  map[string]string
+	latencySampleSize           int
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
+	randomizer                  Randomizer
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
 		eventsAPIs:                  map[string]string{},
+		latencySampleSize:           20,
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
+		randomizer:                  newRandomizer(),
+	}
+}
+
+// OptionRandomizer set a custom Randomizer
+// that must implement the Randomizer interface
+// and be safe for concurrent use by multiple goroutines.
+func OptionRandomizer(randomizer Randomizer) Option {
+	return func(cfg *upstreamConfig) {
+		cfg.randomizer = randomizer
 	}
 }
 
@@ -28,6 +43,18 @@ func newUpstreamConfig() upstreamConfig {
 func OptionExposePrivateAPIs(enabled bool) Option {
 	return func(cfg *upstreamConfig) {
 		cfg.exposePrivateAPIs = enabled
+	}
+}
+
+// OptionLatencySampleSize configures the size of
+// the response time moving average sampling.
+// Default is 20.
+func OptionLatencySampleSize(samples int) Option {
+	return func(cfg *upstreamConfig) {
+		if samples <= 0 {
+			panic("OptionLatencySampleSize must be greater than 0")
+		}
+		cfg.latencySampleSize = samples
 	}
 }
 

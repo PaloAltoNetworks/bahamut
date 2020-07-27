@@ -212,6 +212,16 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.rateLimiting.rateLimiter, ShouldResemble, rlm)
 	})
 
+	Convey("Calling OptAPIRateLimiting should work", t, func() {
+		rlm := rate.NewLimiter(rate.Limit(10), 20)
+		ident := elemental.MakeIdentity("thing", "things")
+		cond := func(*elemental.Request) bool { return true }
+		OptAPIRateLimiting(ident, 10, 20, cond)(&c)
+		So(c.rateLimiting.apiRateLimiters, ShouldContainKey, ident)
+		So(c.rateLimiting.apiRateLimiters[ident].limiter, ShouldResemble, rlm)
+		So(c.rateLimiting.apiRateLimiters[ident].condition, ShouldEqual, cond)
+	})
+
 	Convey("Calling OptModel should work", t, func() {
 		m := map[int]elemental.ModelManager{0: testmodel.Manager()}
 		OptModel(m)(&c)
@@ -296,5 +306,61 @@ func TestBahamut_Options(t *testing.T) {
 		l := log.New(ioutil.Discard, "", 0)
 		OptHTTPLogger(l)(&c)
 		So(c.restServer.httpLogger, ShouldEqual, l)
+	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix should work", t, func() {
+		OptEnableCustomRoutePathPrefix("/custom")(&c)
+		So(c.restServer.customRoutePrefix, ShouldEqual, "/custom")
+	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix with no leading / should panic", t, func() {
+		So(func() {
+			OptEnableCustomRoutePathPrefix("custom")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix with multiple slashes should clean it up", t, func() {
+		OptEnableCustomRoutePathPrefix("////custom/")(&c)
+		So(c.restServer.customRoutePrefix, ShouldEqual, "/custom")
+	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix with a bad URI should panic", t, func() {
+		So(func() {
+			OptEnableCustomRoutePathPrefix("/#$%^#$%#$%#$")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableCustomRoutePathPrefix with a host URL, should panic", t, func() {
+		So(func() {
+			OptEnableCustomRoutePathPrefix("http://example/api")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix should work", t, func() {
+		OptEnableAPIPathPrefix("/custom")(&c)
+		So(c.restServer.apiPrefix, ShouldEqual, "/custom")
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix with a bad URI should panic", t, func() {
+		So(func() {
+			OptEnableAPIPathPrefix("/#$%^#$%#$%#$")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix with a host URL, should panic", t, func() {
+		So(func() {
+			OptEnableAPIPathPrefix("http://example/api")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix with no leading / should panic", t, func() {
+		So(func() {
+			OptEnableAPIPathPrefix("custom")(&c)
+		}, ShouldPanic)
+	})
+
+	Convey("Calling OptEnableAPIPathPrefix with multiple slashes should clean it up", t, func() {
+		OptEnableAPIPathPrefix("////custom/")(&c)
+		So(c.restServer.customRoutePrefix, ShouldEqual, "/custom")
 	})
 }

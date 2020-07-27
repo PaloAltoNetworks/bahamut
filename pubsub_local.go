@@ -11,7 +11,10 @@
 
 package bahamut
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 type registration struct {
 	topic string
@@ -72,20 +75,11 @@ func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic st
 }
 
 // Connect connects the PubSubClient to the remote service.
-func (p *localPubSub) Connect() Waiter {
+func (p *localPubSub) Connect(ctx context.Context) error {
 
-	abort := make(chan struct{})
-	connected := make(chan bool)
+	go p.listen()
 
-	go func() {
-		go p.listen()
-		connected <- true
-	}()
-
-	return connectionWaiter{
-		ok:    connected,
-		abort: abort,
-	}
+	return nil
 }
 
 // Disconnect disconnects the PubSubClient from the remote service..

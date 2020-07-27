@@ -136,4 +136,9 @@ func Test_Options(t *testing.T) {
 		OptionAllowedCORSOrigin("dog")(c)
 		So(c.corsOrigin, ShouldEqual, "dog")
 	})
+
+	Convey("Calling OptionUpstreamURLScheme should work", t, func() {
+		OptionUpstreamURLScheme("http")(c)
+		So(c.upstreamURLScheme, ShouldEqual, "http")
+	})
 }

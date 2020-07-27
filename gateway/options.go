@@ -85,6 +85,7 @@ type gwconfig struct {
 	upstreamMaxConnsPerHost     int
 	upstreamMaxIdleConns        int
 	upstreamMaxIdleConnsPerHost int
+	upstreamURLScheme           string
 	upstreamTLSHandshakeTimeout time.Duration
 	upstreamTLSConfig           *tls.Config
 	serverTLSConfig             *tls.Config
@@ -104,6 +105,7 @@ func newGatewayConfig() *gwconfig {
 		upstreamMaxIdleConns:        32000,
 		upstreamMaxIdleConnsPerHost: 64,
 		upstreamTLSHandshakeTimeout: 10 * time.Second,
+		upstreamURLScheme:           "https",
 		upstreamUseHTTP2:            false,
 		httpIdleTimeout:             240 * time.Second,
 		httpReadTimeout:             120 * time.Second,
@@ -205,7 +207,16 @@ func OptionUpstreamConfig(
 	}
 }
 
-// OptionMetricsManager registers a given PrefixInterceptorFunc for the given path prefix.
+// OptionUpstreamURLScheme sets the URL scheme to use
+// to connect to the upstreams. default is https.
+func OptionUpstreamURLScheme(scheme string) Option {
+	return func(cfg *gwconfig) {
+		cfg.upstreamURLScheme = scheme
+	}
+}
+
+// OptionMetricsManager registers set the MetricsManager to use.
+// This will enable response time load balancing of endpoints.
 func OptionMetricsManager(metricsManager bahamut.MetricsManager) Option {
 	return func(cfg *gwconfig) {
 		cfg.metricsManager = metricsManager

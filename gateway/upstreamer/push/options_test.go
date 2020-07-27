@@ -1,6 +1,7 @@
 package push
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 
@@ -38,6 +39,12 @@ func Test_Options(t *testing.T) {
 		OptionServiceTimeout(time.Hour, time.Minute)(&c)
 		So(c.serviceTimeout, ShouldEqual, time.Hour)
 		So(c.serviceTimeoutCheckInterval, ShouldEqual, time.Minute)
+	})
+
+	Convey("Calling OptionRandomizer should work", t, func() {
+		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
+		OptionRandomizer(rn)(&c)
+		So(c.randomizer, ShouldResemble, rn)
 	})
 
 }

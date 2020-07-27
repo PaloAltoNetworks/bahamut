@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
@@ -35,6 +36,11 @@ func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load fl
 	}
 }
 
+// Implement LatencyBasedUpstreamer interface
+func (u *simpleUpstreamer) CollectLatency(address string, rt time.Duration) {
+	// noop
+}
+
 type fakeMetricManager struct {
 	registerWSConnectionCalled    int64
 	unregisterWSConnectionCalled  int64
@@ -43,7 +49,7 @@ type fakeMetricManager struct {
 }
 
 func (m *fakeMetricManager) MeasureRequest(method string, url string) bahamut.FinishMeasurementFunc {
-	return func(code int, span opentracing.Span) {}
+	return func(code int, span opentracing.Span) time.Duration { return 0 }
 }
 
 func (m *fakeMetricManager) RegisterWSConnection() {

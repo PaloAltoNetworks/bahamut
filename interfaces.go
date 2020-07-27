@@ -23,6 +23,8 @@ type processorFinderFunc func(identity elemental.Identity) (Processor, error)
 
 type eventPusherFunc func(...*elemental.Event)
 
+type retrieveHandlersFunc func() map[string]http.HandlerFunc
+
 // AuthAction is the type of action an Authenticator or an Authorizer can return.
 type AuthAction int
 
@@ -59,6 +61,16 @@ type Server interface {
 
 	// ProcessorsCount returns the number of registered processors.
 	ProcessorsCount() int
+
+	// RegisterCustomRouteHandler registers a generic HTTP handler for a given
+	// path. Users are responsible for all processing in this path.
+	RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error
+
+	// UnregisterCustomRouteHandler unregisters a generic HTTP handler for a path.
+	UnregisterCustomRouteHandler(path string) error
+
+	// CustomHandlers returns a map of all the custom handlers.
+	CustomHandlers() map[string]http.HandlerFunc
 
 	// Push pushes the given events to all active sessions.
 	// It will use the PubSubClient configured in the pushConfig.
@@ -112,6 +124,10 @@ type Context interface {
 	// If you use SetOutputData after having already used SetResponseWriter,
 	// the call will panic.
 	SetOutputData(interface{})
+
+	// SetDisableOutputDataPush will instruct the bahamut server to
+	// not automatically push the content of OutputData.
+	SetDisableOutputDataPush(bool)
 
 	// SetResponseWriter sets the ResponseWriter function to use to write the response back to the client.
 	//

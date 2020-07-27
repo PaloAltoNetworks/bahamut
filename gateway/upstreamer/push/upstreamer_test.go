@@ -16,8 +16,8 @@ func TestUpstreamer(t *testing.T) {
 	Convey("Given I have a pubsub client and an upstreamer with required services", t, func() {
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(time.Second) {
-			panic("cannot start pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		u := NewUpstreamer(
@@ -175,8 +175,8 @@ func TestUpstreamer(t *testing.T) {
 	Convey("Given I have a pubsub client and an upstreamer with no required services", t, func() {
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		if !pubsub.Connect().Wait(time.Second) {
-			panic("cannot start pubsub")
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
 		}
 
 		u := NewUpstreamer(
@@ -200,24 +200,42 @@ func TestUpstreamer(t *testing.T) {
 	})
 }
 
+type deterministicRandom struct {
+	value int
+}
+
+func (d deterministicRandom) Intn(int) int {
+	return d.value
+}
+
+func (d deterministicRandom) Shuffle(n int, swap func(i, j int)) {
+	return
+}
+
 func TestUpstreamUpstreamer(t *testing.T) {
+
+	// use a deterministic randomizer for tests
+
+	opt := OptionRandomizer(deterministicRandom{
+		value: 1,
+	})
 
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", opt)
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
-					lastLoad: 0.1,
+					lastLoad: 10.0,
 				},
 				{
 					address:  "2.2.2.2:1",
-					lastLoad: 0.2,
+					lastLoad: 10.0,
 				},
 				{
 					address:  "3.3.3.3:1",
-					lastLoad: 0.9,
+					lastLoad: 81.0,
 				},
 			},
 		}
@@ -315,16 +333,16 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 2 registered apis", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", opt)
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
-					address:  "1.1.1.1:1",
-					lastLoad: 0.2,
+					address:  "2.2.2.2:1",
+					lastLoad: 3.0,
 				},
 				{
-					address:  "2.2.2.2:1",
-					lastLoad: 0.1,
+					address:  "1.1.1.1:1",
+					lastLoad: 2.0,
 				},
 			},
 		}
@@ -337,7 +355,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 			Convey("Then upstream should be correct", func() {
 				So(upstream, ShouldEqual, "2.2.2.2:1")
-				So(load, ShouldEqual, 0.1)
+				So(load, ShouldEqual, 3)
 			})
 		})
 	})

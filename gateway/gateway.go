@@ -22,9 +22,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// An Upstreamer is the interface that can conpute upstreams.
+// An Upstreamer is the interface that can compute upstreams.
 type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, load float64)
+}
+
+// A LatencyBasedUpstreamer is the interface that can circle back
+// response time as an input for Upstreamer decision.
+type LatencyBasedUpstreamer interface {
+	CollectLatency(address string, responseTime time.Duration)
+	Upstreamer
 }
 
 // A Gateway can be used as an api gateway.
@@ -35,13 +42,14 @@ type Gateway interface {
 
 // An gateway is cool
 type gateway struct {
-	server        *http.Server
-	upstreamer    Upstreamer
-	forwarder     *forward.Forwarder
-	proxyHandler  http.Handler
-	listener      net.Listener
-	goodbyeServer *http.Server
-	gatewayConfig *gwconfig
+	server            *http.Server
+	upstreamer        Upstreamer
+	upstreamerLatency LatencyBasedUpstreamer
+	forwarder         *forward.Forwarder
+	proxyHandler      http.Handler
+	listener          net.Listener
+	goodbyeServer     *http.Server
+	gatewayConfig     *gwconfig
 }
 
 // New returns a new Gateway.
@@ -118,6 +126,10 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		gatewayConfig: cfg,
 	}
 
+	if u, ok := s.upstreamer.(LatencyBasedUpstreamer); ok {
+		s.upstreamerLatency = u
+	}
+
 	s.server = &http.Server{
 		ReadTimeout:  cfg.httpReadTimeout,
 		WriteTimeout: cfg.httpWriteTimeout,
@@ -152,13 +164,13 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			},
 		),
 		forward.ResponseModifier(
-			func(r *http.Response) error {
+			func(resp *http.Response) error {
 
-				injectGeneralHeader(r.Header)
-				injectCORSHeader(r.Header, cfg.corsOrigin, r.Request.Header.Get("origin"), r.Request.Method)
+				injectGeneralHeader(resp.Header)
+				injectCORSHeader(resp.Header, cfg.corsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
 
 				if s.gatewayConfig.responseRewriter != nil {
-					if err := s.gatewayConfig.responseRewriter(r); err != nil {
+					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
 						return fmt.Errorf("unable to execute response rewriter: %s", err)
 					}
 				}
@@ -380,7 +392,7 @@ HANDLE_INTERCEPTION:
 		return
 	}
 	if interceptAction == InterceptorActionStop {
-		injectCORSHeader(r.Header, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(w.Header(), s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
 		return
 	}
 
@@ -403,10 +415,11 @@ HANDLE_INTERCEPTION:
 		zap.String("ns", r.Header.Get("X-Namespace")),
 		zap.String("routed", upstream),
 		zap.Float64("load", load),
+		zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
 	)
 
 	r.URL.Host = upstream
-	r.URL.Scheme = "https"
+	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
 	switch interceptAction {
 	case InterceptorActionForwardWS:
@@ -431,7 +444,10 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			finish(0, nil)
+			rt := finish(0, nil)
+			if s.upstreamerLatency != nil {
+				s.upstreamerLatency.CollectLatency(upstream, rt)
+			}
 		}
 
 	default:
@@ -445,7 +461,10 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			finish(0, nil)
+			rt := finish(0, nil)
+			if s.upstreamerLatency != nil {
+				s.upstreamerLatency.CollectLatency(upstream, rt)
+			}
 		}
 	}
 }

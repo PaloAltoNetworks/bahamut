@@ -13,40 +13,50 @@ package bahamut
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/nats-io/nats.go"
+	nats "github.com/nats-io/nats.go"
 	"go.aporeto.io/elemental"
 	"go.uber.org/zap"
 )
 
+// natsClient is an interface for objects that can act as a NATS client
+type natsClient interface {
+	Publish(subj string, data []byte) error
+	RequestWithContext(ctx context.Context, subj string, data []byte) (*nats.Msg, error)
+	Subscribe(subj string, cb nats.MsgHandler) (*nats.Subscription, error)
+	QueueSubscribe(subj, queue string, cb nats.MsgHandler) (*nats.Subscription, error)
+	IsConnected() bool
+	IsReconnecting() bool
+	Flush() error
+	Close()
+}
+
 type natsPubSub struct {
-	natsURL        string
-	client         natsClient
-	retryInterval  time.Duration
-	publishTimeout time.Duration
-	retryNumber    int
-	clientID       string
-	clusterID      string
-	password       string
-	username       string
-	tlsConfig      *tls.Config
+	natsURL         string
+	client          natsClient
+	retryInterval   time.Duration
+	clientID        string
+	clusterID       string
+	password        string
+	username        string
+	tlsConfig       *tls.Config
+	errorHandleFunc func(*nats.Conn, *nats.Subscription, error)
 }
 
 // NewNATSPubSubClient returns a new PubSubClient backend by Nats.
 func NewNATSPubSubClient(natsURL string, options ...NATSOption) PubSubClient {
 
 	n := &natsPubSub{
-		natsURL:        natsURL,
-		retryInterval:  5 * time.Second,
-		publishTimeout: 8 * time.Second,
-		retryNumber:    5,
-		clientID:       uuid.Must(uuid.NewV4()).String(),
-		clusterID:      "test-cluster",
+		natsURL:       natsURL,
+		retryInterval: 5 * time.Second,
+		clientID:      uuid.Must(uuid.NewV4()).String(),
+		clusterID:     "test-cluster",
 	}
 
 	for _, opt := range options {
@@ -187,53 +197,34 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic 
 	return func() { _ = sub.Unsubscribe() }
 }
 
-func (p *natsPubSub) Connect() Waiter {
+func (p *natsPubSub) Connect(ctx context.Context) error {
 
-	abort := make(chan struct{})
-	connected := make(chan bool)
+	opts := []nats.Option{}
 
-	go func() {
+	if p.username != "" || p.password != "" {
+		opts = append(opts, nats.UserInfo(p.username, p.password))
+	}
 
-		// First, we create a connection to the nats cluster.
-		for p.client == nil {
+	if p.tlsConfig != nil {
+		opts = append(opts, nats.Secure(p.tlsConfig))
+	}
 
-			var err error
+	for {
 
-			if p.username != "" || p.password != "" {
-				p.client, err = nats.Connect(p.natsURL, nats.UserInfo(p.username, p.password), nats.Secure(p.tlsConfig))
-			} else {
-				p.client, err = nats.Connect(p.natsURL, nats.Secure(p.tlsConfig))
+		var err error
+		if p.client, err = nats.Connect(p.natsURL, opts...); err == nil {
+			if p.errorHandleFunc != nil {
+				nats.ErrorHandler(p.errorHandleFunc)
 			}
-			if err == nil {
-				// Install error handler
-				nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, natsErr error) {
-					zap.L().Error("NATS error",
-						zap.String("subject", sub.Subject),
-						zap.Error(err),
-					)
-				})
-				break
-			}
-
-			zap.L().Warn("Unable to connect to nats cluster. Retrying",
-				zap.String("url", p.natsURL),
-				zap.Duration("retry", p.retryInterval),
-				zap.Error(err),
-			)
-
-			select {
-			case <-time.After(p.retryInterval):
-			case <-abort:
-				connected <- false
-				return
-			}
+			return nil
 		}
-		connected <- true
-	}()
 
-	return connectionWaiter{
-		ok:    connected,
-		abort: abort,
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("unable to connect to nats on time. last error: %s", err)
+		default:
+			time.Sleep(p.retryInterval)
+		}
 	}
 }
 
