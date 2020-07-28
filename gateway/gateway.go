@@ -202,7 +202,6 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		s.forwarder,
 		buffer.MaxRequestBodyBytes(1024*1024),
 		buffer.MemRequestBodyBytes(1024*1024*1024),
-		buffer.Retry(`IsNetworkError() && Attempts() < 2`),
 		buffer.ErrorHandler(&errorHandler{}),
 	); err != nil {
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
