@@ -17,16 +17,29 @@ type Notifier struct {
 	serviceName        string
 	endpoint           string
 	serviceStatusTopic string
+	limiters           IdentityToAPILimitersRegistry
 }
 
 // NewNotifier returns a new Wutai notifier.
-func NewNotifier(pubsub bahamut.PubSubClient, serviceStatusTopic string, serviceName string, endpoint string) *Notifier {
+func NewNotifier(
+	pubsub bahamut.PubSubClient,
+	serviceStatusTopic string,
+	serviceName string,
+	endpoint string,
+	opts ...NotifierOption,
+) *Notifier {
+
+	cfg := newNotifierConfig()
+	for _, o := range opts {
+		o(&cfg)
+	}
 
 	return &Notifier{
 		pubsub:             pubsub,
 		serviceName:        serviceName,
 		endpoint:           endpoint,
 		serviceStatusTopic: serviceStatusTopic,
+		limiters:           cfg.rateLimits,
 	}
 }
 
@@ -47,6 +60,7 @@ func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) f
 			Routes:       server.RoutesInfo(),
 			Versions:     server.VersionsInfo(),
 			PushEndpoint: server.PushEndpoint(),
+			APILimiters:  w.limiters,
 		}
 
 		pct, err := p.CPUPercent()

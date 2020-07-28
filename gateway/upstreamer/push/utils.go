@@ -70,7 +70,7 @@ func handleAddServicePing(services servicesConfig, sp ping) bool {
 	srv.versions = sp.Versions
 
 	// We register the new endpoint.
-	srv.registerEndpoint(sp.Endpoint, sp.Load)
+	srv.registerEndpoint(sp.Endpoint, sp.Load, sp.APILimiters)
 
 	return true
 }

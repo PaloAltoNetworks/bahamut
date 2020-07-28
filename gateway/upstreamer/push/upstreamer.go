@@ -9,6 +9,7 @@ import (
 
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 // A Upstreamer listens and update the
@@ -74,13 +75,25 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 
 	addresses := [2]string{}
 	loads := [2]float64{}
+	rls := [2]*rate.Limiter{}
 
+	// BEGIN LOCKED OPERATIONS
 	epi1.RLock()
 	epi2.RLock()
+
 	addresses[0], addresses[1] = epi1.address, epi2.address
 	loads[0], loads[1] = epi1.lastLoad, epi2.lastLoad
+
+	if epi1.limiters != nil && epi1.limiters[identity] != nil {
+		rls[0] = epi1.limiters[identity].limiter
+	}
+	if epi2.limiters != nil && epi2.limiters[identity] != nil {
+		rls[1] = epi2.limiters[identity].limiter
+	}
+
 	epi1.RUnlock()
 	epi2.RUnlock()
+	// END LOCKED OPERATIONS
 
 	w := [2]float64{.0, .0}
 
@@ -108,6 +121,7 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	if w[0] > w[1] {
 		addresses[1], addresses[0] = addresses[0], addresses[1]
 		loads[1], loads[0] = loads[0], loads[1]
+		rls[1], rls[0] = rls[0], rls[1]
 		w[1], w[0] = w[0], w[1]
 	}
 
@@ -119,11 +133,19 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 
 	// We pick the fastest/less loaded candidate
 	if draw <= w[0] {
+		// If we have a rl, and it is overload,
+		// choose the other candidate.
+		// This should potentially save a round trip in any case.
+		if rls[1] != nil && !rls[1].Allow() {
+			return addresses[0], loads[0]
+		}
 		return addresses[1], loads[1]
 	}
 
+	if rls[0] != nil && !rls[0].Allow() {
+		return addresses[1], loads[1]
+	}
 	return addresses[0], loads[0]
-
 }
 
 // Start starts for new backend services.

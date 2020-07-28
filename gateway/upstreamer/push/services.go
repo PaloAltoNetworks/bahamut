@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"go.aporeto.io/bahamut"
+	"golang.org/x/time/rate"
 )
 
 type endpointInfo struct {
 	address  string
 	lastSeen time.Time
 	lastLoad float64
+	limiters IdentityToAPILimitersRegistry
 
 	sync.RWMutex
 }
@@ -51,9 +53,24 @@ func (b *service) hasEndpoint(ep string) bool {
 	return ok
 }
 
-func (b *service) registerEndpoint(ep string, load float64) {
+func (b *service) registerEndpoint(address string, load float64, apilimiters IdentityToAPILimitersRegistry) {
 
-	b.endpoints[ep] = &endpointInfo{lastSeen: time.Now(), lastLoad: load, address: ep}
+	if apilimiters == nil {
+		apilimiters = IdentityToAPILimitersRegistry{}
+	}
+
+	// Instanciate all the actual rate limiters using the values
+	// announced by the service.
+	for _, l := range apilimiters {
+		l.limiter = rate.NewLimiter(l.Limit, l.Burst)
+	}
+
+	b.endpoints[address] = &endpointInfo{
+		lastSeen: time.Now(),
+		lastLoad: load,
+		address:  address,
+		limiters: apilimiters,
+	}
 }
 
 func (b *service) pokeEndpoint(ep string, load float64) {

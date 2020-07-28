@@ -7,6 +7,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/time/rate"
 )
 
 func Test_Services(t *testing.T) {
@@ -22,8 +23,16 @@ func Test_Services(t *testing.T) {
 
 		Convey("When I register two endpoints", func() {
 
-			srv.registerEndpoint("1.1.1.1:4443", 0.3)
-			srv.registerEndpoint("2.2.2.2:4443", 0.4)
+			rls1 := IdentityToAPILimitersRegistry{
+				"identity-a": {Limit: 10, Burst: 20},
+				"identity-b": {Limit: 11, Burst: 21},
+			}
+			rls2 := IdentityToAPILimitersRegistry{
+				"identity-c": {Limit: 100, Burst: 200},
+			}
+
+			srv.registerEndpoint("1.1.1.1:4443", 0.3, rls1)
+			srv.registerEndpoint("2.2.2.2:4443", 0.4, rls2)
 
 			Convey("Then they should be registered", func() {
 
@@ -40,10 +49,23 @@ func Test_Services(t *testing.T) {
 				So(len(eps), ShouldEqual, 2)
 				So(eps[0].address, ShouldEqual, "1.1.1.1:4443")
 				So(eps[0].lastLoad, ShouldEqual, 0.3)
+				So(eps[0].limiters, ShouldEqual, rls1)
 				So(eps[0].lastSeen.Round(time.Second), ShouldEqual, time.Now().Round(time.Second))
+				So(eps[0].limiters["identity-a"].limiter, ShouldHaveSameTypeAs, &rate.Limiter{})
+				So(eps[0].limiters["identity-a"].limiter.Limit(), ShouldEqual, rate.Limit(10))
+				So(eps[0].limiters["identity-a"].limiter.Burst(), ShouldEqual, rate.Limit(20))
+				So(eps[0].limiters["identity-b"].limiter, ShouldHaveSameTypeAs, &rate.Limiter{})
+				So(eps[0].limiters["identity-b"].limiter.Limit(), ShouldEqual, rate.Limit(11))
+				So(eps[0].limiters["identity-b"].limiter.Burst(), ShouldEqual, rate.Limit(21))
+
 				So(eps[1].address, ShouldEqual, "2.2.2.2:4443")
 				So(eps[1].lastLoad, ShouldEqual, 0.4)
 				So(eps[1].lastSeen.Round(time.Second), ShouldEqual, time.Now().Round(time.Second))
+				So(eps[1].limiters, ShouldEqual, rls2)
+				So(eps[1].limiters["identity-c"].limiter, ShouldHaveSameTypeAs, &rate.Limiter{})
+				So(eps[1].limiters["identity-c"].limiter.Limit(), ShouldEqual, rate.Limit(100))
+				So(eps[1].limiters["identity-c"].limiter.Burst(), ShouldEqual, rate.Limit(200))
+
 			})
 
 			Convey("When I poke one endpoint", func() {

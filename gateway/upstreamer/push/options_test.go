@@ -6,6 +6,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/time/rate"
 )
 
 func Test_Options(t *testing.T) {
@@ -45,6 +46,21 @@ func Test_Options(t *testing.T) {
 		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
 		OptionRandomizer(rn)(&c)
 		So(c.randomizer, ShouldResemble, rn)
+	})
+
+}
+
+func Test_NotiferOptions(t *testing.T) {
+
+	c := newNotifierConfig()
+
+	Convey("Calling OptionNotifierAnnounceRateLimits should work", t, func() {
+		rls := IdentityToAPILimitersRegistry{
+			"a": {Limit: rate.Limit(1), Burst: 2},
+		}
+		OptionNotifierAnnounceRateLimits(rls)(&c)
+		So(c.rateLimits, ShouldResemble, rls)
+		So(c.rateLimits, ShouldNotEqual, rls)
 	})
 
 }
