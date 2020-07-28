@@ -113,7 +113,7 @@ func newNotifierConfig() notifierConfig {
 type NotifierOption func(*notifierConfig)
 
 // OptionNotifierAnnounceRateLimits can be used to set a IdentityToAPILimitersRegistry
-// to tell the gateways to instanciate some rate limiters for the current
+// to tell the gateways to instantiate some rate limiters for the current
 // instance of the service.
 //
 // It is not guaranteed that the gateway will honor the request.

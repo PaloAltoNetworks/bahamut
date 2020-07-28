@@ -59,7 +59,7 @@ func (b *service) registerEndpoint(address string, load float64, apilimiters Ide
 		apilimiters = IdentityToAPILimitersRegistry{}
 	}
 
-	// Instanciate all the actual rate limiters using the values
+	// Instantiate all the actual rate limiters using the values
 	// announced by the service.
 	for _, l := range apilimiters {
 		l.limiter = rate.NewLimiter(l.Limit, l.Burst)

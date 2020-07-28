@@ -9,7 +9,7 @@ type serviceStatus int
 
 const (
 	serviceStatusGoodbye serviceStatus = 0
-	serviceStatusHello                 = 1
+	serviceStatusHello   serviceStatus = 1
 )
 
 // An APILimiter holds the parameters of a *rate.Limiter.
