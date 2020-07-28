@@ -34,7 +34,15 @@ func TestNotifier(t *testing.T) {
 
 		Convey("When I call NewNotifier", func() {
 
-			n := NewNotifier(pubsub, "topic", "srv1", "1.1.1.1:1")
+			limiters := IdentityToAPILimitersRegistry{}
+
+			n := NewNotifier(
+				pubsub,
+				"topic",
+				"srv1",
+				"1.1.1.1:1",
+				OptionNotifierAnnounceRateLimits(limiters),
+			)
 
 			Convey("Then n should be correct", func() {
 				So(n, ShouldNotBeNil)
@@ -42,6 +50,8 @@ func TestNotifier(t *testing.T) {
 				So(n.serviceName, ShouldEqual, "srv1")
 				So(n.serviceStatusTopic, ShouldEqual, "topic")
 				So(n.endpoint, ShouldEqual, "1.1.1.1:1")
+				So(n.limiters, ShouldResemble, limiters)
+				So(n.limiters, ShouldNotEqual, limiters)
 			})
 
 			Convey("When I call MakeStartHook and call the hook", func() {
