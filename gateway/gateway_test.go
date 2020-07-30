@@ -372,10 +372,11 @@ func TestGateway(t *testing.T) {
 					return InterceptorActionStop, "", nil
 				}),
 			)
-			defer gw.Stop()
 
 			So(err, ShouldBeNil)
 			So(gw, ShouldNotBeNil)
+
+			defer gw.Stop()
 
 			testclient := &http.Client{
 				Transport: &http.Transport{
