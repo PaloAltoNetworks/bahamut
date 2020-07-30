@@ -9,6 +9,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut"
+	"go.aporeto.io/bahamut/gateway"
+	"golang.org/x/time/rate"
 )
 
 func TestUpstreamer(t *testing.T) {
@@ -23,6 +25,7 @@ func TestUpstreamer(t *testing.T) {
 		u := NewUpstreamer(
 			pubsub,
 			"topic",
+			"topic2",
 			OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
 			OptionRequiredServices([]string{"srv1"}),
 			OptionUpstreamerServiceTimeout(2*time.Second, 1*time.Second),
@@ -38,7 +41,7 @@ func TestUpstreamer(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		ready := u.Start(ctx)
+		ready, _ := u.Start(ctx)
 
 		select {
 		case <-time.After(300 * time.Millisecond):
@@ -60,10 +63,10 @@ func TestUpstreamer(t *testing.T) {
 
 		Convey("When I send a hello ping for srv1", func() {
 
-			sping := &ping{
+			sping := &servicePing{
 				Name:     "srv1",
 				Endpoint: "1.1.1.1:1",
-				Status:   serviceStatusHello,
+				Status:   entityStatusHello,
 				Routes: map[int][]bahamut.RouteInfo{
 					0: {
 						{
@@ -139,10 +142,10 @@ func TestUpstreamer(t *testing.T) {
 
 			Convey("When I send a goodbye ping for srv1", func() {
 
-				sping := &ping{
+				sping := &servicePing{
 					Name:     "srv1",
 					Endpoint: "1.1.1.1:1",
-					Status:   serviceStatusGoodbye,
+					Status:   entityStatusGoodbye,
 				}
 
 				pub := bahamut.NewPublication("topic")
@@ -182,6 +185,7 @@ func TestUpstreamer(t *testing.T) {
 		u := NewUpstreamer(
 			pubsub,
 			"topic",
+			"topic2",
 			OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
 			OptionUpstreamerServiceTimeout(2*time.Second, 1*time.Second),
 		)
@@ -189,7 +193,7 @@ func TestUpstreamer(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		ready := u.Start(ctx)
+		ready, _ := u.Start(ctx)
 
 		select {
 		case <-time.After(300 * time.Millisecond):
@@ -222,7 +226,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
-		u := NewUpstreamer(nil, "topic", opt)
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -256,7 +260,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 3 registered apis with same loads", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -289,7 +293,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with not registered api", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{}
 
 		Convey("When I call upstream on /cats", func() {
@@ -307,7 +311,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with a single registered api", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -332,7 +336,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 2 registered apis", t, func() {
 
-		u := NewUpstreamer(nil, "topic", opt)
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -355,6 +359,164 @@ func TestUpstreamUpstreamer(t *testing.T) {
 			Convey("Then upstream should be correct", func() {
 				So(err, ShouldBeNil)
 				So(upstream, ShouldEqual, "2.2.2.2:1")
+			})
+		})
+	})
+
+	Convey("Given I have an upstreamer with 2 registered apis both over used", t, func() {
+
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
+		u.apis = map[string][]*endpointInfo{
+			"cats": {
+				{
+					address:  "2.2.2.2:1",
+					lastLoad: 3.0,
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(0), 0),
+						},
+					},
+				},
+				{
+					address:  "1.1.1.1:1",
+					lastLoad: 2.0,
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(0), 0),
+						},
+					},
+				},
+			},
+		}
+
+		Convey("When I call upstream on /cats", func() {
+
+			upstream, err := u.Upstream(&http.Request{
+				URL: &url.URL{Path: "/cats"},
+			})
+
+			Convey("Then upstream should be correct", func() {
+				So(err, ShouldNotBeNil)
+				So(err, ShouldEqual, gateway.ErrUpstreamerTooManyRequests)
+				So(upstream, ShouldEqual, "")
+			})
+		})
+	})
+
+	Convey("Given I have an upstreamer with 2 registered apis both the least loaded over used", t, func() {
+
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
+		u.apis = map[string][]*endpointInfo{
+			"cats": {
+				{
+					address:  "2.2.2.2:1",
+					lastLoad: 1.0,
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(0), 0),
+						},
+					},
+				},
+				{
+					address:  "1.1.1.1:1",
+					lastLoad: 10.0,
+				},
+			},
+		}
+
+		Convey("When I call upstream on /cats", func() {
+
+			upstream, err := u.Upstream(&http.Request{
+				URL: &url.URL{Path: "/cats"},
+			})
+
+			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
+				So(upstream, ShouldEqual, "1.1.1.1:1")
+			})
+		})
+	})
+
+	Convey("Given I have an upstreamer with 2 registered apis both the most loaded over used", t, func() {
+
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
+		u.apis = map[string][]*endpointInfo{
+			"cats": {
+				{
+					address:  "2.2.2.2:1",
+					lastLoad: 10.0,
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(0), 0),
+						},
+					},
+				},
+				{
+					address:  "1.1.1.1:1",
+					lastLoad: 1.0,
+				},
+			},
+		}
+
+		Convey("When I call upstream on /cats", func() {
+
+			upstream, err := u.Upstream(&http.Request{
+				URL: &url.URL{Path: "/cats"},
+			})
+
+			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
+				So(upstream, ShouldEqual, "1.1.1.1:1")
+			})
+		})
+	})
+
+	Convey("Given I have an upstreamer with 2 registered apis both with rate limiters that needs update", t, func() {
+
+		now := time.Now()
+		u := NewUpstreamer(nil, "topic", "topic2", opt)
+		u.apis = map[string][]*endpointInfo{
+			"cats": {
+				{
+					address:           "2.2.2.2:1",
+					lastLoad:          10.0,
+					lastLimiterAdjust: now.Add(-time.Hour),
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(10.0), 30),
+						},
+					},
+				},
+				{
+					address:           "1.1.1.1:1",
+					lastLimiterAdjust: now.Add(-time.Hour),
+					lastLoad:          1.0,
+					limiters: IdentityToAPILimitersRegistry{
+						"cats": &APILimiter{
+							limiter: rate.NewLimiter(rate.Limit(100.0), 300),
+						},
+					},
+				},
+			},
+		}
+		u.lastPeerChangeDate.Store(now)
+		u.peersCount = 9 // + 1
+
+		Convey("When I call upstream on /cats", func() {
+
+			_, err := u.Upstream(&http.Request{
+				URL: &url.URL{Path: "/cats"},
+			})
+
+			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
+				So(u.apis["cats"][0].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(1.0))
+				So(u.apis["cats"][0].limiters["cats"].limiter.Burst(), ShouldEqual, 3)
+				So(u.apis["cats"][0].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
+
+				So(u.apis["cats"][1].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(10.0))
+				So(u.apis["cats"][1].limiters["cats"].limiter.Burst(), ShouldEqual, 30)
+				So(u.apis["cats"][1].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
 			})
 		})
 	})

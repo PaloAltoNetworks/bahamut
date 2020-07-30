@@ -16,6 +16,9 @@ type upstreamConfig struct {
 	requiredServices            []string
 	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
+	peerTimeout                 time.Duration
+	peerTimeoutCheckInterval    time.Duration
+	peerPingInterval            time.Duration
 	randomizer                  Randomizer
 }
 
@@ -25,6 +28,9 @@ func newUpstreamConfig() upstreamConfig {
 		latencySampleSize:           20,
 		serviceTimeout:              30 * time.Second,
 		serviceTimeoutCheckInterval: 5 * time.Second,
+		peerTimeout:                 30 * time.Second,
+		peerTimeoutCheckInterval:    5 * time.Second,
+		peerPingInterval:            10 * time.Second,
 		randomizer:                  newRandomizer(),
 	}
 }
@@ -83,5 +89,32 @@ func OptionUpstreamerServiceTimeout(timeout time.Duration, checkInterval time.Du
 func OptionUpstreamerRandomizer(randomizer Randomizer) UpstreamerOption {
 	return func(cfg *upstreamConfig) {
 		cfg.randomizer = randomizer
+	}
+}
+
+// OptionUpstreamerPeersTimeout sets for how long a peer ping
+// should stay valid after receiving it.
+// The default is 30s.
+func OptionUpstreamerPeersTimeout(t time.Duration) UpstreamerOption {
+	return func(cfg *upstreamConfig) {
+		cfg.peerTimeout = t
+	}
+}
+
+// OptionUpstreamerPeersCheckInterval sets the frequency at which the upstreamer
+// will check for outdated peers.
+// The default is 5s.
+func OptionUpstreamerPeersCheckInterval(t time.Duration) UpstreamerOption {
+	return func(cfg *upstreamConfig) {
+		cfg.peerTimeoutCheckInterval = t
+	}
+}
+
+// OptionUpstreamerPeersPingInterval sets how often the upstreamer will
+// ping its peers.
+// The default is 10s.
+func OptionUpstreamerPeersPingInterval(t time.Duration) UpstreamerOption {
+	return func(cfg *upstreamConfig) {
+		cfg.peerPingInterval = t
 	}
 }

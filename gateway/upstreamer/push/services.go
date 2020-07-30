@@ -9,10 +9,11 @@ import (
 )
 
 type endpointInfo struct {
-	address  string
-	lastSeen time.Time
-	lastLoad float64
-	limiters IdentityToAPILimitersRegistry
+	address           string
+	lastSeen          time.Time
+	lastLoad          float64
+	limiters          IdentityToAPILimitersRegistry
+	lastLimiterAdjust time.Time
 
 	sync.RWMutex
 }

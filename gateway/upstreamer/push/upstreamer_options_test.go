@@ -47,4 +47,18 @@ func Test_Options(t *testing.T) {
 		So(c.randomizer, ShouldResemble, rn)
 	})
 
+	Convey("Calling OptionUpstreamerPeersTimeout should work", t, func() {
+		OptionUpstreamerPeersTimeout(time.Hour)(&c)
+		So(c.peerTimeout, ShouldResemble, time.Hour)
+	})
+
+	Convey("Calling OptionUpstreamerPeersCheckInterval should work", t, func() {
+		OptionUpstreamerPeersCheckInterval(time.Hour)(&c)
+		So(c.peerTimeoutCheckInterval, ShouldResemble, time.Hour)
+	})
+
+	Convey("Calling OptionUpstreamerPeersPingInterval should work", t, func() {
+		OptionUpstreamerPeersPingInterval(time.Hour)(&c)
+		So(c.peerPingInterval, ShouldResemble, time.Hour)
+	})
 }

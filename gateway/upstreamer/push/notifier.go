@@ -18,6 +18,7 @@ type Notifier struct {
 	endpoint           string
 	serviceStatusTopic string
 	limiters           IdentityToAPILimitersRegistry
+	frequency          time.Duration
 }
 
 // NewNotifier returns a new Wutai notifier.
@@ -40,11 +41,12 @@ func NewNotifier(
 		endpoint:           endpoint,
 		serviceStatusTopic: serviceStatusTopic,
 		limiters:           cfg.rateLimits,
+		frequency:          cfg.pingInterval,
 	}
 }
 
 // MakeStartHook returns a bahamut start hook that sends the hello message to the Upstreamer periodically.
-func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) func(server bahamut.Server) error {
+func (w *Notifier) MakeStartHook(ctx context.Context) func(server bahamut.Server) error {
 
 	return func(server bahamut.Server) error {
 
@@ -53,9 +55,9 @@ func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) f
 			return err
 		}
 
-		sp := ping{
+		sp := servicePing{
 			Name:         w.serviceName,
-			Status:       serviceStatusHello,
+			Status:       entityStatusHello,
 			Endpoint:     w.endpoint,
 			Routes:       server.RoutesInfo(),
 			Versions:     server.VersionsInfo(),
@@ -85,7 +87,7 @@ func (w *Notifier) MakeStartHook(ctx context.Context, frequency time.Duration) f
 		go func() {
 			for {
 				select {
-				case <-time.After(frequency):
+				case <-time.After(w.frequency):
 
 					if pct, err = p.Percent(0); err != nil {
 						zap.L().Error("Unable to retrieve cpu usage", zap.Error(err))
@@ -118,9 +120,9 @@ func (w *Notifier) MakeStopHook() func(server bahamut.Server) error {
 	return func(server bahamut.Server) error {
 
 		pub := bahamut.NewPublication(w.serviceStatusTopic)
-		if err := pub.Encode(ping{
+		if err := pub.Encode(servicePing{
 			Name:     w.serviceName,
-			Status:   serviceStatusGoodbye,
+			Status:   entityStatusGoodbye,
 			Endpoint: w.endpoint,
 		}); err != nil {
 			return err

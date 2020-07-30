@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -143,7 +142,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -216,7 +215,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then calling a GET any api will return 423", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -263,7 +262,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -299,7 +298,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/hello", nil)
@@ -333,7 +332,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -367,7 +366,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/hello", nil)
@@ -401,7 +400,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/ups1", nil)
@@ -437,7 +436,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1/chien", nil)
@@ -471,7 +470,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1:7765/ups1", nil)
@@ -511,7 +510,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1:7765/ups1", nil)

@@ -2,11 +2,14 @@ package push
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/bahamut/gateway"
 	"go.uber.org/zap"
@@ -23,10 +26,17 @@ type Upstreamer struct {
 	upstreamerStatusTopic string
 	config                upstreamConfig
 	latencies             sync.Map
+	peersCount            int64
+	lastPeerChangeDate    atomic.Value
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based
-func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...UpstreamerOption) *Upstreamer {
+func NewUpstreamer(
+	pubsub bahamut.PubSubClient,
+	serviceStatusTopic string,
+	peerStatusTopic string,
+	options ...UpstreamerOption,
+) *Upstreamer {
 
 	cfg := newUpstreamConfig()
 	for _, opt := range options {
@@ -37,7 +47,7 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 		pubsub:                pubsub,
 		apis:                  map[string][]*endpointInfo{},
 		serviceStatusTopic:    serviceStatusTopic,
-		upstreamerStatusTopic: serviceStatusTopic + "-upstreamers",
+		upstreamerStatusTopic: peerStatusTopic,
 		config:                cfg,
 	}
 }
@@ -80,6 +90,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 	loads := [2]float64{}
 	rls := [2]*rate.Limiter{}
 
+	var rls1NeedsLimitingUpdate, rls2NeedsLimitingUpdate bool
+
 	// BEGIN LOCKED OPERATIONS
 	epi1.RLock()
 	epi2.RLock()
@@ -87,16 +99,46 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 	addresses[0], addresses[1] = epi1.address, epi2.address
 	loads[0], loads[1] = epi1.lastLoad, epi2.lastLoad
 
+	currentPeers := atomic.LoadInt64(&c.peersCount) + 1 // that's us!
+	lastPeerUpdate := func() time.Time { o, _ := c.lastPeerChangeDate.Load().(time.Time); return o }()
+
 	if epi1.limiters != nil && epi1.limiters[identity] != nil {
+
 		rls[0] = epi1.limiters[identity].limiter
+
+		if rls[0] != nil && epi1.lastLimiterAdjust.Before(lastPeerUpdate) {
+			rls1NeedsLimitingUpdate = true
+			rls[0].SetBurst(rls[0].Burst() / int(currentPeers))
+			rls[0].SetLimit(rls[0].Limit() / rate.Limit(currentPeers))
+		}
 	}
+
 	if epi2.limiters != nil && epi2.limiters[identity] != nil {
+
 		rls[1] = epi2.limiters[identity].limiter
+
+		if rls[1] != nil && epi2.lastLimiterAdjust.Before(lastPeerUpdate) {
+			rls2NeedsLimitingUpdate = true
+			rls[1].SetBurst(rls[1].Burst() / int(currentPeers))
+			rls[1].SetLimit(rls[1].Limit() / rate.Limit(currentPeers))
+		}
 	}
 
 	epi1.RUnlock()
 	epi2.RUnlock()
 	// END LOCKED OPERATIONS
+
+	if rls1NeedsLimitingUpdate {
+		epi1.Lock()
+		epi1.lastLimiterAdjust = lastPeerUpdate
+		epi1.Unlock()
+	}
+
+	if rls2NeedsLimitingUpdate {
+		epi2.Lock()
+		epi2.lastLimiterAdjust = lastPeerUpdate
+		epi2.Unlock()
+	}
 
 	w := [2]float64{.0, .0}
 
@@ -182,16 +224,28 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 }
 
 // Start starts for new backend services.
-func (c *Upstreamer) Start(ctx context.Context) chan struct{} {
+func (c *Upstreamer) Start(ctx context.Context) (chan struct{}, *sync.WaitGroup) {
 
 	ready := make(chan struct{})
 
-	go c.listenService(ctx, ready)
+	var wg sync.WaitGroup
 
-	return ready
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.listenPeers(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.listenServices(ctx, ready)
+	}()
+
+	return ready, &wg
 }
 
-func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
+func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 
 	var err error
 
@@ -230,7 +284,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			var foundOutdated bool
 			for _, srv := range services {
 				for _, ep := range srv.outdatedEndpoints(since) {
-					foundOutdated = foundOutdated || handleRemoveServicePing(services, ping{Name: srv.name, Endpoint: ep})
+					foundOutdated = foundOutdated || handleRemoveServicePing(services, servicePing{Name: srv.name, Endpoint: ep})
 					c.latencies.Delete(ep)
 					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
 				}
@@ -244,7 +298,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 
 		case pub := <-pubs:
 
-			var sp ping
+			var sp servicePing
 
 			if err = pub.Decode(&sp); err != nil {
 				zap.L().Error("Unable to decode service ping", zap.Error(err))
@@ -259,7 +313,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 			}
 
 			switch sp.Status {
-			case serviceStatusHello:
+			case entityStatusHello:
 
 				if handleAddServicePing(services, sp) {
 					c.lock.Lock()
@@ -281,7 +335,7 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 					}
 				}
 
-			case serviceStatusGoodbye:
+			case entityStatusGoodbye:
 
 				if handleRemoveServicePing(services, sp) {
 					c.lock.Lock()
@@ -294,11 +348,128 @@ func (c *Upstreamer) listenService(ctx context.Context, ready chan struct{}) {
 
 		case err = <-errs:
 			if err.Error() == "nats: invalid connection" {
-				zap.L().Fatal("Unrecoverable error from pubsub", zap.Error(err))
+				zap.L().Fatal("Unrecoverable error from pubsub services channel", zap.Error(err))
 			}
-			zap.L().Error("Received error from pubsub", zap.Error(err))
+			zap.L().Error("Received error from pubsub services channel", zap.Error(err))
 
 		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (c *Upstreamer) listenPeers(ctx context.Context) {
+
+	// Build the UUID
+	rID, err := uuid.NewV4()
+	if err != nil {
+		panic(fmt.Errorf("unable to generate runtime UUID: %s", err))
+	}
+	ridb := rID.String()
+
+	// Build publications.
+	helloPub := bahamut.NewPublication(c.upstreamerStatusTopic)
+	if err := helloPub.Encode(upstreamPing{
+		RuntimeID: ridb,
+		Status:    entityStatusHello,
+	}); err != nil {
+		panic(fmt.Errorf("unable to encode upstream hello pub: %s", err))
+	}
+
+	goodbyePub := bahamut.NewPublication(c.upstreamerStatusTopic)
+	if err := goodbyePub.Encode(upstreamPing{
+		RuntimeID: ridb,
+		Status:    entityStatusGoodbye,
+	}); err != nil {
+		panic(fmt.Errorf("unable to encode upstream goodbye pub: %s", err))
+	}
+
+	sendTicker := time.NewTicker(c.config.peerPingInterval)
+	defer sendTicker.Stop()
+
+	cleanTicker := time.NewTicker(c.config.peerTimeoutCheckInterval)
+	defer sendTicker.Stop()
+
+	pubs := make(chan *bahamut.Publication, 1024)
+	errs := make(chan error, 1024)
+
+	unsub := c.pubsub.Subscribe(pubs, errs, c.upstreamerStatusTopic)
+	defer unsub()
+
+	upstreams := sync.Map{}
+
+	// Send the first ping immediately
+	if err := c.pubsub.Publish(helloPub); err != nil {
+		zap.L().Error("Unable to send initial hello to pubsub upstreams channel", zap.Error(err))
+	}
+
+	for {
+		select {
+
+		case <-sendTicker.C:
+
+			if err := c.pubsub.Publish(helloPub); err != nil {
+				zap.L().Error("Unable to send hello to pubsub upstreams channel", zap.Error(err))
+				break
+			}
+
+		case <-cleanTicker.C:
+
+			now := time.Now()
+			var deleted int64
+			upstreams.Range(func(id, date interface{}) bool {
+				if now.After(date.(time.Time).Add(c.config.peerTimeout)) {
+					upstreams.Delete(id)
+					deleted++
+				}
+				return true
+			})
+
+			if deleted > 0 {
+				atomic.AddInt64(&c.peersCount, -deleted)
+				c.lastPeerChangeDate.Store(now)
+			}
+
+		case pub := <-pubs:
+
+			var ping upstreamPing
+
+			if err = pub.Decode(&ping); err != nil {
+				zap.L().Error("Unable to decode uostream ping", zap.Error(err))
+				break
+			}
+
+			if ping.RuntimeID == ridb {
+				break
+			}
+
+			switch ping.Status {
+			case entityStatusHello:
+				if _, ok := upstreams.Load(ping.RuntimeID); !ok {
+					atomic.AddInt64(&c.peersCount, 1)
+					c.lastPeerChangeDate.Store(time.Now())
+				}
+				upstreams.Store(ping.RuntimeID, time.Now())
+
+			case entityStatusGoodbye:
+				upstreams.Delete(ping.RuntimeID)
+				atomic.AddInt64(&c.peersCount, -1)
+				c.lastPeerChangeDate.Store(time.Now())
+			}
+
+		case err = <-errs:
+			if err.Error() == "nats: invalid connection" {
+				zap.L().Fatal("Unrecoverable error from pubsub upstreams channel", zap.Error(err))
+			}
+			zap.L().Error("Received error from pubsub upstreams channel", zap.Error(err))
+
+		case <-ctx.Done():
+
+			if err := c.pubsub.Publish(goodbyePub); err != nil {
+				zap.L().Error("Unable to send hello to pubsub upstreams channel", zap.Error(err))
+				break
+			}
+
 			return
 		}
 	}

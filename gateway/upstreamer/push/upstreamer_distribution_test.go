@@ -14,7 +14,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -52,7 +52,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 1 not loaded/ratelimited and one loaded/not ratelimited", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -89,7 +89,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 	Convey("Given I have an upstreamer with 1 not loaded/not ratelimited and one loaded/ratelimited", t, func() {
 
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
 			"cats": {
 				{
@@ -128,7 +128,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 func TestLatencyBasedUpstreamer(t *testing.T) {
 
 	Convey("Given I have a new latency based upstreamer", t, func() {
-		u := NewUpstreamer(nil, "topic")
+		u := NewUpstreamer(nil, "topic", "topic2")
 		u.config.latencySampleSize = 2
 
 		Convey("When I there is no entries the average is not available", func() {

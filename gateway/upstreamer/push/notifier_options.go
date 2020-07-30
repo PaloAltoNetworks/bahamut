@@ -1,18 +1,30 @@
 package push
 
+import "time"
+
 type notifierConfig struct {
-	rateLimits IdentityToAPILimitersRegistry
+	rateLimits   IdentityToAPILimitersRegistry
+	pingInterval time.Duration
 }
 
 func newNotifierConfig() notifierConfig {
 	return notifierConfig{
-		rateLimits: IdentityToAPILimitersRegistry{},
+		rateLimits:   IdentityToAPILimitersRegistry{},
+		pingInterval: 5 * time.Second,
 	}
 }
 
 // A NotifierOption is the kind of option that can be passed
 // to the notifier.
 type NotifierOption func(*notifierConfig)
+
+// OptionNotifierPingInterval sets the interval between sending
+// 2 pings. The default is 5s.
+func OptionNotifierPingInterval(interval time.Duration) NotifierOption {
+	return func(c *notifierConfig) {
+		c.pingInterval = interval
+	}
+}
 
 // OptionNotifierAnnounceRateLimits can be used to set a IdentityToAPILimitersRegistry
 // to tell the gateways to instantiate some rate limiters for the current

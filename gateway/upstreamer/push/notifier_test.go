@@ -42,6 +42,7 @@ func TestNotifier(t *testing.T) {
 				"srv1",
 				"1.1.1.1:1",
 				OptionNotifierAnnounceRateLimits(limiters),
+				OptionNotifierPingInterval(time.Second),
 			)
 
 			Convey("Then n should be correct", func() {
@@ -59,7 +60,7 @@ func TestNotifier(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 
-				hook := n.MakeStartHook(ctx, 1*time.Second)
+				hook := n.MakeStartHook(ctx)
 
 				err := hook(server)
 
@@ -77,14 +78,14 @@ func TestNotifier(t *testing.T) {
 
 					So(p, ShouldNotBeNil)
 
-					sping := &ping{}
+					sping := &servicePing{}
 					if err := p.Decode(sping); err != nil {
 						panic(err)
 					}
 
 					So(sping.Name, ShouldEqual, "srv1")
 					So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
-					So(sping.Status, ShouldEqual, serviceStatusHello)
+					So(sping.Status, ShouldEqual, entityStatusHello)
 
 					Convey("Then I wait 1.5sec and I should get another pusb", func() {
 
@@ -94,14 +95,14 @@ func TestNotifier(t *testing.T) {
 						case <-time.After(1500 * time.Millisecond):
 						}
 
-						sping := &ping{}
+						sping := &servicePing{}
 						if err := p.Decode(sping); err != nil {
 							panic(err)
 						}
 
 						So(sping.Name, ShouldEqual, "srv1")
 						So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
-						So(sping.Status, ShouldEqual, serviceStatusHello)
+						So(sping.Status, ShouldEqual, entityStatusHello)
 					})
 				})
 			})
@@ -126,14 +127,14 @@ func TestNotifier(t *testing.T) {
 
 					So(p, ShouldNotBeNil)
 
-					sping := &ping{}
+					sping := &servicePing{}
 					if err := p.Decode(sping); err != nil {
 						panic(err)
 					}
 
 					So(sping.Name, ShouldEqual, "srv1")
 					So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
-					So(sping.Status, ShouldEqual, serviceStatusGoodbye)
+					So(sping.Status, ShouldEqual, entityStatusGoodbye)
 				})
 			})
 		})

@@ -59,7 +59,7 @@ type LatencyBasedUpstreamer interface {
 
 // A Gateway can be used as an api gateway.
 type Gateway interface {
-	Start(ctx context.Context)
+	Start()
 	Stop()
 }
 
@@ -275,7 +275,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 }
 
 // Start starts the http server
-func (s *gateway) Start(ctx context.Context) {
+func (s *gateway) Start() {
 
 	go func() {
 
@@ -425,6 +425,9 @@ HANDLE_INTERCEPTION:
 			switch {
 
 			case errors.Is(err, ErrUpstreamerTooManyRequests):
+				if mm := s.gatewayConfig.metricsManager; mm != nil {
+					mm.MeasureRequest(r.Method, path)(http.StatusTooManyRequests, nil)
+				}
 				writeError(w, r, errRateLimit)
 
 			default:

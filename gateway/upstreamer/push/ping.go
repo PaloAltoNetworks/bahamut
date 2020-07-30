@@ -5,11 +5,11 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type serviceStatus int
+type entityStatus int
 
 const (
-	serviceStatusGoodbye serviceStatus = 0
-	serviceStatusHello   serviceStatus = 1
+	entityStatusGoodbye entityStatus = 0
+	entityStatusHello   entityStatus = 1
 )
 
 // An APILimiter holds the parameters of a *rate.Limiter.
@@ -27,14 +27,20 @@ type APILimiter struct {
 // to an AnnouncedRateLimits.
 type IdentityToAPILimitersRegistry map[string]*APILimiter
 
-type ping struct {
+type servicePing struct {
 	// Decodable: must be public
 	Name         string
 	Endpoint     string
 	PushEndpoint string
-	Status       serviceStatus
+	Status       entityStatus
 	Routes       map[int][]bahamut.RouteInfo
 	Versions     map[string]interface{}
 	Load         float64
 	APILimiters  IdentityToAPILimitersRegistry
+}
+
+type upstreamPing struct {
+	// Decodable: must be public
+	Status    entityStatus
+	RuntimeID string
 }
