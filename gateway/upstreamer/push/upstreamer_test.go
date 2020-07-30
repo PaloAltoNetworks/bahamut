@@ -48,13 +48,13 @@ func TestUpstreamer(t *testing.T) {
 
 		Convey("When I ask for the upstream for /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be empty", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldBeEmpty)
-				So(load, ShouldEqual, 0.0)
 			})
 		})
 
@@ -105,13 +105,13 @@ func TestUpstreamer(t *testing.T) {
 
 			Convey("When I ask for the upstream for /cats", func() {
 
-				upstream, load := u.Upstream(&http.Request{
+				upstream, err := u.Upstream(&http.Request{
 					URL: &url.URL{Path: "/cats"},
 				})
 
 				Convey("Then upstream should be correct", func() {
+					So(err, ShouldBeNil)
 					So(upstream, ShouldEqual, "127.0.0.1:1")
-					So(load, ShouldEqual, 0.2)
 					So(len(u.apis["cats"]), ShouldEqual, 1)
 					So(u.apis["cats"][0].address, ShouldEqual, "127.0.0.1:1")
 					So(u.apis["cats"][0].lastLoad, ShouldEqual, 0.2)
@@ -124,13 +124,13 @@ func TestUpstreamer(t *testing.T) {
 
 					Convey("Then endpoint should have been removed because it is outdated", func() {
 
-						upstream, load := u.Upstream(&http.Request{
+						upstream, err := u.Upstream(&http.Request{
 							URL: &url.URL{Path: "/cats"},
 						})
 
 						Convey("Then upstream should be correct", func() {
+							So(err, ShouldBeNil)
 							So(upstream, ShouldEqual, "")
-							So(load, ShouldEqual, 0)
 							So(len(u.apis["cats"]), ShouldEqual, 0)
 						})
 					})
@@ -158,13 +158,13 @@ func TestUpstreamer(t *testing.T) {
 
 				Convey("When I ask for the upstream for /cats", func() {
 
-					upstream, load := u.Upstream(&http.Request{
+					upstream, err := u.Upstream(&http.Request{
 						URL: &url.URL{Path: "/cats"},
 					})
 
 					Convey("Then upstream should be correct", func() {
+						So(err, ShouldBeNil)
 						So(upstream, ShouldEqual, "")
-						So(load, ShouldEqual, 0.0)
 						So(len(u.apis["cats"]), ShouldEqual, 0)
 					})
 				})
@@ -242,15 +242,14 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		Convey("When I call upstream on /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldNotBeEmpty)
 				So(upstream, ShouldNotEqual, "3.3.3.3:1")
-				So(load, ShouldNotEqual, 0)
-				So(load, ShouldNotEqual, 0.9)
 			})
 		})
 	})
@@ -277,13 +276,13 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		Convey("When I call upstream on /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldNotBeEmpty)
-				So(load, ShouldNotEqual, 0)
 			})
 		})
 	})
@@ -295,13 +294,13 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		Convey("When I call upstream on /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldBeEmpty)
-				So(load, ShouldEqual, 0)
 			})
 		})
 	})
@@ -320,13 +319,13 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		Convey("When I call upstream on /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldEqual, "1.1.1.1:1")
-				So(load, ShouldEqual, 0.1)
 			})
 		})
 	})
@@ -349,15 +348,14 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		Convey("When I call upstream on /cats", func() {
 
-			upstream, load := u.Upstream(&http.Request{
+			upstream, err := u.Upstream(&http.Request{
 				URL: &url.URL{Path: "/cats"},
 			})
 
 			Convey("Then upstream should be correct", func() {
+				So(err, ShouldBeNil)
 				So(upstream, ShouldEqual, "2.2.2.2:1")
-				So(load, ShouldEqual, 3)
 			})
 		})
 	})
-
 }

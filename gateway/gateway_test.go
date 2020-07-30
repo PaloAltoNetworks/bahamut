@@ -20,19 +20,25 @@ import (
 )
 
 type simpleUpstreamer struct {
-	ups1 *httptest.Server
-	ups2 *httptest.Server
+	ups1    *httptest.Server
+	ups2    *httptest.Server
+	nextErr error
 }
 
-func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load float64) {
+func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, err error) {
 
+	if u.nextErr != nil {
+		e := u.nextErr
+		u.nextErr = nil
+		return "", e
+	}
 	switch req.URL.Path {
 	case "/ups1":
-		return strings.Replace(u.ups1.URL, "https://", "", 1), 0.2
+		return strings.Replace(u.ups1.URL, "https://", "", 1), nil
 	case "/ups2":
-		return strings.Replace(u.ups2.URL, "https://", "", 1), 0.1
+		return strings.Replace(u.ups2.URL, "https://", "", 1), nil
 	default:
-		return "", 0.0
+		return "", nil
 	}
 }
 
@@ -161,6 +167,24 @@ func TestGateway(t *testing.T) {
 				resp, err := testclient.Do(req)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 503)
+			})
+
+			Convey("Then we I call and get a ErrUpstreamerTooManyRequests", func() {
+				u.nextErr = ErrUpstreamerTooManyRequests
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups3", nil)
+				req.Close = true
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			})
+
+			Convey("Then we I call and get an unknown error", func() {
+				u.nextErr = fmt.Errorf("oh no")
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups3", nil)
+				req.Close = true
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
 			})
 
 			// Convey("Then the metric manager should have been called", func() {

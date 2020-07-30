@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.aporeto.io/bahamut"
+	"go.aporeto.io/bahamut/gateway"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -40,7 +41,7 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 }
 
 // Upstream returns the upstream to go for the given path
-func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
+func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
 	identity := getTargetIdentity(req.URL.Path)
 
@@ -54,14 +55,14 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	switch l {
 
 	case 0:
-		return "", 0.0
+		return "", nil
 
 	case 1:
 		ep := c.apis[identity][0]
 		ep.RLock()
 		defer ep.RUnlock()
 
-		return ep.address, ep.lastLoad
+		return ep.address, nil
 
 	case 2:
 		n1, n2 = 0, 1
@@ -131,21 +132,51 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, float64) {
 	// Given a random choice from 0 to w[1]+1
 	draw := float64(c.config.randomizer.Intn(int(w[1]) + 1))
 
-	// We pick the fastest/less loaded candidate
-	if draw <= w[0] {
-		// If we have a rl, and it is overload,
-		// choose the other candidate.
-		// This should potentially save a round trip in any case.
-		if rls[1] != nil && !rls[1].Allow() {
-			return addresses[0], loads[0]
+	// routine to extract the endpoint for the given
+	// choice index. If it returns false, the object
+	// has a rate limiter, and it is currently full.
+	check := func(idx uint8) (string, bool) {
+		if rls[idx] != nil && !rls[idx].Allow() {
+			return "", false
 		}
-		return addresses[1], loads[1]
+		return addresses[idx], true
 	}
 
-	if rls[0] != nil && !rls[0].Allow() {
-		return addresses[1], loads[1]
+	// We pick the fastest/less loaded candidate
+	// and get the index of the winner.
+	var idx uint8
+	if draw <= w[0] {
+		idx = 1
 	}
-	return addresses[0], loads[0]
+
+	// We check if the winner should be
+	// ok to handle the request based on its
+	// requested rate limiting. If so, we return
+	// it's address.
+	addr, ok := check(idx)
+	if ok {
+		return addr, nil
+	}
+
+	// If not, we flip the index.
+	if idx == 0 {
+		idx = 1
+	} else {
+		idx = 0
+	}
+
+	// And we check if the other endpoint would
+	// be ok to handle the request.
+	//
+	// Note: we may need to make a decision based on the difference
+	// of the load between the 2 candidates.
+	addr, ok = check(idx)
+	if ok {
+		return addr, nil
+	}
+
+	// If it is sill not ok, we return a 429 error.
+	return "", gateway.ErrUpstreamerTooManyRequests
 }
 
 // Start starts for new backend services.

@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -22,9 +23,31 @@ import (
 	"go.uber.org/zap"
 )
 
+// ErrUpstreamerTooManyRequests can be returned to
+// instruct the bahamut.Gateway to return to stop
+// routing and return a a 429 Too Many Request error to
+// the client.
+var ErrUpstreamerTooManyRequests = errors.New("Please retry in a moment")
+
 // An Upstreamer is the interface that can compute upstreams.
 type Upstreamer interface {
-	Upstream(req *http.Request) (upstream string, load float64)
+
+	// Upstream is called by the bahamut.Gateway for each incoming request
+	// in order to find which upstream to forward the request to, based
+	// on the incoming http.Request and any other details the implementation
+	// whishes to. Needless to say, it must be fast or it would severly degrade
+	// the performances of the bahamut.Gateway.
+	//
+	// The request state must not be changed from this function.
+	//
+	// The returned upstream is a string in the form "https://10.3.19.4".
+	// If it is empty, the bahamut.Gayeway will return a
+	// 503 Service Unavailable error.
+	//
+	// If Upstream returns an error, the bahamut.Gayeway will check for a
+	// known ErrUpstreamerX and will act accordingly. Otherwise it will
+	// return the error as a 500 Internal Server Error.
+	Upstream(req *http.Request) (upstream string, err error)
 }
 
 // A LatencyBasedUpstreamer is the interface that can circle back
@@ -354,7 +377,6 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	var upstream string
-	var load float64
 	var interceptAction InterceptorAction
 	var err error
 
@@ -399,7 +421,31 @@ HANDLE_INTERCEPTION:
 	// we find it as usual.
 	if upstream == "" {
 
-		upstream, load = s.upstreamer.Upstream(r)
+		if upstream, err = s.upstreamer.Upstream(r); err != nil {
+			switch {
+
+			case errors.Is(err, ErrUpstreamerTooManyRequests):
+				writeError(w, r, errRateLimit)
+
+			default:
+
+				zap.L().Error("request",
+					zap.String("ip", r.RemoteAddr),
+					zap.String("method", r.Method),
+					zap.String("proto", r.Proto),
+					zap.String("path", r.URL.Path),
+					zap.String("ns", r.Header.Get("X-Namespace")),
+					zap.String("routed", upstream),
+					zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
+					zap.Error(err),
+				)
+
+				writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", err.Error()))
+			}
+
+			return
+		}
+
 		if upstream == "" {
 			writeError(w, r, errServiceUnavailable)
 			return
@@ -413,7 +459,6 @@ HANDLE_INTERCEPTION:
 		zap.String("path", r.URL.Path),
 		zap.String("ns", r.Header.Get("X-Namespace")),
 		zap.String("routed", upstream),
-		zap.Float64("load", load),
 		zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
 	)
 
