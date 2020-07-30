@@ -410,7 +410,6 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			if err := c.pubsub.Publish(helloPub); err != nil {
 				zap.L().Error("Unable to send hello to pubsub peers channel", zap.Error(err))
-				break
 			}
 
 		case <-cleanTicker.C:
