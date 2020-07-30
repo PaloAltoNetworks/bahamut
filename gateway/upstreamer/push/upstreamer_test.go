@@ -23,9 +23,9 @@ func TestUpstreamer(t *testing.T) {
 		u := NewUpstreamer(
 			pubsub,
 			"topic",
-			OptionOverrideEndpointsAddresses("127.0.0.1"),
+			OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
 			OptionRequiredServices([]string{"srv1"}),
-			OptionServiceTimeout(2*time.Second, 1*time.Second),
+			OptionUpstreamerServiceTimeout(2*time.Second, 1*time.Second),
 		)
 
 		Convey("Then the upstreamer should be correct", func() {
@@ -182,8 +182,8 @@ func TestUpstreamer(t *testing.T) {
 		u := NewUpstreamer(
 			pubsub,
 			"topic",
-			OptionOverrideEndpointsAddresses("127.0.0.1"),
-			OptionServiceTimeout(2*time.Second, 1*time.Second),
+			OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
+			OptionUpstreamerServiceTimeout(2*time.Second, 1*time.Second),
 		)
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -216,7 +216,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 	// use a deterministic randomizer for tests
 
-	opt := OptionRandomizer(deterministicRandom{
+	opt := OptionUpstreamerRandomizer(deterministicRandom{
 		value: 1,
 	})
 

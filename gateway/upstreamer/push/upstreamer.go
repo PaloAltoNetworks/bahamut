@@ -16,16 +16,17 @@ import (
 // A Upstreamer listens and update the
 // list of the backend services.
 type Upstreamer struct {
-	pubsub             bahamut.PubSubClient
-	apis               map[string][]*endpointInfo
-	lock               sync.RWMutex
-	serviceStatusTopic string
-	config             upstreamConfig
-	latencies          sync.Map
+	pubsub                bahamut.PubSubClient
+	apis                  map[string][]*endpointInfo
+	lock                  sync.RWMutex
+	serviceStatusTopic    string
+	upstreamerStatusTopic string
+	config                upstreamConfig
+	latencies             sync.Map
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based
-func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...Option) *Upstreamer {
+func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, options ...UpstreamerOption) *Upstreamer {
 
 	cfg := newUpstreamConfig()
 	for _, opt := range options {
@@ -33,10 +34,11 @@ func NewUpstreamer(pubsub bahamut.PubSubClient, serviceStatusTopic string, optio
 	}
 
 	return &Upstreamer{
-		pubsub:             pubsub,
-		apis:               map[string][]*endpointInfo{},
-		serviceStatusTopic: serviceStatusTopic,
-		config:             cfg,
+		pubsub:                pubsub,
+		apis:                  map[string][]*endpointInfo{},
+		serviceStatusTopic:    serviceStatusTopic,
+		upstreamerStatusTopic: serviceStatusTopic + "-upstreamers",
+		config:                cfg,
 	}
 }
 
