@@ -95,13 +95,13 @@ type simpleLimiter struct{}
 
 func (l *simpleLimiter) DefaultRates() *ratelimit.RateSet {
 	rl := ratelimit.NewRateSet()
-	rl.Add(time.Second, 100, 1000)
+	_ = rl.Add(time.Second, 100, 1000)
 	return rl
 }
 
 func (l *simpleLimiter) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
 	rl := ratelimit.NewRateSet()
-	rl.Add(time.Second, 100, 1000)
+	_ = rl.Add(time.Second, 100, 1000)
 	return rl, nil
 }
 
