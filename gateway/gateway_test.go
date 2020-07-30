@@ -14,6 +14,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/tg/tglib"
 )
@@ -90,6 +91,24 @@ func makeServerCert() tls.Certificate {
 	return tlsCert
 }
 
+type simpleLimiter struct{}
+
+func (l *simpleLimiter) DefaultRates() *ratelimit.RateSet {
+	rl := ratelimit.NewRateSet()
+	rl.Add(time.Second, 100, 1000)
+	return rl
+}
+
+func (l *simpleLimiter) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
+	rl := ratelimit.NewRateSet()
+	rl.Add(time.Second, 100, 1000)
+	return rl, nil
+}
+
+func (l *simpleLimiter) ExtractSource(req *http.Request) (token string, amount int64, err error) {
+	return "default", 1, nil
+}
+
 func TestGateway(t *testing.T) {
 
 	Convey("Given I have 2 tls upstreams and an Upstreamer", t, func() {
@@ -123,7 +142,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				// OptionRateLimiting(true, 100, 1000),
+				OptionRateLimiter(&simpleLimiter{}),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionUpstreamConfig(0, 0, 0, 0, 0, "NetworkErrorRatio() > 0.5", false),
 				OptionEnableTrace(true),
@@ -199,7 +218,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				// OptionRateLimiting(true, 100, 1000),
+				OptionRateLimiter(&simpleLimiter{}),
 				OptionEnableMaintenance(true),
 			)
 			defer gw.Stop()
@@ -239,7 +258,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				// OptionRateLimiting(true, 100, 1000),
+				OptionRateLimiter(&simpleLimiter{}),
 				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
 					req.Header.Add("inject", "hello")
 					return nil
