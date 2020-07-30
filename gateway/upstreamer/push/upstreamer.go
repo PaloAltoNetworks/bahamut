@@ -19,15 +19,15 @@ import (
 // A Upstreamer listens and update the
 // list of the backend services.
 type Upstreamer struct {
-	pubsub                bahamut.PubSubClient
-	apis                  map[string][]*endpointInfo
-	lock                  sync.RWMutex
-	serviceStatusTopic    string
-	upstreamerStatusTopic string
-	config                upstreamConfig
-	latencies             sync.Map
-	peersCount            int64
-	lastPeerChangeDate    atomic.Value
+	pubsub             bahamut.PubSubClient
+	apis               map[string][]*endpointInfo
+	lock               sync.RWMutex
+	serviceStatusTopic string
+	peerStatusTopic    string
+	config             upstreamConfig
+	latencies          sync.Map
+	peersCount         int64
+	lastPeerChangeDate atomic.Value
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based
@@ -44,11 +44,11 @@ func NewUpstreamer(
 	}
 
 	return &Upstreamer{
-		pubsub:                pubsub,
-		apis:                  map[string][]*endpointInfo{},
-		serviceStatusTopic:    serviceStatusTopic,
-		upstreamerStatusTopic: peerStatusTopic,
-		config:                cfg,
+		pubsub:             pubsub,
+		apis:               map[string][]*endpointInfo{},
+		serviceStatusTopic: serviceStatusTopic,
+		peerStatusTopic:    peerStatusTopic,
+		config:             cfg,
 	}
 }
 
@@ -368,20 +368,20 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 	ridb := rID.String()
 
 	// Build publications.
-	helloPub := bahamut.NewPublication(c.upstreamerStatusTopic)
-	if err := helloPub.Encode(upstreamPing{
+	helloPub := bahamut.NewPublication(c.peerStatusTopic)
+	if err := helloPub.Encode(peerPing{
 		RuntimeID: ridb,
 		Status:    entityStatusHello,
 	}); err != nil {
-		panic(fmt.Errorf("unable to encode upstream hello pub: %s", err))
+		panic(fmt.Errorf("unable to encode peer hello pub: %s", err))
 	}
 
-	goodbyePub := bahamut.NewPublication(c.upstreamerStatusTopic)
-	if err := goodbyePub.Encode(upstreamPing{
+	goodbyePub := bahamut.NewPublication(c.peerStatusTopic)
+	if err := goodbyePub.Encode(peerPing{
 		RuntimeID: ridb,
 		Status:    entityStatusGoodbye,
 	}); err != nil {
-		panic(fmt.Errorf("unable to encode upstream goodbye pub: %s", err))
+		panic(fmt.Errorf("unable to encode peer goodbye pub: %s", err))
 	}
 
 	sendTicker := time.NewTicker(c.config.peerPingInterval)
@@ -393,14 +393,14 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 	pubs := make(chan *bahamut.Publication, 1024)
 	errs := make(chan error, 1024)
 
-	unsub := c.pubsub.Subscribe(pubs, errs, c.upstreamerStatusTopic)
+	unsub := c.pubsub.Subscribe(pubs, errs, c.peerStatusTopic)
 	defer unsub()
 
-	upstreams := sync.Map{}
+	peers := sync.Map{}
 
 	// Send the first ping immediately
 	if err := c.pubsub.Publish(helloPub); err != nil {
-		zap.L().Error("Unable to send initial hello to pubsub upstreams channel", zap.Error(err))
+		zap.L().Error("Unable to send initial hello to pubsub peers channel", zap.Error(err))
 	}
 
 	for {
@@ -409,7 +409,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 		case <-sendTicker.C:
 
 			if err := c.pubsub.Publish(helloPub); err != nil {
-				zap.L().Error("Unable to send hello to pubsub upstreams channel", zap.Error(err))
+				zap.L().Error("Unable to send hello to pubsub peers channel", zap.Error(err))
 				break
 			}
 
@@ -417,9 +417,9 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			now := time.Now()
 			var deleted int64
-			upstreams.Range(func(id, date interface{}) bool {
+			peers.Range(func(id, date interface{}) bool {
 				if now.After(date.(time.Time).Add(c.config.peerTimeout)) {
-					upstreams.Delete(id)
+					peers.Delete(id)
 					deleted++
 				}
 				return true
@@ -432,7 +432,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 		case pub := <-pubs:
 
-			var ping upstreamPing
+			var ping peerPing
 
 			if err = pub.Decode(&ping); err != nil {
 				zap.L().Error("Unable to decode uostream ping", zap.Error(err))
@@ -445,14 +445,14 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			switch ping.Status {
 			case entityStatusHello:
-				if _, ok := upstreams.Load(ping.RuntimeID); !ok {
+				if _, ok := peers.Load(ping.RuntimeID); !ok {
 					atomic.AddInt64(&c.peersCount, 1)
 					c.lastPeerChangeDate.Store(time.Now())
 				}
-				upstreams.Store(ping.RuntimeID, time.Now())
+				peers.Store(ping.RuntimeID, time.Now())
 
 			case entityStatusGoodbye:
-				upstreams.Delete(ping.RuntimeID)
+				peers.Delete(ping.RuntimeID)
 				atomic.AddInt64(&c.peersCount, -1)
 				c.lastPeerChangeDate.Store(time.Now())
 			}

@@ -39,7 +39,7 @@ type servicePing struct {
 	APILimiters  IdentityToAPILimitersRegistry
 }
 
-type upstreamPing struct {
+type peerPing struct {
 	// Decodable: must be public
 	Status    entityStatus
 	RuntimeID string
