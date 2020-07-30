@@ -149,8 +149,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
 		if rls[0] != nil && epi1.lastLimiterAdjust.Before(lastPeerUpdate) {
 			rls1NeedsLimitingUpdate = true
-			rls[0].SetBurst(rls[0].Burst() / int(currentPeers))
-			rls[0].SetLimit(rls[0].Limit() / rate.Limit(currentPeers))
+			rls[0].SetBurst(epi1.limiters[identity].Burst / int(currentPeers))
+			rls[0].SetLimit(epi1.limiters[identity].Limit / rate.Limit(currentPeers))
 		}
 	}
 
@@ -160,8 +160,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
 		if rls[1] != nil && epi2.lastLimiterAdjust.Before(lastPeerUpdate) {
 			rls2NeedsLimitingUpdate = true
-			rls[1].SetBurst(rls[1].Burst() / int(currentPeers))
-			rls[1].SetLimit(rls[1].Limit() / rate.Limit(currentPeers))
+			rls[1].SetBurst(epi2.limiters[identity].Burst / int(currentPeers))
+			rls[1].SetLimit(epi2.limiters[identity].Limit / rate.Limit(currentPeers))
 		}
 	}
 

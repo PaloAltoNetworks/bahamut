@@ -485,6 +485,8 @@ func TestUpstreamUpstreamer(t *testing.T) {
 					lastLimiterAdjust: now.Add(-time.Hour),
 					limiters: IdentityToAPILimitersRegistry{
 						"cats": &APILimiter{
+							Limit:   rate.Limit(10.0),
+							Burst:   30,
 							limiter: rate.NewLimiter(rate.Limit(10.0), 30),
 						},
 					},
@@ -495,6 +497,8 @@ func TestUpstreamUpstreamer(t *testing.T) {
 					lastLoad:          1.0,
 					limiters: IdentityToAPILimitersRegistry{
 						"cats": &APILimiter{
+							Limit:   rate.Limit(100.0),
+							Burst:   300,
 							limiter: rate.NewLimiter(rate.Limit(100.0), 300),
 						},
 					},
