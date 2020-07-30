@@ -141,10 +141,16 @@ func OptionUpstreamerPeersPingInterval(t time.Duration) UpstreamerOption {
 
 // OptionUpstreamerTokenRateLimiting configures the per source rate limiting.
 // The default is cps:500/burst:2000
-func OptionUpstreamerTokenRateLimiting(cps int, burst int) UpstreamerOption {
+func OptionUpstreamerTokenRateLimiting(rps int, burst int) UpstreamerOption {
 	return func(cfg *upstreamConfig) {
-		cfg.tokenLimitingRPS = int64(cps)
+		cfg.tokenLimitingRPS = int64(rps)
 		cfg.tokenLimitingBurst = int64(burst)
+		if cfg.tokenLimitingRPS <= 0 {
+			panic("rps cannot be <= 0")
+		}
+		if cfg.tokenLimitingBurst <= 0 {
+			panic("burst cannot be <= 0")
+		}
 	}
 }
 

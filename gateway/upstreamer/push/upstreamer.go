@@ -61,12 +61,8 @@ func NewUpstreamer(
 
 // DefaultRates implements the gateway.Limiter interface.
 func (c *Upstreamer) DefaultRates() *ratelimit.RateSet {
-
 	rates := ratelimit.NewRateSet()
-	if err := rates.Add(time.Second, c.config.tokenLimitingRPS, c.config.tokenLimitingBurst); err != nil {
-		panic(fmt.Errorf("unable to make rate set: %s", err))
-	}
-
+	_ = rates.Add(time.Second, c.config.tokenLimitingRPS, c.config.tokenLimitingBurst) // This error cannot happen
 	return rates
 }
 
@@ -87,8 +83,6 @@ func (c *Upstreamer) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
 		) // This error cannot happen
 
 		c.lastRateSet.Store(rl)
-	} else {
-		fmt.Println("reusing previous rates")
 	}
 
 	return rl, nil
