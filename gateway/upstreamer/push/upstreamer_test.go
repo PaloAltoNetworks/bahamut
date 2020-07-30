@@ -530,7 +530,7 @@ func TestUpstreamPeers(t *testing.T) {
 		defer cancel()
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		pubsub.Connect(nil)
+		_ = pubsub.Connect(nil)
 
 		u := NewUpstreamer(pubsub, "serviceStatusTopic", "peerStatusTopic", OptionUpstreamerPeersPingInterval(time.Second))
 
@@ -580,7 +580,7 @@ func TestUpstreamPeers(t *testing.T) {
 		defer cancel()
 
 		pubsub := bahamut.NewLocalPubSubClient()
-		pubsub.Connect(nil)
+		_ = pubsub.Connect(nil)
 
 		u := NewUpstreamer(
 			pubsub,
