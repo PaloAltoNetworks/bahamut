@@ -35,7 +35,7 @@ type Upstreamer interface {
 	// Upstream is called by the bahamut.Gateway for each incoming request
 	// in order to find which upstream to forward the request to, based
 	// on the incoming http.Request and any other details the implementation
-	// whishes to. Needless to say, it must be fast or it would severly degrade
+	// whishes to. Needless to say, it must be fast or it would severely degrade
 	// the performances of the bahamut.Gateway.
 	//
 	// The request state must not be changed from this function.
