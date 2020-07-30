@@ -12,6 +12,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/armon/go-proxyproto v0.0.0-20200108142055-f0b8253b1507
+	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v3.2.0+incompatible

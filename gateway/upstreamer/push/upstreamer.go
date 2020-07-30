@@ -10,14 +10,20 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/bahamut/gateway"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
+var emptyRateSet = &ratelimit.RateSet{}
+
 // A Upstreamer listens and update the
 // list of the backend services.
+// It also implement gateway.Limiter interface
+// allowing to install the per token rate limiter
+// in an efficient way.
 type Upstreamer struct {
 	pubsub             bahamut.PubSubClient
 	apis               map[string][]*endpointInfo
@@ -27,7 +33,8 @@ type Upstreamer struct {
 	config             upstreamConfig
 	latencies          sync.Map
 	peersCount         int64
-	lastPeerChangeDate atomic.Value
+	lastPeerChangeDate atomic.Value // time.Time
+	lastRateSet        atomic.Value // *ratelimit.RateSet
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based
@@ -50,6 +57,46 @@ func NewUpstreamer(
 		peerStatusTopic:    peerStatusTopic,
 		config:             cfg,
 	}
+}
+
+// DefaultRates implements the gateway.Limiter interface.
+func (c *Upstreamer) DefaultRates() *ratelimit.RateSet {
+
+	rates := ratelimit.NewRateSet()
+	if err := rates.Add(time.Second, c.config.tokenLimitingRPS, c.config.tokenLimitingBurst); err != nil {
+		panic(fmt.Errorf("unable to make rate set: %s", err))
+	}
+
+	return rates
+}
+
+// ExtractRates implements the gateway.Limiter interface.
+func (c *Upstreamer) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
+
+	rl, ok := c.lastRateSet.Load().(*ratelimit.RateSet)
+
+	if !ok || rl == emptyRateSet {
+
+		rl = ratelimit.NewRateSet()
+		currentPeers := atomic.LoadInt64(&c.peersCount) + 1 // that's us!
+
+		_ = rl.Add(
+			time.Second,
+			c.config.tokenLimitingRPS/currentPeers,
+			c.config.tokenLimitingBurst/currentPeers,
+		) // This error cannot happen
+
+		c.lastRateSet.Store(rl)
+	} else {
+		fmt.Println("reusing previous rates")
+	}
+
+	return rl, nil
+}
+
+// ExtractSource implements the gateway.Limiter interface.
+func (c *Upstreamer) ExtractSource(r *http.Request) (string, int64, error) {
+	return c.config.tokenLimitingSourceExtractor(r)
 }
 
 // Upstream returns the upstream to go for the given path
@@ -427,6 +474,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 			if deleted > 0 {
 				atomic.AddInt64(&c.peersCount, -deleted)
 				c.lastPeerChangeDate.Store(now)
+				c.lastRateSet.Store(emptyRateSet)
 			}
 
 		case pub := <-pubs:
@@ -447,6 +495,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 				if _, ok := peers.Load(ping.RuntimeID); !ok {
 					atomic.AddInt64(&c.peersCount, 1)
 					c.lastPeerChangeDate.Store(time.Now())
+					c.lastRateSet.Store(emptyRateSet)
 				}
 				peers.Store(ping.RuntimeID, time.Now())
 
@@ -455,6 +504,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 					peers.Delete(ping.RuntimeID)
 					atomic.AddInt64(&c.peersCount, -1)
 					c.lastPeerChangeDate.Store(time.Now())
+					c.lastRateSet.Store(emptyRateSet)
 				}
 			}
 

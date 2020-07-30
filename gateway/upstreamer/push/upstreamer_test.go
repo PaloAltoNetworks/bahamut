@@ -4,10 +4,12 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/bahamut/gateway"
 	"golang.org/x/time/rate"
@@ -576,6 +578,11 @@ func TestUpstreamPeers(t *testing.T) {
 
 	Convey("An upstreamer should manage the hello and goodbye pings correctly", t, func() {
 
+		makedrl := func(cps, burst int64) *ratelimit.RateSet {
+			drl := ratelimit.NewRateSet()
+			_ = drl.Add(time.Second, cps, burst)
+			return drl
+		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
@@ -591,6 +598,7 @@ func TestUpstreamPeers(t *testing.T) {
 			OptionUpstreamerPeersTimeout(2*time.Second),
 		)
 
+		So(u.DefaultRates(), ShouldResemble, makedrl(500, 2000))
 		u.Start(ctx)
 
 		time.Sleep(300 * time.Millisecond)
@@ -614,38 +622,103 @@ func TestUpstreamPeers(t *testing.T) {
 			panic(err)
 		}
 		time.Sleep(300 * time.Millisecond)
-		So(u.peersCount, ShouldEqual, 1)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 1)
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldEqual, emptyRateSet)
+		ndrl, _ := u.ExtractRates(nil)
+		So(ndrl, ShouldResemble, makedrl(500/2, 2000/2))
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldResemble, makedrl(500/2, 2000/2))
 
 		// Send second hello from same peer
 		if err := pubsub.Publish(fakeHello1); err != nil {
 			panic(err)
 		}
 		time.Sleep(300 * time.Millisecond)
-		So(u.peersCount, ShouldEqual, 1)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 1)
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldNotEqual, emptyRateSet)
+		ndrl, _ = u.ExtractRates(nil)
+		So(ndrl, ShouldResemble, makedrl(500/2, 2000/2))
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldResemble, makedrl(500/2, 2000/2))
 
-		// Send first hello from another pee peer
+		// Send first hello from another peer
 		if err := pubsub.Publish(fakeHello2); err != nil {
 			panic(err)
 		}
 		time.Sleep(300 * time.Millisecond)
-		So(u.peersCount, ShouldEqual, 2)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 2)
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldEqual, emptyRateSet)
+		ndrl, _ = u.ExtractRates(nil)
+		So(ndrl, ShouldResemble, makedrl(500/3, 2000/3))
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldResemble, makedrl(500/3, 2000/3))
 
 		// Send goodbye from first peer
 		if err := pubsub.Publish(fakeGoodbye1); err != nil {
 			panic(err)
 		}
 		time.Sleep(300 * time.Millisecond)
-		So(u.peersCount, ShouldEqual, 1)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 1)
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldEqual, emptyRateSet)
+		ndrl, _ = u.ExtractRates(nil)
+		So(ndrl, ShouldResemble, makedrl(500/2, 2000/2))
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldResemble, makedrl(500/2, 2000/2))
 
 		// Send another goodbye from first peer (should not happen but should not cause issue)
 		if err := pubsub.Publish(fakeGoodbye1); err != nil {
 			panic(err)
 		}
 		time.Sleep(300 * time.Millisecond)
-		So(u.peersCount, ShouldEqual, 1)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 1)
 
 		// Now let the second peer timeout
 		time.Sleep(3 * time.Second)
-		So(u.peersCount, ShouldEqual, 0)
+		So(atomic.LoadInt64(&u.peersCount), ShouldEqual, 0)
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldEqual, emptyRateSet)
+		ndrl, _ = u.ExtractRates(nil)
+		So(ndrl, ShouldResemble, makedrl(500, 2000))
+		So(u.lastRateSet.Load().(*ratelimit.RateSet), ShouldResemble, makedrl(500, 2000))
+	})
+}
+
+func TestUpstreamerExtractSource(t *testing.T) {
+
+	Convey("Given given I have an upstreamer that receives a request with no auth", t, func() {
+
+		u := NewUpstreamer(
+			nil,
+			"serviceStatusTopic",
+			"peerStatusTopic",
+			OptionUpstreamerPeersPingInterval(time.Second),
+			OptionUpstreamerPeersCheckInterval(time.Second),
+			OptionUpstreamerPeersTimeout(2*time.Second),
+			OptionUpstreamerTokenSourceExtractor(defaultTokenSourceExtractor),
+		)
+
+		token, amount, err := u.ExtractSource(&http.Request{
+			Header: http.Header{"Authorization": {""}},
+		})
+
+		So(token, ShouldEqual, "default")
+		So(amount, ShouldEqual, 1)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Given given I have an upstreamer that receives a request with no auth", t, func() {
+
+		u := NewUpstreamer(
+			nil,
+			"serviceStatusTopic",
+			"peerStatusTopic",
+			OptionUpstreamerPeersPingInterval(time.Second),
+			OptionUpstreamerPeersCheckInterval(time.Second),
+			OptionUpstreamerPeersTimeout(2*time.Second),
+			OptionUpstreamerTokenSourceExtractor(defaultTokenSourceExtractor),
+		)
+
+		token, amount, err := u.ExtractSource(&http.Request{
+			Header: http.Header{"Authorization": {"Bearer X"}},
+		})
+
+		So(token, ShouldEqual, "763578776710062675")
+		So(amount, ShouldEqual, 1)
+		So(err, ShouldBeNil)
 	})
 }

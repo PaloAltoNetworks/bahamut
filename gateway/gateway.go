@@ -19,6 +19,7 @@ import (
 	"github.com/vulcand/oxy/connlimit"
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/ratelimit"
+	"github.com/vulcand/oxy/utils"
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
 )
@@ -28,40 +29,6 @@ import (
 // routing and return a a 429 Too Many Request error to
 // the client.
 var ErrUpstreamerTooManyRequests = errors.New("Please retry in a moment")
-
-// An Upstreamer is the interface that can compute upstreams.
-type Upstreamer interface {
-
-	// Upstream is called by the bahamut.Gateway for each incoming request
-	// in order to find which upstream to forward the request to, based
-	// on the incoming http.Request and any other details the implementation
-	// whishes to. Needless to say, it must be fast or it would severely degrade
-	// the performances of the bahamut.Gateway.
-	//
-	// The request state must not be changed from this function.
-	//
-	// The returned upstream is a string in the form "https://10.3.19.4".
-	// If it is empty, the bahamut.Gayeway will return a
-	// 503 Service Unavailable error.
-	//
-	// If Upstream returns an error, the bahamut.Gayeway will check for a
-	// known ErrUpstreamerX and will act accordingly. Otherwise it will
-	// return the error as a 500 Internal Server Error.
-	Upstream(req *http.Request) (upstream string, err error)
-}
-
-// A LatencyBasedUpstreamer is the interface that can circle back
-// response time as an input for Upstreamer decision.
-type LatencyBasedUpstreamer interface {
-	CollectLatency(address string, responseTime time.Duration)
-	Upstreamer
-}
-
-// A Gateway can be used as an api gateway.
-type Gateway interface {
-	Start()
-	Stop()
-}
 
 // An gateway is cool
 type gateway struct {
@@ -234,7 +201,9 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 
 		if topProxyHandler, err = connlimit.New(
 			topProxyHandler,
-			&sourceExtractor{},
+			utils.ExtractorFunc(func(req *http.Request) (token string, amount int64, err error) {
+				return "default", 1, nil
+			}),
 			int64(cfg.tcpMaxConnections),
 			connlimit.ErrorHandler(&errorHandler{}),
 		); err != nil {
@@ -242,17 +211,12 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		}
 	}
 
-	if cfg.rateLimitingEnabled {
-
-		rates := ratelimit.NewRateSet()
-		if err := rates.Add(time.Second, cfg.rateLimitingRPS, cfg.rateLimitingBurst); err != nil {
-			return nil, fmt.Errorf("unable to make rate set: %s", err)
-		}
-
+	if cfg.limiter != nil {
 		if topProxyHandler, err = ratelimit.New(
 			topProxyHandler,
-			&sourceExtractor{},
-			rates,
+			utils.ExtractorFunc(cfg.limiter.ExtractSource),
+			cfg.limiter.DefaultRates(),
+			ratelimit.ExtractRates(ratelimit.RateExtractorFunc(cfg.limiter.ExtractRates)),
 			ratelimit.ErrorHandler(&errorHandler{}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize ratelimiter: %s", err)

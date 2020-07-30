@@ -71,9 +71,7 @@ type gwconfig struct {
 	suffixInterceptors          map[string]InterceptorFunc
 	proxyProtocolEnabled        bool
 	proxyProtocolSubnet         string
-	rateLimitingBurst           int64
-	rateLimitingEnabled         bool
-	rateLimitingRPS             int64
+	limiter                     Limiter
 	tcpMaxConnections           int
 	tcpRateLimitingBurst        int
 	tcpRateLimitingCPS          float64
@@ -110,8 +108,6 @@ func newGatewayConfig() *gwconfig {
 		httpIdleTimeout:             240 * time.Second,
 		httpReadTimeout:             120 * time.Second,
 		httpWriteTimeout:            240 * time.Second,
-		rateLimitingRPS:             2000,
-		rateLimitingBurst:           500,
 	}
 }
 
@@ -137,12 +133,11 @@ func OptionTCPRateLimiting(enabled bool, cps float64, burst int, maxConnections 
 	}
 }
 
-// OptionRateLimiting enables and configures the HTTP rate limiter.
-func OptionRateLimiting(enabled bool, cps int, burst int) Option {
+// OptionRateLimiter sets the limiter to use
+// for per client rate limiting.
+func OptionRateLimiter(l Limiter) Option {
 	return func(cfg *gwconfig) {
-		cfg.rateLimitingEnabled = enabled
-		cfg.rateLimitingRPS = int64(cps)
-		cfg.rateLimitingBurst = int64(burst)
+		cfg.limiter = l
 	}
 }
 

@@ -29,10 +29,9 @@ func Test_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptionRateLimiting should work", t, func() {
-		OptionRateLimiting(true, 1.0, 2)(c)
-		So(c.rateLimitingEnabled, ShouldEqual, true)
-		So(c.rateLimitingRPS, ShouldEqual, 1.0)
-		So(c.rateLimitingBurst, ShouldEqual, 2)
+		l := Limiter(nil)
+		OptionRateLimiter(l)(c)
+		So(c.limiter, ShouldEqual, l)
 	})
 
 	Convey("Calling OptionEnableTrace should work", t, func() {

@@ -123,7 +123,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
+				// OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionUpstreamConfig(0, 0, 0, 0, 0, "NetworkErrorRatio() > 0.5", false),
 				OptionEnableTrace(true),
@@ -199,7 +199,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
+				// OptionRateLimiting(true, 100, 1000),
 				OptionEnableMaintenance(true),
 			)
 			defer gw.Stop()
@@ -239,7 +239,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
+				// OptionRateLimiting(true, 100, 1000),
 				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
 					req.Header.Add("inject", "hello")
 					return nil
@@ -453,7 +453,6 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 			)
@@ -494,7 +493,6 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 			)
 			defer gw.Stop()
@@ -534,7 +532,6 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
 				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
 				OptionEnableProxyProtocol(true, "oopsy"),
 			)
