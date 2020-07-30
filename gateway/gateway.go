@@ -429,7 +429,7 @@ HANDLE_INTERCEPTION:
 
 			default:
 
-				zap.L().Error("request",
+				zap.L().Error("Upstreamer error",
 					zap.String("ip", r.RemoteAddr),
 					zap.String("method", r.Method),
 					zap.String("proto", r.Proto),
