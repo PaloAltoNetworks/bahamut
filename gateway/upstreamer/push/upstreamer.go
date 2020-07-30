@@ -451,9 +451,11 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 				peers.Store(ping.RuntimeID, time.Now())
 
 			case entityStatusGoodbye:
-				peers.Delete(ping.RuntimeID)
-				atomic.AddInt64(&c.peersCount, -1)
-				c.lastPeerChangeDate.Store(time.Now())
+				if _, ok := peers.Load(ping.RuntimeID); ok {
+					peers.Delete(ping.RuntimeID)
+					atomic.AddInt64(&c.peersCount, -1)
+					c.lastPeerChangeDate.Store(time.Now())
+				}
 			}
 
 		case err = <-errs:
@@ -466,7 +468,6 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			if err := c.pubsub.Publish(goodbyePub); err != nil {
 				zap.L().Error("Unable to send hello to pubsub upstreams channel", zap.Error(err))
-				break
 			}
 
 			return

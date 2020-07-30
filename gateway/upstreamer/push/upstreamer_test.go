@@ -521,3 +521,131 @@ func TestUpstreamUpstreamer(t *testing.T) {
 		})
 	})
 }
+
+func TestUpstreamPeers(t *testing.T) {
+
+	Convey("An upstreamer should send the hello and goodbye pings correctly", t, func() {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pubsub := bahamut.NewLocalPubSubClient()
+		pubsub.Connect(nil)
+
+		u := NewUpstreamer(pubsub, "serviceStatusTopic", "peerStatusTopic", OptionUpstreamerPeersPingInterval(time.Second))
+
+		pubs := make(chan *bahamut.Publication, 1024)
+		errs := make(chan error, 1024)
+		unsub := pubsub.Subscribe(pubs, errs, "peerStatusTopic")
+		defer unsub()
+
+		u.Start(ctx)
+
+		var ping peerPing
+		select {
+		case p := <-pubs:
+			_ = p.Decode(&ping)
+		case <-time.After(2 * time.Second):
+			panic("no pub in time")
+		}
+
+		So(ping.Status, ShouldEqual, entityStatusHello)
+
+		// Wait one second to see if we receive another push
+		select {
+		case p := <-pubs:
+			_ = p.Decode(&ping)
+		case <-time.After(2 * time.Second):
+			panic("no pub in time")
+		}
+
+		So(ping.Status, ShouldEqual, entityStatusHello)
+
+		// Stop the upstreamer
+		cancel()
+
+		select {
+		case p := <-pubs:
+			_ = p.Decode(&ping)
+		case <-time.After(2 * time.Second):
+			panic("no pub in time")
+		}
+
+		So(ping.Status, ShouldEqual, entityStatusGoodbye)
+	})
+
+	Convey("An upstreamer should manage the hello and goodbye pings correctly", t, func() {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pubsub := bahamut.NewLocalPubSubClient()
+		pubsub.Connect(nil)
+
+		u := NewUpstreamer(
+			pubsub,
+			"serviceStatusTopic",
+			"peerStatusTopic",
+			OptionUpstreamerPeersPingInterval(time.Second),
+			OptionUpstreamerPeersCheckInterval(time.Second),
+			OptionUpstreamerPeersTimeout(2*time.Second),
+		)
+
+		u.Start(ctx)
+
+		time.Sleep(300 * time.Millisecond)
+
+		fakeHello1 := bahamut.NewPublication("peerStatusTopic")
+		if err := fakeHello1.Encode(peerPing{RuntimeID: "id1", Status: entityStatusHello}); err != nil {
+			panic(err)
+		}
+		fakeGoodbye1 := bahamut.NewPublication("peerStatusTopic")
+		if err := fakeGoodbye1.Encode(peerPing{RuntimeID: "id1", Status: entityStatusGoodbye}); err != nil {
+			panic(err)
+		}
+
+		fakeHello2 := bahamut.NewPublication("peerStatusTopic")
+		if err := fakeHello2.Encode(peerPing{RuntimeID: "id2", Status: entityStatusHello}); err != nil {
+			panic(err)
+		}
+
+		// Send first hello from one peer
+		if err := pubsub.Publish(fakeHello1); err != nil {
+			panic(err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		So(u.peersCount, ShouldEqual, 1)
+
+		// Send second hello from same peer
+		if err := pubsub.Publish(fakeHello1); err != nil {
+			panic(err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		So(u.peersCount, ShouldEqual, 1)
+
+		// Send first hello from another pee peer
+		if err := pubsub.Publish(fakeHello2); err != nil {
+			panic(err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		So(u.peersCount, ShouldEqual, 2)
+
+		// Send goodbye from first peer
+		if err := pubsub.Publish(fakeGoodbye1); err != nil {
+			panic(err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		So(u.peersCount, ShouldEqual, 1)
+
+		// Send another goodbye from first peer (should not happen but should not cause issue)
+		if err := pubsub.Publish(fakeGoodbye1); err != nil {
+			panic(err)
+		}
+		time.Sleep(300 * time.Millisecond)
+		So(u.peersCount, ShouldEqual, 1)
+
+		// Now let the second peer timeout
+		time.Sleep(3 * time.Second)
+		So(u.peersCount, ShouldEqual, 0)
+	})
+}
