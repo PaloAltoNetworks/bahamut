@@ -29,7 +29,7 @@ func Test_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptionRateLimiting should work", t, func() {
-		l := Limiter(nil)
+		l := SourceLimiter(nil)
 		OptionRateLimiter(l)(c)
 		So(c.limiter, ShouldEqual, l)
 	})

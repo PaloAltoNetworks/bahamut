@@ -71,7 +71,7 @@ type gwconfig struct {
 	suffixInterceptors          map[string]InterceptorFunc
 	proxyProtocolEnabled        bool
 	proxyProtocolSubnet         string
-	limiter                     Limiter
+	limiter                     SourceLimiter
 	tcpMaxConnections           int
 	tcpRateLimitingBurst        int
 	tcpRateLimitingCPS          float64
@@ -135,7 +135,7 @@ func OptionTCPRateLimiting(enabled bool, cps float64, burst int, maxConnections 
 
 // OptionRateLimiter sets the limiter to use
 // for per client rate limiting.
-func OptionRateLimiter(l Limiter) Option {
+func OptionRateLimiter(l SourceLimiter) Option {
 	return func(cfg *gwconfig) {
 		cfg.limiter = l
 	}

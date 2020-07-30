@@ -28,10 +28,10 @@ type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, err error)
 }
 
-// A Limiter can be used to decide global rates for a token
-// This allows to perform advanced computation to determine how/
+// A SourceLimiter can be used to decide rates per token.
+// This allows to perform advanced computation to determine how
 // to rate limit one unique client.
-type Limiter interface {
+type SourceLimiter interface {
 
 	// DefaultRates returns the default rate limiting.
 	DefaultRates() *ratelimit.RateSet
