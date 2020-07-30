@@ -24,11 +24,23 @@ import (
 	"go.uber.org/zap"
 )
 
-// ErrUpstreamerTooManyRequests can be returned to
-// instruct the bahamut.Gateway to return to stop
-// routing and return a a 429 Too Many Request error to
-// the client.
-var ErrUpstreamerTooManyRequests = errors.New("Please retry in a moment")
+type responseWriter struct {
+	rw   http.ResponseWriter
+	code int
+}
+
+func (w *responseWriter) Header() http.Header {
+	return w.rw.Header()
+}
+
+func (w *responseWriter) Write(data []byte) (int, error) {
+	return w.rw.Write(data)
+}
+
+func (w *responseWriter) WriteHeader(statusCode int) {
+	w.code = statusCode
+	w.rw.WriteHeader(statusCode)
+}
 
 // An gateway is cool
 type gateway struct {
@@ -321,7 +333,9 @@ func (s *gateway) checkInterceptor(
 	return 0, "", nil
 }
 
-func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *gateway) ServeHTTP(ow http.ResponseWriter, r *http.Request) {
+
+	w := &responseWriter{rw: ow}
 
 	if r.Method == http.MethodOptions {
 		h := w.Header()
@@ -455,7 +469,7 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(0, nil)
+			rt := finish(w.code, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
@@ -472,7 +486,7 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(0, nil)
+			rt := finish(w.code, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}

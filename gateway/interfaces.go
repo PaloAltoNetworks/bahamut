@@ -1,11 +1,18 @@
 package gateway
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/vulcand/oxy/ratelimit"
 )
+
+// ErrUpstreamerTooManyRequests can be returned to
+// instruct the bahamut.Gateway to return to stop
+// routing and return a a 429 Too Many Request error to
+// the client.
+var ErrUpstreamerTooManyRequests = errors.New("Please retry in a moment")
 
 // An Upstreamer is the interface that can compute upstreams.
 type Upstreamer interface {
