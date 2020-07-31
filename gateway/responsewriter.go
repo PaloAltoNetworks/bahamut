@@ -7,43 +7,29 @@ import (
 	"net/http"
 )
 
-type responseWriter interface {
-	http.ResponseWriter
-	http.Flusher
-	status() int
-}
-
-type responseWriterWrapper struct {
+type responseWriter struct {
 	http.ResponseWriter
 	code int
 }
 
-func newResponseWriter(rw http.ResponseWriter) responseWriter {
-	nrw := &responseWriterWrapper{
+func newResponseWriter(rw http.ResponseWriter) *responseWriter {
+	nrw := &responseWriter{
 		ResponseWriter: rw,
-	}
-
-	if _, ok := rw.(http.CloseNotifier); ok {
-		return &responseWriterCloseNotifer{nrw}
 	}
 
 	return nrw
 }
 
-func (rw *responseWriterWrapper) status() int {
-	return rw.code
-}
-
-func (rw *responseWriterWrapper) WriteHeader(s int) {
+func (rw *responseWriter) WriteHeader(s int) {
 	rw.code = s
 	rw.ResponseWriter.WriteHeader(s)
 }
 
-func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
+func (rw *responseWriter) Write(b []byte) (int, error) {
 	return rw.ResponseWriter.Write(b)
 }
 
-func (rw *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hijacker, ok := rw.ResponseWriter.(http.Hijacker)
 	if !ok {
 		return nil, nil, errors.New("the responseWriter doesn't support the Hijacker interface")
@@ -51,16 +37,8 @@ func (rw *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return hijacker.Hijack()
 }
 
-func (rw *responseWriterWrapper) Flush() {
+func (rw *responseWriter) Flush() {
 	if flusher, ok := rw.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()
 	}
-}
-
-type responseWriterCloseNotifer struct {
-	*responseWriterWrapper
-}
-
-func (rw *responseWriterCloseNotifer) CloseNotify() <-chan bool {
-	return rw.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }

@@ -455,7 +455,7 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.status(), nil)
+			rt := finish(w.code, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
@@ -472,7 +472,7 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.status(), nil)
+			rt := finish(w.code, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
