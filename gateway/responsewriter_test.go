@@ -16,7 +16,7 @@ type testResponseWritterHijacker struct {
 }
 
 func (rw *testResponseWritterHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return nil, nil, fmt.Errorf("hello!")
+	return nil, nil, fmt.Errorf("hello")
 }
 
 func TestResponseWritter(t *testing.T) {
@@ -32,7 +32,7 @@ func TestResponseWritter(t *testing.T) {
 		})
 
 		Convey("Then Write should ", func() {
-			w.Write([]byte("hello"))
+			_, _ = w.Write([]byte("hello"))
 			So(rw.Body.Bytes(), ShouldResemble, []byte("hello"))
 		})
 
@@ -56,7 +56,7 @@ func TestResponseWritter(t *testing.T) {
 		Convey("Then Hijack should work", func() {
 			_, _, err := w.Hijack()
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldEqual, `hello!`)
+			So(err.Error(), ShouldEqual, `hello`)
 		})
 	})
 }
