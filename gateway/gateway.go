@@ -24,24 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type responseWriter struct {
-	rw   http.ResponseWriter
-	code int
-}
-
-func (w *responseWriter) Header() http.Header {
-	return w.rw.Header()
-}
-
-func (w *responseWriter) Write(data []byte) (int, error) {
-	return w.rw.Write(data)
-}
-
-func (w *responseWriter) WriteHeader(statusCode int) {
-	w.code = statusCode
-	w.rw.WriteHeader(statusCode)
-}
-
 // An gateway is cool
 type gateway struct {
 	server            *http.Server
@@ -333,9 +315,9 @@ func (s *gateway) checkInterceptor(
 	return 0, "", nil
 }
 
-func (s *gateway) ServeHTTP(ow http.ResponseWriter, r *http.Request) {
+func (s *gateway) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
-	w := &responseWriter{rw: ow}
+	w := newResponseWriter(rw)
 
 	if r.Method == http.MethodOptions {
 		h := w.Header()
@@ -400,9 +382,11 @@ HANDLE_INTERCEPTION:
 	if upstream == "" {
 
 		if upstream, err = s.upstreamer.Upstream(r); err != nil {
+
 			switch {
 
 			case errors.Is(err, ErrUpstreamerTooManyRequests):
+
 				if mm := s.gatewayConfig.metricsManager; mm != nil {
 					mm.MeasureRequest(r.Method, path)(http.StatusTooManyRequests, nil)
 				}
@@ -447,7 +431,9 @@ HANDLE_INTERCEPTION:
 	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
 	switch interceptAction {
+
 	case InterceptorActionForwardWS:
+
 		if mm := s.gatewayConfig.metricsManager; mm != nil {
 			mm.RegisterWSConnection()
 		}
@@ -469,7 +455,7 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.code, nil)
+			rt := finish(w.status(), nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
@@ -486,7 +472,7 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.code, nil)
+			rt := finish(w.status(), nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
