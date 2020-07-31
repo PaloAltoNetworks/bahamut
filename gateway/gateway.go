@@ -315,9 +315,7 @@ func (s *gateway) checkInterceptor(
 	return 0, "", nil
 }
 
-func (s *gateway) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-
-	w := newResponseWriter(rw)
+func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodOptions {
 		h := w.Header()
@@ -455,7 +453,7 @@ HANDLE_INTERCEPTION:
 		s.forwarder.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.code, nil)
+			rt := finish(0, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
@@ -472,7 +470,7 @@ HANDLE_INTERCEPTION:
 		s.proxyHandler.ServeHTTP(w, r)
 
 		if finish != nil {
-			rt := finish(w.code, nil)
+			rt := finish(0, nil)
 			if s.upstreamerLatency != nil {
 				s.upstreamerLatency.CollectLatency(upstream, rt)
 			}
