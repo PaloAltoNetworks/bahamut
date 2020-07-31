@@ -135,10 +135,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
 	// BEGIN LOCKED OPERATIONS
 	epi1.RLock()
-	epi2.RLock()
-
-	addresses[0], addresses[1] = epi1.address, epi2.address
-	loads[0], loads[1] = epi1.lastLoad, epi2.lastLoad
+	addresses[0] = epi1.address
+	loads[0] = epi1.lastLoad
 
 	currentPeers := atomic.LoadInt64(&c.peersCount) + 1 // that's us!
 	lastPeerUpdate := func() time.Time { o, _ := c.lastPeerChangeDate.Load().(time.Time); return o }()
@@ -153,6 +151,11 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 			rls[0].SetLimit(epi1.limiters[identity].Limit / rate.Limit(currentPeers))
 		}
 	}
+	epi1.RUnlock()
+
+	epi2.RLock()
+	addresses[1] = epi2.address
+	loads[1] = epi2.lastLoad
 
 	if epi2.limiters != nil && epi2.limiters[identity] != nil {
 
@@ -164,8 +167,6 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 			rls[1].SetLimit(epi2.limiters[identity].Limit / rate.Limit(currentPeers))
 		}
 	}
-
-	epi1.RUnlock()
 	epi2.RUnlock()
 	// END LOCKED OPERATIONS
 
