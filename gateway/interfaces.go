@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/vulcand/oxy/ratelimit"
+	"golang.org/x/time/rate"
 )
 
 // ErrUpstreamerTooManyRequests can be returned to
@@ -35,21 +35,23 @@ type Upstreamer interface {
 	Upstream(req *http.Request) (upstream string, err error)
 }
 
-// A SourceLimiter can be used to decide rates per token.
-// This allows to perform advanced computation to determine how
-// to rate limit one unique client.
-type SourceLimiter interface {
-
-	// DefaultRates returns the default rate limiting.
-	DefaultRates() *ratelimit.RateSet
-
-	// ExtractRates will be called to decide what would be the rate to
-	// given a request.
-	ExtractRates(r *http.Request) (*ratelimit.RateSet, error)
+// A SourceExtractor is used to extract a token (or key) used
+// to keep track of a single source.
+type SourceExtractor interface {
 
 	// ExtractSource will be called to decide what would be the rate to
 	// given a request.
-	ExtractSource(req *http.Request) (token string, amount int64, err error)
+	ExtractSource(req *http.Request) (token string, err error)
+}
+
+// A RateExtractor is used to decide rates per token.
+// This allows to perform advanced computation to determine how
+// to rate limit one unique client.
+type RateExtractor interface {
+
+	// ExtractRates will be called to decide what would be the rate to
+	// given a request.
+	ExtractRates(r *http.Request) (rate.Limit, int, error)
 }
 
 // A LatencyBasedUpstreamer is the interface that can circle back

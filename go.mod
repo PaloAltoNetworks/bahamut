@@ -12,12 +12,13 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/armon/go-proxyproto v0.0.0-20200108142055-f0b8253b1507
-	github.com/cespare/xxhash/v2 v2.1.1
+	github.com/cespare/xxhash v1.1.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/golang/mock v1.4.4
 	github.com/gorilla/websocket v1.4.2
+	github.com/karlseguin/ccache/v2 v2.0.6
 	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
 	github.com/nats-io/nats-server/v2 v2.1.7
 	github.com/nats-io/nats.go v1.10.0

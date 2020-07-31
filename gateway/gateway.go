@@ -18,7 +18,6 @@ import (
 	"github.com/vulcand/oxy/cbreaker"
 	"github.com/vulcand/oxy/connlimit"
 	"github.com/vulcand/oxy/forward"
-	"github.com/vulcand/oxy/ratelimit"
 	"github.com/vulcand/oxy/utils"
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
@@ -85,8 +84,8 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		}
 	}
 
-	if cfg.tcpRateLimitingEnabled {
-		listener = newLimitedListener(listener, cfg.tcpRateLimitingCPS, cfg.tcpRateLimitingBurst)
+	if cfg.tcpGlobalRateLimitingEnabled {
+		listener = newLimitedListener(listener, cfg.tcpGlobalRateLimitingCPS, cfg.tcpGlobalRateLimitingBurst)
 	}
 
 	var serverLogger *log.Logger
@@ -191,30 +190,33 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
 
-	if cfg.tcpMaxConnections > 0 {
+	if cfg.tcpMaxClientConnections > 0 {
 
 		if topProxyHandler, err = connlimit.New(
 			topProxyHandler,
 			utils.ExtractorFunc(func(req *http.Request) (token string, amount int64, err error) {
-				return "default", 1, nil
+				token = "default"
+				if cfg.sourceExtractor != nil {
+					if token, err = cfg.sourceExtractor.ExtractSource(req); err != nil {
+						return "", 0, err
+					}
+				}
+				return token, 1, nil
 			}),
-			int64(cfg.tcpMaxConnections),
+			int64(cfg.tcpMaxClientConnections),
 			connlimit.ErrorHandler(&errorHandler{}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
 	}
 
-	if cfg.limiter != nil {
-		if topProxyHandler, err = ratelimit.New(
+	if cfg.ratesExtractor != nil {
+		topProxyHandler = newSourceLimiter(
 			topProxyHandler,
-			utils.ExtractorFunc(cfg.limiter.ExtractSource),
-			cfg.limiter.DefaultRates(),
-			ratelimit.ExtractRates(ratelimit.RateExtractorFunc(cfg.limiter.ExtractRates)),
-			ratelimit.ErrorHandler(&errorHandler{}),
-		); err != nil {
-			return nil, fmt.Errorf("unable to initialize ratelimiter: %s", err)
-		}
+			cfg.sourceExtractor,
+			cfg.ratesExtractor,
+			&errorHandler{},
+		)
 	}
 
 	if cfg.upstreamCircuitBreakerCond != "" {

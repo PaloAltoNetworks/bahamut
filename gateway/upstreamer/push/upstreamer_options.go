@@ -1,57 +1,43 @@
 package push
 
 import (
-	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
+	"golang.org/x/time/rate"
 )
-
-func defaultTokenSourceExtractor(r *http.Request) (string, int64, error) {
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "default", 1, nil
-	}
-
-	return fmt.Sprintf("%d", xxhash.Sum64([]byte(authHeader))), 1, nil
-}
 
 // An UpstreamerOption represents a configuration option
 // for the Upstreamer.
 type UpstreamerOption func(*upstreamConfig)
 
 type upstreamConfig struct {
-	overrideEndpointAddress      string
-	exposePrivateAPIs            bool
-	eventsAPIs                   map[string]string
-	latencySampleSize            int
-	requiredServices             []string
-	serviceTimeout               time.Duration
-	serviceTimeoutCheckInterval  time.Duration
-	peerTimeout                  time.Duration
-	peerTimeoutCheckInterval     time.Duration
-	peerPingInterval             time.Duration
-	randomizer                   Randomizer
-	tokenLimitingBurst           int64
-	tokenLimitingRPS             int64
-	tokenLimitingSourceExtractor func(*http.Request) (string, int64, error)
+	overrideEndpointAddress     string
+	exposePrivateAPIs           bool
+	eventsAPIs                  map[string]string
+	latencySampleSize           int
+	requiredServices            []string
+	serviceTimeout              time.Duration
+	serviceTimeoutCheckInterval time.Duration
+	peerTimeout                 time.Duration
+	peerTimeoutCheckInterval    time.Duration
+	peerPingInterval            time.Duration
+	randomizer                  Randomizer
+	tokenLimitingBurst          int
+	tokenLimitingRPS            rate.Limit
 }
 
 func newUpstreamConfig() upstreamConfig {
 	return upstreamConfig{
-		eventsAPIs:                   map[string]string{},
-		latencySampleSize:            20,
-		serviceTimeout:               30 * time.Second,
-		serviceTimeoutCheckInterval:  5 * time.Second,
-		peerTimeout:                  30 * time.Second,
-		peerTimeoutCheckInterval:     5 * time.Second,
-		peerPingInterval:             10 * time.Second,
-		randomizer:                   newRandomizer(),
-		tokenLimitingBurst:           2000,
-		tokenLimitingRPS:             500,
-		tokenLimitingSourceExtractor: defaultTokenSourceExtractor,
+		eventsAPIs:                  map[string]string{},
+		latencySampleSize:           20,
+		serviceTimeout:              30 * time.Second,
+		serviceTimeoutCheckInterval: 5 * time.Second,
+		peerTimeout:                 30 * time.Second,
+		peerTimeoutCheckInterval:    5 * time.Second,
+		peerPingInterval:            10 * time.Second,
+		randomizer:                  newRandomizer(),
+		tokenLimitingBurst:          2000,
+		tokenLimitingRPS:            500,
 	}
 }
 
@@ -141,24 +127,15 @@ func OptionUpstreamerPeersPingInterval(t time.Duration) UpstreamerOption {
 
 // OptionUpstreamerTokenRateLimiting configures the per source rate limiting.
 // The default is cps:500/burst:2000
-func OptionUpstreamerTokenRateLimiting(rps int, burst int) UpstreamerOption {
+func OptionUpstreamerTokenRateLimiting(rps rate.Limit, burst int) UpstreamerOption {
 	return func(cfg *upstreamConfig) {
-		cfg.tokenLimitingRPS = int64(rps)
-		cfg.tokenLimitingBurst = int64(burst)
+		cfg.tokenLimitingRPS = rps
+		cfg.tokenLimitingBurst = burst
 		if cfg.tokenLimitingRPS <= 0 {
 			panic("rps cannot be <= 0")
 		}
 		if cfg.tokenLimitingBurst <= 0 {
 			panic("burst cannot be <= 0")
 		}
-	}
-}
-
-// OptionUpstreamerTokenSourceExtractor passes a function that will be used
-// to extract the identifier of the source.
-// By default, a hash of the Authorization is used.
-func OptionUpstreamerTokenSourceExtractor(extractor func(*http.Request) (string, int64, error)) UpstreamerOption {
-	return func(cfg *upstreamConfig) {
-		cfg.tokenLimitingSourceExtractor = extractor
 	}
 }

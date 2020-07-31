@@ -2,7 +2,6 @@ package push
 
 import (
 	"math/rand"
-	"net/http"
 	"testing"
 	"time"
 
@@ -70,13 +69,5 @@ func Test_Options(t *testing.T) {
 
 		So(func() { OptionUpstreamerTokenRateLimiting(0, 2)(&c) }, ShouldPanicWith, `rps cannot be <= 0`)
 		So(func() { OptionUpstreamerTokenRateLimiting(1, 0)(&c) }, ShouldPanicWith, `burst cannot be <= 0`)
-	})
-
-	Convey("Calling OptionUpstreamerTokenSourceExtractor should work", t, func() {
-		f := func(*http.Request) (string, int64, error) {
-			return "a", 1, nil
-		}
-		OptionUpstreamerTokenSourceExtractor(f)(&c)
-		So(c.tokenLimitingSourceExtractor, ShouldEqual, f)
 	})
 }

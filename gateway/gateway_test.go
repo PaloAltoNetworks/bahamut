@@ -14,9 +14,9 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/tg/tglib"
+	"golang.org/x/time/rate"
 )
 
 type simpleUpstreamer struct {
@@ -93,20 +93,12 @@ func makeServerCert() tls.Certificate {
 
 type simpleLimiter struct{}
 
-func (l *simpleLimiter) DefaultRates() *ratelimit.RateSet {
-	rl := ratelimit.NewRateSet()
-	_ = rl.Add(time.Second, 100, 1000)
-	return rl
+func (l *simpleLimiter) ExtractRates(r *http.Request) (rate.Limit, int, error) {
+	return rate.Limit(100), 1000, nil
 }
 
-func (l *simpleLimiter) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
-	rl := ratelimit.NewRateSet()
-	_ = rl.Add(time.Second, 100, 1000)
-	return rl, nil
-}
-
-func (l *simpleLimiter) ExtractSource(req *http.Request) (token string, amount int64, err error) {
-	return "default", 1, nil
+func (l *simpleLimiter) ExtractSource(req *http.Request) (token string, err error) {
+	return "default", nil
 }
 
 func TestGateway(t *testing.T) {
@@ -142,8 +134,10 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiter(&simpleLimiter{}),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionSourceExtractor(&simpleLimiter{}),
+				OptionRateExtractor(&simpleLimiter{}),
+				OptionTCPGlobalRateLimiting(true, 200.0, 200.0),
+				OptionTCPClientMaxConnection(100),
 				OptionUpstreamConfig(0, 0, 0, 0, 0, "NetworkErrorRatio() > 0.5", false),
 				OptionEnableTrace(true),
 				OptionMetricsManager(mm),
@@ -218,7 +212,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiter(&simpleLimiter{}),
+				OptionSourceExtractor(&simpleLimiter{}),
+				OptionRateExtractor(&simpleLimiter{}),
 				OptionEnableMaintenance(true),
 			)
 			defer gw.Stop()
@@ -258,7 +253,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiter(&simpleLimiter{}),
+				OptionSourceExtractor(&simpleLimiter{}),
+				OptionRateExtractor(&simpleLimiter{}),
 				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
 					req.Header.Add("inject", "hello")
 					return nil
@@ -473,7 +469,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(true, 200.0, 200.0),
+				OptionTCPClientMaxConnection(100),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 			)
 			defer gw.Stop()
@@ -513,7 +510,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(true, 200.0, 200.0),
+				OptionTCPClientMaxConnection(100),
 			)
 			defer gw.Stop()
 
@@ -552,7 +550,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(true, 200.0, 200.0),
+				OptionTCPClientMaxConnection(100),
 				OptionEnableProxyProtocol(true, "oopsy"),
 			)
 

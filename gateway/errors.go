@@ -116,6 +116,8 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		writeError(w, r, errBadGateway)
 	case context.Canceled:
 		writeError(w, r, errClientClosedConnection)
+	case errTooManyRequest:
+		writeError(w, r, errRateLimit)
 	default:
 		writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", err.Error()))
 	}

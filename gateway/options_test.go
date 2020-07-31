@@ -20,18 +20,28 @@ func Test_Options(t *testing.T) {
 		So(c.proxyProtocolSubnet, ShouldEqual, "10.0.0.0/0")
 	})
 
-	Convey("Calling OptionTCPRateLimiting should work", t, func() {
-		OptionTCPRateLimiting(true, 1.0, 2, 3)(c)
-		So(c.tcpRateLimitingEnabled, ShouldEqual, true)
-		So(c.tcpRateLimitingCPS, ShouldEqual, 1.0)
-		So(c.tcpRateLimitingBurst, ShouldEqual, 2)
-		So(c.tcpMaxConnections, ShouldEqual, 3)
+	Convey("Calling OptionTCPGobalRateLimiting should work", t, func() {
+		OptionTCPGlobalRateLimiting(true, 1.0, 2)(c)
+		So(c.tcpGlobalRateLimitingEnabled, ShouldEqual, true)
+		So(c.tcpGlobalRateLimitingCPS, ShouldEqual, 1.0)
+		So(c.tcpGlobalRateLimitingBurst, ShouldEqual, 2)
 	})
 
-	Convey("Calling OptionRateLimiting should work", t, func() {
-		l := SourceLimiter(nil)
-		OptionRateLimiter(l)(c)
-		So(c.limiter, ShouldEqual, l)
+	Convey("Calling OptionTCPRateLimiting should work", t, func() {
+		OptionTCPClientMaxConnection(3)(c)
+		So(c.tcpMaxClientConnections, ShouldEqual, 3)
+	})
+
+	Convey("Calling OptionRateExtractor should work", t, func() {
+		l := RateExtractor(nil)
+		OptionRateExtractor(l)(c)
+		So(c.ratesExtractor, ShouldEqual, l)
+	})
+
+	Convey("Calling OptionSourceExtractor should work", t, func() {
+		l := SourceExtractor(nil)
+		OptionSourceExtractor(l)(c)
+		So(c.ratesExtractor, ShouldEqual, l)
 	})
 
 	Convey("Calling OptionEnableTrace should work", t, func() {

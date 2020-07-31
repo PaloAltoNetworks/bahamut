@@ -10,14 +10,18 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/bahamut/gateway"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
-var emptyRateSet = &ratelimit.RateSet{}
+var emptyRateSet = &rateSet{}
+
+type rateSet struct {
+	limit rate.Limit
+	burst int
+}
 
 // A Upstreamer listens and update the
 // list of the backend services.
@@ -34,7 +38,7 @@ type Upstreamer struct {
 	latencies          sync.Map
 	peersCount         int64
 	lastPeerChangeDate atomic.Value // time.Time
-	lastRateSet        atomic.Value // *ratelimit.RateSet
+	lastRateSet        atomic.Value // *rateSet
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based
@@ -59,38 +63,23 @@ func NewUpstreamer(
 	}
 }
 
-// DefaultRates implements the gateway.Limiter interface.
-func (c *Upstreamer) DefaultRates() *ratelimit.RateSet {
-	rates := ratelimit.NewRateSet()
-	_ = rates.Add(time.Second, c.config.tokenLimitingRPS, c.config.tokenLimitingBurst) // This error cannot happen
-	return rates
-}
-
 // ExtractRates implements the gateway.Limiter interface.
-func (c *Upstreamer) ExtractRates(r *http.Request) (*ratelimit.RateSet, error) {
+func (c *Upstreamer) ExtractRates(r *http.Request) (rate.Limit, int, error) {
 
-	rl, ok := c.lastRateSet.Load().(*ratelimit.RateSet)
+	rl, ok := c.lastRateSet.Load().(*rateSet)
 
 	if !ok || rl == emptyRateSet {
 
-		rl = ratelimit.NewRateSet()
 		currentPeers := atomic.LoadInt64(&c.peersCount) + 1 // that's us!
-
-		_ = rl.Add(
-			time.Second,
-			c.config.tokenLimitingRPS/currentPeers,
-			c.config.tokenLimitingBurst/currentPeers,
-		) // This error cannot happen
+		rl = &rateSet{
+			limit: c.config.tokenLimitingRPS / rate.Limit(currentPeers),
+			burst: c.config.tokenLimitingBurst / int(currentPeers),
+		}
 
 		c.lastRateSet.Store(rl)
 	}
 
-	return rl, nil
-}
-
-// ExtractSource implements the gateway.Limiter interface.
-func (c *Upstreamer) ExtractSource(r *http.Request) (string, int64, error) {
-	return c.config.tokenLimitingSourceExtractor(r)
+	return rl.limit, rl.burst, nil
 }
 
 // Upstream returns the upstream to go for the given path
