@@ -20,9 +20,9 @@ func newResponseWriter(rw http.ResponseWriter) *responseWriter {
 	return nrw
 }
 
-func (rw *responseWriter) WriteHeader(s int) {
-	rw.code = s
-	rw.ResponseWriter.WriteHeader(s)
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.code = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func (rw *responseWriter) Write(b []byte) (int, error) {
