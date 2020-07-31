@@ -316,7 +316,7 @@ func (m *mockMetricsManager) RegisterTCPConnection()                       {}
 func (m *mockMetricsManager) UnregisterTCPConnection()                     {}
 func (m *mockMetricsManager) Write(w http.ResponseWriter, r *http.Request) {}
 
-func TestServer_Handlers_RateLimiters(t *testing.T) {
+func TestServer_MakeHandlers(t *testing.T) {
 
 	Convey("Given I have some config", t, func() {
 
@@ -342,6 +342,32 @@ func TestServer_Handlers_RateLimiters(t *testing.T) {
 			h(w, r)
 
 			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(measuredCode, ShouldEqual, http.StatusBadRequest)
+		})
+
+		Convey("When I create a handler with badly versionned api", func() {
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/v/dog/identity", nil)
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(w.Body.String(), ShouldEqual, `[{"code":400,"description":"Invalid api version number","subject":"bahamut","title":"Bad Request","trace":"unknown"}]`)
+			So(measuredCode, ShouldEqual, http.StatusBadRequest)
+		})
+
+		Convey("When I create a handler with unknown versionned api", func() {
+			c := newRestServer(cfg, bone.New(), nil, nil, nil)
+			h := c.makeHandler(handleRetrieve)
+
+			w := httptest.NewRecorder()
+			r, _ := http.NewRequest(http.MethodGet, "http://toto.com/v/42/identity", nil)
+			h(w, r)
+
+			So(w.Result().StatusCode, ShouldEqual, http.StatusBadRequest)
+			So(w.Body.String(), ShouldEqual, `[{"code":400,"description":"Unknown api version","subject":"bahamut","title":"Bad Request","trace":"unknown"}]`)
 			So(measuredCode, ShouldEqual, http.StatusBadRequest)
 		})
 
