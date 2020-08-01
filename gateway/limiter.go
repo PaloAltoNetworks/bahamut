@@ -2,11 +2,9 @@ package gateway
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/cespare/xxhash"
 	"github.com/karlseguin/ccache/v2"
 	"golang.org/x/time/rate"
 )
@@ -15,49 +13,38 @@ const maxCacheSize = 65536
 
 var errTooManyRequest = errors.New("Please retry in a moment")
 
-type defaultExtractorFunc struct {
-}
-
-func (f defaultExtractorFunc) ExtractSource(r *http.Request) (string, error) {
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "default", nil
-	}
-
-	return fmt.Sprintf("%d", xxhash.Sum64([]byte(authHeader))), nil
-}
-
 type sourceLimiter struct {
 	next            http.Handler
 	rls             *ccache.Cache
 	sourceExtractor SourceExtractor
 	rateExtractor   RateExtractor
 	errorHandler    *errorHandler
+	defaultLimit    rate.Limit
+	defaultBurst    int
 }
 
 func newSourceLimiter(
 	next http.Handler,
-	extractor SourceExtractor,
+	defaultLimit rate.Limit,
+	defaultBurst int,
+	sourceExtractor SourceExtractor,
 	rateExtractor RateExtractor,
 	errorHandler *errorHandler,
 ) *sourceLimiter {
-
-	if rateExtractor == nil {
-		panic("rateExtractor must not be nil")
-	}
 
 	if errorHandler == nil {
 		panic("errorHandler must not be nil")
 	}
 
-	if extractor == nil {
-		extractor = defaultExtractorFunc{}
+	if sourceExtractor == nil {
+		panic("sourceExtractor must not be nil")
 	}
 
 	return &sourceLimiter{
 		next:            next,
-		sourceExtractor: extractor,
+		defaultLimit:    defaultLimit,
+		defaultBurst:    defaultBurst,
+		sourceExtractor: sourceExtractor,
 		rateExtractor:   rateExtractor,
 		errorHandler:    errorHandler,
 		rls:             ccache.New(ccache.Configure().MaxSize(maxCacheSize)),
@@ -74,10 +61,18 @@ func (l *sourceLimiter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	var rl *rate.Limiter
 
-	limit, burst, err := l.rateExtractor.ExtractRates(req)
-	if err != nil {
-		l.errorHandler.ServeHTTP(w, req, errTooManyRequest)
-		return
+	var limit rate.Limit
+	var burst int
+
+	if l.rateExtractor != nil {
+		limit, burst, err = l.rateExtractor.ExtractRates(req)
+		if err != nil {
+			l.errorHandler.ServeHTTP(w, req, errTooManyRequest)
+			return
+		}
+	} else {
+		limit = l.defaultLimit
+		burst = l.defaultBurst
 	}
 
 	if item := l.rls.Get(key); item == nil || item.Value() == nil || item.Expired() {

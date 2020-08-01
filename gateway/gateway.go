@@ -190,31 +190,28 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
 
-	if cfg.tcpMaxClientConnections > 0 {
+	if cfg.tcpClientMaxConnectionsEnabled {
 
 		if topProxyHandler, err = connlimit.New(
 			topProxyHandler,
 			utils.ExtractorFunc(func(req *http.Request) (token string, amount int64, err error) {
-				token = "default"
-				if cfg.sourceExtractor != nil {
-					if token, err = cfg.sourceExtractor.ExtractSource(req); err != nil {
-						return "", 0, err
-					}
-				}
-				return token, 1, nil
+				token, err = cfg.tcpClientSourceExtractor.ExtractSource(req)
+				return token, 1, err
 			}),
-			int64(cfg.tcpMaxClientConnections),
+			int64(cfg.tcpClientMaxConnections),
 			connlimit.ErrorHandler(&errorHandler{}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
 	}
 
-	if cfg.ratesExtractor != nil {
+	if cfg.sourceRateLimitingEnabled {
 		topProxyHandler = newSourceLimiter(
 			topProxyHandler,
+			cfg.sourceRateLimitingRPS,
+			cfg.sourceRateLimitingBurst,
 			cfg.sourceExtractor,
-			cfg.ratesExtractor,
+			cfg.sourceRateExtractor,
 			&errorHandler{},
 		)
 	}
