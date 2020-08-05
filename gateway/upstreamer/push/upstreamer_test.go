@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ type errorPubSubClient struct {
 	disconnectError error
 	pubs            chan *bahamut.Publication
 	errs            chan error
+	sync.Mutex
 }
 
 func (p *errorPubSubClient) Publish(publication *bahamut.Publication, opts ...bahamut.PubSubOptPublish) error {
@@ -28,8 +30,10 @@ func (p *errorPubSubClient) Publish(publication *bahamut.Publication, opts ...ba
 }
 
 func (p *errorPubSubClient) Subscribe(pubs chan *bahamut.Publication, errors chan error, topic string, opts ...bahamut.PubSubOptSubscribe) func() {
+	p.Lock()
 	p.pubs = pubs
 	p.errs = errors
+	p.Unlock()
 	return func() {}
 }
 
@@ -618,10 +622,14 @@ func TestUpstreamPeers(t *testing.T) {
 		u.Start(ctx)
 
 		<-time.After(300 * time.Millisecond)
+		pubsub.Lock()
 		pubsub.errs <- fmt.Errorf("bam")
+		pubsub.Unlock()
 		<-time.After(300 * time.Millisecond)
 
+		pubsub.Lock()
 		So(len(pubsub.errs), ShouldEqual, 0)
+		pubsub.Unlock()
 	})
 
 	Convey("An upstreamer should manage the hello and goodbye pings correctly", t, func() {
