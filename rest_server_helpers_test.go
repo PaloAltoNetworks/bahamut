@@ -220,3 +220,84 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 		})
 	})
 }
+
+func Test_extractAPIVersion(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantVersion int
+		wantErr     bool
+	}{
+		{
+			"no path",
+			args{
+				"",
+			},
+			0,
+			false,
+		},
+		{
+			"valid unversionned with no heading /",
+			args{
+				"objects",
+			},
+			0,
+			false,
+		},
+		{
+			"valid unversionned with heading /",
+			args{
+				"/objects",
+			},
+			0,
+			false,
+		},
+		{
+			"valid versionned with no heading /",
+			args{
+				"v/4/objects",
+			},
+			4,
+			false,
+		},
+		{
+			"valid versionned with heading /",
+			args{
+				"/v/4/objects",
+			},
+			4,
+			false,
+		},
+		{
+			"invalid versionned with no heading /",
+			args{
+				"v/dog/objects",
+			},
+			0,
+			true,
+		},
+		{
+			"invalid versionned with heading /",
+			args{
+				"/v/dog/objects",
+			},
+			0,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotVersion, err := extractAPIVersion(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractAPIVersion() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotVersion != tt.wantVersion {
+				t.Errorf("extractAPIVersion() = %v, want %v", gotVersion, tt.wantVersion)
+			}
+		})
+	}
+}

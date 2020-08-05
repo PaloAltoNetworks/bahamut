@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -17,28 +18,10 @@ import (
 	"github.com/vulcand/oxy/cbreaker"
 	"github.com/vulcand/oxy/connlimit"
 	"github.com/vulcand/oxy/forward"
-	"github.com/vulcand/oxy/ratelimit"
+	"github.com/vulcand/oxy/utils"
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
 )
-
-// An Upstreamer is the interface that can compute upstreams.
-type Upstreamer interface {
-	Upstream(req *http.Request) (upstream string, load float64)
-}
-
-// A LatencyBasedUpstreamer is the interface that can circle back
-// response time as an input for Upstreamer decision.
-type LatencyBasedUpstreamer interface {
-	CollectLatency(address string, responseTime time.Duration)
-	Upstreamer
-}
-
-// A Gateway can be used as an api gateway.
-type Gateway interface {
-	Start(ctx context.Context)
-	Stop()
-}
 
 // An gateway is cool
 type gateway struct {
@@ -101,8 +84,8 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		}
 	}
 
-	if cfg.tcpRateLimitingEnabled {
-		listener = newLimitedListener(listener, cfg.tcpRateLimitingCPS, cfg.tcpRateLimitingBurst)
+	if cfg.tcpGlobalRateLimitingEnabled {
+		listener = newLimitedListener(listener, cfg.tcpGlobalRateLimitingCPS, cfg.tcpGlobalRateLimitingBurst)
 	}
 
 	var serverLogger *log.Logger
@@ -207,33 +190,30 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
 
-	if cfg.tcpMaxConnections > 0 {
+	if cfg.tcpClientMaxConnectionsEnabled {
 
 		if topProxyHandler, err = connlimit.New(
 			topProxyHandler,
-			&sourceExtractor{},
-			int64(cfg.tcpMaxConnections),
+			utils.ExtractorFunc(func(req *http.Request) (token string, amount int64, err error) {
+				token, err = cfg.tcpClientSourceExtractor.ExtractSource(req)
+				return token, 1, err
+			}),
+			int64(cfg.tcpClientMaxConnections),
 			connlimit.ErrorHandler(&errorHandler{}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
 	}
 
-	if cfg.rateLimitingEnabled {
-
-		rates := ratelimit.NewRateSet()
-		if err := rates.Add(time.Second, cfg.rateLimitingRPS, cfg.rateLimitingBurst); err != nil {
-			return nil, fmt.Errorf("unable to make rate set: %s", err)
-		}
-
-		if topProxyHandler, err = ratelimit.New(
+	if cfg.sourceRateLimitingEnabled {
+		topProxyHandler = newSourceLimiter(
 			topProxyHandler,
-			&sourceExtractor{},
-			rates,
-			ratelimit.ErrorHandler(&errorHandler{}),
-		); err != nil {
-			return nil, fmt.Errorf("unable to initialize ratelimiter: %s", err)
-		}
+			cfg.sourceRateLimitingRPS,
+			cfg.sourceRateLimitingBurst,
+			cfg.sourceExtractor,
+			cfg.sourceRateExtractor,
+			&errorHandler{},
+		)
 	}
 
 	if cfg.upstreamCircuitBreakerCond != "" {
@@ -252,7 +232,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 }
 
 // Start starts the http server
-func (s *gateway) Start(ctx context.Context) {
+func (s *gateway) Start() {
 
 	go func() {
 
@@ -354,7 +334,6 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	var upstream string
-	var load float64
 	var interceptAction InterceptorAction
 	var err error
 
@@ -399,7 +378,36 @@ HANDLE_INTERCEPTION:
 	// we find it as usual.
 	if upstream == "" {
 
-		upstream, load = s.upstreamer.Upstream(r)
+		if upstream, err = s.upstreamer.Upstream(r); err != nil {
+
+			switch {
+
+			case errors.Is(err, ErrUpstreamerTooManyRequests):
+
+				if mm := s.gatewayConfig.metricsManager; mm != nil {
+					mm.MeasureRequest(r.Method, path)(http.StatusTooManyRequests, nil)
+				}
+				writeError(w, r, errRateLimit)
+
+			default:
+
+				zap.L().Error("Upstreamer error",
+					zap.String("ip", r.RemoteAddr),
+					zap.String("method", r.Method),
+					zap.String("proto", r.Proto),
+					zap.String("path", r.URL.Path),
+					zap.String("ns", r.Header.Get("X-Namespace")),
+					zap.String("routed", upstream),
+					zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
+					zap.Error(err),
+				)
+
+				writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", err.Error()))
+			}
+
+			return
+		}
+
 		if upstream == "" {
 			writeError(w, r, errServiceUnavailable)
 			return
@@ -413,7 +421,6 @@ HANDLE_INTERCEPTION:
 		zap.String("path", r.URL.Path),
 		zap.String("ns", r.Header.Get("X-Namespace")),
 		zap.String("routed", upstream),
-		zap.Float64("load", load),
 		zap.String("scheme", s.gatewayConfig.upstreamURLScheme),
 	)
 
@@ -421,7 +428,9 @@ HANDLE_INTERCEPTION:
 	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
 	switch interceptAction {
+
 	case InterceptorActionForwardWS:
+
 		if mm := s.gatewayConfig.metricsManager; mm != nil {
 			mm.RegisterWSConnection()
 		}

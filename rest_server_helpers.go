@@ -12,6 +12,7 @@
 package bahamut
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -84,4 +85,18 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 	}
 
 	return r.StatusCode
+}
+
+// If the first one is "v" it means the next one has to be a int for the version number.
+func extractAPIVersion(path string) (version int, err error) {
+
+	components := strings.SplitN(strings.TrimPrefix(path, "/"), "/", 3)
+	if components[0] == "v" {
+		version, err = strconv.Atoi(components[1])
+		if err != nil {
+			return 0, fmt.Errorf("Invalid api version number '%s'", components[1])
+		}
+	}
+
+	return version, nil
 }

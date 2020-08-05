@@ -3,34 +3,32 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20200729012332-b8c6e84fe209
-	go.aporeto.io/tg v1.34.1-0.20200625070346-1dca773a2406
-	go.aporeto.io/wsc v1.36.1-0.20200625070416-f79596292373
+	go.aporeto.io/elemental v1.100.1-0.20200731065958-3c0219b4b984
+	go.aporeto.io/tg v1.34.1-0.20200731064715-73c288bdd03a
+	go.aporeto.io/wsc v1.36.1-0.20200731064733-e5c5718dc58f
 )
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/armon/go-proxyproto v0.0.0-20200108142055-f0b8253b1507
+	github.com/cespare/xxhash v1.1.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-zoo/bone v1.3.0
-	github.com/gofrs/uuid v3.2.0+incompatible
-	github.com/golang/mock v1.4.1
-	github.com/golang/protobuf v1.3.4 // indirect
-	github.com/gorilla/websocket v1.4.1
+	github.com/gofrs/uuid v3.3.0+incompatible
+	github.com/golang/mock v1.4.4
+	github.com/gorilla/websocket v1.4.2
+	github.com/karlseguin/ccache/v2 v2.0.6
 	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
-	github.com/nats-io/nats-server/v2 v2.1.4
-	github.com/nats-io/nats.go v1.9.1
-	github.com/opentracing/opentracing-go v1.1.0
-	github.com/prometheus/client_golang v1.5.0
-	github.com/prometheus/procfs v0.0.10 // indirect
-	github.com/shirou/gopsutil v2.20.2+incompatible
-	github.com/sirupsen/logrus v1.4.2
+	github.com/nats-io/nats-server/v2 v2.1.7
+	github.com/nats-io/nats.go v1.10.0
+	github.com/opentracing/opentracing-go v1.2.0
+	github.com/prometheus/client_golang v1.7.1
+	github.com/shirou/gopsutil v2.20.6+incompatible
+	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
-	github.com/vulcand/oxy v1.0.0
-	go.uber.org/zap v1.14.0
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
+	github.com/vulcand/oxy v1.1.0
+	go.uber.org/zap v1.15.0
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 )

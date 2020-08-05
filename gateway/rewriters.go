@@ -53,18 +53,6 @@ func (s *requestRewriter) Rewrite(r *http.Request) {
 	}
 }
 
-type sourceExtractor struct{}
-
-func (s *sourceExtractor) Extract(req *http.Request) (token string, amount int64, err error) {
-
-	authHeader := req.Header.Get("Authorization")
-	if authHeader == "" {
-		return "default", 1, nil
-	}
-
-	return authHeader, 1, nil
-}
-
 type circuitBreakerHandler struct{}
 
 func (h *circuitBreakerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

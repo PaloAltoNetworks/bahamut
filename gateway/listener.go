@@ -13,11 +13,11 @@ type limitListener struct {
 	limiter *rate.Limiter
 }
 
-func newLimitedListener(l net.Listener, cps float64, burst int) net.Listener {
+func newLimitedListener(l net.Listener, cps rate.Limit, burst int) net.Listener {
 
 	return &limitListener{
 		Listener: l,
-		limiter:  rate.NewLimiter(rate.Limit(cps), burst),
+		limiter:  rate.NewLimiter(cps, burst),
 	}
 
 }

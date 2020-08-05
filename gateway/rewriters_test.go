@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -213,65 +212,6 @@ f6eiTREm5FRLzNkfhxQ=
 			})
 		})
 	})
-}
-
-func Test_sourceExtractor_Extract(t *testing.T) {
-	type args struct {
-		req *http.Request
-	}
-	tests := []struct {
-		name       string
-		s          *sourceExtractor
-		args       args
-		wantToken  string
-		wantAmount int64
-		wantErr    bool
-	}{
-		{
-			"authenticated",
-			&sourceExtractor{},
-			args{
-				&http.Request{
-					URL: &url.URL{Path: "/toto"},
-					Header: http.Header{
-						"Authorization": []string{"Bearer X"},
-					},
-				},
-			},
-			"Bearer X",
-			1,
-			false,
-		},
-		{
-			"unauthenticated",
-			&sourceExtractor{},
-			args{
-				&http.Request{
-					URL:    &url.URL{Path: "/toto"},
-					Header: http.Header{},
-				},
-			},
-			"default",
-			1,
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &sourceExtractor{}
-			gotToken, gotAmount, err := s.Extract(tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("sourceExtractor.Extract() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotToken != tt.wantToken {
-				t.Errorf("sourceExtractor.Extract() gotToken = %v, want %v", gotToken, tt.wantToken)
-			}
-			if gotAmount != tt.wantAmount {
-				t.Errorf("sourceExtractor.Extract() gotAmount = %v, want %v", gotAmount, tt.wantAmount)
-			}
-		})
-	}
 }
 
 func Test_circuitBreakerHandler(t *testing.T) {
