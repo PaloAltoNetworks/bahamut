@@ -10,7 +10,6 @@ import (
 
 	"github.com/mailgun/multibuf"
 	"github.com/vulcand/oxy/connlimit"
-	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/elemental"
 )
 
@@ -92,10 +91,6 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		}
 
 		writeError(w, r, errBadGateway)
-		return
-
-	case *ratelimit.MaxRateError:
-		writeError(w, r, errRateLimit)
 		return
 
 	case *connlimit.MaxConnError:
