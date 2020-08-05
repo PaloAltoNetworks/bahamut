@@ -2,6 +2,7 @@ package push
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync/atomic"
@@ -13,6 +14,32 @@ import (
 	"go.aporeto.io/bahamut/gateway"
 	"golang.org/x/time/rate"
 )
+
+type errorPubSubClient struct {
+	publishError    error
+	connectError    error
+	disconnectError error
+	pubs            chan *bahamut.Publication
+	errs            chan error
+}
+
+func (p *errorPubSubClient) Publish(publication *bahamut.Publication, opts ...bahamut.PubSubOptPublish) error {
+	return p.publishError
+}
+
+func (p *errorPubSubClient) Subscribe(pubs chan *bahamut.Publication, errors chan error, topic string, opts ...bahamut.PubSubOptSubscribe) func() {
+	p.pubs = pubs
+	p.errs = errors
+	return func() {}
+}
+
+func (p *errorPubSubClient) Connect(ctx context.Context) error {
+	return p.connectError
+}
+
+func (p *errorPubSubClient) Disconnect() error {
+	return p.disconnectError
+}
 
 func TestUpstreamer(t *testing.T) {
 
@@ -577,6 +604,24 @@ func TestUpstreamPeers(t *testing.T) {
 		}
 
 		So(ping.Status, ShouldEqual, entityStatusGoodbye)
+	})
+
+	Convey("An upstreamer should handle receiving an error", t, func() {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		pubsub := &errorPubSubClient{}
+
+		u := NewUpstreamer(pubsub, "serviceStatusTopic", "peerStatusTopic", OptionUpstreamerPeersPingInterval(time.Second))
+
+		u.Start(ctx)
+
+		<-time.After(300 * time.Millisecond)
+		pubsub.errs <- fmt.Errorf("bam")
+		<-time.After(300 * time.Millisecond)
+
+		So(len(pubsub.errs), ShouldEqual, 0)
 	})
 
 	Convey("An upstreamer should manage the hello and goodbye pings correctly", t, func() {

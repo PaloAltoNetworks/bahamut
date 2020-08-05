@@ -2,7 +2,6 @@ package push
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -378,9 +377,6 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 			}
 
 		case err = <-errs:
-			if err.Error() == "nats: invalid connection" {
-				zap.L().Fatal("Unrecoverable error from pubsub services channel", zap.Error(err))
-			}
 			zap.L().Error("Received error from pubsub services channel", zap.Error(err))
 
 		case <-ctx.Done():
@@ -392,28 +388,21 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 	// Build the UUID
-	rID, err := uuid.NewV4()
-	if err != nil {
-		panic(fmt.Errorf("unable to generate runtime UUID: %s", err))
-	}
-	ridb := rID.String()
+	uuid4, _ := uuid.NewV4()
+	rid := uuid4.String()
 
 	// Build publications.
 	helloPub := bahamut.NewPublication(c.peerStatusTopic)
-	if err := helloPub.Encode(peerPing{
-		RuntimeID: ridb,
+	_ = helloPub.Encode(peerPing{
+		RuntimeID: rid,
 		Status:    entityStatusHello,
-	}); err != nil {
-		panic(fmt.Errorf("unable to encode peer hello pub: %s", err))
-	}
+	}) // no error can be returned here
 
 	goodbyePub := bahamut.NewPublication(c.peerStatusTopic)
-	if err := goodbyePub.Encode(peerPing{
-		RuntimeID: ridb,
+	_ = goodbyePub.Encode(peerPing{
+		RuntimeID: rid,
 		Status:    entityStatusGoodbye,
-	}); err != nil {
-		panic(fmt.Errorf("unable to encode peer goodbye pub: %s", err))
-	}
+	}) // no error can be returned here
 
 	sendTicker := time.NewTicker(c.config.peerPingInterval)
 	defer sendTicker.Stop()
@@ -465,12 +454,12 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			var ping peerPing
 
-			if err = pub.Decode(&ping); err != nil {
+			if err := pub.Decode(&ping); err != nil {
 				zap.L().Error("Unable to decode uostream ping", zap.Error(err))
 				break
 			}
 
-			if ping.RuntimeID == ridb {
+			if ping.RuntimeID == rid {
 				break
 			}
 
@@ -492,14 +481,10 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 				}
 			}
 
-		case err = <-errs:
-			if err.Error() == "nats: invalid connection" {
-				zap.L().Fatal("Unrecoverable error from pubsub upstreams channel", zap.Error(err))
-			}
+		case err := <-errs:
 			zap.L().Error("Received error from pubsub upstreams channel", zap.Error(err))
 
 		case <-ctx.Done():
-
 			if err := c.pubsub.Publish(goodbyePub); err != nil {
 				zap.L().Error("Unable to send hello to pubsub upstreams channel", zap.Error(err))
 			}
