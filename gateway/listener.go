@@ -28,13 +28,8 @@ func (l *limitListener) Accept() (net.Conn, error) {
 	}
 
 	if !l.limiter.Allow() {
-		// We send a RST right away, no need to
-		// spend time doing a proper termination sequence
-		if t, ok := c.(*net.TCPConn); ok {
-			t.SetLinger(0)
-		}
-
 		c.Close() // nolint
 	}
+
 	return c, nil
 }
