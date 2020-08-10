@@ -54,6 +54,10 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		return nil, fmt.Errorf("unable build fast tcp listener: %s", err)
 	}
 
+	if cfg.tcpGlobalRateLimitingEnabled {
+		rootListener = newLimitedListener(rootListener, cfg.tcpGlobalRateLimitingCPS, cfg.tcpGlobalRateLimitingBurst)
+	}
+
 	if cfg.proxyProtocolEnabled {
 
 		sc, err := makeProxyProtocolSourceChecker(cfg.proxyProtocolSubnet)
@@ -82,10 +86,6 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		} else {
 			listener = rootListener
 		}
-	}
-
-	if cfg.tcpGlobalRateLimitingEnabled {
-		listener = newLimitedListener(listener, cfg.tcpGlobalRateLimitingCPS, cfg.tcpGlobalRateLimitingBurst)
 	}
 
 	var serverLogger *log.Logger

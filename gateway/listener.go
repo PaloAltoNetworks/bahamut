@@ -1,9 +1,7 @@
 package gateway
 
 import (
-	"context"
 	"net"
-	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -24,19 +22,19 @@ func newLimitedListener(l net.Listener, cps rate.Limit, burst int) net.Listener 
 
 func (l *limitListener) Accept() (net.Conn, error) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	lerr := l.limiter.Wait(ctx)
-
 	c, err := l.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
 
-	if lerr != nil {
+	if !l.limiter.Allow() {
+		// We send a RST right away, no need to
+		// spend time doing a proper termination sequence
+		if t, ok := c.(*net.TCPConn); ok {
+			t.SetLinger(0)
+		}
+
 		c.Close() // nolint
 	}
-
 	return c, nil
 }
