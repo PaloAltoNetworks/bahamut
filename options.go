@@ -500,13 +500,12 @@ func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
 	}
 }
 
-// OptErrorProcessor sets the error processor func to use. If non
+// OptErrorTransformer sets the error transformer func to use. If non
 // nil, this will be called to eventually transform the error before
-// converting it to an elemental.Errors that will be returned to the client
-// If the function return nil, the original error will be used, as if
-// this function was not set.
-func OptErrorProcessor(f func(error) error) Option {
+// converting it to the elemental.Errors that will be returned to the client.
+// If the function return nil, the original error will be used.
+func OptErrorTransformer(f func(error) error) Option {
 	return func(c *config) {
-		c.hooks.processError = f
+		c.hooks.errorTransformer = f
 	}
 }

@@ -366,7 +366,7 @@ func TestBahamut_Options(t *testing.T) {
 
 	Convey("Calling OptErrorProcessor should work", t, func() {
 		f := func(error) error { return nil }
-		OptErrorProcessor(f)(&c)
-		So(c.hooks.processError, ShouldEqual, f)
+		OptErrorTransformer(f)(&c)
+		So(c.hooks.errorTransformer, ShouldEqual, f)
 	})
 }

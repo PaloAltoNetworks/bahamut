@@ -141,8 +141,8 @@ type config struct {
 	}
 
 	hooks struct {
-		postStart    func(Server) error
-		preStop      func(Server) error
-		processError func(error) error
+		postStart        func(Server) error
+		preStop          func(Server) error
+		errorTransformer func(error) error
 	}
 }
