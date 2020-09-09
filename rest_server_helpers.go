@@ -39,7 +39,7 @@ func setCommonHeader(w http.ResponseWriter, encoding elemental.EncodingType) {
 
 func makeNotFoundHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil, nil))
 	}
 }
 

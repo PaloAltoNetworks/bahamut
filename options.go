@@ -499,3 +499,13 @@ func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
 		c.model.retriever = f
 	}
 }
+
+// OptErrorTransformer sets the error transformer func to use. If non
+// nil, this will be called to eventually transform the error before
+// converting it to the elemental.Errors that will be returned to the client.
+// If the function return nil, the original error will be used.
+func OptErrorTransformer(f func(error) error) Option {
+	return func(c *config) {
+		c.hooks.errorTransformer = f
+	}
+}

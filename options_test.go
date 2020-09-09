@@ -363,4 +363,10 @@ func TestBahamut_Options(t *testing.T) {
 		OptEnableAPIPathPrefix("////custom/")(&c)
 		So(c.restServer.customRoutePrefix, ShouldEqual, "/custom")
 	})
+
+	Convey("Calling OptErrorProcessor should work", t, func() {
+		f := func(error) error { return nil }
+		OptErrorTransformer(f)(&c)
+		So(c.hooks.errorTransformer, ShouldEqual, f)
+	})
 }

@@ -293,7 +293,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Get API version
 		version, err := extractAPIVersion(req.URL.Path)
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrInvalidAPIVersion, nil))
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrInvalidAPIVersion, nil, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -303,7 +303,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Check API Version
 		manager, ok := a.cfg.model.modelManagers[version]
 		if !ok {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrUnknownAPIVersion, nil))
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrUnknownAPIVersion, nil, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -312,7 +312,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, manager)
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -325,7 +325,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Global rate limiting
 		if a.cfg.rateLimiting.rateLimiter != nil {
 			if !a.cfg.rateLimiting.rateLimiter.Allow() {
-				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
@@ -338,7 +338,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			if rlm, ok := a.cfg.rateLimiting.apiRateLimiters[request.Identity]; ok {
 				if rlm.condition == nil || rlm.condition(request) {
 					if !rlm.limiter.Allow() {
-						code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+						code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
 						if measure != nil {
 							measure(code, opentracing.SpanFromContext(ctx))
 						}
