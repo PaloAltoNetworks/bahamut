@@ -499,3 +499,14 @@ func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
 		c.model.retriever = f
 	}
 }
+
+// OptErrorProcessor sets the error processor func to use. If non
+// nil, this will be called to eventually transform the error before
+// converting it to an elemental.Errors that will be returned to the client
+// If the function return nil, the original error will be used, as if
+// this function was not set.
+func OptErrorProcessor(f func(error) error) Option {
+	return func(c *config) {
+		c.hooks.processError = f
+	}
+}

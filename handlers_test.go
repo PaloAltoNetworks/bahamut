@@ -356,7 +356,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 		Convey("When I call makeErrorResponse", func() {
 
-			r := makeErrorResponse(context.Background(), resp, err, nil)
+			r := makeErrorResponse(context.Background(), resp, err, nil, nil)
 
 			Convey("Then the returned response should be the same", func() {
 				So(resp, ShouldEqual, r)
@@ -374,7 +374,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 		Convey("When I call makeErrorResponse", func() {
 
-			r := makeErrorResponse(context.Background(), nil, err, nil)
+			r := makeErrorResponse(context.Background(), nil, err, nil, nil)
 
 			Convey("Then the returned response should be the same", func() {
 				So(r, ShouldEqual, nil)
@@ -397,7 +397,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 			r := makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
 				testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return []byte("coucou"), nil },
-			})
+			}, nil)
 
 			Convey("Then the returned response should be the same", func() {
 				So(r.Data, ShouldResemble, []byte("coucou"))
@@ -421,8 +421,54 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 			So(func() {
 				makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
 					testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return nil, fmt.Errorf("boom") },
-				})
+				}, nil)
 			}, ShouldPanicWith, "unable to encode error using custom marshaller: boom")
+		})
+	})
+
+	Convey("Given I a response and an error and a processor", t, func() {
+
+		resp := elemental.NewResponse(elemental.NewRequest())
+		err := fmt.Errorf("paf")
+
+		Convey("When I call makeErrorResponse", func() {
+
+			r := makeErrorResponse(context.Background(), resp, err, nil,
+				func(err error) error {
+					return fmt.Errorf("decorated: %s", err)
+				},
+			)
+
+			Convey("Then the returned response should be the same", func() {
+				So(resp, ShouldEqual, r)
+			})
+
+			Convey("Then response should be correctly encoded", func() {
+				So(string(resp.Data), ShouldEqual, `[{"code":500,"description":"decorated: paf","subject":"elemental","title":"Internal Server Error","trace":"unknown"}]`)
+			})
+		})
+	})
+
+	Convey("Given I a response and an error and a processor that returns nil", t, func() {
+
+		resp := elemental.NewResponse(elemental.NewRequest())
+		err := fmt.Errorf("paf")
+
+		Convey("When I call makeErrorResponse", func() {
+
+			r := makeErrorResponse(context.Background(), resp, err, nil,
+				func(err error) error {
+					return nil
+				},
+			)
+
+			Convey("Then the returned response should be the same", func() {
+				So(resp, ShouldEqual, r)
+			})
+
+			Convey("Then response should be correctly encoded", func() {
+				So(string(resp.Data), ShouldEqual, `[{"code":500,"description":"paf","subject":"elemental","title":"Internal Server Error","trace":"unknown"}]`)
+			})
 		})
 	})
 }
@@ -455,7 +501,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			return nil
 		}
 
-		r := runDispatcher(ctx, response, d, true, nil)
+		r := runDispatcher(ctx, response, d, true, nil, nil)
 
 		Convey("Then the code should be 204", func() {
 			So(r.StatusCode, ShouldEqual, 204)
@@ -484,7 +530,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			return elemental.NewError("nop", "nope", "test", 42)
 		}
 
-		r := runDispatcher(ctx, response, d, true, nil)
+		r := runDispatcher(ctx, response, d, true, nil, nil)
 
 		Convey("Then the code should be 42", func() {
 			So(r.StatusCode, ShouldEqual, 42)
@@ -513,7 +559,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 			panic("booom!")
 		}
 
-		r := runDispatcher(ctx, response, d, false, nil)
+		r := runDispatcher(ctx, response, d, false, nil, nil)
 
 		Convey("Then the code should be 500", func() {
 			So(r.StatusCode, ShouldEqual, 500)
@@ -543,7 +589,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		}
 
 		Convey("Then the code should be 500", func() {
-			So(func() { runDispatcher(ctx, response, d, true, nil) }, ShouldPanic)
+			So(func() { runDispatcher(ctx, response, d, true, nil, nil) }, ShouldPanic)
 		})
 
 	})
@@ -566,7 +612,7 @@ func TestHandlers_runDispatcher(t *testing.T) {
 		}
 
 		r := elemental.NewResponse(elemental.NewRequest())
-		go func() { runDispatcher(ctx, r, d, true, nil) }()
+		go func() { runDispatcher(ctx, r, d, true, nil, nil) }()
 		time.Sleep(30 * time.Millisecond)
 		cancel()
 

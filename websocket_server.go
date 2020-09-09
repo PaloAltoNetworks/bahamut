@@ -199,7 +199,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	readEncodingType, writeEncodingType, err := elemental.EncodingFromHeaders(r.Header)
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 	}
 
 	session := newWSPushSession(r, n.cfg, n.unregisterSession, readEncodingType, writeEncodingType)
@@ -217,24 +217,24 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	session.cookies = r.Cookies()
 
 	if err := n.authSession(session); err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 		return
 	}
 
 	if err := n.initPushSession(session); err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 		return
 	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 		return
 	}
 
 	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{WriteChanSize: 64, ReadChanSize: 16})
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 		return
 	}
 
