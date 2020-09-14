@@ -1639,6 +1639,46 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		})
 	})
 
+	Convey("Given I have a processor that handle ProcessPatch function and uses a working elementalRetriever with an invalid object", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.TaskIdentity
+		request.Data = []byte(`{"ID": "1234", "status": "not-good"}`)
+
+		expectedID := "a"
+		expectedName := "Fake"
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				output: &testmodel.SparseTask{ID: &expectedID, Name: &expectedName},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.Task{})},
+			}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return &testmodel.Task{ID: expectedID, Name: "will be patched"}, nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.Background(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedError := "error 422 (elemental): Validation Error: Data 'not-good' of attribute 'status' is not in list '[DONE PROGRESS TODO]'"
+		expectedNbCalls := 1
+
+		Convey("Then I should get a bahamut error and no context", func() {
+			So(err, ShouldNotEqual, nil)
+			So(err.Error(), ShouldEqual, expectedError)
+			So(retrieverCalled, ShouldEqual, 1)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldBeNil)
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+	})
+
 	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that fails", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
@@ -1709,7 +1749,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		Convey("Then I should have no error and context should be initiated", func() {
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldEqual, "error 400 (bahamut): Bad Request: Idenfiable is not patchable")
+			So(err.Error(), ShouldEqual, "error 400 (bahamut): Bad Request: Identifiable is not patchable")
 			So(retrieverCalled, ShouldEqual, 1)
 			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
 			So(ctx.outputData, ShouldBeNil)
