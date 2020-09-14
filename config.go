@@ -42,6 +42,11 @@ type TraceCleaner func(elemental.Identity, []byte) []byte
 // treat the request as a standard update.
 type IdentifiableRetriever func(*elemental.Request) (elemental.Identifiable, error)
 
+type apiRateLimit struct {
+	limiter   *rate.Limiter
+	condition func(*elemental.Request) bool
+}
+
 // A config represents the configuration of Bahamut.
 type config struct {
 	general struct {
@@ -109,7 +114,8 @@ type config struct {
 	}
 
 	rateLimiting struct {
-		rateLimiter *rate.Limiter
+		rateLimiter     *rate.Limiter
+		apiRateLimiters map[elemental.Identity]apiRateLimit
 	}
 
 	model struct {
@@ -135,7 +141,8 @@ type config struct {
 	}
 
 	hooks struct {
-		postStart func(Server) error
-		preStop   func(Server) error
+		postStart        func(Server) error
+		preStop          func(Server) error
+		errorTransformer func(error) error
 	}
 }

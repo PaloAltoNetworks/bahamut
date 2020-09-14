@@ -129,11 +129,11 @@ func TestHandleServicePings(t *testing.T) {
 			versions12 := map[string]interface{}{"a": 2}
 			versions2 := map[string]interface{}{"b": 2}
 
-			handled := handleAddServicePing(scfg, ping{
+			handled := handleAddServicePing(scfg, servicePing{
 				Name:         "srv1",
 				Endpoint:     "1.1.1.1:1",
 				PushEndpoint: "push1",
-				Status:       serviceStatusHello,
+				Status:       entityStatusHello,
 				Load:         0.1,
 				Routes:       routes11,
 				Versions:     versions11,
@@ -157,11 +157,11 @@ func TestHandleServicePings(t *testing.T) {
 
 			Convey("When I send a second ping from another instance of the same service", func() {
 
-				handled := handleAddServicePing(scfg, ping{
+				handled := handleAddServicePing(scfg, servicePing{
 					Name:         "srv1",
 					Endpoint:     "1.1.1.1:2",
 					PushEndpoint: "push1",
-					Status:       serviceStatusHello,
+					Status:       entityStatusHello,
 					Load:         0.1,
 					Routes:       routes12,
 					Versions:     versions12,
@@ -186,11 +186,11 @@ func TestHandleServicePings(t *testing.T) {
 
 				Convey("When I send a hello ping from an instance of a second service", func() {
 
-					handled := handleAddServicePing(scfg, ping{
+					handled := handleAddServicePing(scfg, servicePing{
 						Name:         "srv2",
 						Endpoint:     "2.2.2.2:1",
 						PushEndpoint: "push2",
-						Status:       serviceStatusHello,
+						Status:       entityStatusHello,
 						Load:         0.2,
 						Routes:       routes2,
 						Versions:     versions2,
@@ -226,11 +226,11 @@ func TestHandleServicePings(t *testing.T) {
 
 					Convey("When I send a goodbye ping from an instance of the first service", func() {
 
-						handled := handleRemoveServicePing(scfg, ping{
+						handled := handleRemoveServicePing(scfg, servicePing{
 							Name:         "srv1",
 							Endpoint:     "1.1.1.1:1",
 							PushEndpoint: "push2",
-							Status:       serviceStatusGoodbye,
+							Status:       entityStatusGoodbye,
 						})
 
 						Convey("Then it should have unregistered one endpoint of srv1", func() {
@@ -257,11 +257,11 @@ func TestHandleServicePings(t *testing.T) {
 
 						Convey("When I finally send another goodbye from the last instance of srv1", func() {
 
-							handled := handleRemoveServicePing(scfg, ping{
+							handled := handleRemoveServicePing(scfg, servicePing{
 								Name:         "srv1",
 								Endpoint:     "1.1.1.1:2",
 								PushEndpoint: "push2",
-								Status:       serviceStatusGoodbye,
+								Status:       entityStatusGoodbye,
 							})
 
 							Convey("Then it should have unregistered srv1", func() {
@@ -304,11 +304,11 @@ func TestHandleServicePings(t *testing.T) {
 
 		So(len(srv1.outdatedEndpoints(time.Now().Add(-time.Hour))), ShouldEqual, 1)
 
-		handled := handleAddServicePing(scfg, ping{
+		handled := handleAddServicePing(scfg, servicePing{
 			Name:         "srv1",
 			Endpoint:     "1.1.1.1:1",
 			PushEndpoint: "push1",
-			Status:       serviceStatusHello,
+			Status:       entityStatusHello,
 			Load:         0.42,
 		})
 
@@ -340,11 +340,11 @@ func TestHandleServicePings(t *testing.T) {
 			},
 		}
 
-		handled := handleRemoveServicePing(scfg, ping{
+		handled := handleRemoveServicePing(scfg, servicePing{
 			Name:         "srv2",
 			Endpoint:     "1.1.1.1:1", // looksy here
 			PushEndpoint: "push1",
-			Status:       serviceStatusGoodbye,
+			Status:       entityStatusGoodbye,
 			Load:         0.2,
 		})
 
@@ -377,11 +377,11 @@ func TestHandleServicePings(t *testing.T) {
 			},
 		}
 
-		handled := handleRemoveServicePing(scfg, ping{
+		handled := handleRemoveServicePing(scfg, servicePing{
 			Name:         "srv1",
 			Endpoint:     "2.2.2.2:1",
 			PushEndpoint: "push1",
-			Status:       serviceStatusGoodbye,
+			Status:       entityStatusGoodbye,
 			Load:         0.2,
 		})
 
@@ -403,8 +403,8 @@ func TestHandleServicePings(t *testing.T) {
 		scfg := servicesConfig{}
 
 		So(func() {
-			handleAddServicePing(scfg, ping{
-				Status: serviceStatusGoodbye,
+			handleAddServicePing(scfg, servicePing{
+				Status: entityStatusGoodbye,
 			})
 		}, ShouldPanicWith, "handleAddServicePing received a goodbye service ping")
 	})
@@ -414,8 +414,8 @@ func TestHandleServicePings(t *testing.T) {
 		scfg := servicesConfig{}
 
 		So(func() {
-			handleRemoveServicePing(scfg, ping{
-				Status: serviceStatusHello,
+			handleRemoveServicePing(scfg, servicePing{
+				Status: entityStatusHello,
 			})
 		}, ShouldPanicWith, "handleRemoveServicePing received a hello service ping")
 	})

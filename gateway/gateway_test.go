@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -17,22 +16,29 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/tg/tglib"
+	"golang.org/x/time/rate"
 )
 
 type simpleUpstreamer struct {
-	ups1 *httptest.Server
-	ups2 *httptest.Server
+	ups1    *httptest.Server
+	ups2    *httptest.Server
+	nextErr error
 }
 
-func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, load float64) {
+func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, err error) {
 
+	if u.nextErr != nil {
+		e := u.nextErr
+		u.nextErr = nil
+		return "", e
+	}
 	switch req.URL.Path {
 	case "/ups1":
-		return strings.Replace(u.ups1.URL, "https://", "", 1), 0.2
+		return strings.Replace(u.ups1.URL, "https://", "", 1), nil
 	case "/ups2":
-		return strings.Replace(u.ups2.URL, "https://", "", 1), 0.1
+		return strings.Replace(u.ups2.URL, "https://", "", 1), nil
 	default:
-		return "", 0.0
+		return "", nil
 	}
 }
 
@@ -85,6 +91,16 @@ func makeServerCert() tls.Certificate {
 	return tlsCert
 }
 
+type simpleLimiter struct{}
+
+func (l *simpleLimiter) ExtractRates(r *http.Request) (rate.Limit, int, error) {
+	return rate.Limit(100), 1000, nil
+}
+
+func (l *simpleLimiter) ExtractSource(req *http.Request) (token string, err error) {
+	return "default", nil
+}
+
 func TestGateway(t *testing.T) {
 
 	Convey("Given I have 2 tls upstreams and an Upstreamer", t, func() {
@@ -118,8 +134,9 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionSourceRateLimitingDynamic(&simpleLimiter{}),
+				OptionTCPGlobalRateLimiting(200.0, 200.0),
+				OptionTCPClientMaxConnections(100),
 				OptionUpstreamConfig(0, 0, 0, 0, 0, "NetworkErrorRatio() > 0.5", false),
 				OptionEnableTrace(true),
 				OptionMetricsManager(mm),
@@ -137,7 +154,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -163,6 +180,24 @@ func TestGateway(t *testing.T) {
 				So(resp.StatusCode, ShouldEqual, 503)
 			})
 
+			Convey("Then we I call and get a ErrUpstreamerTooManyRequests", func() {
+				u.nextErr = ErrUpstreamerTooManyRequests
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups3", nil)
+				req.Close = true
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusTooManyRequests)
+			})
+
+			Convey("Then we I call and get an unknown error", func() {
+				u.nextErr = fmt.Errorf("oh no")
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups3", nil)
+				req.Close = true
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
+			})
+
 			// Convey("Then the metric manager should have been called", func() {
 			// 	So(atomic.AddInt64(&mm.registerTCPConnectionCalled, 0), ShouldBeGreaterThan, 0)
 			// 	So(atomic.AddInt64(&mm.unregisterTCPConnectionCalled, 0), ShouldBeGreaterThan, 0)
@@ -176,7 +211,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
+				OptionSourceRateLimitingDynamic(&simpleLimiter{}),
 				OptionEnableMaintenance(true),
 			)
 			defer gw.Stop()
@@ -192,7 +227,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then calling a GET any api will return 423", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -216,7 +251,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
-				OptionRateLimiting(true, 100, 1000),
+				OptionSourceRateLimitingDynamic(&simpleLimiter{}),
 				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
 					req.Header.Add("inject", "hello")
 					return nil
@@ -239,7 +274,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -275,7 +310,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/hello", nil)
@@ -309,7 +344,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1", nil)
@@ -330,10 +365,11 @@ func TestGateway(t *testing.T) {
 					return InterceptorActionStop, "", nil
 				}),
 			)
-			defer gw.Stop()
 
 			So(err, ShouldBeNil)
 			So(gw, ShouldNotBeNil)
+
+			defer gw.Stop()
 
 			testclient := &http.Client{
 				Transport: &http.Transport{
@@ -343,7 +379,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/hello", nil)
@@ -377,7 +413,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/chien/ups1", nil)
@@ -413,7 +449,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/ups1/chien", nil)
@@ -430,8 +466,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(200.0, 200.0),
+				OptionTCPClientMaxConnections(100),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 			)
 			defer gw.Stop()
@@ -447,7 +483,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1:7765/ups1", nil)
@@ -471,8 +507,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(200.0, 200.0),
+				OptionTCPClientMaxConnections(100),
 			)
 			defer gw.Stop()
 
@@ -487,7 +523,7 @@ func TestGateway(t *testing.T) {
 				},
 			}
 
-			gw.Start(context.Background())
+			gw.Start()
 
 			Convey("Then we I call existing ep 1", func() {
 				req, _ := http.NewRequest(http.MethodGet, "https://127.0.0.1:7765/ups1", nil)
@@ -511,8 +547,8 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionServerTLSConfig(&tls.Config{Certificates: []tls.Certificate{makeServerCert()}}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRateLimiting(true, 100, 1000),
-				OptionTCPRateLimiting(true, 200.0, 200.0, 100),
+				OptionTCPGlobalRateLimiting(200.0, 200.0),
+				OptionTCPClientMaxConnections(100),
 				OptionEnableProxyProtocol(true, "oopsy"),
 			)
 

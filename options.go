@@ -348,10 +348,27 @@ func OptAuditer(auditer Auditer) Option {
 	}
 }
 
-// OptRateLimiting configures the rate limiting.
+// OptRateLimiting configures the global rate limiting.
 func OptRateLimiting(limit float64, burst int) Option {
 	return func(c *config) {
 		c.rateLimiting.rateLimiter = rate.NewLimiter(rate.Limit(limit), burst)
+	}
+}
+
+// OptAPIRateLimiting configures the per-api rate limiting.
+// The optional parameter condition is a function that can be provided
+// to decide if the rate limiter should apply based on the custom computation
+// iof the incoming request.
+func OptAPIRateLimiting(identity elemental.Identity, limit float64, burst int, condition func(*elemental.Request) bool) Option {
+	return func(c *config) {
+		if c.rateLimiting.apiRateLimiters == nil {
+			c.rateLimiting.apiRateLimiters = map[elemental.Identity]apiRateLimit{}
+		}
+
+		c.rateLimiting.apiRateLimiters[identity] = apiRateLimit{
+			limiter:   rate.NewLimiter(rate.Limit(limit), burst),
+			condition: condition,
+		}
 	}
 }
 
@@ -480,5 +497,15 @@ func OptCORSOrigin(origin string) Option {
 func OptIdentifiableRetriever(f IdentifiableRetriever) Option {
 	return func(c *config) {
 		c.model.retriever = f
+	}
+}
+
+// OptErrorTransformer sets the error transformer func to use. If non
+// nil, this will be called to eventually transform the error before
+// converting it to the elemental.Errors that will be returned to the client.
+// If the function return nil, the original error will be used.
+func OptErrorTransformer(f func(error) error) Option {
+	return func(c *config) {
+		c.hooks.errorTransformer = f
 	}
 }

@@ -44,9 +44,9 @@ func pick(randomizer Randomizer, len int) (int, int) {
 	return idxs[0], idxs[1]
 }
 
-func handleAddServicePing(services servicesConfig, sp ping) bool {
+func handleAddServicePing(services servicesConfig, sp servicePing) bool {
 
-	if sp.Status == serviceStatusGoodbye {
+	if sp.Status == entityStatusGoodbye {
 		panic("handleAddServicePing received a goodbye service ping")
 	}
 
@@ -70,14 +70,14 @@ func handleAddServicePing(services servicesConfig, sp ping) bool {
 	srv.versions = sp.Versions
 
 	// We register the new endpoint.
-	srv.registerEndpoint(sp.Endpoint, sp.Load)
+	srv.registerEndpoint(sp.Endpoint, sp.Load, sp.APILimiters)
 
 	return true
 }
 
-func handleRemoveServicePing(services servicesConfig, sp ping) bool {
+func handleRemoveServicePing(services servicesConfig, sp servicePing) bool {
 
-	if sp.Status == serviceStatusHello {
+	if sp.Status == entityStatusHello {
 		panic("handleRemoveServicePing received a hello service ping")
 	}
 

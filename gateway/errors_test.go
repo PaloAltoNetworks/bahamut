@@ -76,9 +76,10 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":504,"description":"The requested service took too long to respond. Please try again in a moment.","subject":"gateway","title":"Gateway Timeout"}]`)
 		})
 
-		Convey("When I call ServeHTTP with a ratelimit.MaxRateError", func() {
-			eh.ServeHTTP(w, req, &ratelimit.MaxRateError{})
+		Convey("When I call ServeHTTP with a errRateLimit", func() {
+			eh.ServeHTTP(w, req, errTooManyRequest)
 			data, _ := ioutil.ReadAll(w.Body)
+			_ = data
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
 		})
 

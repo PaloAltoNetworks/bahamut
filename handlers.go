@@ -105,10 +105,16 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 	return response
 }
 
-func makeErrorResponse(ctx context.Context, response *elemental.Response, err error, marshallers map[elemental.Identity]CustomMarshaller) *elemental.Response {
+func makeErrorResponse(ctx context.Context, response *elemental.Response, err error, marshallers map[elemental.Identity]CustomMarshaller, errorTransformer func(error) error) *elemental.Response {
 
 	if err == context.Canceled || err == context.DeadlineExceeded {
 		return nil
+	}
+
+	if errorTransformer != nil {
+		if perr := errorTransformer(err); perr != nil {
+			err = perr
+		}
 	}
 
 	outError := processError(ctx, err)
@@ -137,17 +143,17 @@ func makeErrorResponse(ctx context.Context, response *elemental.Response, err er
 	return response
 }
 
-func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller) (out *elemental.Response) {
+func runDispatcher(ctx *bcontext, r *elemental.Response, d func() error, disablePanicRecovery bool, marshallers map[elemental.Identity]CustomMarshaller, errorTransformer func(error) error) (out *elemental.Response) {
 
 	defer func() {
 		if err := handleRecoveredPanic(ctx.ctx, recover(), disablePanicRecovery); err != nil {
 			// out is the named returned value. This switches the output of the function.
-			out = makeErrorResponse(ctx.ctx, r, err, marshallers)
+			out = makeErrorResponse(ctx.ctx, r, err, marshallers, errorTransformer)
 		}
 	}()
 
 	if err := d(); err != nil {
-		return makeErrorResponse(ctx.ctx, r, err, marshallers)
+		return makeErrorResponse(ctx.ctx, r, err, marshallers, errorTransformer)
 	}
 
 	return makeResponse(ctx, r, marshallers)
@@ -173,6 +179,7 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -191,6 +198,7 @@ func handleRetrieveMany(ctx *bcontext, cfg config, processorFinder processorFind
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -213,6 +221,7 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -231,6 +240,7 @@ func handleRetrieve(ctx *bcontext, cfg config, processorFinder processorFinderFu
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -253,6 +263,7 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -275,6 +286,7 @@ func handleCreate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -297,6 +309,7 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -319,6 +332,7 @@ func handleUpdate(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -341,6 +355,7 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -361,6 +376,7 @@ func handleDelete(ctx *bcontext, cfg config, processorFinder processorFinderFunc
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -383,6 +399,7 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -401,6 +418,7 @@ func handleInfo(ctx *bcontext, cfg config, processorFinder processorFinderFunc, 
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }
 
@@ -423,6 +441,7 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 				http.StatusMethodNotAllowed,
 			),
 			cfg.model.marshallers,
+			cfg.hooks.errorTransformer,
 		)
 	}
 
@@ -446,5 +465,6 @@ func handlePatch(ctx *bcontext, cfg config, processorFinder processorFinderFunc,
 		},
 		cfg.general.panicRecoveryDisabled,
 		cfg.model.marshallers,
+		cfg.hooks.errorTransformer,
 	)
 }

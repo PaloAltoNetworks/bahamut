@@ -7,6 +7,7 @@ import (
 
 	"go.aporeto.io/bahamut"
 	"go.aporeto.io/elemental"
+	"golang.org/x/time/rate"
 )
 
 // A RequestRewriter can be used to rewrite the request
@@ -56,40 +57,47 @@ const (
 )
 
 type gwconfig struct {
-	requestRewriter             RequestRewriter
-	responseRewriter            ResponseRewriter
-	blockOpenTracingHeaders     bool
-	exactInterceptors           map[string]InterceptorFunc
-	exposePrivateAPIs           bool
-	httpDisableKeepAlive        bool
-	httpIdleTimeout             time.Duration
-	httpReadTimeout             time.Duration
-	httpWriteTimeout            time.Duration
-	maintenance                 bool
-	metricsManager              bahamut.MetricsManager
-	prefixInterceptors          map[string]InterceptorFunc
-	suffixInterceptors          map[string]InterceptorFunc
-	proxyProtocolEnabled        bool
-	proxyProtocolSubnet         string
-	rateLimitingBurst           int64
-	rateLimitingEnabled         bool
-	rateLimitingRPS             int64
-	tcpMaxConnections           int
-	tcpRateLimitingBurst        int
-	tcpRateLimitingCPS          float64
-	tcpRateLimitingEnabled      bool
-	trace                       bool
-	upstreamUseHTTP2            bool
-	upstreamCircuitBreakerCond  string
-	upstreamIdleConnTimeout     time.Duration
-	upstreamMaxConnsPerHost     int
-	upstreamMaxIdleConns        int
-	upstreamMaxIdleConnsPerHost int
-	upstreamURLScheme           string
-	upstreamTLSHandshakeTimeout time.Duration
-	upstreamTLSConfig           *tls.Config
-	serverTLSConfig             *tls.Config
-	corsOrigin                  string
+	requestRewriter         RequestRewriter
+	responseRewriter        ResponseRewriter
+	blockOpenTracingHeaders bool
+	exactInterceptors       map[string]InterceptorFunc
+	exposePrivateAPIs       bool
+	httpDisableKeepAlive    bool
+	httpIdleTimeout         time.Duration
+	httpReadTimeout         time.Duration
+	httpWriteTimeout        time.Duration
+	maintenance             bool
+	metricsManager          bahamut.MetricsManager
+	prefixInterceptors      map[string]InterceptorFunc
+	suffixInterceptors      map[string]InterceptorFunc
+	proxyProtocolEnabled    bool
+	proxyProtocolSubnet     string
+
+	sourceExtractor           SourceExtractor
+	sourceRateLimitingBurst   int
+	sourceRateLimitingRPS     rate.Limit
+	sourceRateLimitingEnabled bool
+	sourceRateExtractor       RateExtractor
+
+	tcpClientMaxConnectionsEnabled bool
+	tcpClientMaxConnections        int
+	tcpClientSourceExtractor       SourceExtractor
+
+	tcpGlobalRateLimitingBurst   int
+	tcpGlobalRateLimitingCPS     rate.Limit
+	tcpGlobalRateLimitingEnabled bool
+	trace                        bool
+	upstreamUseHTTP2             bool
+	upstreamCircuitBreakerCond   string
+	upstreamIdleConnTimeout      time.Duration
+	upstreamMaxConnsPerHost      int
+	upstreamMaxIdleConns         int
+	upstreamMaxIdleConnsPerHost  int
+	upstreamURLScheme            string
+	upstreamTLSHandshakeTimeout  time.Duration
+	upstreamTLSConfig            *tls.Config
+	serverTLSConfig              *tls.Config
+	corsOrigin                   string
 }
 
 func newGatewayConfig() *gwconfig {
@@ -98,8 +106,8 @@ func newGatewayConfig() *gwconfig {
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		suffixInterceptors:          map[string]InterceptorFunc{},
 		exactInterceptors:           map[string]InterceptorFunc{},
-		tcpRateLimitingBurst:        100,
-		tcpRateLimitingCPS:          200.0,
+		tcpGlobalRateLimitingBurst:  200,
+		tcpGlobalRateLimitingCPS:    100.0,
 		upstreamIdleConnTimeout:     time.Hour,
 		upstreamMaxConnsPerHost:     64,
 		upstreamMaxIdleConns:        32000,
@@ -110,8 +118,8 @@ func newGatewayConfig() *gwconfig {
 		httpIdleTimeout:             240 * time.Second,
 		httpReadTimeout:             120 * time.Second,
 		httpWriteTimeout:            240 * time.Second,
-		rateLimitingRPS:             2000,
-		rateLimitingBurst:           500,
+		sourceExtractor:             &defaultSourceExtractor{},
+		tcpClientSourceExtractor:    &defaultTCPSourceExtractor{},
 	}
 }
 
@@ -127,22 +135,70 @@ func OptionEnableProxyProtocol(enabled bool, subnet string) Option {
 	}
 }
 
-// OptionTCPRateLimiting enables and configures the TCP rate limiter.
-func OptionTCPRateLimiting(enabled bool, cps float64, burst int, maxConnections int) Option {
+// OptionTCPGlobalRateLimiting enables and configures the TCP rate limiter to
+// the rate of the total number of TCP connection the gateway handle.
+func OptionTCPGlobalRateLimiting(cps rate.Limit, burst int) Option {
 	return func(cfg *gwconfig) {
-		cfg.tcpRateLimitingEnabled = enabled
-		cfg.tcpRateLimitingCPS = cps
-		cfg.tcpRateLimitingBurst = burst
-		cfg.tcpMaxConnections = maxConnections
+		cfg.tcpGlobalRateLimitingEnabled = true
+		cfg.tcpGlobalRateLimitingCPS = cps
+		cfg.tcpGlobalRateLimitingBurst = burst
 	}
 }
 
-// OptionRateLimiting enables and configures the HTTP rate limiter.
-func OptionRateLimiting(enabled bool, cps int, burst int) Option {
+// OptionTCPClientMaxConnections sets the maximum number of TCP connections
+// a client can do at the same time. 0 means no limit.
+// If the sourceExtractor is nil, the default one will be used, which uses
+// the request's RemoteAddr as token.
+func OptionTCPClientMaxConnections(maxConnections int) Option {
 	return func(cfg *gwconfig) {
-		cfg.rateLimitingEnabled = enabled
-		cfg.rateLimitingRPS = int64(cps)
-		cfg.rateLimitingBurst = int64(burst)
+		cfg.tcpClientMaxConnectionsEnabled = maxConnections > 0
+		cfg.tcpClientMaxConnections = maxConnections
+	}
+}
+
+// OptionTCPClientMaxConnectionsSourceExtractor sets the source extractor
+// to use to uniquely identify a client TCP connection.
+// The default one uses the http.Request RemoteAddr property.
+// Passing nil will reset to the default source extractor.
+func OptionTCPClientMaxConnectionsSourceExtractor(sourceExtractor SourceExtractor) Option {
+	return func(cfg *gwconfig) {
+		if sourceExtractor == nil {
+			sourceExtractor = &defaultTCPSourceExtractor{}
+		}
+		cfg.tcpClientSourceExtractor = sourceExtractor
+	}
+}
+
+// OptionSourceRateLimiting sets the rate limit for a single source.
+// If OptionSourceRateLimiting option is used, this option has no effect.
+func OptionSourceRateLimiting(rps rate.Limit, burst int) Option {
+	return func(cfg *gwconfig) {
+		cfg.sourceRateLimitingEnabled = true
+		cfg.sourceRateLimitingRPS = rps
+		cfg.sourceRateLimitingBurst = burst
+	}
+}
+
+// OptionSourceRateLimitingDynamic sets the RateExtractor to use to dynamically
+// set the rates for a uniquely identified client.
+// If this option is used, OptionSourceRateLimiting has no effect.
+func OptionSourceRateLimitingDynamic(rateExtractor RateExtractor) Option {
+	return func(cfg *gwconfig) {
+		cfg.sourceRateLimitingEnabled = true
+		cfg.sourceRateExtractor = rateExtractor
+	}
+}
+
+// OptionSourceRateLimitingSourceExtractor configures a custom SourceExtractor
+// to decide how to uniquely identify a client.
+// The default one uses a hash of the authorization header.
+// Passing nil will reset to the default source extractor.
+func OptionSourceRateLimitingSourceExtractor(sourceExtractor SourceExtractor) Option {
+	return func(cfg *gwconfig) {
+		if sourceExtractor == nil {
+			sourceExtractor = &defaultSourceExtractor{}
+		}
+		cfg.sourceExtractor = sourceExtractor
 	}
 }
 

@@ -30,6 +30,16 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	// ErrInvalidAPIVersion is returned when the url cannot be parsed
+	// to find a valid version.
+	ErrInvalidAPIVersion = elemental.NewError("Bad Request", fmt.Sprintf("Invalid api version number"), "bahamut", http.StatusBadRequest)
+
+	// ErrUnknownAPIVersion when there is no elemental.ModelManager configured
+	// to handle the requested version of the api.
+	ErrUnknownAPIVersion = elemental.NewError("Bad Request", fmt.Sprintf("Unknown api version"), "bahamut", http.StatusBadRequest)
+)
+
 // an restServer is the structure serving the api routes.
 type restServer struct {
 	cfg             config
@@ -280,9 +290,29 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
-		request, err := elemental.NewRequestFromHTTPRequest(req, a.cfg.model.modelManagers[0])
+		// Get API version
+		version, err := extractAPIVersion(req.URL.Path)
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil))
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrInvalidAPIVersion, nil, nil))
+			if measure != nil {
+				measure(code, nil)
+			}
+			return
+		}
+
+		// Check API Version
+		manager, ok := a.cfg.model.modelManagers[version]
+		if !ok {
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrUnknownAPIVersion, nil, nil))
+			if measure != nil {
+				measure(code, nil)
+			}
+			return
+		}
+
+		request, err := elemental.NewRequestFromHTTPRequest(req, manager)
+		if err != nil {
+			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -292,13 +322,29 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
 		defer finishTracing(ctx)
 
+		// Global rate limiting
 		if a.cfg.rateLimiting.rateLimiter != nil {
 			if !a.cfg.rateLimiting.rateLimiter.Allow() {
-				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil))
+				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
 				return
+			}
+		}
+
+		// Per api rate limiting
+		if a.cfg.rateLimiting.apiRateLimiters != nil {
+			if rlm, ok := a.cfg.rateLimiting.apiRateLimiters[request.Identity]; ok {
+				if rlm.condition == nil || rlm.condition(request) {
+					if !rlm.limiter.Allow() {
+						code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
+						if measure != nil {
+							measure(code, opentracing.SpanFromContext(ctx))
+						}
+						return
+					}
+				}
 			}
 		}
 
