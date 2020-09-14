@@ -401,10 +401,18 @@ func dispatchPatchOperation(
 		patchable, ok := identifiable.(elemental.Patchable)
 		if !ok {
 			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", "Idenfiable is not patchable", "bahamut", http.StatusBadRequest)
+			return elemental.NewError("Bad Request", "Identifiable is not patchable", "bahamut", http.StatusBadRequest)
 		}
 
 		patchable.Patch(sparse.(elemental.SparseIdentifiable))
+
+		if v, ok := patchable.(elemental.Validatable); ok {
+			if err = v.Validate(); err != nil {
+				audit(auditer, ctx, err)
+				return err
+			}
+		}
+
 		ctx.inputData = patchable
 
 		if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
