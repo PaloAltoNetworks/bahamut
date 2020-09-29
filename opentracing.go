@@ -105,7 +105,7 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 	safeHeaders := http.Header{}
 	for k, v := range r.Headers {
 		lk := strings.ToLower(k)
-		if lk == "authorization" {
+		if lk == "authorization" || lk == "cookie" {
 			safeHeaders[k] = snipSlice
 			continue
 		}
