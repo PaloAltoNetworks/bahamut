@@ -198,6 +198,7 @@ func TestTracing_traceRequest(t *testing.T) {
 		hreq.Header.Add("Authorization", "secretA")
 		hreq.Header.Add("Authorization", "secretB")
 		hreq.Header.Add("NotAuthorization", "notSecretA")
+		hreq.Header.Add("Cookie", "secretC")
 
 		req, err := elemental.NewRequestFromHTTPRequest(hreq, testmodel.Manager())
 		if err != nil {
@@ -249,6 +250,9 @@ func TestTracing_traceRequest(t *testing.T) {
 				So(span.fields[1].String(), ShouldEqual, "req.page.size:30")
 				So(span.fields[2].String(), ShouldContainSubstring, "Notauthorization:[notSecretA]")
 				So(span.fields[2].String(), ShouldContainSubstring, "Authorization:[[snip]]")
+
+				So(span.fields[2].String(), ShouldContainSubstring, "Cookie:[[snip]]")
+
 				So(span.fields[3].String(), ShouldEqual, "req.claims:{}")
 				So(span.fields[4].String(), ShouldEqual, "req.client_ip:127.0.0.1")
 				So(span.fields[5].String(), ShouldNotContainSubstring, "secretA")
