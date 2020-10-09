@@ -189,6 +189,12 @@ func Test_Options(t *testing.T) {
 		So(c.corsOrigin, ShouldEqual, "dog")
 	})
 
+	Convey("Calling OptionAdditionnalAllowedCORSOrigin should work", t, func() {
+		c := newGatewayConfig()
+		OptionAdditionnalAllowedCORSOrigin([]string{"dog"})(c)
+		So(c.additionalCorsOrigin, ShouldContainKey, "dog")
+	})
+
 	Convey("Calling OptionUpstreamURLScheme should work", t, func() {
 		c := newGatewayConfig()
 		OptionUpstreamURLScheme("http")(c)

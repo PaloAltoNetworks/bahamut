@@ -291,11 +291,6 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.opentracing.traceCleaner, ShouldEqual, f)
 	})
 
-	Convey("Calling OptCORSOrigin should work", t, func() {
-		OptCORSOrigin("here")(&c)
-		So(c.security.CORSOrigin, ShouldEqual, "here")
-	})
-
 	Convey("Calling OptIdentifiableRetriever should work", t, func() {
 		f := func(*elemental.Request) (elemental.Identifiable, error) { return nil, nil }
 		OptIdentifiableRetriever(f)(&c)
