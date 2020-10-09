@@ -24,10 +24,8 @@ func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map
 
 	if corsOrigin == "*" && origin != "" {
 		corsOrigin = origin
-	} else {
-		if _, ok := additionalCorsOrigin[origin]; ok {
-			corsOrigin = origin
-		}
+	} else if _, ok := additionalCorsOrigin[origin]; ok {
+		corsOrigin = origin
 	}
 
 	if method == http.MethodOptions {
