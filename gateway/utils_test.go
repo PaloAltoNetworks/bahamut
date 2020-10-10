@@ -45,10 +45,11 @@ func Test_injectGeneralHeader(t *testing.T) {
 
 func Test_injectCORSHeader(t *testing.T) {
 	type args struct {
-		h          http.Header
-		corsOrigin string
-		origin     string
-		method     string
+		h                    http.Header
+		corsOrigin           string
+		additionalCorsOrigin map[string]struct{}
+		origin               string
+		method               string
 	}
 	tests := []struct {
 		name string
@@ -60,6 +61,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"*",
+				map[string]struct{}{},
 				"chien",
 				http.MethodGet,
 			},
@@ -74,6 +76,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"*",
+				map[string]struct{}{},
 				"chien",
 				http.MethodOptions,
 			},
@@ -91,6 +94,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
+				map[string]struct{}{},
 				"chien",
 				http.MethodGet,
 			},
@@ -105,6 +109,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
+				map[string]struct{}{},
 				"chien",
 				http.MethodOptions,
 			},
@@ -118,10 +123,44 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
+			"additional origin",
+			args{
+				http.Header{},
+				"dog",
+				map[string]struct{}{"chien": {}},
+				"chien",
+				http.MethodGet,
+			},
+			http.Header{
+				"Access-Control-Allow-Origin":      {"chien"},
+				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Credentials": {"true"},
+			},
+		},
+		{
+			"additional origin options",
+			args{
+				http.Header{},
+				"dog",
+				map[string]struct{}{"chien": {}},
+				"chien",
+				http.MethodOptions,
+			},
+			http.Header{
+				"Access-Control-Allow-Origin":      {"chien"},
+				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Methods":     {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
+				"Access-Control-Allow-Headers":     {"Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key"},
+				"Access-Control-Allow-Credentials": {"true"},
+				"Access-Control-Max-Age":           {"1500"},
+			},
+		},
+		{
 			"dev empty",
 			args{
 				http.Header{},
 				"*",
+				map[string]struct{}{},
 				"",
 				http.MethodGet,
 			},
@@ -136,6 +175,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"*",
+				map[string]struct{}{},
 				"",
 				http.MethodOptions,
 			},
@@ -151,7 +191,7 @@ func Test_injectCORSHeader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := injectCORSHeader(tt.args.h, tt.args.corsOrigin, tt.args.origin, tt.args.method); !reflect.DeepEqual(got, tt.want) {
+			if got := injectCORSHeader(tt.args.h, tt.args.corsOrigin, tt.args.additionalCorsOrigin, tt.args.origin, tt.args.method); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("injectCORSHeader() = %v, want %v", got, tt.want)
 			}
 		})

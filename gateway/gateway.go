@@ -150,7 +150,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			func(resp *http.Response) error {
 
 				injectGeneralHeader(resp.Header)
-				injectCORSHeader(resp.Header, cfg.corsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
+				injectCORSHeader(resp.Header, cfg.corsOrigin, cfg.additionalCorsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
 
 				if s.gatewayConfig.responseRewriter != nil {
 					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
@@ -318,7 +318,7 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodOptions {
 		h := w.Header()
-		injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(h, s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
 		w.WriteHeader(http.StatusOK) // nolint: errcheck
 		return
 	}
@@ -326,7 +326,7 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.gatewayConfig.maintenance {
 		h := w.Header()
 		h.Set("Content-Type", "application/msgpack, application/json")
-		injectCORSHeader(h, s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(h, s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
 		writeError(w, r, errLocked)
 		return
 	}
@@ -370,7 +370,7 @@ HANDLE_INTERCEPTION:
 		return
 	}
 	if interceptAction == InterceptorActionStop {
-		injectCORSHeader(w.Header(), s.gatewayConfig.corsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(w.Header(), s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
 		return
 	}
 

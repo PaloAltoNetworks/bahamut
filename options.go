@@ -480,16 +480,6 @@ func OptTraceCleaner(cleaner TraceCleaner) Option {
 	}
 }
 
-// OptCORSOrigin sets the allowed origin for CORS requests.
-// If not set, bahamut will use the HTTP Header `Origin` and if
-// it cannot find it, it will use `*`.
-// If this option is set, the given origin will always be used.
-func OptCORSOrigin(origin string) Option {
-	return func(c *config) {
-		c.security.CORSOrigin = origin
-	}
-}
-
 // OptIdentifiableRetriever sets the IdentifiableRetriever tha will be used to perform transparent
 // patch support using elemental.SparseIdentifiable. When set, the handler for PATCH method will use
 // this function to retrieve the target identifiable, will apply the patch and

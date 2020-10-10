@@ -98,10 +98,12 @@ type gwconfig struct {
 	upstreamTLSConfig            *tls.Config
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
+	additionalCorsOrigin         map[string]struct{}
 }
 
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
+		additionalCorsOrigin:        map[string]struct{}{},
 		corsOrigin:                  "*",
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		suffixInterceptors:          map[string]InterceptorFunc{},
@@ -340,5 +342,16 @@ func OptionUpstreamTLSConfig(tlsConfig *tls.Config) Option {
 func OptionAllowedCORSOrigin(origin string) Option {
 	return func(cfg *gwconfig) {
 		cfg.corsOrigin = origin
+	}
+}
+
+// OptionAdditionnalAllowedCORSOrigin sets allowed CORS origin.
+// If set, the gateway will mirror whatever is in the upcoming
+// request Origin header as long as there is a match.
+func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
+	return func(cfg *gwconfig) {
+		for _, o := range origins {
+			cfg.additionalCorsOrigin[o] = struct{}{}
+		}
 	}
 }

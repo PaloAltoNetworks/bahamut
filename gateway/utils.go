@@ -20,9 +20,11 @@ func injectGeneralHeader(h http.Header) http.Header {
 	return h
 }
 
-func injectCORSHeader(h http.Header, corsOrigin string, origin string, method string) http.Header {
+func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map[string]struct{}, origin string, method string) http.Header {
 
 	if corsOrigin == "*" && origin != "" {
+		corsOrigin = origin
+	} else if _, ok := additionalCorsOrigin[origin]; ok {
 		corsOrigin = origin
 	}
 
