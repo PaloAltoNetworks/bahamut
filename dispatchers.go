@@ -175,7 +175,7 @@ func dispatchCreateOperation(
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			logValidationError("create", ctx, err)
+			logValidationError(ctx, err)
 			return err
 		}
 	}
@@ -256,7 +256,7 @@ func dispatchUpdateOperation(
 	if v, ok := obj.(elemental.Validatable); ok {
 		if err = v.Validate(); err != nil {
 			audit(auditer, ctx, err)
-			logValidationError("update", ctx, err)
+			logValidationError(ctx, err)
 			return err
 		}
 	}
@@ -412,7 +412,7 @@ func dispatchPatchOperation(
 		if v, ok := patchable.(elemental.Validatable); ok {
 			if err = v.Validate(); err != nil {
 				audit(auditer, ctx, err)
-				logValidationError("patch", ctx, err)
+				logValidationError(ctx, err)
 				return err
 			}
 		}
@@ -496,10 +496,10 @@ func makeReadOnlyError(identity elemental.Identity, readOnlyExclusion []elementa
 	return elemental.NewError("Locked", "This api is currently locked. Please try again later", "bahamut", http.StatusLocked)
 }
 
-func logValidationError(operation string, ctx *bcontext, err error) {
+func logValidationError(ctx *bcontext, err error) {
 
 	zap.L().Debug("Validation error",
-		zap.String("operation", operation),
+		zap.String("operation", string(ctx.request.Operation)),
 		zap.String("clientIP", ctx.request.ClientIP),
 		zap.Strings("claims", ctx.claims),
 		zap.String("namespace", ctx.request.Namespace),
