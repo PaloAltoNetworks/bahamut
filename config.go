@@ -70,14 +70,15 @@ type config struct {
 	}
 
 	pushServer struct {
-		service         PubSubClient
-		topic           string
-		endpoint        string
-		dispatchHandler PushDispatchHandler
-		publishHandler  PushPublishHandler
-		enabled         bool
-		publishEnabled  bool
-		dispatchEnabled bool
+		service                   PubSubClient
+		topic                     string
+		endpoint                  string
+		dispatchHandler           PushDispatchHandler
+		publishHandler            PushPublishHandler
+		enabled                   bool
+		subjectHierarchiesEnabled bool
+		publishEnabled            bool
+		dispatchEnabled           bool
 	}
 
 	healthServer struct {
