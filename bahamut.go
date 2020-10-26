@@ -101,6 +101,10 @@ func New(options ...Option) Server {
 		zap.L().Warn("Push server is enabled but neither dispatching or publishing is. Use bahamut.OptPushPublishHandler() and/or bahamut.OptPushDispatchHandler()")
 	}
 
+	if !c.pushServer.enabled && c.pushServer.subjectHierarchiesEnabled {
+		zap.L().Warn("Push server subject hierarchies have been enabled, but no push server has been configured. Use bahamut.OptPushServer to configure a Push server.")
+	}
+
 	if (c.restServer.enabled || c.pushServer.enabled) && len(c.model.modelManagers) == 0 {
 		zap.L().Warn("No elemental.ModelManager is defined. Use bahamut.OptModel()")
 	}

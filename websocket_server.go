@@ -172,7 +172,27 @@ func (n *pushServer) pushEvents(events ...*elemental.Event) {
 			}
 		}
 
-		publication := NewPublication(n.cfg.pushServer.topic)
+		// if subject hierarchies are enabled, for the benefit of subscribers interested in specific identities, we utilize
+		// a subject hierarchy here to publish to a specific subject under the configured topic of the push server.
+		//
+		// for example:
+		//
+		//   if the push server topic has been set to "global-events" and the server is about to push a "create" event w/ an identity
+		//   value of "apples", enabling this option, would cause the push server to target a new publication to the subject
+		//   "global-events.apples.create", INSTEAD OF "global-events".
+		//
+		//   consequently, clients interested in receiving events pertaining to the "apples" resource can then subscribe
+		//   on that specific topic, as opposed to ignoring events they don't care about. For clients interested in receiving
+		//   ALL events published to "global-events", they can utilize NATS wildcards and subscribe to "global-events.>"
+		//   ('>' targets all hierarchies) or "global-events.*" ('*' matching a single token).
+		//
+		// more details: https://docs.nats.io/nats-concepts/subjects#subject-hierarchies
+		topic := n.cfg.pushServer.topic
+		if n.cfg.pushServer.subjectHierarchiesEnabled {
+			topic = fmt.Sprintf("%s.%s.%s", topic, event.Identity, event.Type)
+		}
+
+		publication := NewPublication(topic)
 		if err = publication.Encode(event); err != nil {
 			zap.L().Error("Unable to encode event", zap.Error(err))
 			break
@@ -258,7 +278,18 @@ func (n *pushServer) start(ctx context.Context) {
 
 	if n.cfg.pushServer.service != nil {
 		errors := make(chan error, 24000)
-		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, n.cfg.pushServer.topic)()
+		subTopic := n.cfg.pushServer.topic
+		// backwards compatibility: if the push server is using subject hierarchies when publishing events, we must by default
+		// listen to all child subjects of the configured topic via a wildcard '>'.
+		//
+		// see: https://docs.nats.io/nats-concepts/subjects#wildcards for more details.
+		//
+		// TODO: in the future, support to subscribing to specific subjects and/or wildcards may be added.
+		if n.cfg.pushServer.subjectHierarchiesEnabled {
+			subTopic = fmt.Sprintf("%s.>", subTopic)
+		}
+
+		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, subTopic)()
 	}
 
 	zap.L().Debug("Websocket server started",

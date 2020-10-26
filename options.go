@@ -161,6 +161,23 @@ func OptPushServer(service PubSubClient, topic string) Option {
 	}
 }
 
+// OptPushServerEnableSubjectHierarchies will cause the push server to push to specific subject hierarchies under the configured
+// pub/sub topic you have chosen for your push server. This option has no effect if OptPushServer is not set.
+//
+// For example:
+//
+//   If the push server topic has been set to "global-events" and the server is about to push a "create" event w/ an identity
+//   value of "apples", enabling this option, would cause the push server to target a new publication to the subject
+//   "global-events.apples.create", INSTEAD OF "global-events". Consequently, as a result of this, any upstream push
+//   servers that are interested in receiving all events you publish to this topic would need to utilize subject wildcards.
+//
+//   See: https://docs.nats.io/nats-concepts/subjects#wildcards for more details.
+func OptPushServerEnableSubjectHierarchies() Option {
+	return func(c *config) {
+		c.pushServer.subjectHierarchiesEnabled = true
+	}
+}
+
 // OptPushEndpoint sets the endpoint to use for websocket channel.
 //
 // If unset, it fallsback to the default which is /events. This option
