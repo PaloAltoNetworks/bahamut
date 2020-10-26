@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -99,6 +100,7 @@ type gwconfig struct {
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
 	additionalCorsOrigin         map[string]struct{}
+	trustForwardHeader           bool
 }
 
 func newGatewayConfig() *gwconfig {
@@ -353,5 +355,14 @@ func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 		for _, o := range origins {
 			cfg.additionalCorsOrigin[o] = struct{}{}
 		}
+	}
+}
+
+// OptionTrustForwardHeader configures if the gateway should strip
+// the X-Forwarded-For header or not.
+func OptionTrustForwardHeader(trust bool) Option {
+	fmt.Println("Keep", trust)
+	return func(cfg *gwconfig) {
+		cfg.trustForwardHeader = trust
 	}
 }

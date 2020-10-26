@@ -11,9 +11,10 @@ import (
 )
 
 type requestRewriter struct {
-	customRewriter   RequestRewriter
-	blockOpenTracing bool
-	private          bool
+	customRewriter     RequestRewriter
+	blockOpenTracing   bool
+	private            bool
+	trustForwardHeader bool
 }
 
 func (s *requestRewriter) Rewrite(r *http.Request) {
@@ -38,8 +39,11 @@ func (s *requestRewriter) Rewrite(r *http.Request) {
 
 	// Will be rewritten by the forwarder,
 	// based on proxy protocol if enabled.
-	r.Header.Del("X-Forwarded-For")
-	r.Header.Del("X-Real-IP")
+	// unless trustForwardHeader is set.
+	if !s.trustForwardHeader {
+		r.Header.Del("X-Forwarded-For")
+		r.Header.Del("X-Real-IP")
+	}
 
 	if r.TLS != nil && len(r.TLS.PeerCertificates) == 1 {
 
