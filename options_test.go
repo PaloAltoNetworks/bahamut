@@ -105,6 +105,11 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.pushServer.publishHandler, ShouldEqual, h)
 	})
 
+	Convey("Calling OptPushServerEnableSubjectHierarchies should work", t, func() {
+		OptPushServerEnableSubjectHierarchies()(&c)
+		So(c.pushServer.subjectHierarchiesEnabled, ShouldEqual, true)
+	})
+
 	Convey("Calling OptHealthServer should work", t, func() {
 		h := func() error { return nil }
 		OptHealthServer("1.2.3.4:123", h)(&c)

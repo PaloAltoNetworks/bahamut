@@ -518,6 +518,41 @@ func TestWebsocketServer_pushEvents(t *testing.T) {
 				So(len(srv.publications), ShouldEqual, 0)
 			})
 		})
+
+		Convey("When I call pushEvents on a server w/ NATS subject hierarchies enabled", func() {
+
+			srv := &mockPubSubServer{}
+			h := &mockSessionHandler{}
+			h.shouldPublishOK = true
+
+			cfg := config{}
+			cfg.pushServer.service = srv
+			cfg.pushServer.enabled = true
+			cfg.pushServer.publishEnabled = true
+			cfg.pushServer.dispatchEnabled = true
+			cfg.pushServer.subjectHierarchiesEnabled = true
+			cfg.pushServer.topic = "events"
+			cfg.pushServer.publishHandler = h
+
+			wss := newPushServer(cfg, mux, pf)
+			testEvent := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+			wss.pushEvents(testEvent)
+
+			Convey("Then I should find one publication sent to the correct topic", func() {
+
+				eventOut := elemental.NewEvent(elemental.EventCreate, testmodel.NewList())
+				eventOut.Timestamp = testEvent.Timestamp
+				r, err := elemental.Encode(elemental.EncodingTypeMSGPACK, eventOut)
+				So(err, ShouldBeNil)
+				So(len(srv.publications), ShouldEqual, 1)
+				pub := srv.publications[0]
+				So(string(pub.Data), ShouldResemble, string(r))
+				So(pub.Topic, ShouldEqual, fmt.Sprintf("%s.%s.%s",
+					cfg.pushServer.topic,
+					testmodel.ListIdentity.Name,
+					elemental.EventCreate))
+			})
+		})
 	})
 }
 
@@ -542,6 +577,7 @@ func TestWebsocketServer_start(t *testing.T) {
 		cfg.pushServer.enabled = true
 		cfg.pushServer.publishEnabled = true
 		cfg.pushServer.dispatchEnabled = true
+		cfg.pushServer.subjectHierarchiesEnabled = true
 		cfg.pushServer.dispatchHandler = pushHandler
 
 		wss := newPushServer(cfg, mux, pf)

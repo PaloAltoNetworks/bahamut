@@ -172,9 +172,9 @@ func OptPushServer(service PubSubClient, topic string) Option {
 //   servers that are interested in receiving all events you publish to this topic would need to utilize subject wildcards.
 //
 //   See: https://docs.nats.io/nats-concepts/subjects#wildcards for more details.
-func OptPushServerEnableSubjectHierarchies(enabled bool) Option {
+func OptPushServerEnableSubjectHierarchies() Option {
 	return func(c *config) {
-		c.pushServer.subjectHierarchiesEnabled = enabled
+		c.pushServer.subjectHierarchiesEnabled = true
 	}
 }
 
