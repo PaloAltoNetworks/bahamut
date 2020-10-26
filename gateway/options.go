@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -359,9 +358,8 @@ func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 }
 
 // OptionTrustForwardHeader configures if the gateway should strip
-// the X-Forwarded-For header or not.
+// the X-Forwarded-For and X-Real-IP header or not.
 func OptionTrustForwardHeader(trust bool) Option {
-	fmt.Println("Keep", trust)
 	return func(cfg *gwconfig) {
 		cfg.trustForwardHeader = trust
 	}
