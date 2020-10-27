@@ -141,9 +141,10 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		forward.ErrorHandler(&errorHandler{}),
 		forward.Rewriter(
 			&requestRewriter{
-				blockOpenTracing: (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
-				private:          cfg.exposePrivateAPIs,
-				customRewriter:   cfg.requestRewriter,
+				blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
+				private:            cfg.exposePrivateAPIs,
+				customRewriter:     cfg.requestRewriter,
+				trustForwardHeader: cfg.trustForwardHeader,
 			},
 		),
 		forward.ResponseModifier(

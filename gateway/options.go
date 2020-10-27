@@ -99,6 +99,7 @@ type gwconfig struct {
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
 	additionalCorsOrigin         map[string]struct{}
+	trustForwardHeader           bool
 }
 
 func newGatewayConfig() *gwconfig {
@@ -353,5 +354,13 @@ func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 		for _, o := range origins {
 			cfg.additionalCorsOrigin[o] = struct{}{}
 		}
+	}
+}
+
+// OptionTrustForwardHeader configures if the gateway should strip
+// the X-Forwarded-For and X-Real-IP header or not.
+func OptionTrustForwardHeader(trust bool) Option {
+	return func(cfg *gwconfig) {
+		cfg.trustForwardHeader = trust
 	}
 }

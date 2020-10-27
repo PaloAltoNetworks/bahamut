@@ -200,4 +200,11 @@ func Test_Options(t *testing.T) {
 		OptionUpstreamURLScheme("http")(c)
 		So(c.upstreamURLScheme, ShouldEqual, "http")
 	})
+
+	Convey("Calling OptionTrustForwardHeader should work", t, func() {
+		c := newGatewayConfig()
+		OptionTrustForwardHeader(true)(c)
+		So(c.trustForwardHeader, ShouldBeTrue)
+	})
+
 }
