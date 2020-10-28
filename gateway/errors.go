@@ -98,7 +98,7 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		return
 
 	case *multibuf.MaxSizeReachedError:
-		writeError(w, r, makeError(http.StatusBadRequest, "Entity Too Large", fmt.Sprintf("Payload size exceeds the maximum allowed size (%d bytes)", e.MaxSize)))
+		writeError(w, r, makeError(http.StatusRequestEntityTooLarge, "Entity Too Large", fmt.Sprintf("Payload size exceeds the maximum allowed size (%d bytes)", e.MaxSize)))
 		return
 
 	case x509.UnknownAuthorityError, x509.HostnameError, x509.CertificateInvalidError, x509.ConstraintViolationError:
@@ -114,6 +114,12 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 	case errTooManyRequest:
 		writeError(w, r, errRateLimit)
 	default:
+		// the http package function MaxBytesReader is returning an error.erroString
+		// so we need to check its string value.
+		if err.Error() == "http: request body too large" {
+			writeError(w, r, makeError(http.StatusRequestEntityTooLarge, "Entity Too Large", err.Error()))
+			return
+		}
 		writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", err.Error()))
 	}
 }

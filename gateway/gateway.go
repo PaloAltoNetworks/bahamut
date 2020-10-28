@@ -155,7 +155,6 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 				}
 
 				injectGeneralHeader(resp.Header)
-
 				injectCORSHeader(resp.Header, cfg.corsOrigin, cfg.additionalCorsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
 
 				if s.gatewayConfig.responseRewriter != nil {
