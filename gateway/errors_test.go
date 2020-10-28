@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -92,7 +93,13 @@ func TestErrorHandler(t *testing.T) {
 		Convey("When I call ServeHTTP with a multibuf.MaxSizeReachedErrortf", func() {
 			eh.ServeHTTP(w, req, &multibuf.MaxSizeReachedError{})
 			data, _ := ioutil.ReadAll(w.Body)
-			So(string(data), ShouldEqual, `[{"code":400,"description":"Payload size exceeds the maximum allowed size (0 bytes)","subject":"gateway","title":"Entity Too Large"}]`)
+			So(string(data), ShouldEqual, `[{"code":413,"description":"Payload size exceeds the maximum allowed size (0 bytes)","subject":"gateway","title":"Entity Too Large"}]`)
+		})
+
+		Convey("When I call ServeHTTP with a error.errorString too large returned by MaxBytesReader", func() {
+			eh.ServeHTTP(w, req, errors.New("http: request body too large"))
+			data, _ := ioutil.ReadAll(w.Body)
+			So(string(data), ShouldEqual, `[{"code":413,"description":"http: request body too large","subject":"gateway","title":"Entity Too Large"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a x509.UnknownAuthorityError", func() {
