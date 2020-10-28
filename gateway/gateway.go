@@ -150,12 +150,11 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		forward.ResponseModifier(
 			func(resp *http.Response) error {
 
-				if resp.Request == nil {
-					return nil
-				}
-
 				injectGeneralHeader(resp.Header)
-				injectCORSHeader(resp.Header, cfg.corsOrigin, cfg.additionalCorsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
+
+				if resp.Request != nil {
+					injectCORSHeader(resp.Header, cfg.corsOrigin, cfg.additionalCorsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
+				}
 
 				if s.gatewayConfig.responseRewriter != nil {
 					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
