@@ -816,12 +816,10 @@ func TestWebsocketServer_start(t *testing.T) {
 
 				select {
 				case data := <-conn1.LastWrite():
-					fmt.Println("ZOBN")
 					l.Lock()
 					msg1 = data
 					l.Unlock()
 				case data := <-conn2.LastWrite():
-					fmt.Println("P{ROUT")
 					l.Lock()
 					msg2 = data
 					l.Unlock()
