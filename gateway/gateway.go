@@ -138,7 +138,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 	if s.forwarder, err = forward.New(
 		forward.BufferPool(newPool(1024*1024)),
 		forward.WebsocketTLSClientConfig(cfg.upstreamTLSConfig),
-		forward.ErrorHandler(&errorHandler{}),
+		forward.ErrorHandler(&errorHandler{corsOrigin: cfg.corsOrigin, additionalCorsOrigin: cfg.additionalCorsOrigin}),
 		forward.Rewriter(
 			&requestRewriter{
 				blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
@@ -190,7 +190,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		s.forwarder,
 		buffer.MaxRequestBodyBytes(1024*1024),
 		buffer.MemRequestBodyBytes(1024*1024*1024),
-		buffer.ErrorHandler(&errorHandler{}),
+		buffer.ErrorHandler(&errorHandler{corsOrigin: cfg.corsOrigin, additionalCorsOrigin: cfg.additionalCorsOrigin}),
 	); err != nil {
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
@@ -204,7 +204,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 				return token, 1, err
 			}),
 			int64(cfg.tcpClientMaxConnections),
-			connlimit.ErrorHandler(&errorHandler{}),
+			connlimit.ErrorHandler(&errorHandler{corsOrigin: cfg.corsOrigin, additionalCorsOrigin: cfg.additionalCorsOrigin}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
@@ -217,7 +217,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			cfg.sourceRateLimitingBurst,
 			cfg.sourceExtractor,
 			cfg.sourceRateExtractor,
-			&errorHandler{},
+			&errorHandler{corsOrigin: cfg.corsOrigin, additionalCorsOrigin: cfg.additionalCorsOrigin},
 		)
 	}
 

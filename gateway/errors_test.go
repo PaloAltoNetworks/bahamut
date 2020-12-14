@@ -32,7 +32,7 @@ func TestErrorHandler(t *testing.T) {
 
 	Convey("Given I create a new error handler", t, func() {
 
-		eh := &errorHandler{}
+		eh := &errorHandler{corsOrigin: "foo", additionalCorsOrigin: map[string]struct{}{"bar": {}}}
 		req := httptest.NewRequest(http.MethodGet, "/target", nil)
 		w := httptest.NewRecorder()
 
@@ -82,12 +82,22 @@ func TestErrorHandler(t *testing.T) {
 			data, _ := ioutil.ReadAll(w.Body)
 			_ = data
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin":      {"foo"},
+				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Credentials": {"true"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a connlimit.MaxConnError", func() {
 			eh.ServeHTTP(w, req, &connlimit.MaxConnError{})
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Connections"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin":      {"foo"},
+				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Credentials": {"true"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a multibuf.MaxSizeReachedErrortf", func() {
@@ -131,7 +141,7 @@ func TestErrorHandler(t *testing.T) {
 	})
 }
 
-func TestEriteError(t *testing.T) {
+func TestWriteError(t *testing.T) {
 
 	Convey("Given call writeError on request with no encoding and everything is fine", t, func() {
 
