@@ -135,7 +135,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 
 	var topProxyHandler http.Handler
 
-	var corsOriginInjectorFunc errorHeaderInjector = func(w http.ResponseWriter, r *http.Request) http.Header {
+	corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
 		return injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
 	}
 
