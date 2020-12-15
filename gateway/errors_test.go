@@ -32,7 +32,12 @@ func TestErrorHandler(t *testing.T) {
 
 	Convey("Given I create a new error handler", t, func() {
 
-		eh := &errorHandler{}
+		corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
+			w.Header().Set("Access-Control-Allow-Origin", "foo")
+			return w.Header()
+		}
+
+		eh := &errorHandler{corsOriginInjector: corsOriginInjectorFunc}
 		req := httptest.NewRequest(http.MethodGet, "/target", nil)
 		w := httptest.NewRecorder()
 
@@ -44,6 +49,9 @@ func TestErrorHandler(t *testing.T) {
 			eh.ServeHTTP(w, req, io.EOF)
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin": {"foo"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a context.Canceled error", func() {
@@ -65,6 +73,9 @@ func TestErrorHandler(t *testing.T) {
 			eh.ServeHTTP(w, req, ne)
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin": {"foo"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with net.Error that is a timeout", func() {
@@ -75,6 +86,9 @@ func TestErrorHandler(t *testing.T) {
 			eh.ServeHTTP(w, req, ne)
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":504,"description":"The requested service took too long to respond. Please try again in a moment.","subject":"gateway","title":"Gateway Timeout"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin": {"foo"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a errRateLimit", func() {
@@ -82,12 +96,18 @@ func TestErrorHandler(t *testing.T) {
 			data, _ := ioutil.ReadAll(w.Body)
 			_ = data
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin": {"foo"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a connlimit.MaxConnError", func() {
 			eh.ServeHTTP(w, req, &connlimit.MaxConnError{})
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Connections"}]`)
+			So(w.Header(), ShouldResemble, http.Header{
+				"Access-Control-Allow-Origin": {"foo"},
+			})
 		})
 
 		Convey("When I call ServeHTTP with a multibuf.MaxSizeReachedErrortf", func() {
@@ -131,7 +151,7 @@ func TestErrorHandler(t *testing.T) {
 	})
 }
 
-func TestEriteError(t *testing.T) {
+func TestWriteError(t *testing.T) {
 
 	Convey("Given call writeError on request with no encoding and everything is fine", t, func() {
 

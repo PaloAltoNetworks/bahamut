@@ -135,10 +135,14 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 
 	var topProxyHandler http.Handler
 
+	corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
+		return injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+	}
+
 	if s.forwarder, err = forward.New(
 		forward.BufferPool(newPool(1024*1024)),
 		forward.WebsocketTLSClientConfig(cfg.upstreamTLSConfig),
-		forward.ErrorHandler(&errorHandler{}),
+		forward.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
 		forward.Rewriter(
 			&requestRewriter{
 				blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
@@ -190,7 +194,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		s.forwarder,
 		buffer.MaxRequestBodyBytes(1024*1024),
 		buffer.MemRequestBodyBytes(1024*1024*1024),
-		buffer.ErrorHandler(&errorHandler{}),
+		buffer.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
 	); err != nil {
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
@@ -204,7 +208,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 				return token, 1, err
 			}),
 			int64(cfg.tcpClientMaxConnections),
-			connlimit.ErrorHandler(&errorHandler{}),
+			connlimit.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
@@ -217,7 +221,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			cfg.sourceRateLimitingBurst,
 			cfg.sourceExtractor,
 			cfg.sourceRateExtractor,
-			&errorHandler{},
+			&errorHandler{corsOriginInjector: corsOriginInjectorFunc},
 		)
 	}
 

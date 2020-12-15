@@ -73,7 +73,10 @@ func makeError(code int, title string, description string) elemental.Error {
 	)
 }
 
+type errorHeaderInjector func(w http.ResponseWriter, r *http.Request) http.Header
+
 type errorHandler struct {
+	corsOriginInjector errorHeaderInjector
 }
 
 func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err error) {
@@ -85,6 +88,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 	switch e := err.(type) {
 
 	case net.Error:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		if e.Timeout() {
 			writeError(w, r, errGatewayTimeout)
 			return
@@ -94,6 +100,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		return
 
 	case *connlimit.MaxConnError:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errConnLimit)
 		return
 
@@ -108,10 +117,16 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 
 	switch err {
 	case io.EOF:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errBadGateway)
 	case context.Canceled:
 		writeError(w, r, errClientClosedConnection)
 	case errTooManyRequest:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errRateLimit)
 	default:
 		// the http package function MaxBytesReader is returning an error.erroString
