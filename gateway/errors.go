@@ -88,6 +88,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 	switch e := err.(type) {
 
 	case net.Error:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		if e.Timeout() {
 			writeError(w, r, errGatewayTimeout)
 			return
@@ -114,6 +117,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 
 	switch err {
 	case io.EOF:
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errBadGateway)
 	case context.Canceled:
 		writeError(w, r, errClientClosedConnection)
