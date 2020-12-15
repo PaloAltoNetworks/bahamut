@@ -32,7 +32,12 @@ func TestErrorHandler(t *testing.T) {
 
 	Convey("Given I create a new error handler", t, func() {
 
-		eh := &errorHandler{corsOrigin: "foo", additionalCorsOrigin: map[string]struct{}{"bar": {}}}
+		corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
+			w.Header().Set("Access-Control-Allow-Origin", "foo")
+			return w.Header()
+		}
+
+		eh := &errorHandler{corsOriginInjector: corsOriginInjectorFunc}
 		req := httptest.NewRequest(http.MethodGet, "/target", nil)
 		w := httptest.NewRecorder()
 
@@ -83,9 +88,7 @@ func TestErrorHandler(t *testing.T) {
 			_ = data
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
-				"Access-Control-Allow-Origin":      {"foo"},
-				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
-				"Access-Control-Allow-Credentials": {"true"},
+				"Access-Control-Allow-Origin": {"foo"},
 			})
 		})
 
@@ -94,9 +97,7 @@ func TestErrorHandler(t *testing.T) {
 			data, _ := ioutil.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Connections"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
-				"Access-Control-Allow-Origin":      {"foo"},
-				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
-				"Access-Control-Allow-Credentials": {"true"},
+				"Access-Control-Allow-Origin": {"foo"},
 			})
 		})
 

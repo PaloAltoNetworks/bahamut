@@ -73,9 +73,10 @@ func makeError(code int, title string, description string) elemental.Error {
 	)
 }
 
+type errorHeaderInjector func(w http.ResponseWriter, r *http.Request) http.Header
+
 type errorHandler struct {
-	corsOrigin           string
-	additionalCorsOrigin map[string]struct{}
+	corsOriginInjector errorHeaderInjector
 }
 
 func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err error) {
@@ -96,7 +97,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		return
 
 	case *connlimit.MaxConnError:
-		injectCORSHeader(w.Header(), s.corsOrigin, s.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errConnLimit)
 		return
 
@@ -115,7 +118,9 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 	case context.Canceled:
 		writeError(w, r, errClientClosedConnection)
 	case errTooManyRequest:
-		injectCORSHeader(w.Header(), s.corsOrigin, s.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+		if s.corsOriginInjector != nil {
+			s.corsOriginInjector(w, r)
+		}
 		writeError(w, r, errRateLimit)
 	default:
 		// the http package function MaxBytesReader is returning an error.erroString
