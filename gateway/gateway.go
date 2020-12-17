@@ -311,18 +311,17 @@ func (s *gateway) checkInterceptor(
 	path string,
 ) (InterceptorAction, string, error) {
 
+	cfg := s.gatewayConfig
+
 	for key, interceptor := range registry {
 
 		if !checker(path, key) {
 			continue
 		}
 
-		return interceptor(w, r, writeError, func() func() {
-			cfg := s.gatewayConfig
-			return func() {
-				injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
-			}
-		}())
+		return interceptor(w, r, writeError, func() {
+			injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+		})
 	}
 
 	return 0, "", nil
