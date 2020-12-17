@@ -119,7 +119,7 @@ func Test_Options(t *testing.T) {
 
 	Convey("Calling OptionRegisterPrefixInterceptor should work", t, func() {
 		c := newGatewayConfig()
-		f := func(http.ResponseWriter, *http.Request, ErrorWriter) (InterceptorAction, string, error) {
+		f := func(http.ResponseWriter, *http.Request, ErrorWriter, func()) (InterceptorAction, string, error) {
 			return InterceptorActionForward, "", nil
 		}
 		OptionRegisterPrefixInterceptor("/prefix", f)(c)
@@ -128,7 +128,7 @@ func Test_Options(t *testing.T) {
 
 	Convey("Calling OptionRegisterSuffixInterceptor should work", t, func() {
 		c := newGatewayConfig()
-		f := func(http.ResponseWriter, *http.Request, ErrorWriter) (InterceptorAction, string, error) {
+		f := func(http.ResponseWriter, *http.Request, ErrorWriter, func()) (InterceptorAction, string, error) {
 			return InterceptorActionForward, "", nil
 		}
 		OptionRegisterSuffixInterceptor("/suffix", f)(c)
@@ -137,7 +137,7 @@ func Test_Options(t *testing.T) {
 
 	Convey("Calling OptionRegisterExactInterceptor should work", t, func() {
 		c := newGatewayConfig()
-		f := func(http.ResponseWriter, *http.Request, ErrorWriter) (InterceptorAction, string, error) {
+		f := func(http.ResponseWriter, *http.Request, ErrorWriter, func()) (InterceptorAction, string, error) {
 			return InterceptorActionForward, "", nil
 		}
 		OptionRegisterExactInterceptor("/exact", f)(c)
