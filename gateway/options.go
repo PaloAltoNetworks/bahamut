@@ -25,8 +25,12 @@ type ResponseRewriter func(*http.Response) error
 // to tell the gateway it should proceed from there.
 // If it returns an error, the error is returned to the client as an internal server error.
 //
+// The given corsInjector function can be called if you wish your response to contain the CORS information
+// the gateway would normally add. This is mandatory if you add your own headers in the interceptor.
+// Otherwise, the gateway will add the CORS information for you.
+//
 // NOTE: It is not possible to rewrite the request. To do so, you can use a RequestRewriter.
-type InterceptorFunc func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (action InterceptorAction, upstream string, err error)
+type InterceptorFunc func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (action InterceptorAction, upstream string, err error)
 
 // ErrorWriter is a function that can be used to return a standard formatted error to the client.
 type ErrorWriter func(w http.ResponseWriter, r *http.Request, eerr elemental.Error)

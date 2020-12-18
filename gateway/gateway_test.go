@@ -292,7 +292,8 @@ func TestGateway(t *testing.T) {
 				"127.0.0.1:7765",
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRegisterExactInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterExactInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
+					corsInjector()
 					w.WriteHeader(604)
 					return InterceptorActionStop, "", nil
 				}),
@@ -317,6 +318,9 @@ func TestGateway(t *testing.T) {
 				resp, err := testclient.Do(req)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 604)
+				So(resp.Header.Get("Access-Control-Allow-Origin"), ShouldNotBeEmpty)
+				So(resp.Header.Get("Access-Control-Expose-Headers"), ShouldNotBeEmpty)
+				So(resp.Header.Get("Access-Control-Allow-Credentials"), ShouldNotBeEmpty)
 			})
 		})
 
@@ -327,7 +331,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionMetricsManager(&fakeMetricManager{}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRegisterExactInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterExactInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
 					return InterceptorActionForwardWS, strings.Replace(u.ups2.URL, "https://", "", 1), nil
 				}),
 			)
@@ -360,7 +364,7 @@ func TestGateway(t *testing.T) {
 				"127.0.0.1:7765",
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRegisterSuffixInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterSuffixInterceptor("/hello", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
 					w.WriteHeader(604)
 					return InterceptorActionStop, "", nil
 				}),
@@ -396,7 +400,7 @@ func TestGateway(t *testing.T) {
 				u,
 				OptionMetricsManager(&fakeMetricManager{}),
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRegisterSuffixInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterSuffixInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
 					return InterceptorActionForwardDirect, strings.Replace(u.ups2.URL, "https://", "", 1), nil
 				}),
 			)
@@ -429,10 +433,10 @@ func TestGateway(t *testing.T) {
 				"127.0.0.1:7765",
 				u,
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
-				OptionRegisterPrefixInterceptor("/ohnows", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterPrefixInterceptor("/ohnows", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
 					return InterceptorActionForward, "", fmt.Errorf("boom")
 				}),
-				OptionRegisterPrefixInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter) (InterceptorAction, string, error) {
+				OptionRegisterPrefixInterceptor("/ups1", func(w http.ResponseWriter, req *http.Request, ew ErrorWriter, corsInjector func()) (InterceptorAction, string, error) {
 					return InterceptorActionForward, "", fmt.Errorf("boom")
 				}),
 			)
