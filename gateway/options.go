@@ -104,6 +104,7 @@ type gwconfig struct {
 	corsOrigin                   string
 	additionalCorsOrigin         map[string]struct{}
 	trustForwardHeader           bool
+	upstreamEnableCompression    bool
 }
 
 func newGatewayConfig() *gwconfig {
@@ -275,6 +276,14 @@ func OptionUpstreamConfig(
 func OptionUpstreamURLScheme(scheme string) Option {
 	return func(cfg *gwconfig) {
 		cfg.upstreamURLScheme = scheme
+	}
+}
+
+// OptionUpstreamEnableCompression enables using compression between
+// the gateway and the upstreams. This can lead to performance issues.
+func OptionUpstreamEnableCompression(enable bool) Option {
+	return func(cfg *gwconfig) {
+		cfg.upstreamEnableCompression = enable
 	}
 }
 
