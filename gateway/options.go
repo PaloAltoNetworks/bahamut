@@ -100,11 +100,11 @@ type gwconfig struct {
 	upstreamURLScheme            string
 	upstreamTLSHandshakeTimeout  time.Duration
 	upstreamTLSConfig            *tls.Config
+	upstreamEnableCompression    bool
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
 	additionalCorsOrigin         map[string]struct{}
 	trustForwardHeader           bool
-	upstreamEnableCompression    bool
 }
 
 func newGatewayConfig() *gwconfig {
