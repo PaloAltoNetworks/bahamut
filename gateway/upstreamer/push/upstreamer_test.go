@@ -236,6 +236,91 @@ func TestUpstreamer(t *testing.T) {
 	})
 }
 
+func TestGlobalServiceTopic(t *testing.T) {
+
+	Convey("Given I have an upstreamer", t, func() {
+
+		pubsub := bahamut.NewLocalPubSubClient()
+		if err := pubsub.Connect(context.Background()); err != nil {
+			panic(err)
+		}
+
+		u := NewUpstreamer(
+			pubsub,
+			"local-topic",
+			"topic2",
+			OptionUpstreamerGlobalServiceTopic("global-topic"),
+		)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		ready, _ := u.Start(ctx)
+
+		select {
+		case <-ready:
+		case <-time.After(300 * time.Millisecond):
+			panic("got not ready but it should not have been")
+		}
+
+		sendHelloPing := func(endpoint string, topic string) {
+			sping := &servicePing{
+				Name:     "srv1",
+				Endpoint: endpoint,
+				Status:   entityStatusHello,
+				Routes: map[int][]bahamut.RouteInfo{
+					0: {
+						{
+							Identity: "cats",
+							URL:      "/cats",
+							Verbs:    []string{http.MethodGet},
+							Private:  false,
+						},
+					},
+				},
+				Versions: map[string]interface{}{
+					"hello": "hey",
+				},
+				Load: 0.2,
+			}
+
+			pub := bahamut.NewPublication(topic)
+			if err := pub.Encode(sping); err != nil {
+				panic(err)
+			}
+
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
+		}
+
+		Convey("When send a local ping", func() {
+
+			sendHelloPing("1.1.1.1:1", "local-topic")
+			time.Sleep(time.Second)
+
+			Convey("Then upstream should be correct", func() {
+				u.lock.Lock()
+				So(len(u.apis["cats"]), ShouldEqual, 1)
+				u.lock.Unlock()
+			})
+
+			Convey("When send a global ping", func() {
+
+				sendHelloPing("2.2.2.2:1", "global-topic")
+				time.Sleep(time.Second)
+
+				Convey("Then upstream should be correct", func() {
+					u.lock.Lock()
+					So(len(u.apis["cats"]), ShouldEqual, 2)
+					u.lock.Unlock()
+				})
+			})
+		})
+
+	})
+}
+
 type deterministicRandom struct {
 	value int
 }
