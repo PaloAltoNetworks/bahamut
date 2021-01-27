@@ -47,6 +47,12 @@ func NewNotifier(
 
 // MakeStartHook returns a bahamut start hook that sends the hello message to the Upstreamer periodically.
 func (w *Notifier) MakeStartHook(ctx context.Context) func(server bahamut.Server) error {
+	return w.MakeStartHookWithPriority(ctx, defaultPriorityLabel)
+}
+
+// MakeStartHookWithPriority returns a bahamut start hook that sends the hello message to the Upstreamer periodically
+// declaring the default priority label.
+func (w *Notifier) MakeStartHookWithPriority(ctx context.Context, priorityLabel string) func(server bahamut.Server) error {
 
 	return func(server bahamut.Server) error {
 
@@ -56,13 +62,14 @@ func (w *Notifier) MakeStartHook(ctx context.Context) func(server bahamut.Server
 		}
 
 		sp := servicePing{
-			Name:         w.serviceName,
-			Status:       entityStatusHello,
-			Endpoint:     w.endpoint,
-			Routes:       server.RoutesInfo(),
-			Versions:     server.VersionsInfo(),
-			PushEndpoint: server.PushEndpoint(),
-			APILimiters:  w.limiters,
+			Name:          w.serviceName,
+			Status:        entityStatusHello,
+			Endpoint:      w.endpoint,
+			Routes:        server.RoutesInfo(),
+			Versions:      server.VersionsInfo(),
+			PushEndpoint:  server.PushEndpoint(),
+			APILimiters:   w.limiters,
+			PriorityLabel: priorityLabel,
 		}
 
 		pct, err := p.CPUPercent()

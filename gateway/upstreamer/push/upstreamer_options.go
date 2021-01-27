@@ -24,6 +24,7 @@ type upstreamConfig struct {
 	randomizer                  Randomizer
 	tokenLimitingBurst          int
 	tokenLimitingRPS            rate.Limit
+	priorityLabel               string
 }
 
 func newUpstreamConfig() upstreamConfig {
@@ -38,6 +39,7 @@ func newUpstreamConfig() upstreamConfig {
 		randomizer:                  newRandomizer(),
 		tokenLimitingBurst:          2000,
 		tokenLimitingRPS:            500,
+		priorityLabel:               defaultPriorityLabel,
 	}
 }
 
@@ -137,5 +139,15 @@ func OptionUpstreamerTokenRateLimiting(rps rate.Limit, burst int) UpstreamerOpti
 		if cfg.tokenLimitingBurst <= 0 {
 			panic("burst cannot be <= 0")
 		}
+	}
+}
+
+// OptionUpstreamerPriorityLabel sets the value of the label
+// that will be used to priorize the traffic to the services. The gateway
+// will try to send traffic the upstreams declaring this label first,
+// or will fallback to anything if no service with that label is found.
+func OptionUpstreamerPriorityLabel(label string) UpstreamerOption {
+	return func(cfg *upstreamConfig) {
+		cfg.priorityLabel = label
 	}
 }

@@ -29,18 +29,20 @@ type IdentityToAPILimitersRegistry map[string]*APILimiter
 
 type servicePing struct {
 	// Decodable: must be public
-	Name         string
-	Endpoint     string
-	PushEndpoint string
-	Status       entityStatus
-	Routes       map[int][]bahamut.RouteInfo
-	Versions     map[string]interface{}
-	Load         float64
-	APILimiters  IdentityToAPILimitersRegistry
+	Name          string
+	Endpoint      string
+	PushEndpoint  string
+	Status        entityStatus
+	Routes        map[int][]bahamut.RouteInfo
+	Versions      map[string]interface{}
+	Load          float64
+	APILimiters   IdentityToAPILimitersRegistry
+	PriorityLabel string
 }
 
 type peerPing struct {
 	// Decodable: must be public
-	Status    entityStatus
-	RuntimeID string
+	Status        entityStatus
+	RuntimeID     string
+	PriorityLabel string
 }

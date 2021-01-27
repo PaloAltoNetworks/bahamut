@@ -26,4 +26,8 @@ func Test_NotiferOptions(t *testing.T) {
 		So(c.pingInterval, ShouldEqual, 3*time.Hour)
 	})
 
+	Convey("Calling OptionPriorityLabel should work", t, func() {
+		OptionPriorityLabel("coucou")(&c)
+		So(c.priorityLabel, ShouldEqual, "coucou")
+	})
 }

@@ -15,7 +15,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -53,7 +53,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 	Convey("Given I have an upstreamer with 1 not loaded/ratelimited and one loaded/not ratelimited", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -90,7 +90,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 	Convey("Given I have an upstreamer with 1 not loaded/not ratelimited and one loaded/ratelimited", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -136,7 +136,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var v float64
 			var err error
 
-			if ma, ok := u.latencies.Load("foo"); ok {
+			if ma, ok := u.secondaryLatencies.Load("foo"); ok {
 				v, err = ma.(*movingAverage).average()
 			}
 
@@ -150,7 +150,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var v float64
 			var err error
 
-			if ma, ok := u.latencies.Load("bar"); ok {
+			if ma, ok := u.secondaryLatencies.Load("bar"); ok {
 				v, err = ma.(*movingAverage).average()
 			}
 
@@ -165,7 +165,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var v float64
 			var err error
 
-			if ma, ok := u.latencies.Load("bar"); ok {
+			if ma, ok := u.secondaryLatencies.Load("bar"); ok {
 				v, err = ma.(*movingAverage).average()
 			}
 
@@ -174,11 +174,11 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 		})
 
 		Convey("When I delete an entry a values the average is not available", func() {
-			u.latencies.Delete("bar")
+			u.secondaryLatencies.Delete("bar")
 			var v float64
 			var err error
 
-			if ma, ok := u.latencies.Load("bar"); ok {
+			if ma, ok := u.secondaryLatencies.Load("bar"); ok {
 				v, err = ma.(*movingAverage).average()
 			}
 

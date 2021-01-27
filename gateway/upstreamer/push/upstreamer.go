@@ -29,12 +29,14 @@ type rateSet struct {
 // in an efficient way.
 type Upstreamer struct {
 	pubsub             bahamut.PubSubClient
-	apis               map[string][]*endpointInfo
+	secondaryAPIs      map[string][]*endpointInfo
+	primaryAPIs        map[string][]*endpointInfo
 	lock               sync.RWMutex
 	serviceStatusTopic string
 	peerStatusTopic    string
 	config             upstreamConfig
-	latencies          sync.Map
+	secondaryLatencies sync.Map
+	primaryLatencies   sync.Map
 	peersCount         int64
 	lastPeerChangeDate atomic.Value // time.Time
 	lastRateSet        atomic.Value // *rateSet
@@ -55,7 +57,8 @@ func NewUpstreamer(
 
 	return &Upstreamer{
 		pubsub:             pubsub,
-		apis:               map[string][]*endpointInfo{},
+		secondaryAPIs:      map[string][]*endpointInfo{},
+		primaryAPIs:        map[string][]*endpointInfo{},
 		serviceStatusTopic: serviceStatusTopic,
 		peerStatusTopic:    peerStatusTopic,
 		config:             cfg,
@@ -84,12 +87,26 @@ func (c *Upstreamer) ExtractRates(r *http.Request) (rate.Limit, int, error) {
 // Upstream returns the upstream to go for the given path
 func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
+	addr, err := c.upstreamFrom(req, c.primaryAPIs, &c.primaryLatencies)
+	if err != nil {
+		return "", err
+	}
+
+	if addr != "" {
+		return addr, nil
+	}
+
+	return c.upstreamFrom(req, c.secondaryAPIs, &c.secondaryLatencies)
+}
+
+func (c *Upstreamer) upstreamFrom(req *http.Request, apis map[string][]*endpointInfo, latencies *sync.Map) (string, error) {
+
 	identity := getTargetIdentity(req.URL.Path)
 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	l := len(c.apis[identity])
+	l := len(apis[identity])
 
 	var n1, n2 int
 
@@ -99,7 +116,7 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 		return "", nil
 
 	case 1:
-		ep := c.apis[identity][0]
+		ep := apis[identity][0]
 		ep.RLock()
 		defer ep.RUnlock()
 
@@ -112,8 +129,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 		n1, n2 = pick(c.config.randomizer, l)
 	}
 
-	epi1 := c.apis[identity][n1]
-	epi2 := c.apis[identity][n2]
+	epi1 := apis[identity][n1]
+	epi2 := apis[identity][n2]
 
 	addresses := [2]string{}
 	loads := [2]float64{}
@@ -173,13 +190,13 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 	w := [2]float64{.0, .0}
 
 	// fill our weight from the Feedbackloop
-	if ma, ok := c.latencies.Load(addresses[0]); ok {
+	if ma, ok := latencies.Load(addresses[0]); ok {
 		if v, err := ma.(*movingAverage).average(); err == nil {
 			w[0] = v
 		}
 	}
 
-	if ma, ok := c.latencies.Load(addresses[1]); ok {
+	if ma, ok := latencies.Load(addresses[1]); ok {
 		if v, err := ma.(*movingAverage).average(); err == nil {
 			w[1] = v
 		}
@@ -299,7 +316,71 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 		close(ready)
 	}
 
-	services := servicesConfig{}
+	handleOutdated := func(srvs servicesConfig, apis *map[string][]*endpointInfo, latencies *sync.Map, since time.Time) {
+
+		var found bool
+
+		for _, srv := range srvs {
+
+			for _, ep := range srv.outdatedEndpoints(since) {
+
+				found = found || handleRemoveServicePing(srvs, servicePing{Name: srv.name, Endpoint: ep})
+				latencies.Delete(ep)
+
+				zap.L().Info("Handled outdated service",
+					zap.String("name", srv.name),
+					zap.String("backend", ep),
+				)
+			}
+		}
+
+		if !found {
+			return
+		}
+
+		c.lock.Lock()
+		*apis = resyncRoutes(srvs, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+		c.lock.Unlock()
+	}
+
+	handleHello := func(sp servicePing, srvs servicesConfig, apis *map[string][]*endpointInfo) {
+
+		if !handleAddServicePing(srvs, sp) {
+			return
+		}
+
+		c.lock.Lock()
+		*apis = resyncRoutes(srvs, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+		c.lock.Unlock()
+
+		zap.L().Debug("Handled service hello",
+			zap.String("name", sp.Name),
+			zap.String("backend", sp.Endpoint),
+			zap.String("priorityLabel", sp.PriorityLabel),
+		)
+	}
+
+	handleGoodbye := func(sp servicePing, srvs servicesConfig, apis *map[string][]*endpointInfo, latencies *sync.Map) {
+
+		if !handleRemoveServicePing(srvs, sp) {
+			return
+		}
+
+		c.lock.Lock()
+		*apis = resyncRoutes(srvs, c.config.exposePrivateAPIs, c.config.eventsAPIs)
+		c.lock.Unlock()
+
+		latencies.Delete(sp.Endpoint)
+
+		zap.L().Debug("Handled service goodbye",
+			zap.String("name", sp.Name),
+			zap.String("backend", sp.Endpoint),
+			zap.String("priorityLabel", sp.PriorityLabel),
+		)
+	}
+
+	secondaryServices := servicesConfig{}
+	primaryServices := servicesConfig{}
 
 	ticker := time.NewTicker(c.config.serviceTimeoutCheckInterval)
 	defer ticker.Stop()
@@ -311,20 +392,8 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 
 			since := time.Now().Add(-c.config.serviceTimeout)
 
-			var foundOutdated bool
-			for _, srv := range services {
-				for _, ep := range srv.outdatedEndpoints(since) {
-					foundOutdated = foundOutdated || handleRemoveServicePing(services, servicePing{Name: srv.name, Endpoint: ep})
-					c.latencies.Delete(ep)
-					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
-				}
-			}
-
-			if foundOutdated {
-				c.lock.Lock()
-				c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
-				c.lock.Unlock()
-			}
+			handleOutdated(primaryServices, &c.primaryAPIs, &c.primaryLatencies, since)
+			handleOutdated(secondaryServices, &c.secondaryAPIs, &c.secondaryLatencies, since)
 
 		case pub := <-pubs:
 
@@ -345,11 +414,10 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 			switch sp.Status {
 			case entityStatusHello:
 
-				if handleAddServicePing(services, sp) {
-					c.lock.Lock()
-					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
-					c.lock.Unlock()
-					zap.L().Debug("Handled service hello", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
+				if sp.PriorityLabel == c.config.priorityLabel {
+					handleHello(sp, primaryServices, &c.primaryAPIs)
+				} else {
+					handleHello(sp, secondaryServices, &c.secondaryAPIs)
 				}
 
 				if requiredCount > 0 && !requiredNotifSent {
@@ -367,12 +435,10 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 
 			case entityStatusGoodbye:
 
-				if handleRemoveServicePing(services, sp) {
-					c.lock.Lock()
-					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
-					c.lock.Unlock()
-					c.latencies.Delete(sp.Endpoint)
-					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
+				if sp.PriorityLabel == c.config.priorityLabel {
+					handleGoodbye(sp, primaryServices, &c.primaryAPIs, &c.primaryLatencies)
+				} else {
+					handleGoodbye(sp, secondaryServices, &c.secondaryAPIs, &c.secondaryLatencies)
 				}
 			}
 
@@ -394,14 +460,16 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 	// Build publications.
 	helloPub := bahamut.NewPublication(c.peerStatusTopic)
 	_ = helloPub.Encode(peerPing{
-		RuntimeID: rid,
-		Status:    entityStatusHello,
+		RuntimeID:     rid,
+		Status:        entityStatusHello,
+		PriorityLabel: c.config.priorityLabel,
 	}) // no error can be returned here
 
 	goodbyePub := bahamut.NewPublication(c.peerStatusTopic)
 	_ = goodbyePub.Encode(peerPing{
-		RuntimeID: rid,
-		Status:    entityStatusGoodbye,
+		RuntimeID:     rid,
+		Status:        entityStatusGoodbye,
+		PriorityLabel: c.config.priorityLabel,
 	}) // no error can be returned here
 
 	sendTicker := time.NewTicker(c.config.peerPingInterval)
@@ -498,10 +566,10 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 // samples into the latencies sync map
 func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) {
 
-	if values, ok := c.latencies.Load(address); ok {
+	if values, ok := c.secondaryLatencies.Load(address); ok {
 		values.(*movingAverage).insertValue(float64(responseTime.Microseconds()))
 	} else {
-		c.latencies.Store(address, newMovingAverage(c.config.latencySampleSize))
+		c.secondaryLatencies.Store(address, newMovingAverage(c.config.latencySampleSize))
 		c.CollectLatency(address, responseTime)
 	}
 }

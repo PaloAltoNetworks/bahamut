@@ -2,15 +2,19 @@ package push
 
 import "time"
 
+const defaultPriorityLabel = "default"
+
 type notifierConfig struct {
-	rateLimits   IdentityToAPILimitersRegistry
-	pingInterval time.Duration
+	rateLimits    IdentityToAPILimitersRegistry
+	pingInterval  time.Duration
+	priorityLabel string
 }
 
 func newNotifierConfig() notifierConfig {
 	return notifierConfig{
-		rateLimits:   IdentityToAPILimitersRegistry{},
-		pingInterval: 5 * time.Second,
+		rateLimits:    IdentityToAPILimitersRegistry{},
+		pingInterval:  5 * time.Second,
+		priorityLabel: defaultPriorityLabel,
 	}
 }
 
@@ -37,5 +41,15 @@ func OptionNotifierAnnounceRateLimits(rls IdentityToAPILimitersRegistry) Notifie
 		for k, v := range rls {
 			c.rateLimits[k] = v
 		}
+	}
+}
+
+// OptionPriorityLabel sets the priority label the service
+// will declare to the gateway. The gateway will prioritize routing
+// to services that have the same priority label as itself, or
+// will fallback to the rest otherwise.
+func OptionPriorityLabel(label string) NotifierOption {
+	return func(c *notifierConfig) {
+		c.priorityLabel = label
 	}
 }

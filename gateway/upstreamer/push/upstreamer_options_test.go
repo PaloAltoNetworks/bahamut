@@ -70,4 +70,9 @@ func Test_Options(t *testing.T) {
 		So(func() { OptionUpstreamerTokenRateLimiting(0, 2)(&c) }, ShouldPanicWith, `rps cannot be <= 0`)
 		So(func() { OptionUpstreamerTokenRateLimiting(1, 0)(&c) }, ShouldPanicWith, `burst cannot be <= 0`)
 	})
+
+	Convey("Calling OptionUpstreamerPriorityLabel should work", t, func() {
+		OptionUpstreamerPriorityLabel("hello")(&c)
+		So(c.priorityLabel, ShouldEqual, "hello")
+	})
 }

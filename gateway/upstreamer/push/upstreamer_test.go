@@ -58,7 +58,7 @@ func TestUpstreamer(t *testing.T) {
 			pubsub,
 			"topic",
 			"topic2",
-			OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
+			// OptionUpstreamerOverrideEndpointsAddresses("127.0.0.1"),
 			OptionRequiredServices([]string{"srv1"}),
 			OptionUpstreamerServiceTimeout(2*time.Second, 1*time.Second),
 		)
@@ -67,7 +67,9 @@ func TestUpstreamer(t *testing.T) {
 			So(u, ShouldNotBeNil)
 			So(u.pubsub, ShouldEqual, pubsub)
 			So(u.serviceStatusTopic, ShouldEqual, "topic")
-			So(u.apis, ShouldResemble, map[string][]*endpointInfo{})
+			So(u.primaryAPIs, ShouldResemble, map[string][]*endpointInfo{})
+			So(u.secondaryAPIs, ShouldResemble, map[string][]*endpointInfo{})
+			So(u.config.priorityLabel, ShouldEqual, defaultPriorityLabel)
 		})
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -93,12 +95,12 @@ func TestUpstreamer(t *testing.T) {
 			})
 		})
 
-		Convey("When I send a hello ping for srv1", func() {
-
+		sendHelloPing := func(endpoint string, prio string) {
 			sping := &servicePing{
-				Name:     "srv1",
-				Endpoint: "1.1.1.1:1",
-				Status:   entityStatusHello,
+				Name:          "srv1",
+				Endpoint:      endpoint,
+				Status:        entityStatusHello,
+				PriorityLabel: prio,
 				Routes: map[int][]bahamut.RouteInfo{
 					0: {
 						{
@@ -120,6 +122,23 @@ func TestUpstreamer(t *testing.T) {
 				},
 				Load: 0.2,
 			}
+			pub := bahamut.NewPublication("topic")
+			if err := pub.Encode(sping); err != nil {
+				panic(err)
+			}
+			if err := pubsub.Publish(pub); err != nil {
+				panic(err)
+			}
+		}
+
+		sendGoodbyePing := func(endpoint string, prio string) {
+
+			sping := &servicePing{
+				Name:          "srv1",
+				Endpoint:      endpoint,
+				Status:        entityStatusGoodbye,
+				PriorityLabel: prio,
+			}
 
 			pub := bahamut.NewPublication("topic")
 			if err := pub.Encode(sping); err != nil {
@@ -129,7 +148,11 @@ func TestUpstreamer(t *testing.T) {
 			if err := pubsub.Publish(pub); err != nil {
 				panic(err)
 			}
+		}
 
+		Convey("When I send a hello ping for srv1 with non local prio and local prio", func() {
+
+			sendHelloPing("1.1.1.1:1", "not-default")
 			time.Sleep(time.Second)
 
 			select {
@@ -146,18 +169,21 @@ func TestUpstreamer(t *testing.T) {
 
 				Convey("Then upstream should be correct", func() {
 					So(err, ShouldBeNil)
-					So(upstream, ShouldEqual, "127.0.0.1:1")
-					So(len(u.apis["cats"]), ShouldEqual, 1)
-					So(u.apis["cats"][0].address, ShouldEqual, "127.0.0.1:1")
-					So(u.apis["cats"][0].lastLoad, ShouldEqual, 0.2)
-					So(u.apis["cats"][0].lastSeen.Round(time.Second), ShouldEqual, time.Now().Add(-time.Second).Round(time.Second))
+					So(upstream, ShouldEqual, "1.1.1.1:1")
+					So(len(u.secondaryAPIs["cats"]), ShouldEqual, 1)
+					So(len(u.primaryAPIs["cats"]), ShouldEqual, 0)
+
+					So(u.secondaryAPIs["cats"][0].address, ShouldEqual, "1.1.1.1:1")
+					So(u.secondaryAPIs["cats"][0].lastLoad, ShouldEqual, 0.2)
+					So(u.secondaryAPIs["cats"][0].lastSeen.Round(time.Second), ShouldEqual, time.Now().Add(-time.Second).Round(time.Second))
 				})
 
-				Convey("When I wait 2 additional second", func() {
+				Convey("When I send a second ping with the local priority", func() {
 
-					time.Sleep(2 * time.Second)
+					sendHelloPing("2.2.2.2:1", "default")
+					time.Sleep(time.Second)
 
-					Convey("Then endpoint should have been removed because it is outdated", func() {
+					Convey("When I ask for the upstream for /cats", func() {
 
 						upstream, err := u.Upstream(&http.Request{
 							URL: &url.URL{Path: "/cats"},
@@ -165,30 +191,39 @@ func TestUpstreamer(t *testing.T) {
 
 						Convey("Then upstream should be correct", func() {
 							So(err, ShouldBeNil)
-							So(upstream, ShouldEqual, "")
-							So(len(u.apis["cats"]), ShouldEqual, 0)
+							So(upstream, ShouldEqual, "2.2.2.2:1")
+							So(len(u.primaryAPIs["cats"]), ShouldEqual, 1)
+							So(len(u.secondaryAPIs["cats"]), ShouldEqual, 1)
+
+							So(u.primaryAPIs["cats"][0].address, ShouldEqual, "2.2.2.2:1")
+							So(u.primaryAPIs["cats"][0].lastLoad, ShouldEqual, 0.2)
+							So(u.primaryAPIs["cats"][0].lastSeen.Round(time.Second), ShouldEqual, time.Now().Add(-time.Second).Round(time.Second))
+						})
+
+						Convey("When I wait 2 additional second", func() {
+
+							time.Sleep(2 * time.Second)
+
+							Convey("Then endpoint should have been removed because it is outdated", func() {
+
+								upstream, err := u.Upstream(&http.Request{
+									URL: &url.URL{Path: "/cats"},
+								})
+
+								Convey("Then upstream should be correct", func() {
+									So(err, ShouldBeNil)
+									So(upstream, ShouldEqual, "")
+									So(len(u.secondaryAPIs["cats"]), ShouldEqual, 0)
+								})
+							})
 						})
 					})
 				})
 			})
 
-			Convey("When I send a goodbye ping for srv1", func() {
+			Convey("When I send a goodbye ping for srv1 for local prio", func() {
 
-				sping := &servicePing{
-					Name:     "srv1",
-					Endpoint: "1.1.1.1:1",
-					Status:   entityStatusGoodbye,
-				}
-
-				pub := bahamut.NewPublication("topic")
-				if err := pub.Encode(sping); err != nil {
-					panic(err)
-				}
-
-				if err := pubsub.Publish(pub); err != nil {
-					panic(err)
-				}
-
+				sendGoodbyePing("2.2.2.2:1", "default")
 				time.Sleep(time.Second)
 
 				Convey("When I ask for the upstream for /cats", func() {
@@ -199,8 +234,29 @@ func TestUpstreamer(t *testing.T) {
 
 					Convey("Then upstream should be correct", func() {
 						So(err, ShouldBeNil)
-						So(upstream, ShouldEqual, "")
-						So(len(u.apis["cats"]), ShouldEqual, 0)
+						So(upstream, ShouldEqual, "1.1.1.1:1")
+						So(len(u.primaryAPIs["cats"]), ShouldEqual, 0)
+						So(len(u.secondaryAPIs["cats"]), ShouldEqual, 1)
+					})
+
+					Convey("When I send a goodbye ping for srv1 for non local prio", func() {
+
+						sendGoodbyePing("1.1.1.1:1", "not-default")
+						time.Sleep(time.Second)
+
+						Convey("When I ask for the upstream for /cats", func() {
+
+							upstream, err := u.Upstream(&http.Request{
+								URL: &url.URL{Path: "/cats"},
+							})
+
+							Convey("Then upstream should be correct", func() {
+								So(err, ShouldBeNil)
+								So(upstream, ShouldEqual, "")
+								So(len(u.primaryAPIs["cats"]), ShouldEqual, 0)
+								So(len(u.secondaryAPIs["cats"]), ShouldEqual, 0)
+							})
+						})
 					})
 				})
 			})
@@ -259,7 +315,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 3 registered apis with different loads", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -293,7 +349,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 3 registered apis with same loads", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -326,7 +382,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with not registered api", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{}
+		u.secondaryAPIs = map[string][]*endpointInfo{}
 
 		Convey("When I call upstream on /cats", func() {
 
@@ -344,7 +400,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with a single registered api", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "1.1.1.1:1",
@@ -369,7 +425,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 2 registered apis", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "2.2.2.2:1",
@@ -398,7 +454,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 2 registered apis both over used", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "2.2.2.2:1",
@@ -438,7 +494,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 2 registered apis both the least loaded over used", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "2.2.2.2:1",
@@ -472,7 +528,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 	Convey("Given I have an upstreamer with 2 registered apis both the most loaded over used", t, func() {
 
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:  "2.2.2.2:1",
@@ -507,7 +563,7 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 		now := time.Now()
 		u := NewUpstreamer(nil, "topic", "topic2", opt)
-		u.apis = map[string][]*endpointInfo{
+		u.secondaryAPIs = map[string][]*endpointInfo{
 			"cats": {
 				{
 					address:           "2.2.2.2:1",
@@ -546,13 +602,13 @@ func TestUpstreamUpstreamer(t *testing.T) {
 
 			Convey("Then upstream should be correct", func() {
 				So(err, ShouldBeNil)
-				So(u.apis["cats"][0].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(1.0))
-				So(u.apis["cats"][0].limiters["cats"].limiter.Burst(), ShouldEqual, 3)
-				So(u.apis["cats"][0].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
+				So(u.secondaryAPIs["cats"][0].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(1.0))
+				So(u.secondaryAPIs["cats"][0].limiters["cats"].limiter.Burst(), ShouldEqual, 3)
+				So(u.secondaryAPIs["cats"][0].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
 
-				So(u.apis["cats"][1].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(10.0))
-				So(u.apis["cats"][1].limiters["cats"].limiter.Burst(), ShouldEqual, 30)
-				So(u.apis["cats"][1].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
+				So(u.secondaryAPIs["cats"][1].limiters["cats"].limiter.Limit(), ShouldAlmostEqual, rate.Limit(10.0))
+				So(u.secondaryAPIs["cats"][1].limiters["cats"].limiter.Burst(), ShouldEqual, 30)
+				So(u.secondaryAPIs["cats"][1].lastLimiterAdjust.Round(time.Second), ShouldEqual, now.Round(time.Second))
 			})
 		})
 	})
