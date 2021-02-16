@@ -282,8 +282,49 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 	pubs := make(chan *bahamut.Publication, 1024)
 	errs := make(chan error, 1024)
 
-	unsub := c.pubsub.Subscribe(pubs, errs, c.serviceStatusTopic)
-	defer unsub()
+	if c.config.globalServiceTopic == "" {
+
+		// if there is no global service topic,
+		// we simply subscribe to the c.serviceStatusTopic.
+
+		unsub := c.pubsub.Subscribe(pubs, errs, c.serviceStatusTopic)
+		defer unsub()
+
+	} else {
+
+		// If c.config.globalServiceTopic is set, we listen to both
+		// topics, and multiplex them
+
+		lpubs := make(chan *bahamut.Publication, 1024)
+		lerrs := make(chan error, 1024)
+		lunsub := c.pubsub.Subscribe(lpubs, lerrs, c.serviceStatusTopic)
+		defer lunsub()
+
+		gpubs := make(chan *bahamut.Publication, 1024)
+		gerrs := make(chan error, 1024)
+		gunsub := c.pubsub.Subscribe(gpubs, gerrs, c.config.globalServiceTopic)
+		defer gunsub()
+
+		go func() {
+			for {
+				select {
+
+				case p := <-lpubs:
+					pubs <- p
+				case p := <-gpubs:
+					pubs <- p
+
+				case e := <-lerrs:
+					errs <- e
+				case e := <-gerrs:
+					errs <- e
+
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
 
 	var requiredReady int
 	var requiredNotifSent bool

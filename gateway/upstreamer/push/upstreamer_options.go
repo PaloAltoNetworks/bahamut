@@ -24,6 +24,7 @@ type upstreamConfig struct {
 	randomizer                  Randomizer
 	tokenLimitingBurst          int
 	tokenLimitingRPS            rate.Limit
+	globalServiceTopic          string
 }
 
 func newUpstreamConfig() upstreamConfig {
@@ -137,5 +138,13 @@ func OptionUpstreamerTokenRateLimiting(rps rate.Limit, burst int) UpstreamerOpti
 		if cfg.tokenLimitingBurst <= 0 {
 			panic("burst cannot be <= 0")
 		}
+	}
+}
+
+// OptionUpstreamerGlobalServiceTopic sets the global topic that the gateway
+// will use to listen for service pings coming from global services.
+func OptionUpstreamerGlobalServiceTopic(topic string) UpstreamerOption {
+	return func(cfg *upstreamConfig) {
+		cfg.globalServiceTopic = topic
 	}
 }

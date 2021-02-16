@@ -403,10 +403,16 @@ func dispatchPatchOperation(
 
 		patchable, ok := identifiable.(elemental.Patchable)
 		if !ok {
+			err := elemental.NewError("Bad Request", "Identifiable is not patchable", "bahamut", http.StatusBadRequest)
 			audit(auditer, ctx, err)
-			return elemental.NewError("Bad Request", "Identifiable is not patchable", "bahamut", http.StatusBadRequest)
+			return err
 		}
 
+		if !identifiable.Identity().IsEqual(sparse.Identity()) {
+			err := elemental.NewError("Bad Request", "Patch and target does not have the same identity", "bahamut", http.StatusBadRequest)
+			audit(auditer, ctx, err)
+			return err
+		}
 		patchable.Patch(sparse.(elemental.SparseIdentifiable))
 
 		if v, ok := patchable.(elemental.Validatable); ok {

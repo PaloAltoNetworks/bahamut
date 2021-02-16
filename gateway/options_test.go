@@ -207,4 +207,10 @@ func Test_Options(t *testing.T) {
 		So(c.trustForwardHeader, ShouldBeTrue)
 	})
 
+	Convey("Calling OptionUpstreamEnableCompression should work", t, func() {
+		c := newGatewayConfig()
+		OptionUpstreamEnableCompression(true)(c)
+		So(c.upstreamEnableCompression, ShouldBeTrue)
+	})
+
 }

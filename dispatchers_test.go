@@ -1789,6 +1789,45 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		})
 	})
 
+	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that returns a diffetent identifiable", t, func() {
+		request := elemental.NewRequest()
+		request.Identity = testmodel.ListIdentity
+		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+
+		expectedID := "a"
+		expectedName := "Fake"
+
+		processorFinder := func(identity elemental.Identity) (Processor, error) {
+			return &mockProcessor{
+				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName},
+				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
+			}, nil
+		}
+
+		var retrieverCalled int
+		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
+			retrieverCalled++
+			return testmodel.NewTask(), nil
+		}
+
+		auditer := &mockAuditer{}
+		pusher := &mockPusher{}
+
+		ctx := newContext(context.Background(), request)
+		err := dispatchPatchOperation(ctx, processorFinder, testmodel.Manager(), nil, nil, nil, pusher.Push, auditer, false, nil, retriever)
+
+		expectedNbCalls := 1
+
+		Convey("Then I should have no error and context should be initiated", func() {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error 400 (bahamut): Bad Request: Patch and target does not have the same identity")
+			So(retrieverCalled, ShouldEqual, 1)
+			So(auditer.GetCallCount(), ShouldEqual, expectedNbCalls)
+			So(ctx.outputData, ShouldBeNil)
+			So(len(pusher.events), ShouldEqual, 0)
+		})
+	})
+
 	Convey("Given I have a processor that handle ProcessPatch function and uses an elementalRetriever that works but the processor returns an error", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity

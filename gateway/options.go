@@ -100,6 +100,7 @@ type gwconfig struct {
 	upstreamURLScheme            string
 	upstreamTLSHandshakeTimeout  time.Duration
 	upstreamTLSConfig            *tls.Config
+	upstreamEnableCompression    bool
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
 	additionalCorsOrigin         map[string]struct{}
@@ -275,6 +276,14 @@ func OptionUpstreamConfig(
 func OptionUpstreamURLScheme(scheme string) Option {
 	return func(cfg *gwconfig) {
 		cfg.upstreamURLScheme = scheme
+	}
+}
+
+// OptionUpstreamEnableCompression enables using compression between
+// the gateway and the upstreams. This can lead to performance issues.
+func OptionUpstreamEnableCompression(enable bool) Option {
+	return func(cfg *gwconfig) {
+		cfg.upstreamEnableCompression = enable
 	}
 }
 
