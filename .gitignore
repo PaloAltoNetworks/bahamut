@@ -12,3 +12,5 @@ artifacts
 remod.dev
 .remod
 dist
+
+/scripts/codecov
