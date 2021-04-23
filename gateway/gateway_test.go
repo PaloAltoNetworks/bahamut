@@ -313,14 +313,25 @@ func TestGateway(t *testing.T) {
 
 			gw.Start()
 
-			Convey("Then we I call existing ep 1", func() {
+			Convey("Then we I call existing ep 1 with origin", func() {
+				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/hello", nil)
+				req.Header.Set("origin", "orig")
+				resp, err := testclient.Do(req)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, 604)
+				So(resp.Header.Get("Access-Control-Allow-Origin"), ShouldEqual, "orig")
+				So(resp.Header.Get("Access-Control-Expose-Headers"), ShouldNotBeEmpty)
+				So(resp.Header.Get("Access-Control-Allow-Credentials"), ShouldNotBeEmpty)
+			})
+
+			Convey("Then we I call existing ep 1 without origin", func() {
 				req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:7765/hello", nil)
 				resp, err := testclient.Do(req)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 604)
-				So(resp.Header.Get("Access-Control-Allow-Origin"), ShouldNotBeEmpty)
+				So(resp.Header.Get("Access-Control-Allow-Origin"), ShouldBeEmpty)
 				So(resp.Header.Get("Access-Control-Expose-Headers"), ShouldNotBeEmpty)
-				So(resp.Header.Get("Access-Control-Allow-Credentials"), ShouldNotBeEmpty)
+				So(resp.Header.Get("Access-Control-Allow-Credentials"), ShouldBeEmpty)
 			})
 		})
 
