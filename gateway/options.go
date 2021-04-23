@@ -61,7 +61,7 @@ const (
 )
 
 // CORSOriginMirror can be used with OptionAllowedCORSOrigin().
-// If set, the gateway will mirror any upcoming ORIGIN header
+// In this case, the gateway will mirror any upcoming ORIGIN header
 // in Access-Control-Allow-Origin response header.
 // NOTE: This should not be used in production.
 const CORSOriginMirror = "_mirror_"
