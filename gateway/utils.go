@@ -20,12 +20,22 @@ func injectGeneralHeader(h http.Header) http.Header {
 	return h
 }
 
-func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map[string]struct{}, origin string, method string) http.Header {
+func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map[string]struct{}, allowCredentials bool, origin string, method string) http.Header {
 
-	if corsOrigin == "*" && origin != "" {
+	switch {
+
+	case corsOrigin == "*":
+		corsOrigin = "*"
+
+	case corsOrigin == CORSOriginMirror && origin != "":
 		corsOrigin = origin
-	} else if _, ok := additionalCorsOrigin[origin]; ok {
+
+	case corsOrigin == CORSOriginMirror && origin == "":
+		corsOrigin = ""
+
+	case func() bool { _, ok := additionalCorsOrigin[origin]; return ok }():
 		corsOrigin = origin
+
 	}
 
 	if method == http.MethodOptions {
@@ -34,9 +44,15 @@ func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map
 		h.Set("Access-Control-Max-Age", "1500")
 	}
 
-	h.Set("Access-Control-Allow-Origin", corsOrigin)
+	if corsOrigin != "" {
+		h.Set("Access-Control-Allow-Origin", corsOrigin)
+	}
+
 	h.Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
-	h.Set("Access-Control-Allow-Credentials", "true")
+
+	if allowCredentials && corsOrigin != "*" && corsOrigin != "" {
+		h.Set("Access-Control-Allow-Credentials", "true")
+	}
 
 	return h
 }

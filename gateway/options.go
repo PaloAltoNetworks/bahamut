@@ -60,6 +60,12 @@ const (
 	InterceptorActionStop
 )
 
+// CORSOriginMirror can be used with OptionAllowedCORSOrigin().
+// In this case, the gateway will mirror any upcoming ORIGIN header
+// in Access-Control-Allow-Origin response header.
+// NOTE: This should not be used in production.
+const CORSOriginMirror = "_mirror_"
+
 type gwconfig struct {
 	requestRewriter         RequestRewriter
 	responseRewriter        ResponseRewriter
@@ -103,6 +109,7 @@ type gwconfig struct {
 	upstreamEnableCompression    bool
 	serverTLSConfig              *tls.Config
 	corsOrigin                   string
+	corsAllowCredentials         bool
 	additionalCorsOrigin         map[string]struct{}
 	trustForwardHeader           bool
 }
@@ -110,7 +117,8 @@ type gwconfig struct {
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
 		additionalCorsOrigin:        map[string]struct{}{},
-		corsOrigin:                  "*",
+		corsOrigin:                  CORSOriginMirror,
+		corsAllowCredentials:        true,
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		suffixInterceptors:          map[string]InterceptorFunc{},
 		exactInterceptors:           map[string]InterceptorFunc{},
@@ -347,12 +355,12 @@ func OptionUpstreamTLSConfig(tlsConfig *tls.Config) Option {
 }
 
 // OptionAllowedCORSOrigin sets allowed CORS origin.
-// If set to empty, or "*", the gateway will mirror
+// If set to CORSOriginMirror the gateway will mirror
 // whatever is set in the upcoming request Origin header.
 // This is not secure to be used in production
 // when a browser is calling the gateway.
 //
-// By default, it is set to "*"
+// By default, it is set to CORSOriginMirror.
 func OptionAllowedCORSOrigin(origin string) Option {
 	return func(cfg *gwconfig) {
 		cfg.corsOrigin = origin
@@ -367,6 +375,16 @@ func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 		for _, o := range origins {
 			cfg.additionalCorsOrigin[o] = struct{}{}
 		}
+	}
+}
+
+// OptionCORSAllowCredentials sets if the header Access-Control-Allow-Credentials
+// should be set to true.
+//
+// By default, it is set to true.
+func OptionCORSAllowCredentials(allow bool) Option {
+	return func(cfg *gwconfig) {
+		cfg.corsAllowCredentials = allow
 	}
 }
 
