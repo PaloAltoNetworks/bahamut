@@ -93,7 +93,38 @@ func Test_requestRewriter(t *testing.T) {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "A")
 				So(r.Header.Get("X-Real-IP"), ShouldEqual, "B")
 			})
+		})
 
+		Convey("When I call Rewrite it with marked as ws internal", func() {
+
+			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
+			r.TLS = &tls.ConnectionState{}
+
+			r.RemoteAddr = "1.1.1.1:11"
+			r.Header.Set(internalWSMarkingHeader, "1")
+
+			rw.Rewrite(r)
+
+			Convey("Then the response should be correct", func() {
+				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "1.1.1.1")
+				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+			})
+		})
+
+		Convey("When I call Rewrite it with marked as ws internal with bad address", func() {
+
+			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
+			r.TLS = &tls.ConnectionState{}
+
+			r.RemoteAddr = "oh no"
+			r.Header.Set(internalWSMarkingHeader, "1")
+
+			rw.Rewrite(r)
+
+			Convey("Then the response should be correct", func() {
+				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
+				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+			})
 		})
 
 		Convey("When I call Rewrite it with a valid TLS client certificate", func() {

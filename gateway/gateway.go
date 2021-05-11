@@ -492,6 +492,11 @@ HANDLE_INTERCEPTION:
 			mm.RegisterWSConnection()
 		}
 
+		// We mark the request as a websocket so the
+		// rewriter can handle settinfg X-Forwarded-For header
+		// See rewriter for more info.
+		r.Header.Set(internalWSMarkingHeader, "1")
+
 		s.forwarder.ServeHTTP(w, r)
 
 		if mm := s.gatewayConfig.metricsManager; mm != nil {
