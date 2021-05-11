@@ -484,6 +484,10 @@ HANDLE_INTERCEPTION:
 	r.URL.Host = upstream
 	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
+	// Always strip the internal ws header marker
+	// to make sure it cannot be sent by the clients.
+	r.Header.Del(internalWSMarkingHeader)
+
 	switch interceptAction {
 
 	case InterceptorActionForwardWS:
