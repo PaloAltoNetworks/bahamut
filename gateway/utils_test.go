@@ -48,6 +48,7 @@ func Test_injectCORSHeader(t *testing.T) {
 		h                    http.Header
 		corsOrigin           string
 		additionalCorsOrigin map[string]struct{}
+		corsAllowCredentials bool
 		origin               string
 		method               string
 	}
@@ -57,11 +58,12 @@ func Test_injectCORSHeader(t *testing.T) {
 		want http.Header
 	}{
 		{
-			"normal",
+			"default",
 			args{
 				http.Header{},
-				"*",
+				CORSOriginMirror,
 				map[string]struct{}{},
+				true,
 				"chien",
 				http.MethodGet,
 			},
@@ -72,11 +74,12 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"normal options",
+			"default OPTIONS",
 			args{
 				http.Header{},
-				"*",
+				CORSOriginMirror,
 				map[string]struct{}{},
+				true,
 				"chien",
 				http.MethodOptions,
 			},
@@ -95,6 +98,7 @@ func Test_injectCORSHeader(t *testing.T) {
 				http.Header{},
 				"dog",
 				map[string]struct{}{},
+				true,
 				"chien",
 				http.MethodGet,
 			},
@@ -105,11 +109,12 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"dev options",
+			"dev OPTIONS",
 			args{
 				http.Header{},
 				"dog",
 				map[string]struct{}{},
+				true,
 				"chien",
 				http.MethodOptions,
 			},
@@ -128,6 +133,7 @@ func Test_injectCORSHeader(t *testing.T) {
 				http.Header{},
 				"dog",
 				map[string]struct{}{"chien": {}},
+				true,
 				"chien",
 				http.MethodGet,
 			},
@@ -138,11 +144,12 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"additional origin options",
+			"additional origin OPTIONS",
 			args{
 				http.Header{},
 				"dog",
 				map[string]struct{}{"chien": {}},
+				true,
 				"chien",
 				http.MethodOptions,
 			},
@@ -156,42 +163,59 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"dev empty",
+			"default empty origin",
 			args{
 				http.Header{},
-				"*",
+				CORSOriginMirror,
 				map[string]struct{}{},
+				true,
 				"",
 				http.MethodGet,
 			},
 			http.Header{
-				"Access-Control-Allow-Origin":      {"*"},
-				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
-				"Access-Control-Allow-Credentials": {"true"},
+				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 			},
 		},
 		{
-			"dev empty options",
+			"default empty OPTIONS",
 			args{
 				http.Header{},
-				"*",
+				CORSOriginMirror,
 				map[string]struct{}{},
+				true,
 				"",
 				http.MethodOptions,
 			},
 			http.Header{
-				"Access-Control-Allow-Origin":      {"*"},
-				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
-				"Access-Control-Allow-Methods":     {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
-				"Access-Control-Allow-Headers":     {"Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key"},
-				"Access-Control-Allow-Credentials": {"true"},
-				"Access-Control-Max-Age":           {"1500"},
+				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Methods":  {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
+				"Access-Control-Allow-Headers":  {"Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key"},
+				"Access-Control-Max-Age":        {"1500"},
+			},
+		},
+
+		{
+			"star with credential set to true (should be ignored)",
+			args{
+				http.Header{},
+				"*",
+				map[string]struct{}{},
+				true,
+				"",
+				http.MethodOptions,
+			},
+			http.Header{
+				"Access-Control-Allow-Origin":   {"*"},
+				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
+				"Access-Control-Allow-Methods":  {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
+				"Access-Control-Allow-Headers":  {"Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key"},
+				"Access-Control-Max-Age":        {"1500"},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := injectCORSHeader(tt.args.h, tt.args.corsOrigin, tt.args.additionalCorsOrigin, tt.args.origin, tt.args.method); !reflect.DeepEqual(got, tt.want) {
+			if got := injectCORSHeader(tt.args.h, tt.args.corsOrigin, tt.args.additionalCorsOrigin, tt.args.corsAllowCredentials, tt.args.origin, tt.args.method); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("injectCORSHeader() = %v, want %v", got, tt.want)
 			}
 		})

@@ -18,6 +18,8 @@ func Test_Options(t *testing.T) {
 		OptionEnableProxyProtocol(true, "10.0.0.0/0")(c)
 		So(c.proxyProtocolEnabled, ShouldEqual, true)
 		So(c.proxyProtocolSubnet, ShouldEqual, "10.0.0.0/0")
+		So(c.corsAllowCredentials, ShouldEqual, true)
+		So(c.corsOrigin, ShouldEqual, CORSOriginMirror)
 	})
 
 	Convey("Calling OptionTCPGobalRateLimiting should work", t, func() {
@@ -213,4 +215,9 @@ func Test_Options(t *testing.T) {
 		So(c.upstreamEnableCompression, ShouldBeTrue)
 	})
 
+	Convey("Calling OptionCORSAllowCredentials should work", t, func() {
+		c := newGatewayConfig()
+		OptionCORSAllowCredentials(false)(c)
+		So(c.corsAllowCredentials, ShouldBeFalse)
+	})
 }

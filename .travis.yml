@@ -3,6 +3,11 @@ language: go
 go:
   - 1.13.x
   - 1.14.x
+<<<<<<< HEAD
+=======
+  - 1.15.x
+  - 1.16.x
+>>>>>>> dc858bec4307b2e3e269b5d48699857f42de0b1a
 
 env:
   global:

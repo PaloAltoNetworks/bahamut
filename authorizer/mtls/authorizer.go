@@ -98,7 +98,10 @@ func CertificatesFromHeader(headerData string) (certs []*x509.Certificate, err e
 }
 
 // VerifierFunc is the type of function you can pass to do custom
-// verification on the certificates, like checking for the DN.
+// verification on the certificates, like checking against a certificate
+// revocation list. Note that CRL checking is not done by
+// Go when using x509.VerifyOptions. If you need need advanced CRL check
+// you need to implement it in a VerifierFunc.
 type VerifierFunc func(*x509.Certificate) bool
 
 // DeciderFunc is the type of function to pass to decide

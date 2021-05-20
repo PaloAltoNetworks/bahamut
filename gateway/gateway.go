@@ -136,7 +136,14 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 	var topProxyHandler http.Handler
 
 	corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
-		return injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+		return injectCORSHeader(
+			w.Header(),
+			cfg.corsOrigin,
+			cfg.additionalCorsOrigin,
+			cfg.corsAllowCredentials,
+			r.Header.Get("origin"),
+			r.Method,
+		)
 	}
 
 	if s.forwarder, err = forward.New(
@@ -159,7 +166,14 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 				}
 
 				injectGeneralHeader(resp.Header)
-				injectCORSHeader(resp.Header, cfg.corsOrigin, cfg.additionalCorsOrigin, resp.Request.Header.Get("origin"), resp.Request.Method)
+				injectCORSHeader(
+					resp.Header,
+					cfg.corsOrigin,
+					cfg.additionalCorsOrigin,
+					cfg.corsAllowCredentials,
+					resp.Request.Header.Get("origin"),
+					resp.Request.Method,
+				)
 
 				if s.gatewayConfig.responseRewriter != nil {
 					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
@@ -320,7 +334,14 @@ func (s *gateway) checkInterceptor(
 		}
 
 		return interceptor(w, r, writeError, func() {
-			injectCORSHeader(w.Header(), cfg.corsOrigin, cfg.additionalCorsOrigin, r.Header.Get("origin"), r.Method)
+			injectCORSHeader(
+				w.Header(),
+				cfg.corsOrigin,
+				cfg.additionalCorsOrigin,
+				cfg.corsAllowCredentials,
+				r.Header.Get("origin"),
+				r.Method,
+			)
 		})
 	}
 
@@ -331,7 +352,14 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodOptions {
 		h := w.Header()
-		injectCORSHeader(h, s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(
+			h,
+			s.gatewayConfig.corsOrigin,
+			s.gatewayConfig.additionalCorsOrigin,
+			s.gatewayConfig.corsAllowCredentials,
+			r.Header.Get("Origin"),
+			r.Method,
+		)
 		w.WriteHeader(http.StatusOK) // nolint: errcheck
 		return
 	}
@@ -339,7 +367,14 @@ func (s *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.gatewayConfig.maintenance {
 		h := w.Header()
 		h.Set("Content-Type", "application/msgpack, application/json")
-		injectCORSHeader(h, s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(
+			h,
+			s.gatewayConfig.corsOrigin,
+			s.gatewayConfig.additionalCorsOrigin,
+			s.gatewayConfig.corsAllowCredentials,
+			r.Header.Get("Origin"),
+			r.Method,
+		)
 		writeError(w, r, errLocked)
 		return
 	}
@@ -385,7 +420,14 @@ HANDLE_INTERCEPTION:
 	if interceptAction == InterceptorActionStop {
 		// This has no incidence if the interceptor already wrote the header.
 		// In such case caller must call the corsInjector by himself.
-		injectCORSHeader(w.Header(), s.gatewayConfig.corsOrigin, s.gatewayConfig.additionalCorsOrigin, r.Header.Get("Origin"), r.Method)
+		injectCORSHeader(
+			w.Header(),
+			s.gatewayConfig.corsOrigin,
+			s.gatewayConfig.additionalCorsOrigin,
+			s.gatewayConfig.corsAllowCredentials,
+			r.Header.Get("Origin"),
+			r.Method,
+		)
 		return
 	}
 
