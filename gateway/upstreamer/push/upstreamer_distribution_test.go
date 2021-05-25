@@ -137,7 +137,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var err error
 
 			if ma, ok := u.latencies.Load("foo"); ok {
-				v, err = ma.(*movingAverage).average()
+				v, err = ma.(movingAverage).average()
 			}
 
 			So(v, ShouldEqual, 0)
@@ -151,7 +151,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var err error
 
 			if ma, ok := u.latencies.Load("bar"); ok {
-				v, err = ma.(*movingAverage).average()
+				v, err = ma.(movingAverage).average()
 			}
 
 			So(v, ShouldEqual, 0)
@@ -166,7 +166,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var err error
 
 			if ma, ok := u.latencies.Load("bar"); ok {
-				v, err = ma.(*movingAverage).average()
+				v, err = ma.(movingAverage).average()
 			}
 
 			So(v, ShouldEqual, 1)
@@ -179,7 +179,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			var err error
 
 			if ma, ok := u.latencies.Load("bar"); ok {
-				v, err = ma.(*movingAverage).average()
+				v, err = ma.(movingAverage).average()
 			}
 
 			So(v, ShouldEqual, 0)
