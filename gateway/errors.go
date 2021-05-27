@@ -152,5 +152,5 @@ func writeError(w http.ResponseWriter, r *http.Request, eerr elemental.Error) {
 	}
 
 	w.WriteHeader(eerr.Code)
-	w.Write(data) // nolint
+	w.Write(data) //revive:disable-line:unhandled-error
 }

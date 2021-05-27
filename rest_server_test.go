@@ -307,14 +307,14 @@ type mockMetricsManager struct {
 	measureFunc FinishMeasurementFunc
 }
 
-func (m *mockMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+func (m *mockMetricsManager) MeasureRequest(_ string, _ string) FinishMeasurementFunc {
 	return m.measureFunc
 }
 func (m *mockMetricsManager) RegisterWSConnection()                        {}
 func (m *mockMetricsManager) UnregisterWSConnection()                      {}
 func (m *mockMetricsManager) RegisterTCPConnection()                       {}
 func (m *mockMetricsManager) UnregisterTCPConnection()                     {}
-func (m *mockMetricsManager) Write(w http.ResponseWriter, r *http.Request) {}
+func (m *mockMetricsManager) Write(_ http.ResponseWriter, _ *http.Request) {}
 
 func TestServer_MakeHandlers(t *testing.T) {
 

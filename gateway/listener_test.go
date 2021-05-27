@@ -13,9 +13,9 @@ type fakeConn struct {
 	closed bool
 }
 
-func (c *fakeConn) Read(b []byte) (n int, err error) { return 0, nil }
+func (c *fakeConn) Read(_ []byte) (n int, err error) { return 0, nil }
 
-func (c *fakeConn) Write(b []byte) (n int, err error) { return 0, nil }
+func (c *fakeConn) Write(_ []byte) (n int, err error) { return 0, nil }
 
 func (c *fakeConn) Close() error { c.closed = true; return nil }
 
@@ -23,11 +23,11 @@ func (c *fakeConn) LocalAddr() net.Addr { return nil }
 
 func (c *fakeConn) RemoteAddr() net.Addr { return nil }
 
-func (c *fakeConn) SetDeadline(t time.Time) error { return nil }
+func (c *fakeConn) SetDeadline(_ time.Time) error { return nil }
 
-func (c *fakeConn) SetReadDeadline(t time.Time) error { return nil }
+func (c *fakeConn) SetReadDeadline(_ time.Time) error { return nil }
 
-func (c *fakeConn) SetWriteDeadline(t time.Time) error { return nil }
+func (c *fakeConn) SetWriteDeadline(_ time.Time) error { return nil }
 
 type fakeListener struct {
 	conn        func() net.Conn

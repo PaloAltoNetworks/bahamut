@@ -46,7 +46,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 		}
 
 		if new > l.maxConn {
-			c.Close() // nolint: errcheck
+			c.Close() //revive:disable-line:unhandled-error
 			l.release()
 			continue
 		}

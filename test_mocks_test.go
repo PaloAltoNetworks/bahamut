@@ -75,7 +75,7 @@ type mockAuth struct {
 	err     error
 }
 
-func (a *mockAuth) AuthenticateRequest(ctx Context) (AuthAction, error) {
+func (a *mockAuth) AuthenticateRequest(_ Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
@@ -87,7 +87,7 @@ func (a *mockAuth) AuthenticateRequest(ctx Context) (AuthAction, error) {
 	return a.action, nil
 }
 
-func (a *mockAuth) IsAuthorized(ctx Context) (AuthAction, error) {
+func (a *mockAuth) IsAuthorized(_ Context) (AuthAction, error) {
 
 	if a.errored {
 		if a.err == nil {
@@ -183,7 +183,7 @@ func (f *mockPusher) Push(evt ...*elemental.Event) {
 type mockSpanContext struct {
 }
 
-func (t *mockSpanContext) ForeachBaggageItem(handler func(k, v string) bool) {}
+func (t *mockSpanContext) ForeachBaggageItem(_ func(k, v string) bool) {}
 
 // A mockTracer is a mockable opentracing.Tracer
 type mockTracer struct {
@@ -200,7 +200,7 @@ func (t *mockTracer) StartSpan(string, ...opentracing.StartSpanOption) opentraci
 	return t.currentSpan
 }
 
-func (t *mockTracer) Inject(span opentracing.SpanContext, format interface{}, carrier interface{}) error {
+func (t *mockTracer) Inject(_ opentracing.SpanContext, _ interface{}, carrier interface{}) error {
 	t.injected = carrier
 	return nil
 }
@@ -231,7 +231,7 @@ func (s *mockSpan) Finish() {
 	s.finished = true
 }
 
-func (s *mockSpan) FinishWithOptions(opts opentracing.FinishOptions) {
+func (s *mockSpan) FinishWithOptions(_ opentracing.FinishOptions) {
 	s.finished = true
 }
 
@@ -239,7 +239,7 @@ func (s *mockSpan) Context() opentracing.SpanContext {
 	return &mockSpanContext{}
 }
 
-func (s *mockSpan) SetOperationName(operationName string) opentracing.Span {
+func (s *mockSpan) SetOperationName(_ string) opentracing.Span {
 	return s
 }
 
@@ -255,15 +255,15 @@ func (s *mockSpan) LogFields(fields ...log.Field) {
 	s.fields = append(s.fields, fields...)
 }
 
-func (s *mockSpan) LogKV(alternatingKeyValues ...interface{}) {
+func (s *mockSpan) LogKV(_ ...interface{}) {
 
 }
 
-func (s *mockSpan) SetBaggageItem(restrictedKey, value string) opentracing.Span {
+func (s *mockSpan) SetBaggageItem(_, _ string) opentracing.Span {
 	return s
 }
 
-func (s *mockSpan) BaggageItem(restrictedKey string) string {
+func (s *mockSpan) BaggageItem(_ string) string {
 	return ""
 
 }
@@ -275,6 +275,6 @@ func (s *mockSpan) String() string {
 	return "1234567890"
 }
 
-func (s *mockSpan) LogEvent(event string)                                 {}
-func (s *mockSpan) LogEventWithPayload(event string, payload interface{}) {}
-func (s *mockSpan) Log(data opentracing.LogData)                          {}
+func (s *mockSpan) LogEvent(_ string)                           {}
+func (s *mockSpan) LogEventWithPayload(_ string, _ interface{}) {}
+func (s *mockSpan) Log(_ opentracing.LogData)                   {}

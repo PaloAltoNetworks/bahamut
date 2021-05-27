@@ -52,7 +52,7 @@ func newlocalPubSub() *localPubSub {
 }
 
 // Publish publishes a publication.
-func (p *localPubSub) Publish(publication *Publication, opts ...PubSubOptPublish) error {
+func (p *localPubSub) Publish(publication *Publication, _ ...PubSubOptPublish) error {
 
 	p.publications <- publication
 
@@ -60,7 +60,7 @@ func (p *localPubSub) Publish(publication *Publication, opts ...PubSubOptPublish
 }
 
 // Subscribe will subscribe the given channel to the given topic
-func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
+func (p *localPubSub) Subscribe(c chan *Publication, _ chan error, topic string, _ ...PubSubOptSubscribe) func() {
 
 	unsubscribe := make(chan struct{})
 
@@ -75,7 +75,7 @@ func (p *localPubSub) Subscribe(c chan *Publication, errors chan error, topic st
 }
 
 // Connect connects the PubSubClient to the remote service.
-func (p *localPubSub) Connect(ctx context.Context) error {
+func (p *localPubSub) Connect(_ context.Context) error {
 
 	go p.listen()
 

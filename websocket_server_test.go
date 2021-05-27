@@ -38,12 +38,12 @@ type mockPubSubServer struct {
 func (p *mockPubSubServer) Connect(context.Context) error { return nil }
 func (p *mockPubSubServer) Disconnect() error             { return nil }
 
-func (p *mockPubSubServer) Publish(publication *Publication, opts ...PubSubOptPublish) error {
+func (p *mockPubSubServer) Publish(publication *Publication, _ ...PubSubOptPublish) error {
 	p.publications = append(p.publications, publication)
 	return p.PublishErr
 }
 
-func (p *mockPubSubServer) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
+func (p *mockPubSubServer) Subscribe(_ chan *Publication, _ chan error, _ string, _ ...PubSubOptSubscribe) func() {
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event, inter
 	return h.shouldDispatchOK, h.shouldDispatchErr
 }
 
-func (h *mockSessionHandler) RelatedEventIdentities(i string) []string {
+func (h *mockSessionHandler) RelatedEventIdentities(_ string) []string {
 
 	h.Lock()
 	defer h.Unlock()
@@ -124,7 +124,7 @@ func (h *mockSessionHandler) RelatedEventIdentities(i string) []string {
 	return h.relatedIdentities
 }
 
-func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) (interface{}, error) {
+func (h *mockSessionHandler) SummarizeEvent(_ *elemental.Event) (interface{}, error) {
 
 	h.Lock()
 	defer h.Unlock()

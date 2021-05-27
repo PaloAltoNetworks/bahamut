@@ -43,7 +43,7 @@ func (u *simpleUpstreamer) Upstream(req *http.Request) (upstream string, err err
 }
 
 // Implement LatencyBasedUpstreamer interface
-func (u *simpleUpstreamer) CollectLatency(address string, rt time.Duration) {
+func (u *simpleUpstreamer) CollectLatency(_ string, _ time.Duration) {
 	// noop
 }
 
@@ -54,7 +54,7 @@ type fakeMetricManager struct {
 	unregisterTCPConnectionCalled int64
 }
 
-func (m *fakeMetricManager) MeasureRequest(method string, url string) bahamut.FinishMeasurementFunc {
+func (m *fakeMetricManager) MeasureRequest(_ string, _ string) bahamut.FinishMeasurementFunc {
 	return func(code int, span opentracing.Span) time.Duration { return 0 }
 }
 
@@ -70,7 +70,7 @@ func (m *fakeMetricManager) RegisterTCPConnection() {
 func (m *fakeMetricManager) UnregisterTCPConnection() {
 	atomic.AddInt64(&m.unregisterTCPConnectionCalled, 1)
 }
-func (m *fakeMetricManager) Write(w http.ResponseWriter, r *http.Request) {}
+func (m *fakeMetricManager) Write(_ http.ResponseWriter, _ *http.Request) {}
 
 func makeServerCert() tls.Certificate {
 	certPem, keyPem, err := tglib.Issue(pkix.Name{}, tglib.OptIssueTypeServerAuth())
@@ -93,11 +93,11 @@ func makeServerCert() tls.Certificate {
 
 type simpleLimiter struct{}
 
-func (l *simpleLimiter) ExtractRates(r *http.Request) (rate.Limit, int, error) {
+func (l *simpleLimiter) ExtractRates(_ *http.Request) (rate.Limit, int, error) {
 	return rate.Limit(100), 1000, nil
 }
 
-func (l *simpleLimiter) ExtractSource(req *http.Request) (token string, err error) {
+func (l *simpleLimiter) ExtractSource(_ *http.Request) (token string, err error) {
 	return "default", nil
 }
 

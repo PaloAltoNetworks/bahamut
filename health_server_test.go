@@ -31,20 +31,20 @@ func freePort() (port int) {
 	if err = ln.Close(); err != nil {
 		panic(err)
 	}
-	return
+	return port
 }
 
 // A MetricsManager handles Prometheus Metrics Management
 type testMetricsManager struct{}
 
-func (m *testMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+func (m *testMetricsManager) MeasureRequest(_ string, _ string) FinishMeasurementFunc {
 	return nil
 }
 func (m *testMetricsManager) RegisterWSConnection()    {}
 func (m *testMetricsManager) UnregisterWSConnection()  {}
 func (m *testMetricsManager) RegisterTCPConnection()   {}
 func (m *testMetricsManager) UnregisterTCPConnection() {}
-func (m *testMetricsManager) Write(w http.ResponseWriter, r *http.Request) {
+func (m *testMetricsManager) Write(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 }
 
