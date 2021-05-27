@@ -41,15 +41,21 @@ func (m movingAverage) average() (float64, error) {
 	return sum / float64(m.sampleSize), nil
 }
 
-// insertValue will insert a new value to the ring and return a copy
+// append will insert a new value to the ring and return a copy
 // of itself
-func (m movingAverage) insertValue(value float64) movingAverage {
+func (m movingAverage) append(value float64) movingAverage {
 
-	m.ring[m.nextIdx] = value
-	m.nextIdx = (m.nextIdx + 1) % m.sampleSize
-	if m.nextIdx == 0 {
-		m.samplingComplete = true
+	nm := newMovingAverage(m.sampleSize)
+
+	for i := range m.ring {
+		nm.ring[i] = m.ring[i]
 	}
 
-	return m
+	nm.nextIdx = (m.nextIdx + 1) % nm.sampleSize
+	nm.ring[nm.nextIdx] = value
+	if nm.nextIdx == 0 {
+		nm.samplingComplete = true
+	}
+
+	return nm
 }

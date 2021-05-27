@@ -3,6 +3,7 @@ package push
 import (
 	"net/http"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -158,7 +159,7 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("When I add two entries the average is not yet available", func() {
+		Convey("When I add two entries the average is available", func() {
 			u.CollectLatency("bar", 1*time.Microsecond)
 			u.CollectLatency("bar", 1*time.Microsecond)
 
@@ -171,6 +172,33 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 
 			So(v, ShouldEqual, 1)
 			So(err, ShouldBeNil)
+		})
+
+		Convey("When I add entries concurently there is no race", func() {
+
+			u := NewUpstreamer(nil, "topic", "topic2")
+			u.config.latencySampleSize = 100
+
+			var wg sync.WaitGroup
+
+			inc := func() {
+				defer wg.Done()
+				u.CollectLatency("bar", 1*time.Microsecond)
+			}
+
+			for i := 0; i < 100; i++ {
+				wg.Add(1)
+				go inc()
+			}
+
+			wg.Wait()
+
+			if ma, ok := u.latencies.Load("bar"); ok {
+				// As there is no garrantee of the result as the operation can overlap
+				// we are not checking the result here. This is just to track races
+				_, _ = ma.(movingAverage).average()
+			}
+
 		})
 
 		Convey("When I delete an entry a values the average is not available", func() {

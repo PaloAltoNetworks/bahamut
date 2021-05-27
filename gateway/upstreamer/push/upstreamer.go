@@ -540,7 +540,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) {
 
 	if values, ok := c.latencies.Load(address); ok {
-		c.latencies.Store(address, values.(movingAverage).insertValue(float64(responseTime.Microseconds())))
+		c.latencies.Store(address, values.(movingAverage).append(float64(responseTime.Microseconds())))
 	} else {
 		c.latencies.Store(address, newMovingAverage(c.config.latencySampleSize))
 		c.CollectLatency(address, responseTime)
