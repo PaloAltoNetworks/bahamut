@@ -25,7 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	natsserver "github.com/nats-io/nats-server/v2/test"
-	"github.com/nats-io/nats.go"
+	nats "github.com/nats-io/nats.go"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/bahamut/mocks"
 	"go.aporeto.io/elemental"
