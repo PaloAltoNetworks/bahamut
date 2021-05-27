@@ -48,4 +48,4 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
           # a comma-separated list
-          coverage-reports: "coverage.xml"
+          coverage-reports: "./coverage.xml"

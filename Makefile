@@ -30,7 +30,7 @@ test:
 	go test ./... -race -cover -covermode=atomic -coverprofile=unit_coverage.cov
 
 	@ echo "Converting the coverage file..."
-	gocov convert ./coverage/unit_coverage.cov | gocov-xml > ./coverage/coverage.xml
+	gocov convert ./unit_coverage.cov | gocov-xml > ./coverage.xml
 
 sec:
 	gosec -quiet ./...
