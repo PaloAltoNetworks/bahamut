@@ -23,7 +23,7 @@ type MockPinger struct {
 	PingStatus error
 }
 
-func (m MockPinger) Ping(_ time.Duration) error {
+func (m MockPinger) Ping(timeout time.Duration) error {
 	return m.PingStatus
 }
 

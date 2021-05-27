@@ -289,7 +289,7 @@ func (n *pushServer) start(ctx context.Context) {
 			subTopic = fmt.Sprintf("%s.>", subTopic)
 		}
 
-		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, subTopic)() //revive:disable:defer
+		defer n.cfg.pushServer.service.Subscribe(n.publications, errors, subTopic)()
 	}
 
 	zap.L().Debug("Websocket server started",

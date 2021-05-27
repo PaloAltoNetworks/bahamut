@@ -31,7 +31,7 @@ func TestLimitListener(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer l.Close() //revive:disable-line:unhandled-error
+	defer l.Close() // nolint
 	l = newListener(l, max)
 
 	var open int32
@@ -42,7 +42,7 @@ func TestLimitListener(t *testing.T) {
 		}
 		defer atomic.AddInt32(&open, -1)
 		time.Sleep(10 * time.Millisecond)
-		fmt.Fprint(w, "some body") //revive:disable-line:unhandled-error
+		fmt.Fprint(w, "some body")
 	}))
 
 	var wg sync.WaitGroup
@@ -60,8 +60,8 @@ func TestLimitListener(t *testing.T) {
 				}
 				return
 			}
-			defer r.Body.Close()            //revive:disable-line:unhandled-error
-			io.Copy(ioutil.Discard, r.Body) //revive:disable-line:unhandled-error
+			defer r.Body.Close()            // nolint
+			io.Copy(ioutil.Discard, r.Body) // nolint
 		}()
 	}
 	wg.Wait()
@@ -110,7 +110,7 @@ func TestLimitListenerClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close() //revive:disable-line:unhandled-error
+	defer ln.Close() // nolint
 	ln = newListener(ln, 1)
 
 	doneCh := make(chan struct{})
@@ -120,7 +120,7 @@ func TestLimitListenerClose(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		defer c.Close() //revive:disable-line:unhandled-error
+		defer c.Close() // nolint
 		<-doneCh
 	}()
 
@@ -128,13 +128,13 @@ func TestLimitListenerClose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Close() //revive:disable-line:unhandled-error
+	defer c.Close() // nolint
 
 	acceptDone := make(chan struct{})
 	go func() {
 		c, err := ln.Accept()
 		if err == nil {
-			c.Close() //revive:disable-line:unhandled-error
+			c.Close() // nolint
 			t.Errorf("Unexpected successful Accept()")
 		}
 		close(acceptDone)
@@ -142,7 +142,7 @@ func TestLimitListenerClose(t *testing.T) {
 
 	// Wait a tiny bit to ensure the Accept() is blocking.
 	time.Sleep(10 * time.Millisecond)
-	ln.Close() //revive:disable-line:unhandled-error
+	ln.Close() // nolint
 
 	select {
 	case <-acceptDone:

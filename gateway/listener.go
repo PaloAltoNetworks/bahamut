@@ -28,7 +28,7 @@ func (l *limitListener) Accept() (net.Conn, error) {
 	}
 
 	if !l.limiter.Allow() {
-		c.Close() //revive:disable-line:unhandled-error
+		c.Close() // nolint
 	}
 
 	return c, nil

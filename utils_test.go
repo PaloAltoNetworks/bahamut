@@ -61,7 +61,7 @@ func TestUtils_RecoverFromPanic(t *testing.T) {
 
 		f := func() {
 			defer func() {
-				handleRecoveredPanic(ctx, recover(), true) //revive:disable-line:unhandled-error
+				handleRecoveredPanic(ctx, recover(), true) // nolint
 			}()
 			func() { panic("this is a panic!") }()
 		}

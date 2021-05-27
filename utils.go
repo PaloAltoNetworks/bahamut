@@ -35,7 +35,7 @@ func handleRecoveredPanic(ctx context.Context, r interface{}, disablePanicRecove
 	st := string(debug.Stack())
 
 	// Print the panic as it would have happened
-	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) //revive:disable-line:unhandled-error
+	fmt.Fprintf(os.Stderr, "panic: %s\n\n%s", err, st) // nolint: errcheck
 
 	sp := opentracing.SpanFromContext(ctx)
 	if sp != nil {
@@ -102,12 +102,13 @@ func splitPtr(tag string, key *string, value *string) (err error) {
 
 	l := len(tag)
 	if l < 3 {
-		return fmt.Errorf("invalid tag: invalid length '%s'", tag)
-
+		err = fmt.Errorf("invalid tag: invalid length '%s'", tag)
+		return
 	}
 
 	if tag[0] == '=' {
-		return fmt.Errorf("invalid tag: missing key '%s'", tag)
+		err = fmt.Errorf("invalid tag: missing key '%s'", tag)
+		return
 	}
 
 	for i := 0; i < l; i++ {
@@ -117,7 +118,7 @@ func splitPtr(tag string, key *string, value *string) (err error) {
 			}
 			*key = tag[:i]
 			*value = tag[i+1:]
-			return err
+			return
 		}
 	}
 

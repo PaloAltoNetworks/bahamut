@@ -121,7 +121,7 @@ func (p *natsPubSub) Publish(publication *Publication, opts ...PubSubOptPublish)
 	}
 }
 
-func (p *natsPubSub) Subscribe(pubs chan *Publication, errch chan error, topic string, opts ...PubSubOptSubscribe) func() {
+func (p *natsPubSub) Subscribe(pubs chan *Publication, errors chan error, topic string, opts ...PubSubOptSubscribe) func() {
 
 	config := defaultSubscribeConfig()
 	for _, opt := range opts {
@@ -139,7 +139,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errch chan error, topic s
 			r.ResponseMode = ResponseModeNone
 			r.Topic = replyAddr
 			if err := p.Publish(r); err != nil {
-				errch <- err
+				errors <- err
 			}
 		// TODO: the publisher should be able to provide a response deadline for the publication to the
 		// subscriber so that the subscriber knows when to give up in the event that processing has taken
@@ -147,7 +147,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errch chan error, topic s
 		// about the reply because you took too long to respond).
 		case <-time.After(config.replyTimeout):
 			pub.setExpired()
-			errch <- fmt.Errorf("timed out waiting for response to send to subscriber on NATS subject: %s", replyAddr)
+			errors <- fmt.Errorf("timed out waiting for response to send to subscriber on NATS subject: %s", replyAddr)
 		}
 	}
 
@@ -166,7 +166,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errch chan error, topic s
 			// to respond to the publisher with an ACK.
 			case ResponseModeACK:
 				if err := p.client.Publish(m.Reply, ackMessage); err != nil {
-					errch <- err
+					errors <- err
 					return
 				}
 			// `ResponseModePublication` mode is used in cases when the subscriber needs to do processing on the
@@ -190,7 +190,7 @@ func (p *natsPubSub) Subscribe(pubs chan *Publication, errch chan error, topic s
 	}
 
 	if err != nil {
-		errch <- err
+		errors <- err
 		return func() {}
 	}
 
