@@ -39,5 +39,7 @@ jobs:
           make
 
       - name: coverage
-        run: |
-          echo "TODO: Codacy here"
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: "./unit_coverage.cov"
