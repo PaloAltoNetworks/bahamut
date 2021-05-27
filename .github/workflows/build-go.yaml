@@ -33,6 +33,9 @@ jobs:
           go version
           go get github.com/golangci/golangci-lint/cmd/golangci-lint@latest
           go get github.com/securego/gosec/cmd/gosec
+          #go get golang.org/x/tools/cmd/cover
+          go get github.com/axw/gocov/gocov
+          go get github.com/AlekSi/gocov-xml
 
       - name: build
         run: |
@@ -45,4 +48,4 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
           # a comma-separated list
-          coverage-reports: "unit_coverage.cov"
+          coverage-reports: "coverage.xml"
