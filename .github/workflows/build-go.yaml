@@ -1,0 +1,44 @@
+name: build-go
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GO111MODULE: on
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - 1.13
+          - 1.14
+          - 1.15
+          - 1.16
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: setup
+        run: |
+          go version
+          go get github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go get github.com/securego/gosec/cmd/gosec
+
+      - name: build
+        run: |
+          make
+
+      - name: coverage
+        run: |
+          echo "TODO: Codacy here"
