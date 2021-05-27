@@ -46,13 +46,13 @@ func (m movingAverage) average() (float64, error) {
 func (m movingAverage) append(value float64) movingAverage {
 
 	nm := newMovingAverage(m.sampleSize)
-
+	nm.samplingComplete = m.samplingComplete
 	for i := range m.ring {
 		nm.ring[i] = m.ring[i]
 	}
 
+	nm.ring[m.nextIdx] = value
 	nm.nextIdx = (m.nextIdx + 1) % nm.sampleSize
-	nm.ring[nm.nextIdx] = value
 	if nm.nextIdx == 0 {
 		nm.samplingComplete = true
 	}
