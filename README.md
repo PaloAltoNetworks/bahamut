@@ -1,6 +1,6 @@
 # Bahamut
 
-[![codecov](https://codecov.io/gh/aporeto-inc/bahamut/branch/master/graph/badge.svg?token=gMtfEkiWUa)](https://codecov.io/gh/aporeto-inc/bahamut)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f8d3dbbc552b4c8abf8985425d25c338)](https://www.codacy.com/gh/PaloAltoNetworks/bahamut/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PaloAltoNetworks/bahamut&amp;utm_campaign=Badge_Grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/f8d3dbbc552b4c8abf8985425d25c338)](https://www.codacy.com/gh/PaloAltoNetworks/bahamut/dashboard?utm_source=github.com&utm_medium=referral&utm_content=PaloAltoNetworks/bahamut&utm_campaign=Badge_Coverage)
 
 > README IS A WORK IN PROGRESS AS WE ARE WRITTING MORE DOCUMENTATION ABOUT THIS PACKAGE.
 
