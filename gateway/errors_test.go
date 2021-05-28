@@ -11,10 +11,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/aporeto-inc/oxy/connlimit"
+	"github.com/aporeto-inc/oxy/ratelimit"
 	"github.com/mailgun/multibuf"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/vulcand/oxy/connlimit"
-	"github.com/vulcand/oxy/ratelimit"
 	"go.aporeto.io/elemental"
 )
 

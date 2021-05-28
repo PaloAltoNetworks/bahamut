@@ -3,6 +3,7 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
+	github.com/aporeto-inc/oxy v1.11.1
 	go.aporeto.io/elemental v1.100.1-0.20210428215439-6059ff91f9f7
 	go.aporeto.io/tg v1.34.1-0.20210427202027-51db463efa40
 	go.aporeto.io/wsc v1.36.1-0.20210422182307-cde7d2b8a7eb
@@ -23,6 +24,7 @@ require (
 	github.com/karlseguin/ccache/v2 v2.0.6
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
+	github.com/mailgun/timetools v0.0.0-20170619190023-f3a7b8ffff47 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.7
 	github.com/nats-io/nats.go v1.10.0
@@ -35,7 +37,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
-	github.com/vulcand/oxy v1.1.0
+	github.com/vulcand/oxy v1.3.0 // indirect
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
@@ -44,5 +46,6 @@ require (
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	honnef.co/go/tools v0.1.4 // indirect
 )

@@ -8,8 +8,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/aporeto-inc/oxy/connlimit"
 	"github.com/mailgun/multibuf"
-	"github.com/vulcand/oxy/connlimit"
 	"go.aporeto.io/elemental"
 )
 
