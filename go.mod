@@ -48,4 +48,4 @@ require (
 )
 
 // Oxy
-replace github.com/vulcand/oxy => github.com/aporeto-inc/oxy v1.10.1-0.20210528215002-c1399da9883f
+replace github.com/vulcand/oxy => github.com/aporeto-inc/oxy v1.10.1-0.20210528185327-d3e4a53bf854

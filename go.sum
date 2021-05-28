@@ -26,6 +26,8 @@ github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
+github.com/aporeto-inc/oxy v1.10.1-0.20210528185327-d3e4a53bf854 h1:J4G2O0yTlOSxGjU8MOXwNl3MOfwPjGjzd0blE24D7AQ=
+github.com/aporeto-inc/oxy v1.10.1-0.20210528185327-d3e4a53bf854/go.mod h1:hN/gw/jg+GH4A+bqvznsW26Izd4jNGV6h1z3s7drRzs=
 github.com/aporeto-inc/oxy v1.10.1-0.20210528215002-c1399da9883f h1:8DUWeH3Q/7YAGeFkdnLxrvFMVYcQuSllzsSOLRr3kbA=
 github.com/aporeto-inc/oxy v1.10.1-0.20210528215002-c1399da9883f/go.mod h1:hN/gw/jg+GH4A+bqvznsW26Izd4jNGV6h1z3s7drRzs=
 github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1 h1:TEBmxO80TM04L8IuMWk77SGL1HomBmKTdzdJLLWznxI=
