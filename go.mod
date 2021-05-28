@@ -46,3 +46,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	honnef.co/go/tools v0.1.4 // indirect
 )
+
+// Oxy
+replace github.com/vulcand/oxy => github.com/aporeto-inc/oxy v1.10.1-0.20210528215002-c1399da9883f
