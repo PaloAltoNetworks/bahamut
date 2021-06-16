@@ -3,12 +3,15 @@ package gateway
 import (
 	"encoding/pem"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 
 	"go.aporeto.io/tg/tglib"
 	"go.uber.org/zap"
 )
+
+const internalWSMarkingHeader = "__internal_ws__"
 
 type requestRewriter struct {
 	customRewriter     RequestRewriter
@@ -43,6 +46,16 @@ func (s *requestRewriter) Rewrite(r *http.Request) {
 	if !s.trustForwardHeader {
 		r.Header.Del("X-Forwarded-For")
 		r.Header.Del("X-Real-IP")
+	}
+
+	// If the request has been marked as a ws proxy, we set
+	// the X-Forwarded header ourselves, since oxy does not
+	// do it (for some reasons).
+	if r.Header.Get(internalWSMarkingHeader) != "" {
+		r.Header.Del(internalWSMarkingHeader)
+		if clientIP, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+			r.Header.Set("X-Forwarded-For", clientIP)
+		}
 	}
 
 	if r.TLS != nil && len(r.TLS.PeerCertificates) == 1 {

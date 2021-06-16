@@ -174,13 +174,13 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
 	// fill our weight from the Feedbackloop
 	if ma, ok := c.latencies.Load(addresses[0]); ok {
-		if v, err := ma.(*movingAverage).average(); err == nil {
+		if v, err := ma.(movingAverage).average(); err == nil {
 			w[0] = v
 		}
 	}
 
 	if ma, ok := c.latencies.Load(addresses[1]); ok {
-		if v, err := ma.(*movingAverage).average(); err == nil {
+		if v, err := ma.(movingAverage).average(); err == nil {
 			w[1] = v
 		}
 	}
@@ -540,7 +540,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 func (c *Upstreamer) CollectLatency(address string, responseTime time.Duration) {
 
 	if values, ok := c.latencies.Load(address); ok {
-		values.(*movingAverage).insertValue(float64(responseTime.Microseconds()))
+		c.latencies.Store(address, values.(movingAverage).append(float64(responseTime.Microseconds())))
 	} else {
 		c.latencies.Store(address, newMovingAverage(c.config.latencySampleSize))
 		c.CollectLatency(address, responseTime)

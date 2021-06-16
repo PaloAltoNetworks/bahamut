@@ -484,6 +484,10 @@ HANDLE_INTERCEPTION:
 	r.URL.Host = upstream
 	r.URL.Scheme = s.gatewayConfig.upstreamURLScheme
 
+	// Always strip the internal ws header marker
+	// to make sure it cannot be sent by the clients.
+	r.Header.Del(internalWSMarkingHeader)
+
 	switch interceptAction {
 
 	case InterceptorActionForwardWS:
@@ -491,6 +495,11 @@ HANDLE_INTERCEPTION:
 		if mm := s.gatewayConfig.metricsManager; mm != nil {
 			mm.RegisterWSConnection()
 		}
+
+		// We mark the request as a websocket so the
+		// rewriter can handle settinfg X-Forwarded-For header
+		// See rewriter for more info.
+		r.Header.Set(internalWSMarkingHeader, "1")
 
 		s.forwarder.ServeHTTP(w, r)
 

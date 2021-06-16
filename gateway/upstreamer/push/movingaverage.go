@@ -12,13 +12,13 @@ type movingAverage struct {
 }
 
 // newMovingAverage return a new movingAverage
-func newMovingAverage(sampleSize int) *movingAverage {
+func newMovingAverage(sampleSize int) movingAverage {
 
 	if sampleSize <= 0 {
 		panic("sampleSize must be greather than 0.")
 	}
 
-	return &movingAverage{
+	return movingAverage{
 		sampleSize: sampleSize,
 		ring:       make([]float64, sampleSize),
 	}
@@ -26,7 +26,7 @@ func newMovingAverage(sampleSize int) *movingAverage {
 
 // average return the average of the sampleSize
 // If sampleSize are not compplete it returns 0
-func (m *movingAverage) average() (float64, error) {
+func (m movingAverage) average() (float64, error) {
 
 	sum := .0
 
@@ -41,12 +41,21 @@ func (m *movingAverage) average() (float64, error) {
 	return sum / float64(m.sampleSize), nil
 }
 
-// insertValue will insert a new value to the ring.
-func (m *movingAverage) insertValue(value float64) {
+// append will insert a new value to the ring and return a copy
+// of itself
+func (m movingAverage) append(value float64) movingAverage {
 
-	m.ring[m.nextIdx] = value
-	m.nextIdx = (m.nextIdx + 1) % m.sampleSize
-	if m.nextIdx == 0 {
-		m.samplingComplete = true
+	nm := newMovingAverage(m.sampleSize)
+	nm.samplingComplete = m.samplingComplete
+	for i := range m.ring {
+		nm.ring[i] = m.ring[i]
 	}
+
+	nm.ring[m.nextIdx] = value
+	nm.nextIdx = (m.nextIdx + 1) % nm.sampleSize
+	if nm.nextIdx == 0 {
+		nm.samplingComplete = true
+	}
+
+	return nm
 }
