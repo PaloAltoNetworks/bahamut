@@ -331,11 +331,11 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 	Convey("Given I have a processor that handle ProcessCreate function", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
-		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+		request.Data = []byte(`{"ID": "1234", "name": "Fake", "secret": "can't see me"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				output: &testmodel.List{ID: "a"},
+				output: &testmodel.List{ID: "a", Secret: "can't see me"},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventUpdate, &testmodel.List{})},
 			}, nil
 		}
@@ -355,7 +355,11 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			So(ctx.outputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventUpdate)
+			So(pusher.events[0].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[0].JSONData, ShouldNotContain, []byte("can't see me"))
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventCreate)
+			So(pusher.events[1].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[1].JSONData, ShouldNotContain, []byte("can't see me"))
 		})
 	})
 
@@ -700,11 +704,11 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 	Convey("Given I have a processor that handle ProcessUpdate function", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
-		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+		request.Data = []byte(`{"ID": "1234", "name": "Fake", "secret": "can't see me"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				output: &testmodel.List{ID: "a"},
+				output: &testmodel.List{ID: "a", Secret: "can't see me"},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
 			}, nil
 		}
@@ -724,7 +728,11 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			So(ctx.outputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[0].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[0].JSONData, ShouldNotContain, []byte("can't see me"))
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
+			So(pusher.events[1].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[1].JSONData, ShouldNotContain, []byte("can't see me"))
 		})
 	})
 
@@ -1064,11 +1072,11 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 
 	Convey("Given I have a processor that handle ProcessDelete function", t, func() {
 		request := elemental.NewRequest()
-		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+		request.Data = []byte(`{"ID": "1234", "name": "Fake", "secret": "can't see me"}`)
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				output: &testmodel.List{ID: "a"},
+				output: &testmodel.List{ID: "a", Secret: "can't see me"},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventCreate, &testmodel.List{})},
 			}, nil
 		}
@@ -1087,7 +1095,11 @@ func TestDispatchers_dispatchDeleteOperation(t *testing.T) {
 			So(ctx.outputData, ShouldResemble, &testmodel.List{ID: "a"})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventCreate)
+			So(pusher.events[0].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[0].JSONData, ShouldNotContain, []byte("can't see me"))
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[1].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[1].JSONData, ShouldNotContain, []byte("can't see me"))
 		})
 	})
 
@@ -1318,14 +1330,15 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 	Convey("Given I have a processor that handle ProcessPatch function", t, func() {
 		request := elemental.NewRequest()
 		request.Identity = testmodel.ListIdentity
-		request.Data = []byte(`{"ID": "1234", "name": "Fake"}`)
+		request.Data = []byte(`{"ID": "1234", "name": "Fake", "secret": "can't see me"}`)
 
 		expectedID := "a"
 		expectedName := "Fake"
+		expectedSecret := "can't see me"
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName},
+				output: &testmodel.SparseList{ID: &expectedID, Name: &expectedName, Secret: &expectedSecret},
 				events: []*elemental.Event{elemental.NewEvent(elemental.EventDelete, &testmodel.List{})},
 			}, nil
 		}
@@ -1344,7 +1357,11 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			So(ctx.outputData, ShouldResemble, &testmodel.SparseList{ID: &expectedID, Name: &expectedName})
 			So(len(pusher.events), ShouldEqual, 2)
 			So(pusher.events[0].Type, ShouldEqual, elemental.EventDelete)
+			So(pusher.events[0].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[0].JSONData, ShouldNotContain, []byte("can't see me"))
 			So(pusher.events[1].Type, ShouldEqual, elemental.EventUpdate)
+			So(pusher.events[1].RawData, ShouldNotContain, []byte("can't see me"))
+			So(pusher.events[1].JSONData, ShouldNotContain, []byte("can't see me"))
 		})
 	})
 
