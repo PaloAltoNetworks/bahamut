@@ -192,6 +192,7 @@ func dispatchCreateOperation(
 	}
 
 	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
+		elemental.ResetSecretAttributesValues(o)
 		pusher(elemental.NewEvent(elemental.EventCreate, o))
 	}
 
@@ -273,6 +274,7 @@ func dispatchUpdateOperation(
 	}
 
 	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
+		elemental.ResetSecretAttributesValues(o)
 		pusher(elemental.NewEvent(elemental.EventUpdate, o))
 	}
 
@@ -326,6 +328,7 @@ func dispatchDeleteOperation(
 	}
 
 	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
+		elemental.ResetSecretAttributesValues(o)
 		pusher(elemental.NewEvent(elemental.EventDelete, o))
 	}
 
@@ -442,6 +445,7 @@ func dispatchPatchOperation(
 	}
 
 	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
+		elemental.ResetSecretAttributesValues(o)
 		pusher(elemental.NewEvent(elemental.EventUpdate, o))
 	}
 
