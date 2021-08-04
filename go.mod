@@ -3,9 +3,9 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20210706184354-966eab3720af
-	go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155
-	go.aporeto.io/wsc v1.36.1-0.20210528201141-2af38def4959
+	go.aporeto.io/elemental v1.100.1-0.20210804221503-7466b2fc5bf3
+	go.aporeto.io/tg v1.34.1-0.20210521191510-d369249d5f0c
+	go.aporeto.io/wsc v1.36.1-0.20210804215042-ce6e973dbe20
 )
 
 require (
@@ -38,6 +38,7 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect
+	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
