@@ -16,7 +16,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v3.3.0+incompatible
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/jonboulle/clockwork v0.2.0 // indirect
