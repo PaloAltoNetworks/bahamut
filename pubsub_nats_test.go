@@ -27,7 +27,6 @@ import (
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	nats "github.com/nats-io/nats.go"
 	. "github.com/smartystreets/goconvey/convey"
-	"go.aporeto.io/bahamut/mocks"
 	"go.aporeto.io/elemental"
 )
 
@@ -83,7 +82,7 @@ func TestPublish(t *testing.T) {
 
 	tests := []struct {
 		description             string
-		setup                   func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication)
+		setup                   func(t *testing.T, mockClient *MockNATSClient, pub *Publication)
 		expectedErrType         error
 		publication             *Publication
 		natsOptions             []NATSOption
@@ -92,7 +91,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should successfully publish publication",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 
 				mockClient.
 					EXPECT().
@@ -111,7 +110,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should send received publication response to the configured response channel via the NATSOptRespondToChannel option",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 
 				mockClient.
 					EXPECT().
@@ -165,7 +164,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if the response could not be decoded into a Publication when using the NATSOptRespondToChannel option",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 
 				mockClient.
 					EXPECT().
@@ -211,7 +210,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if no NATS client had been connected",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(pub.Topic, gomock.Any()).
@@ -228,7 +227,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if passed in a nil publication",
 			publication: nil,
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
@@ -241,7 +240,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if Publish returns an error",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(pub.Topic, gomock.Any()).
@@ -254,7 +253,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if RequestWithContext returns an error",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
@@ -291,7 +290,7 @@ func TestPublish(t *testing.T) {
 		{
 			description: "should return an error if response is not a valid ACK response when using the NATSOptPublishRequireAck option",
 			publication: NewPublication("test topic"),
-			setup: func(t *testing.T, mockClient *mocks.MockNATSClient, pub *Publication) {
+			setup: func(t *testing.T, mockClient *MockNATSClient, pub *Publication) {
 				mockClient.
 					EXPECT().
 					Publish(gomock.Any(), gomock.Any()).
@@ -335,7 +334,7 @@ func TestPublish(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockNATSClient := mocks.NewMockNATSClient(ctrl)
+			mockNATSClient := NewMockNATSClient(ctrl)
 			test.setup(t, mockNATSClient, test.publication)
 
 			// note: we prepend the NATSOption client option to use our mock client just in case the
@@ -432,7 +431,7 @@ func TestSubscribe(t *testing.T) {
 				}
 
 				ctrl := gomock.NewController(t)
-				mockClient := mocks.NewMockNATSClient(ctrl)
+				mockClient := NewMockNATSClient(ctrl)
 				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
 				// a failure when the message handler attempts to respond back to the request with an ACK.
 				pc.client = mockClient
@@ -557,7 +556,7 @@ func TestSubscribe(t *testing.T) {
 				}
 
 				ctrl := gomock.NewController(t)
-				mockClient := mocks.NewMockNATSClient(ctrl)
+				mockClient := NewMockNATSClient(ctrl)
 				// hack for fault injection: we override the NATS client we are using to a mock client so we can cause
 				// a failure when the message handler attempts to respond back to the request with a publication.
 				pc.client = mockClient
@@ -679,7 +678,7 @@ func TestSubscribe(t *testing.T) {
 					ctrl.Finish()
 				}
 
-				mockClient := mocks.NewMockNATSClient(ctrl)
+				mockClient := NewMockNATSClient(ctrl)
 				mockClient.
 					EXPECT().
 					Subscribe(subscribeTopic, gomock.Any()).
