@@ -12,3 +12,4 @@ artifacts
 remod.dev
 .remod
 dist
+.vsession

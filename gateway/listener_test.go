@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -51,6 +52,27 @@ func (l *fakeListener) Close() error {
 	return nil
 }
 
+type fakeListenerLimiterMetricManager struct {
+	accepted int
+	rejected int
+	total    int
+	sync.Mutex
+}
+
+func (m *fakeListenerLimiterMetricManager) RegisterAcceptedConnection() {
+	m.Lock()
+	m.total = m.total + 1
+	m.accepted = m.accepted + 1
+	m.Unlock()
+}
+
+func (m *fakeListenerLimiterMetricManager) RegisterLimitedConnection() {
+	m.Lock()
+	m.total = m.total + 1
+	m.rejected = m.rejected + 1
+	m.Unlock()
+}
+
 func TestLimitLimiter(t *testing.T) {
 
 	Convey("Given I call newLimitedListener", t, func() {
@@ -59,7 +81,9 @@ func TestLimitLimiter(t *testing.T) {
 			conn: func() net.Conn { return &fakeConn{} },
 		}
 
-		ll := newLimitedListener(l, 2.0, 1)
+		mm := &fakeListenerLimiterMetricManager{}
+
+		ll := newLimitedListener(l, 2.0, 1, mm)
 
 		Convey("When I call Accept and it works", func() {
 
@@ -71,6 +95,9 @@ func TestLimitLimiter(t *testing.T) {
 
 			Convey("Then c should be correct", func() {
 				So(c, ShouldNotBeNil)
+				So(mm.total, ShouldBeGreaterThanOrEqualTo, 1)
+				So(mm.accepted, ShouldBeGreaterThanOrEqualTo, 1)
+				So(mm.rejected, ShouldEqual, 0)
 			})
 		})
 
@@ -110,6 +137,9 @@ func TestLimitLimiter(t *testing.T) {
 
 			Convey("Then err should be nil", func() {
 				So(conn.(*fakeConn).closed, ShouldBeTrue)
+				So(mm.total, ShouldBeGreaterThanOrEqualTo, 1)
+				So(mm.accepted, ShouldBeGreaterThanOrEqualTo, 1)
+				So(mm.rejected, ShouldBeGreaterThanOrEqualTo, 1)
 			})
 		})
 	})

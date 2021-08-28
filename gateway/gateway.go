@@ -29,7 +29,8 @@ type gateway struct {
 	upstreamer        Upstreamer
 	upstreamerLatency LatencyBasedUpstreamer
 	forwarder         *forward.Forwarder
-	proxyHandler      http.Handler
+	proxyHTTPHandler  http.Handler
+	proxyWSHandler    http.Handler
 	listener          net.Listener
 	goodbyeServer     *http.Server
 	gatewayConfig     *gwconfig
@@ -55,7 +56,12 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 	}
 
 	if cfg.tcpGlobalRateLimitingEnabled {
-		rootListener = newLimitedListener(rootListener, cfg.tcpGlobalRateLimitingCPS, cfg.tcpGlobalRateLimitingBurst)
+		rootListener = newLimitedListener(
+			rootListener,
+			cfg.tcpGlobalRateLimitingCPS,
+			cfg.tcpGlobalRateLimitingBurst,
+			cfg.tcpGlobalRateLimitingMetricManager,
+		)
 	}
 
 	if cfg.proxyProtocolEnabled {
@@ -133,8 +139,6 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		},
 	}
 
-	var topProxyHandler http.Handler
-
 	corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
 		return injectCORSHeader(
 			w.Header(),
@@ -145,6 +149,11 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			r.Method,
 		)
 	}
+
+	var (
+		topProxyHTTPHandler http.Handler
+		topProxyWSHandler   http.Handler
+	)
 
 	if s.forwarder, err = forward.New(
 		forward.BufferPool(newPool(1024*1024)),
@@ -204,8 +213,11 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		return nil, fmt.Errorf("unable to initialize forwarder: %s", err)
 	}
 
-	if topProxyHandler, err = buffer.New(
-		s.forwarder,
+	topProxyHTTPHandler = s.forwarder
+	topProxyWSHandler = s.forwarder
+
+	if topProxyHTTPHandler, err = buffer.New(
+		topProxyHTTPHandler,
 		buffer.MaxRequestBodyBytes(1024*1024),
 		buffer.MemRequestBodyBytes(1024*1024*1024),
 		buffer.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
@@ -215,8 +227,8 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 
 	if cfg.tcpClientMaxConnectionsEnabled {
 
-		if topProxyHandler, err = connlimit.New(
-			topProxyHandler,
+		if topProxyHTTPHandler, err = connlimit.New(
+			topProxyHTTPHandler,
 			utils.ExtractorFunc(func(req *http.Request) (token string, amount int64, err error) {
 				token, err = cfg.tcpClientSourceExtractor.ExtractSource(req)
 				return token, 1, err
@@ -229,19 +241,23 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 	}
 
 	if cfg.sourceRateLimitingEnabled {
-		topProxyHandler = newSourceLimiter(
-			topProxyHandler,
+		srcLimiter := newSourceLimiter(
+			topProxyHTTPHandler,
+			topProxyWSHandler,
 			cfg.sourceRateLimitingRPS,
 			cfg.sourceRateLimitingBurst,
 			cfg.sourceExtractor,
 			cfg.sourceRateExtractor,
 			&errorHandler{corsOriginInjector: corsOriginInjectorFunc},
+			cfg.sourceRateLimitingMetricManager,
 		)
+		topProxyHTTPHandler = srcLimiter
+		topProxyWSHandler = srcLimiter
 	}
 
 	if cfg.upstreamCircuitBreakerCond != "" {
-		if topProxyHandler, err = cbreaker.New(
-			topProxyHandler,
+		if topProxyHTTPHandler, err = cbreaker.New(
+			topProxyHTTPHandler,
 			cfg.upstreamCircuitBreakerCond,
 			cbreaker.Fallback(&circuitBreakerHandler{}),
 		); err != nil {
@@ -249,7 +265,8 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		}
 	}
 
-	s.proxyHandler = topProxyHandler
+	s.proxyHTTPHandler = topProxyHTTPHandler
+	s.proxyWSHandler = topProxyWSHandler
 
 	return s, nil
 }
@@ -501,7 +518,7 @@ HANDLE_INTERCEPTION:
 		// See rewriter for more info.
 		r.Header.Set(internalWSMarkingHeader, "1")
 
-		s.forwarder.ServeHTTP(w, r)
+		s.proxyWSHandler.ServeHTTP(w, r)
 
 		if mm := s.gatewayConfig.metricsManager; mm != nil {
 			mm.UnregisterWSConnection()
@@ -532,7 +549,7 @@ HANDLE_INTERCEPTION:
 			finish = mm.MeasureRequest(r.Method, path)
 		}
 
-		s.proxyHandler.ServeHTTP(w, r)
+		s.proxyHTTPHandler.ServeHTTP(w, r)
 
 		if finish != nil {
 			rt := finish(0, nil)

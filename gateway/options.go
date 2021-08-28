@@ -83,35 +83,38 @@ type gwconfig struct {
 	proxyProtocolEnabled    bool
 	proxyProtocolSubnet     string
 
-	sourceExtractor           SourceExtractor
-	sourceRateLimitingBurst   int
-	sourceRateLimitingRPS     rate.Limit
-	sourceRateLimitingEnabled bool
-	sourceRateExtractor       RateExtractor
+	sourceExtractor                 SourceExtractor
+	sourceRateLimitingBurst         int
+	sourceRateLimitingRPS           rate.Limit
+	sourceRateLimitingEnabled       bool
+	sourceRateExtractor             RateExtractor
+	sourceRateLimitingMetricManager LimiterMetricManager
 
 	tcpClientMaxConnectionsEnabled bool
 	tcpClientMaxConnections        int
 	tcpClientSourceExtractor       SourceExtractor
 
-	tcpGlobalRateLimitingBurst   int
-	tcpGlobalRateLimitingCPS     rate.Limit
-	tcpGlobalRateLimitingEnabled bool
-	trace                        bool
-	upstreamUseHTTP2             bool
-	upstreamCircuitBreakerCond   string
-	upstreamIdleConnTimeout      time.Duration
-	upstreamMaxConnsPerHost      int
-	upstreamMaxIdleConns         int
-	upstreamMaxIdleConnsPerHost  int
-	upstreamURLScheme            string
-	upstreamTLSHandshakeTimeout  time.Duration
-	upstreamTLSConfig            *tls.Config
-	upstreamEnableCompression    bool
-	serverTLSConfig              *tls.Config
-	corsOrigin                   string
-	corsAllowCredentials         bool
-	additionalCorsOrigin         map[string]struct{}
-	trustForwardHeader           bool
+	tcpGlobalRateLimitingBurst         int
+	tcpGlobalRateLimitingCPS           rate.Limit
+	tcpGlobalRateLimitingEnabled       bool
+	tcpGlobalRateLimitingMetricManager LimiterMetricManager
+
+	trace                       bool
+	upstreamUseHTTP2            bool
+	upstreamCircuitBreakerCond  string
+	upstreamIdleConnTimeout     time.Duration
+	upstreamMaxConnsPerHost     int
+	upstreamMaxIdleConns        int
+	upstreamMaxIdleConnsPerHost int
+	upstreamURLScheme           string
+	upstreamTLSHandshakeTimeout time.Duration
+	upstreamTLSConfig           *tls.Config
+	upstreamEnableCompression   bool
+	serverTLSConfig             *tls.Config
+	corsOrigin                  string
+	corsAllowCredentials        bool
+	additionalCorsOrigin        map[string]struct{}
+	trustForwardHeader          bool
 }
 
 func newGatewayConfig() *gwconfig {
@@ -393,5 +396,21 @@ func OptionCORSAllowCredentials(allow bool) Option {
 func OptionTrustForwardHeader(trust bool) Option {
 	return func(cfg *gwconfig) {
 		cfg.trustForwardHeader = trust
+	}
+}
+
+// OptionTCPGlobalRateLimitingManager sets the LimiterMetricManager to
+// use to get metrics on the TCP global rate limiter.
+func OptionTCPGlobalRateLimitingManager(m LimiterMetricManager) Option {
+	return func(cfg *gwconfig) {
+		cfg.tcpGlobalRateLimitingMetricManager = m
+	}
+}
+
+// OptionSourceRateLimitingManager sets the LimiterMetricManager to
+// use to get metrics on the source rate limiter.
+func OptionSourceRateLimitingManager(m LimiterMetricManager) Option {
+	return func(cfg *gwconfig) {
+		cfg.sourceRateLimitingMetricManager = m
 	}
 }
