@@ -220,4 +220,18 @@ func Test_Options(t *testing.T) {
 		OptionCORSAllowCredentials(false)(c)
 		So(c.corsAllowCredentials, ShouldBeFalse)
 	})
+
+	Convey("Calling OptionTCPGlobalRateLimitingManager should work", t, func() {
+		c := newGatewayConfig()
+		m := &fakeListenerLimiterMetricManager{}
+		OptionTCPGlobalRateLimitingManager(m)(c)
+		So(c.tcpGlobalRateLimitingMetricManager, ShouldEqual, m)
+	})
+
+	Convey("Calling OptionSourceRateLimitingManager should work", t, func() {
+		c := newGatewayConfig()
+		m := &fakeListenerLimiterMetricManager{}
+		OptionSourceRateLimitingManager(m)(c)
+		So(c.sourceRateLimitingMetricManager, ShouldEqual, m)
+	})
 }

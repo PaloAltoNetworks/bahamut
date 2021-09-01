@@ -66,3 +66,10 @@ type Gateway interface {
 	Start()
 	Stop()
 }
+
+// A LimiterMetricManager is used to compute
+// metrics for the various limiters that support it.
+type LimiterMetricManager interface {
+	RegisterLimitedConnection()
+	RegisterAcceptedConnection()
+}
