@@ -224,7 +224,7 @@ func TestContext_GetClaims(t *testing.T) {
 	})
 }
 
-func TestOutputDataVSResponseWriter(t *testing.T) {
+func TestContext_OutputDataVSResponseWriter(t *testing.T) {
 
 	Convey("Given I have a bcontext", t, func() {
 
