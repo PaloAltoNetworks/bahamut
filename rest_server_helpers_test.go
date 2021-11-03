@@ -73,9 +73,10 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		Convey("When I call writeHTTPResponse", func() {
 
+			w.Code = 200
 			code := writeHTTPResponse(w, nil)
 
-			Convey("Then the code should be 0", func() {
+			Convey("Then the code should be 200", func() {
 				So(code, ShouldEqual, 0)
 			})
 		})
@@ -199,6 +200,7 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		r.StatusCode = 200
 		r.Cookies = []*http.Cookie{
 			{
 				Name:  "ca",
