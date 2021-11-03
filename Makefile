@@ -7,6 +7,7 @@ default: lint test
 
 lint:
 	# --enable=unparam
+	# --enable=typecheck this one causes a false positive on go 1.16
 	golangci-lint run \
 		--disable-all \
 		--exclude-use-default=false \
@@ -23,7 +24,6 @@ lint:
 		--enable=misspell \
 		--enable=prealloc \
 		--enable=nakedret \
-		--enable=typecheck \
 		./...
 
 test:
