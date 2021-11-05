@@ -41,6 +41,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 	}()
 
 	response.StatusCode = ctx.statusCode
+	var statusCodeWasUnset bool
 	if response.StatusCode == 0 {
 		switch ctx.request.Operation {
 		case elemental.OperationInfo:
@@ -48,6 +49,7 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 		default:
 			response.StatusCode = http.StatusOK
 		}
+		statusCodeWasUnset = true
 	}
 
 	if ctx.request.Operation == elemental.OperationRetrieveMany || ctx.request.Operation == elemental.OperationInfo {
@@ -69,7 +71,9 @@ func makeResponse(ctx *bcontext, response *elemental.Response, marshallers map[e
 	}
 
 	if ctx.outputData == nil {
-		response.StatusCode = http.StatusNoContent
+		if statusCodeWasUnset || ctx.statusCode == http.StatusOK {
+			response.StatusCode = http.StatusNoContent
+		}
 		return response
 	}
 
