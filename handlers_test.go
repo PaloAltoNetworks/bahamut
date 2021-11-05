@@ -176,7 +176,32 @@ func TestHandlers_makeResponse(t *testing.T) {
 			})
 		})
 
-		Convey("When I set the operation to Create, status code OK, but no data, and I call makeResponse", func() {
+		Convey("When I set the operation to Create, no status code and no data, and I call makeResponse", func() {
+
+			ctx.request.Operation = elemental.OperationCreate
+			ctx.outputData = nil
+
+			makeResponse(ctx, response, nil)
+
+			Convey("Then response.StatusCode should be http.StatusNoContent", func() {
+				So(response.StatusCode, ShouldEqual, http.StatusNoContent)
+			})
+		})
+
+		Convey("When I set the operation to Create, status code set and no data, and I call makeResponse", func() {
+
+			ctx.request.Operation = elemental.OperationCreate
+			ctx.statusCode = http.StatusTeapot
+			ctx.outputData = nil
+
+			makeResponse(ctx, response, nil)
+
+			Convey("Then response.StatusCode should be http.StatusTeapot", func() {
+				So(response.StatusCode, ShouldEqual, http.StatusTeapot)
+			})
+		})
+
+		Convey("When I set the operation to Create, status code set to OK and no data, and I call makeResponse", func() {
 
 			ctx.request.Operation = elemental.OperationCreate
 			ctx.statusCode = http.StatusOK
