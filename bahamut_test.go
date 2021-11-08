@@ -322,26 +322,6 @@ func TestBahamut_RegisterCustomRouteHandlers(t *testing.T) {
 
 		Convey("When I try to register a new custom handler", func() {
 
-			Convey("If rest server is not enabled, it should fail", func() {
-				b := NewServer(config{})
-				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
-			})
-
-			Convey("if the rest server is enabled, but the API prefix is empty is empty it should fail", func() {
-				cfg := config{}
-				cfg.restServer.enabled = true
-				b := NewServer(cfg)
-				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
-			})
-
-			Convey("if the customRoute prefix is empty, it should fail", func() {
-				cfg := config{}
-				cfg.restServer.enabled = true
-				cfg.restServer.apiPrefix = "/api"
-				b := NewServer(cfg)
-				So(b.RegisterCustomRouteHandler("/custom", nil), ShouldNotBeNil)
-			})
-
 			Convey("When both prefixes are set, I should be able to register it", func() {
 				cfg := config{}
 				cfg.restServer.enabled = true
