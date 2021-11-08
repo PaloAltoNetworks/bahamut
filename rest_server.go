@@ -167,6 +167,12 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 		}))
 	}
 
+	if a.customHandlers != nil {
+		for customRoute, f := range a.customHandlers() {
+			a.multiplexer.Handle(path.Join(a.cfg.restServer.customRoutePrefix, customRoute), f)
+		}
+	}
+
 	// non versioned routes
 	a.multiplexer.Get(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handleRetrieve))
 	a.multiplexer.Put(path.Join(a.cfg.restServer.apiPrefix, "/:category/:id"), a.makeHandler(handleUpdate))
@@ -191,11 +197,6 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleInfo))
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
-	if a.customHandlers != nil {
-		for customRoute, f := range a.customHandlers() {
-			a.multiplexer.Handle(path.Join(a.cfg.restServer.customRoutePrefix, customRoute), f)
-		}
-	}
 }
 
 func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) {

@@ -170,17 +170,6 @@ func (b *server) UnregisterProcessor(identity elemental.Identity) error {
 
 func (b *server) RegisterCustomRouteHandler(path string, handler http.HandlerFunc) error {
 
-	if !(b.restServer != nil &&
-		b.cfg.restServer.apiPrefix != "" &&
-		b.cfg.restServer.customRoutePrefix != "" &&
-		b.cfg.restServer.apiPrefix != b.cfg.restServer.customRoutePrefix) {
-		return fmt.Errorf(
-			"API root path '%s' and custom handler path '%s' must not overlap",
-			b.cfg.restServer.apiPrefix,
-			b.cfg.restServer.customRoutePrefix,
-		)
-	}
-
 	if _, ok := b.customRoutesHandlers[path]; ok {
 		return fmt.Errorf("path %s has a registered handler already", path)
 	}
