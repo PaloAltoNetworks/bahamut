@@ -30,6 +30,9 @@ func TestMockSession(t *testing.T) {
 		s.MockTLSConnectionState = &tls.ConnectionState{}
 		s.MockToken = "token"
 
+		var calledDirectPush bool
+		s.MockDirectPush = func(evts ...*elemental.Event) { calledDirectPush = true }
+
 		s.SetClaims([]string{"k=v"})
 		s.SetMetadata("mischief") // A beer to the one who gets the reference.
 
@@ -51,5 +54,8 @@ func TestMockSession(t *testing.T) {
 		cc, err = s.Cookie("d")
 		So(cc, ShouldBeNil)
 		So(err, ShouldEqual, http.ErrNoCookie)
+
+		s.DirectPush()
+		So(calledDirectPush, ShouldBeTrue)
 	})
 }
