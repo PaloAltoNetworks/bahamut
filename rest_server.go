@@ -197,6 +197,12 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleInfo))
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
+	if a.cfg.security.accessControl != nil {
+		a.multiplexer.Options("*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCommonHeader(w, elemental.EncodingTypeJSON)
+			a.cfg.security.accessControl.Inject(w.Header(), r.Header.Get("origin"), true)
+		}))
+	}
 }
 
 func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) {
