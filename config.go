@@ -111,6 +111,7 @@ type config struct {
 		sessionAuthenticators []SessionAuthenticator
 		authorizers           []Authorizer
 		auditer               Auditer
+		accessControl         *CORSAccessControlPolicy
 	}
 
 	rateLimiting struct {

@@ -113,13 +113,12 @@ type gwconfig struct {
 	serverTLSConfig             *tls.Config
 	corsOrigin                  string
 	corsAllowCredentials        bool
-	additionalCorsOrigin        map[string]struct{}
+	additionalCorsOrigin        []string
 	trustForwardHeader          bool
 }
 
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
-		additionalCorsOrigin:        map[string]struct{}{},
 		corsOrigin:                  CORSOriginMirror,
 		corsAllowCredentials:        true,
 		prefixInterceptors:          map[string]InterceptorFunc{},
@@ -375,9 +374,7 @@ func OptionAllowedCORSOrigin(origin string) Option {
 // request Origin header as long as there is a match.
 func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 	return func(cfg *gwconfig) {
-		for _, o := range origins {
-			cfg.additionalCorsOrigin[o] = struct{}{}
-		}
+		cfg.additionalCorsOrigin = origins
 	}
 }
 

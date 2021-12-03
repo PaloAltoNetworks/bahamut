@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-zoo/bone"
+	"go.aporeto.io/bahamut"
 )
 
 func injectGeneralHeader(h http.Header) http.Header {
@@ -20,40 +21,11 @@ func injectGeneralHeader(h http.Header) http.Header {
 	return h
 }
 
-func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin map[string]struct{}, allowCredentials bool, origin string, method string) http.Header {
+func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin []string, allowCredentials bool, origin string, method string) http.Header {
 
-	switch {
-
-	case corsOrigin == "*":
-		corsOrigin = "*"
-
-	case corsOrigin == CORSOriginMirror && origin != "":
-		corsOrigin = origin
-
-	case corsOrigin == CORSOriginMirror && origin == "":
-		corsOrigin = ""
-
-	case func() bool { _, ok := additionalCorsOrigin[origin]; return ok }():
-		corsOrigin = origin
-
-	}
-
-	if method == http.MethodOptions {
-		h.Set("Access-Control-Allow-Headers", "Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key")
-		h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
-		h.Set("Access-Control-Max-Age", "1500")
-	}
-
-	if corsOrigin != "" {
-		h.Set("Access-Control-Allow-Origin", corsOrigin)
-	}
-
-	h.Set("Access-Control-Expose-Headers", "X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next")
-
-	if allowCredentials && corsOrigin != "*" && corsOrigin != "" {
-		h.Set("Access-Control-Allow-Credentials", "true")
-	}
-
+	ac := bahamut.NewDefaultCORSAccessControlPolicy(corsOrigin, additionalCorsOrigin)
+	ac.AllowCredentials = allowCredentials
+	ac.Inject(h, origin, method == http.MethodOptions)
 	return h
 }
 
