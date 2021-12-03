@@ -60,12 +60,6 @@ const (
 	InterceptorActionStop
 )
 
-// CORSOriginMirror can be used with OptionAllowedCORSOrigin().
-// In this case, the gateway will mirror any upcoming ORIGIN header
-// in Access-Control-Allow-Origin response header.
-// NOTE: This should not be used in production.
-const CORSOriginMirror = "_mirror_"
-
 type gwconfig struct {
 	requestRewriter         RequestRewriter
 	responseRewriter        ResponseRewriter
@@ -119,7 +113,7 @@ type gwconfig struct {
 
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
-		corsOrigin:                  CORSOriginMirror,
+		corsOrigin:                  bahamut.CORSOriginMirror,
 		corsAllowCredentials:        true,
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		suffixInterceptors:          map[string]InterceptorFunc{},

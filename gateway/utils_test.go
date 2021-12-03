@@ -8,6 +8,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/bahamut"
 	"go.aporeto.io/tg/tglib"
 )
 
@@ -61,7 +62,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default",
 			args{
 				http.Header{},
-				CORSOriginMirror,
+				bahamut.CORSOriginMirror,
 				nil,
 				true,
 				"chien",
@@ -77,7 +78,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default OPTIONS",
 			args{
 				http.Header{},
-				CORSOriginMirror,
+				bahamut.CORSOriginMirror,
 				nil,
 				true,
 				"chien",
@@ -166,7 +167,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default empty origin",
 			args{
 				http.Header{},
-				CORSOriginMirror,
+				bahamut.CORSOriginMirror,
 				nil,
 				true,
 				"",
@@ -180,7 +181,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default empty OPTIONS",
 			args{
 				http.Header{},
-				CORSOriginMirror,
+				bahamut.CORSOriginMirror,
 				nil,
 				true,
 				"",
