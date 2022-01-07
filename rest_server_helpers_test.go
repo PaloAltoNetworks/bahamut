@@ -68,7 +68,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response with a nil response", t, func() {
 
 		w := httptest.NewRecorder()
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		w.Code = 200
 		code := writeHTTPResponse(w, nil, "", ac)
@@ -80,7 +81,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 		r.Redirect = "https://la.bas"
 
 		code := writeHTTPResponse(w, r, "", ac)
@@ -94,7 +96,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.StatusCode = http.StatusNoContent
 
@@ -111,7 +114,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.Messages = []string{"msg1", "msg2"}
 		r.StatusCode = 200
@@ -127,7 +131,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.Next = "next"
 		r.StatusCode = 200
@@ -143,7 +148,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.StatusCode = http.StatusOK
 		r.Data = []byte("hello")
@@ -161,7 +167,8 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
-		ac := NewDefaultCORSAccessControlPolicy("origin.com", nil)
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 		r.StatusCode = 200
 		r.Cookies = []*http.Cookie{
 			{

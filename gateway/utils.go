@@ -23,7 +23,8 @@ func injectGeneralHeader(h http.Header) http.Header {
 
 func injectCORSHeader(h http.Header, corsOrigin string, additionalCorsOrigin []string, allowCredentials bool, origin string, method string) http.Header {
 
-	ac := bahamut.NewDefaultCORSAccessControlPolicy(corsOrigin, additionalCorsOrigin)
+	a := bahamut.NewDefaultCORSController(corsOrigin, additionalCorsOrigin)
+	ac := a.PolicyForRequest(nil)
 	ac.AllowCredentials = allowCredentials
 	ac.Inject(h, origin, method == http.MethodOptions)
 	return h

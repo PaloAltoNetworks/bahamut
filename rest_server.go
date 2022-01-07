@@ -121,7 +121,7 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
-	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler(a.cfg.security.accessControl)))
+	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler(a.cfg.security.corsController)))
 
 	if a.cfg.restServer.customRootHandlerFunc != nil {
 		a.multiplexer.Handle("/", a.cfg.restServer.customRootHandlerFunc)
@@ -197,10 +197,11 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleInfo))
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
-	if a.cfg.security.accessControl != nil {
+	if a.cfg.security.corsController != nil {
 		a.multiplexer.Options("*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			setCommonHeader(w, elemental.EncodingTypeJSON)
-			a.cfg.security.accessControl.Inject(w.Header(), r.Header.Get("origin"), true)
+			policy := a.cfg.security.corsController.PolicyForRequest(r)
+			policy.Inject(w.Header(), r.Header.Get("origin"), true)
 		}))
 	}
 }
@@ -297,6 +298,11 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
+		var corsPolicy *CORSPolicy
+		if controller := a.cfg.security.corsController; controller != nil {
+			corsPolicy = controller.PolicyForRequest(req)
+		}
+
 		// Get API version
 		version, err := extractAPIVersion(req.URL.Path)
 		if err != nil {
@@ -310,7 +316,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 					nil,
 				),
 				req.Header.Get("origin"),
-				a.cfg.security.accessControl,
+				corsPolicy,
 			)
 			if measure != nil {
 				measure(code, nil)
@@ -331,7 +337,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 					nil,
 				),
 				req.Header.Get("origin"),
-				a.cfg.security.accessControl,
+				corsPolicy,
 			)
 			if measure != nil {
 				measure(code, nil)
@@ -351,7 +357,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 					nil,
 				),
 				req.Header.Get("origin"),
-				a.cfg.security.accessControl,
+				corsPolicy,
 			)
 			if measure != nil {
 				measure(code, nil)
@@ -373,7 +379,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 						nil,
 					),
 					req.Header.Get("origin"),
-					a.cfg.security.accessControl,
+					corsPolicy,
 				)
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
@@ -397,7 +403,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 								nil,
 							),
 							req.Header.Get("origin"),
-							a.cfg.security.accessControl,
+							corsPolicy,
 						)
 						if measure != nil {
 							measure(code, opentracing.SpanFromContext(ctx))
@@ -420,7 +426,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 				w,
 				resp,
 				req.Header.Get("origin"),
-				a.cfg.security.accessControl,
+				corsPolicy,
 			)
 		}
 

@@ -212,9 +212,9 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptAuditer should work", t, func() {
-		a := &CORSAccessControlPolicy{}
+		a := NewDefaultCORSController("", nil)
 		OptCORSAccessControl(a)(&c)
-		So(c.security.accessControl, ShouldEqual, a)
+		So(c.security.corsController, ShouldEqual, a)
 	})
 
 	Convey("Calling OptRateLimiting should work", t, func() {

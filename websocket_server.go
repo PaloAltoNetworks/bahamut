@@ -217,6 +217,11 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(n.mainContext)
 
+	var corsPolicy *CORSPolicy
+	if controller := n.cfg.security.corsController; controller != nil {
+		corsPolicy = controller.PolicyForRequest(r)
+	}
+
 	readEncodingType, writeEncodingType, err := elemental.EncodingFromHeaders(r.Header)
 	if err != nil {
 		writeHTTPResponse(
@@ -229,7 +234,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 				nil,
 			),
 			r.Header.Get("origin"),
-			n.cfg.security.accessControl,
+			corsPolicy,
 		)
 	}
 
@@ -258,7 +263,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 				nil,
 			),
 			r.Header.Get("origin"),
-			n.cfg.security.accessControl,
+			corsPolicy,
 		)
 		return
 	}
@@ -274,7 +279,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 				nil,
 			),
 			r.Header.Get("origin"),
-			n.cfg.security.accessControl,
+			corsPolicy,
 		)
 		return
 	}
@@ -291,7 +296,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 				nil,
 			),
 			r.Header.Get("origin"),
-			n.cfg.security.accessControl,
+			corsPolicy,
 		)
 		return
 	}
@@ -308,7 +313,7 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 				nil,
 			),
 			r.Header.Get("origin"),
-			n.cfg.security.accessControl,
+			corsPolicy,
 		)
 		return
 	}

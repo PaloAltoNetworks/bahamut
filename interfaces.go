@@ -337,3 +337,12 @@ type PushSession interface {
 
 	DirectPush(...*elemental.Event)
 }
+
+// A CORSPolicyController allows to return
+// the CORS policy for a given http.Request.
+type CORSPolicyController interface {
+
+	// PolicyForRequest returns the CORSPolicy to
+	// apply for the given http.Request.
+	PolicyForRequest(*http.Request) *CORSPolicy
+}
