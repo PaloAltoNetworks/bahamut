@@ -37,14 +37,31 @@ func setCommonHeader(w http.ResponseWriter, encoding elemental.EncodingType) {
 	}
 }
 
-func makeNotFoundHandler() func(w http.ResponseWriter, r *http.Request) {
+func makeNotFoundHandler(controller CORSPolicyController) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), ErrNotFound, nil, nil))
+
+		var corsPolicy *CORSPolicy
+		if controller != nil {
+			corsPolicy = controller.PolicyForRequest(r)
+		}
+
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				ErrNotFound,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 	}
 }
 
 // writeHTTPResponse writes the response into the given http.ResponseWriter.
-func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
+func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response, origin string, accessControl *CORSPolicy) int {
 
 	// If r is nil, we simply stop.
 	// It mostly means the client closed the connection and
@@ -58,6 +75,10 @@ func writeHTTPResponse(w http.ResponseWriter, r *elemental.Response) int {
 	}
 
 	setCommonHeader(w, r.Request.Accept)
+
+	if accessControl != nil {
+		accessControl.Inject(w.Header(), origin, false)
+	}
 
 	if r.Redirect != "" {
 		w.Header().Set("Location", r.Redirect)

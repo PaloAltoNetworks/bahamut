@@ -57,11 +57,9 @@ func TestRestServerHelper_notFoundHandler(t *testing.T) {
 		h.Add("Origin", "toto")
 
 		w := httptest.NewRecorder()
-		makeNotFoundHandler()(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
+		makeNotFoundHandler(nil)(w, &http.Request{Header: h, URL: &url.URL{Path: "/path"}})
 
-		Convey("Then the response should be correct", func() {
-			So(w.Code, ShouldEqual, http.StatusNotFound)
-		})
+		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
 }
 
@@ -70,136 +68,107 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 	Convey("Given I have a response with a nil response", t, func() {
 
 		w := httptest.NewRecorder()
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
-		Convey("When I call writeHTTPResponse", func() {
+		w.Code = 200
+		code := writeHTTPResponse(w, nil, "", ac)
 
-			w.Code = 200
-			code := writeHTTPResponse(w, nil)
-
-			Convey("Then the code should be 200", func() {
-				So(code, ShouldEqual, 0)
-			})
-		})
+		So(code, ShouldEqual, 0)
 	})
 
 	Convey("Given I have a response with a redirect", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 		r.Redirect = "https://la.bas"
 
-		Convey("When I call writeHTTPResponse", func() {
+		code := writeHTTPResponse(w, r, "", ac)
 
-			code := writeHTTPResponse(w, r)
-
-			Convey("Then the should header Location should be set", func() {
-				So(w.Header().Get("location"), ShouldEqual, "https://la.bas")
-			})
-
-			Convey("Then the code should be 302", func() {
-				So(code, ShouldEqual, 302)
-			})
-		})
+		So(w.Header().Get("location"), ShouldEqual, "https://la.bas")
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
+		So(code, ShouldEqual, 302)
 	})
 
 	Convey("Given I have a response with no data", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.StatusCode = http.StatusNoContent
 
-		Convey("When I call writeHTTPResponse", func() {
+		code := writeHTTPResponse(w, r, "", ac)
 
-			code := writeHTTPResponse(w, r)
-
-			Convey("Then the should headers should be correct", func() {
-				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
-				So(w.Header().Get("X-Messages"), ShouldEqual, "")
-			})
-
-			Convey("Then the code should correct", func() {
-				So(w.Code, ShouldEqual, http.StatusNoContent)
-			})
-
-			Convey("Then the code should be http.StatusNoContent", func() {
-				So(code, ShouldEqual, http.StatusNoContent)
-			})
-		})
+		So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
+		So(w.Header().Get("X-Messages"), ShouldEqual, "")
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
+		So(w.Code, ShouldEqual, http.StatusNoContent)
+		So(code, ShouldEqual, http.StatusNoContent)
 	})
 
 	Convey("Given I have a response messages", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.Messages = []string{"msg1", "msg2"}
 		r.StatusCode = 200
 
-		Convey("When I call writeHTTPResponse", func() {
+		code := writeHTTPResponse(w, r, "", ac)
 
-			code := writeHTTPResponse(w, r)
-
-			Convey("Then the should header message should be set", func() {
-				So(w.Header().Get("X-Messages"), ShouldEqual, "msg1;msg2")
-			})
-
-			Convey("Then the code should be http.StatusNoContent", func() {
-				So(code, ShouldEqual, http.StatusOK)
-			})
-		})
+		So(w.Header().Get("X-Messages"), ShouldEqual, "msg1;msg2")
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
+		So(code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("Given I have a response next", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.Next = "next"
 		r.StatusCode = 200
 
-		Convey("When I call writeHTTPResponse", func() {
+		code := writeHTTPResponse(w, r, "", ac)
 
-			code := writeHTTPResponse(w, r)
-
-			Convey("Then the should header message should be set", func() {
-				So(w.Header().Get("X-Next"), ShouldEqual, "next")
-			})
-
-			Convey("Then the code should be http.StatusNoContent", func() {
-				So(code, ShouldEqual, http.StatusOK)
-			})
-		})
+		So(w.Header().Get("X-Next"), ShouldEqual, "next")
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
+		So(code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("Given I have a response with data", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 
 		r.StatusCode = http.StatusOK
 		r.Data = []byte("hello")
 
-		Convey("When I call writeHTTPResponse", func() {
+		code := writeHTTPResponse(w, r, "", ac)
 
-			code := writeHTTPResponse(w, r)
-
-			Convey("Then the body should be correct", func() {
-				So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
-				So(w.Header().Get("X-Messages"), ShouldEqual, "")
-				So(w.Body.String(), ShouldEqual, string(r.Data))
-			})
-
-			Convey("Then the code should be http.StatusNoContent", func() {
-				So(code, ShouldEqual, http.StatusOK)
-			})
-		})
+		So(w.Header().Get("X-Count-Total"), ShouldEqual, "0")
+		So(w.Header().Get("X-Messages"), ShouldEqual, "")
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
+		So(w.Body.String(), ShouldEqual, string(r.Data))
+		So(code, ShouldEqual, http.StatusOK)
 	})
 
 	Convey("Given I have a some cookies", t, func() {
 
 		w := httptest.NewRecorder()
 		r := elemental.NewResponse(elemental.NewRequest())
+		a := NewDefaultCORSController("origin.com", nil)
+		ac := a.PolicyForRequest(nil)
 		r.StatusCode = 200
 		r.Cookies = []*http.Cookie{
 			{
@@ -212,14 +181,10 @@ func TestRestServerHelper_writeHTTPResponse(t *testing.T) {
 			},
 		}
 
-		Convey("When I call writeHTTPResponse", func() {
+		writeHTTPResponse(w, r, "", ac)
 
-			writeHTTPResponse(w, r)
-
-			Convey("Then the should header message should be set", func() {
-				So(w.Header()["Set-Cookie"], ShouldResemble, []string{"ca=ca", "cb=cb"})
-			})
-		})
+		So(w.Header()["Set-Cookie"], ShouldResemble, []string{"ca=ca", "cb=cb"})
+		So(w.Header().Get("Access-Control-Allow-Origin"), ShouldEqual, "origin.com")
 	})
 }
 

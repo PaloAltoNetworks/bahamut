@@ -60,12 +60,6 @@ const (
 	InterceptorActionStop
 )
 
-// CORSOriginMirror can be used with OptionAllowedCORSOrigin().
-// In this case, the gateway will mirror any upcoming ORIGIN header
-// in Access-Control-Allow-Origin response header.
-// NOTE: This should not be used in production.
-const CORSOriginMirror = "_mirror_"
-
 type gwconfig struct {
 	requestRewriter         RequestRewriter
 	responseRewriter        ResponseRewriter
@@ -113,14 +107,13 @@ type gwconfig struct {
 	serverTLSConfig             *tls.Config
 	corsOrigin                  string
 	corsAllowCredentials        bool
-	additionalCorsOrigin        map[string]struct{}
+	additionalCorsOrigin        []string
 	trustForwardHeader          bool
 }
 
 func newGatewayConfig() *gwconfig {
 	return &gwconfig{
-		additionalCorsOrigin:        map[string]struct{}{},
-		corsOrigin:                  CORSOriginMirror,
+		corsOrigin:                  bahamut.CORSOriginMirror,
 		corsAllowCredentials:        true,
 		prefixInterceptors:          map[string]InterceptorFunc{},
 		suffixInterceptors:          map[string]InterceptorFunc{},
@@ -375,9 +368,7 @@ func OptionAllowedCORSOrigin(origin string) Option {
 // request Origin header as long as there is a match.
 func OptionAdditionnalAllowedCORSOrigin(origins []string) Option {
 	return func(cfg *gwconfig) {
-		for _, o := range origins {
-			cfg.additionalCorsOrigin[o] = struct{}{}
-		}
+		cfg.additionalCorsOrigin = origins
 	}
 }
 

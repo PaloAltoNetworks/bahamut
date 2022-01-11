@@ -121,7 +121,7 @@ func (a *restServer) createUnsecureHTTPServer(address string) *http.Server {
 // installRoutes installs all the routes declared in the APIServerConfig.
 func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 
-	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler()))
+	a.multiplexer.NotFound(http.HandlerFunc(makeNotFoundHandler(a.cfg.security.corsController)))
 
 	if a.cfg.restServer.customRootHandlerFunc != nil {
 		a.multiplexer.Handle("/", a.cfg.restServer.customRootHandlerFunc)
@@ -197,6 +197,13 @@ func (a *restServer) installRoutes(routesInfo map[int][]RouteInfo) {
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:category"), a.makeHandler(handleInfo))
 	a.multiplexer.Head(path.Join(a.cfg.restServer.apiPrefix, "/v/:version/:parentcategory/:id/:category"), a.makeHandler(handleInfo))
 
+	if a.cfg.security.corsController != nil {
+		a.multiplexer.Options("*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCommonHeader(w, elemental.EncodingTypeJSON)
+			policy := a.cfg.security.corsController.PolicyForRequest(r)
+			policy.Inject(w.Header(), r.Header.Get("origin"), true)
+		}))
+	}
 }
 
 func (a *restServer) start(ctx context.Context, routesInfo map[int][]RouteInfo) {
@@ -291,10 +298,26 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, a.cfg.restServer.apiPrefix)
 		}
 
+		var corsPolicy *CORSPolicy
+		if controller := a.cfg.security.corsController; controller != nil {
+			corsPolicy = controller.PolicyForRequest(req)
+		}
+
 		// Get API version
 		version, err := extractAPIVersion(req.URL.Path)
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrInvalidAPIVersion, nil, nil))
+			code := writeHTTPResponse(
+				w,
+				makeErrorResponse(
+					req.Context(),
+					elemental.NewResponse(elemental.NewRequest()),
+					ErrInvalidAPIVersion,
+					nil,
+					nil,
+				),
+				req.Header.Get("origin"),
+				corsPolicy,
+			)
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -304,7 +327,18 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Check API Version
 		manager, ok := a.cfg.model.modelManagers[version]
 		if !ok {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), ErrUnknownAPIVersion, nil, nil))
+			code := writeHTTPResponse(
+				w,
+				makeErrorResponse(
+					req.Context(),
+					elemental.NewResponse(elemental.NewRequest()),
+					ErrUnknownAPIVersion,
+					nil,
+					nil,
+				),
+				req.Header.Get("origin"),
+				corsPolicy,
+			)
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -313,7 +347,18 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 
 		request, err := elemental.NewRequestFromHTTPRequest(req, manager)
 		if err != nil {
-			code := writeHTTPResponse(w, makeErrorResponse(req.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+			code := writeHTTPResponse(
+				w,
+				makeErrorResponse(
+					req.Context(),
+					elemental.NewResponse(elemental.NewRequest()),
+					err,
+					nil,
+					nil,
+				),
+				req.Header.Get("origin"),
+				corsPolicy,
+			)
 			if measure != nil {
 				measure(code, nil)
 			}
@@ -326,7 +371,16 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		// Global rate limiting
 		if a.cfg.rateLimiting.rateLimiter != nil {
 			if !a.cfg.rateLimiting.rateLimiter.Allow() {
-				code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
+				code := writeHTTPResponse(
+					w,
+					makeErrorResponse(ctx, elemental.NewResponse(request),
+						ErrRateLimit,
+						nil,
+						nil,
+					),
+					req.Header.Get("origin"),
+					corsPolicy,
+				)
 				if measure != nil {
 					measure(code, opentracing.SpanFromContext(ctx))
 				}
@@ -339,7 +393,18 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 			if rlm, ok := a.cfg.rateLimiting.apiRateLimiters[request.Identity]; ok {
 				if rlm.condition == nil || rlm.condition(request) {
 					if !rlm.limiter.Allow() {
-						code := writeHTTPResponse(w, makeErrorResponse(ctx, elemental.NewResponse(request), ErrRateLimit, nil, nil))
+						code := writeHTTPResponse(
+							w,
+							makeErrorResponse(
+								ctx,
+								elemental.NewResponse(request),
+								ErrRateLimit,
+								nil,
+								nil,
+							),
+							req.Header.Get("origin"),
+							corsPolicy,
+						)
 						if measure != nil {
 							measure(code, opentracing.SpanFromContext(ctx))
 						}
@@ -357,7 +422,12 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		case bctx.responseWriter != nil:
 			code = bctx.responseWriter(w)
 		default:
-			code = writeHTTPResponse(w, resp)
+			code = writeHTTPResponse(
+				w,
+				resp,
+				req.Header.Get("origin"),
+				corsPolicy,
+			)
 		}
 
 		if measure != nil {

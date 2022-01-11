@@ -365,6 +365,17 @@ func OptAuditer(auditer Auditer) Option {
 	}
 }
 
+// OptCORSAccessControl configures CORS access control policy.
+//
+// By default, no CORS headers are injected by bahamut.
+// You can use NewDefaultCORSAccessControler to get a sensible
+// default policy.
+func OptCORSAccessControl(controller CORSPolicyController) Option {
+	return func(c *config) {
+		c.security.corsController = controller
+	}
+}
+
 // OptRateLimiting configures the global rate limiting.
 func OptRateLimiting(limit float64, burst int) Option {
 	return func(c *config) {

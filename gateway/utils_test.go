@@ -8,6 +8,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/bahamut"
 	"go.aporeto.io/tg/tglib"
 )
 
@@ -47,7 +48,7 @@ func Test_injectCORSHeader(t *testing.T) {
 	type args struct {
 		h                    http.Header
 		corsOrigin           string
-		additionalCorsOrigin map[string]struct{}
+		additionalCorsOrigin []string
 		corsAllowCredentials bool
 		origin               string
 		method               string
@@ -61,8 +62,8 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default",
 			args{
 				http.Header{},
-				CORSOriginMirror,
-				map[string]struct{}{},
+				bahamut.CORSOriginMirror,
+				nil,
 				true,
 				"chien",
 				http.MethodGet,
@@ -77,8 +78,8 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default OPTIONS",
 			args{
 				http.Header{},
-				CORSOriginMirror,
-				map[string]struct{}{},
+				bahamut.CORSOriginMirror,
+				nil,
 				true,
 				"chien",
 				http.MethodOptions,
@@ -97,7 +98,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
-				map[string]struct{}{},
+				nil,
 				true,
 				"chien",
 				http.MethodGet,
@@ -113,7 +114,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
-				map[string]struct{}{},
+				nil,
 				true,
 				"chien",
 				http.MethodOptions,
@@ -132,7 +133,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
-				map[string]struct{}{"chien": {}},
+				[]string{"chien"},
 				true,
 				"chien",
 				http.MethodGet,
@@ -148,7 +149,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"dog",
-				map[string]struct{}{"chien": {}},
+				[]string{"chien"},
 				true,
 				"chien",
 				http.MethodOptions,
@@ -166,8 +167,8 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default empty origin",
 			args{
 				http.Header{},
-				CORSOriginMirror,
-				map[string]struct{}{},
+				bahamut.CORSOriginMirror,
+				nil,
 				true,
 				"",
 				http.MethodGet,
@@ -180,8 +181,8 @@ func Test_injectCORSHeader(t *testing.T) {
 			"default empty OPTIONS",
 			args{
 				http.Header{},
-				CORSOriginMirror,
-				map[string]struct{}{},
+				bahamut.CORSOriginMirror,
+				nil,
 				true,
 				"",
 				http.MethodOptions,
@@ -199,7 +200,7 @@ func Test_injectCORSHeader(t *testing.T) {
 			args{
 				http.Header{},
 				"*",
-				map[string]struct{}{},
+				nil,
 				true,
 				"",
 				http.MethodOptions,
@@ -216,7 +217,7 @@ func Test_injectCORSHeader(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := injectCORSHeader(tt.args.h, tt.args.corsOrigin, tt.args.additionalCorsOrigin, tt.args.corsAllowCredentials, tt.args.origin, tt.args.method); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("injectCORSHeader() = %v, want %v", got, tt.want)
+				t.Errorf("injectCORSHeader() = \ngot:  %v\nwant: %v", got, tt.want)
 			}
 		})
 	}

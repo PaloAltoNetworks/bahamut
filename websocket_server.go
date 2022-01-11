@@ -217,9 +217,25 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	r = r.WithContext(n.mainContext)
 
+	var corsPolicy *CORSPolicy
+	if controller := n.cfg.security.corsController; controller != nil {
+		corsPolicy = controller.PolicyForRequest(r)
+	}
+
 	readEncodingType, writeEncodingType, err := elemental.EncodingFromHeaders(r.Header)
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				err,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 	}
 
 	session := newWSPushSession(r, n.cfg, n.unregisterSession, readEncodingType, writeEncodingType)
@@ -237,24 +253,68 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	session.cookies = r.Cookies()
 
 	if err := n.authSession(session); err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				err,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 		return
 	}
 
 	if err := n.initPushSession(session); err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				err,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 		return
 	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				err,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 		return
 	}
 
 	conn, err := wsc.Accept(r.Context(), ws, wsc.Config{WriteChanSize: 64, ReadChanSize: 16})
 	if err != nil {
-		writeHTTPResponse(w, makeErrorResponse(r.Context(), elemental.NewResponse(elemental.NewRequest()), err, nil, nil))
+		writeHTTPResponse(
+			w,
+			makeErrorResponse(
+				r.Context(),
+				elemental.NewResponse(elemental.NewRequest()),
+				err,
+				nil,
+				nil,
+			),
+			r.Header.Get("origin"),
+			corsPolicy,
+		)
 		return
 	}
 
