@@ -371,8 +371,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.aporeto.io/elemental v1.100.1-0.20211130173545-6dea49cc9163 h1:XotBwJLq0aa/C3wcNLWYzqmeeWDOgzO1+JcKA9ACGuQ=
 go.aporeto.io/elemental v1.100.1-0.20211130173545-6dea49cc9163/go.mod h1:1WRCDolBBhyTFah5tpf9DNVHaJefug7lV9V9UzPNDAE=
 go.aporeto.io/regolithe v1.50.1-0.20210528201106-653300479f97/go.mod h1:St1liiK+bGvmDNkVSfOP7iAlQmDkShfEcDZMXmFbyKk=
-go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155 h1:/kTGNNFJzNRFpAJ+9ykVXW/lCnBKcMUGSMPWvXXjMJg=
-go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155/go.mod h1:Hgsce79sVOYB4LMv/RA/vzJyftp7FhZbJT6SB8OJlso=
+go.aporeto.io/tg v1.34.1-0.20220107235943-7d2aaa0dc6f5 h1:nh2ePOKiTyM9M+PfxxaUQaB4SEnIiIR1U0yO61IYozQ=
+go.aporeto.io/tg v1.34.1-0.20220107235943-7d2aaa0dc6f5/go.mod h1:Hgsce79sVOYB4LMv/RA/vzJyftp7FhZbJT6SB8OJlso=
 go.aporeto.io/wsc v1.36.1-0.20210528201141-2af38def4959 h1:zlmfOlEAq7COKW4yW52q+GnJ/p44H04TCo7F8P+Fbs4=
 go.aporeto.io/wsc v1.36.1-0.20210528201141-2af38def4959/go.mod h1:HM/FZMooSnzMT8nMe7XSNA1NnSVtPNdgZ9PUWS4SxOM=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
