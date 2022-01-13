@@ -317,9 +317,9 @@ func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
 	}
 }
 
-// OptMTLSVerifyPeerCertificate configures the optionnal function to
+// OptMTLSVerifyPeerCertificates configures the optionnal function to
 // to perform custom peer certificate verification.
-func OptMTLSVerifyPeerCertificate(f func([][]byte, [][]*x509.Certificate) error) Option {
+func OptMTLSVerifyPeerCertificates(f func([][]byte, [][]*x509.Certificate) error) Option {
 	return func(c *config) {
 		c.tls.peerCertificateVerifyFunc = f
 	}

@@ -188,7 +188,7 @@ func TestBahamut_Options(t *testing.T) {
 
 	Convey("Calling OptMTLSPeer", t, func() {
 		f := func([][]byte, [][]*x509.Certificate) error { return nil }
-		OptMTLSVerifyPeerCertificate(f)(&c)
+		OptMTLSVerifyPeerCertificates(f)(&c)
 		So(c.tls.peerCertificateVerifyFunc, ShouldEqual, f)
 	})
 
