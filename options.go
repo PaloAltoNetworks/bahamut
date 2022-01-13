@@ -317,6 +317,14 @@ func OptMTLS(caPool *x509.CertPool, authType tls.ClientAuthType) Option {
 	}
 }
 
+// OptMTLSVerifyPeerCertificate configures the optionnal function to
+// to perform custom peer certificate verification.
+func OptMTLSVerifyPeerCertificate(f func([][]byte, [][]*x509.Certificate) error) Option {
+	return func(c *config) {
+		c.tls.peerCertificateVerifyFunc = f
+	}
+}
+
 // OptTLSDisableSessionTicket controls if the TLS session tickets should
 // be disabled.
 func OptTLSDisableSessionTicket(disabled bool) Option {

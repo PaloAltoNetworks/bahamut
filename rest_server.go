@@ -75,6 +75,7 @@ func (a *restServer) createSecureHTTPServer(address string) *http.Server {
 		PreferServerCipherSuites: true,
 		NextProtos:               a.cfg.tls.nextProtos,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		VerifyPeerCertificate:    a.cfg.tls.peerCertificateVerifyFunc,
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
