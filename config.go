@@ -102,6 +102,7 @@ type config struct {
 		authType                        tls.ClientAuthType
 		serverCertificates              []tls.Certificate
 		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+		peerCertificateVerifyFunc       func([][]byte, [][]*x509.Certificate) error
 		disableSessionTicket            bool
 		nextProtos                      []string
 	}

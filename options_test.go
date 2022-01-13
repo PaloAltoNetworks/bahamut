@@ -186,6 +186,12 @@ func TestBahamut_Options(t *testing.T) {
 		So(c.tls.authType, ShouldEqual, authType)
 	})
 
+	Convey("Calling OptMTLSPeer", t, func() {
+		f := func([][]byte, [][]*x509.Certificate) error { return nil }
+		OptMTLSVerifyPeerCertificates(f)(&c)
+		So(c.tls.peerCertificateVerifyFunc, ShouldEqual, f)
+	})
+
 	Convey("Calling OptTLSDisableSessionTicket should work", t, func() {
 		OptTLSDisableSessionTicket(true)(&c)
 		So(c.tls.disableSessionTicket, ShouldEqual, true)
