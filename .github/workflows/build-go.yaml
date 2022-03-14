@@ -56,10 +56,10 @@ jobs:
           make
 
       # note: uncertain how gracefully this handles the matrix
-      - name: coverage
-        uses: codacy/codacy-coverage-reporter-action@v1
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      # - name: coverage
+      #   uses: codacy/codacy-coverage-reporter-action@v1
+      #   with:
+      #     project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
-          # a comma-separated list
-          coverage-reports: "./coverage.xml"
+      #     # a comma-separated list
+      #     coverage-reports: "./coverage.xml"
