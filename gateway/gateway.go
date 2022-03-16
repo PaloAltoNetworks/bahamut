@@ -25,15 +25,16 @@ import (
 
 // An gateway is cool
 type gateway struct {
-	server            *http.Server
-	upstreamer        Upstreamer
-	upstreamerLatency LatencyBasedUpstreamer
-	forwarder         *forward.Forwarder
-	proxyHTTPHandler  http.Handler
-	proxyWSHandler    http.Handler
-	listener          net.Listener
-	goodbyeServer     *http.Server
-	gatewayConfig     *gwconfig
+	server                 *http.Server
+	upstreamer             Upstreamer
+	upstreamerLatency      LatencyBasedUpstreamer
+	forwarder              *forward.Forwarder
+	proxyHTTPHandler       http.Handler
+	proxyWSHandler         http.Handler
+	listener               net.Listener
+	goodbyeServer          *http.Server
+	gatewayConfig          *gwconfig
+	corsOriginInjectorFunc func(w http.ResponseWriter, r *http.Request) http.Header
 }
 
 // New returns a new Gateway.
@@ -139,7 +140,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		},
 	}
 
-	corsOriginInjectorFunc := func(w http.ResponseWriter, r *http.Request) http.Header {
+	s.corsOriginInjectorFunc = func(w http.ResponseWriter, r *http.Request) http.Header {
 		return injectCORSHeader(
 			w.Header(),
 			cfg.corsOrigin,
@@ -158,7 +159,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 	if s.forwarder, err = forward.New(
 		forward.BufferPool(newPool(1024*1024)),
 		forward.WebsocketTLSClientConfig(cfg.upstreamTLSConfig),
-		forward.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
+		forward.ErrorHandler(&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc}),
 		forward.Rewriter(
 			&requestRewriter{
 				blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
@@ -220,7 +221,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		topProxyHTTPHandler,
 		buffer.MaxRequestBodyBytes(1024*1024),
 		buffer.MemRequestBodyBytes(1024*1024*1024),
-		buffer.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
+		buffer.ErrorHandler(&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc}),
 	); err != nil {
 		return nil, fmt.Errorf("unable to initialize request buffer: %s", err)
 	}
@@ -234,7 +235,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 				return token, 1, err
 			}),
 			int64(cfg.tcpClientMaxConnections),
-			connlimit.ErrorHandler(&errorHandler{corsOriginInjector: corsOriginInjectorFunc}),
+			connlimit.ErrorHandler(&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc}),
 		); err != nil {
 			return nil, fmt.Errorf("unable to initialize connection limiter: %s", err)
 		}
@@ -248,7 +249,7 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 			cfg.sourceRateLimitingBurst,
 			cfg.sourceExtractor,
 			cfg.sourceRateExtractor,
-			&errorHandler{corsOriginInjector: corsOriginInjectorFunc},
+			&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc},
 			cfg.sourceRateLimitingMetricManager,
 		)
 		topProxyHTTPHandler = srcLimiter
@@ -461,6 +462,7 @@ HANDLE_INTERCEPTION:
 				if mm := s.gatewayConfig.metricsManager; mm != nil {
 					mm.MeasureRequest(r.Method, path)(http.StatusTooManyRequests, nil)
 				}
+				s.corsOriginInjectorFunc(w, r)
 				writeError(w, r, errRateLimit)
 
 			default:
@@ -476,6 +478,7 @@ HANDLE_INTERCEPTION:
 					zap.Error(err),
 				)
 
+				s.corsOriginInjectorFunc(w, r)
 				writeError(w, r, makeError(http.StatusInternalServerError, "Internal Server Error", err.Error()))
 			}
 
@@ -483,6 +486,7 @@ HANDLE_INTERCEPTION:
 		}
 
 		if upstream == "" {
+			s.corsOriginInjectorFunc(w, r)
 			writeError(w, r, errServiceUnavailable)
 			return
 		}
