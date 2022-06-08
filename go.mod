@@ -23,8 +23,8 @@ require (
 	github.com/karlseguin/ccache/v2 v2.0.6
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
-	github.com/nats-io/nats-server/v2 v2.2.0
-	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
+	github.com/nats-io/nats-server/v2 v2.8.4
+	github.com/nats-io/nats.go v1.16.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1 // indirect
@@ -36,8 +36,7 @@ require (
 	github.com/vulcand/oxy v1.1.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect
-	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
