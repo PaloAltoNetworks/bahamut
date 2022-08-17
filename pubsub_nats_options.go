@@ -118,9 +118,9 @@ func NATSOptSubscribeReplyTimeout(t time.Duration) PubSubOptSubscribe {
 // you receive a response. The context parameter allows you to provide a deadline on how long
 // you should wait before considering the request as a failure:
 //
-//		myCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-//		respCh := make(chan *Publication)
-// 		publishOption := NATSOptRespondToChannel(myCtx, respCh)
+//	myCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+//	respCh := make(chan *Publication)
+//	publishOption := NATSOptRespondToChannel(myCtx, respCh)
 //
 // This option CANNOT be combined with NATSOptPublishRequireAck
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {

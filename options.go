@@ -166,12 +166,12 @@ func OptPushServer(service PubSubClient, topic string) Option {
 //
 // For example:
 //
-//   If the push server topic has been set to "global-events" and the server is about to push a "create" event w/ an identity
-//   value of "apples", enabling this option, would cause the push server to target a new publication to the subject
-//   "global-events.apples.create", INSTEAD OF "global-events". Consequently, as a result of this, any upstream push
-//   servers that are interested in receiving all events you publish to this topic would need to utilize subject wildcards.
+//	If the push server topic has been set to "global-events" and the server is about to push a "create" event w/ an identity
+//	value of "apples", enabling this option, would cause the push server to target a new publication to the subject
+//	"global-events.apples.create", INSTEAD OF "global-events". Consequently, as a result of this, any upstream push
+//	servers that are interested in receiving all events you publish to this topic would need to utilize subject wildcards.
 //
-//   See: https://docs.nats.io/nats-concepts/subjects#wildcards for more details.
+//	See: https://docs.nats.io/nats-concepts/subjects#wildcards for more details.
 func OptPushServerEnableSubjectHierarchies() Option {
 	return func(c *config) {
 		c.pushServer.subjectHierarchiesEnabled = true

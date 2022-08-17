@@ -62,8 +62,7 @@ func OptionUpstreamerOverrideEndpointsAddresses(override string) UpstreamerOptio
 // OptionUpstreamerRegisterEventAPI registers an event API for the given serviceName
 // on the given endpoint.
 // For instance is serviceA exposes an event API on /events, you can use
-//
-//      OptionUpstreamerRegisterEventAPI("serviceA", "events")
+// OptionUpstreamerRegisterEventAPI("serviceA", "events")
 func OptionUpstreamerRegisterEventAPI(serviceName string, eventEndpoint string) UpstreamerOption {
 	return func(cfg *upstreamConfig) {
 		cfg.eventsAPIs[serviceName] = eventEndpoint
