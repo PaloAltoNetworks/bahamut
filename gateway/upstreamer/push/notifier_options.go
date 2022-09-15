@@ -5,6 +5,7 @@ import "time"
 type notifierConfig struct {
 	rateLimits   IdentityToAPILimitersRegistry
 	pingInterval time.Duration
+	prefix       string
 }
 
 func newNotifierConfig() notifierConfig {
@@ -37,5 +38,13 @@ func OptionNotifierAnnounceRateLimits(rls IdentityToAPILimitersRegistry) Notifie
 		for k, v := range rls {
 			c.rateLimits[k] = v
 		}
+	}
+}
+
+// OptionNotifierPrefix sets the API prefix that the gateway should
+// add to the API routes for that service.
+func OptionNotifierPrefix(prefix string) NotifierOption {
+	return func(c *notifierConfig) {
+		c.prefix = prefix
 	}
 }

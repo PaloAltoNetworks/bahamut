@@ -26,4 +26,8 @@ func Test_NotiferOptions(t *testing.T) {
 		So(c.pingInterval, ShouldEqual, 3*time.Hour)
 	})
 
+	Convey("Calling OptionNotifierPrefix should work", t, func() {
+		OptionNotifierPrefix("prefix")(&c)
+		So(c.prefix, ShouldEqual, "prefix")
+	})
 }

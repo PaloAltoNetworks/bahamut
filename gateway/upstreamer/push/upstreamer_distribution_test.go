@@ -17,7 +17,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
-			"cats": {
+			"/cats": {
 				{
 					address:  "1.1.1.1:1",
 					lastLoad: 10.0,
@@ -55,7 +55,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
-			"cats": {
+			"/cats": {
 				{
 					address:  "1.1.1.1:1",
 					lastLoad: 10.0,
@@ -92,7 +92,7 @@ func TestUpstreamUpstreamerDistribution(t *testing.T) {
 
 		u := NewUpstreamer(nil, "topic", "topic2")
 		u.apis = map[string][]*endpointInfo{
-			"cats": {
+			"/cats": {
 				{
 					address:  "1.1.1.1:1",
 					lastLoad: 10.0,
@@ -215,5 +215,4 @@ func TestLatencyBasedUpstreamer(t *testing.T) {
 		})
 
 	})
-
 }
