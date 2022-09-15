@@ -113,7 +113,7 @@ func resyncRoutes(services servicesConfig, includePrivate bool, events map[strin
 
 	for serviceName, config := range services {
 
-		_, prefix := extractPrefix(serviceName)
+		name, prefix := extractPrefix(serviceName)
 
 		for _, routes := range config.routes {
 			for _, route := range routes {
@@ -123,7 +123,7 @@ func resyncRoutes(services servicesConfig, includePrivate bool, events map[strin
 			}
 		}
 
-		if api, ok := events[serviceName]; ok {
+		if api, ok := events[name]; ok {
 			apis[prefix+"/"+api] = append([]*endpointInfo{}, config.getEndpoints()...)
 		}
 	}
