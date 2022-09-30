@@ -20,6 +20,7 @@ type Notifier struct {
 	limiters           IdentityToAPILimitersRegistry
 	frequency          time.Duration
 	prefix             string
+	privateOverrides   map[string]bool
 }
 
 // NewNotifier returns a new Wutai notifier.
@@ -44,6 +45,7 @@ func NewNotifier(
 		limiters:           cfg.rateLimits,
 		frequency:          cfg.pingInterval,
 		prefix:             cfg.prefix,
+		privateOverrides:   cfg.privateOverrides,
 	}
 }
 
@@ -57,12 +59,23 @@ func (w *Notifier) MakeStartHook(ctx context.Context) func(server bahamut.Server
 			return err
 		}
 
+		routes := server.RoutesInfo()
+		for _, versionedRoutes := range routes {
+			for i, r := range versionedRoutes {
+				priv, ok := w.privateOverrides[r.Identity]
+				if ok {
+					r.Private = priv
+					versionedRoutes[i] = r
+				}
+			}
+		}
+
 		sp := servicePing{
 			Name:         w.serviceName,
 			Prefix:       w.prefix,
 			Status:       entityStatusHello,
 			Endpoint:     w.endpoint,
-			Routes:       server.RoutesInfo(),
+			Routes:       routes,
 			Versions:     server.VersionsInfo(),
 			PushEndpoint: server.PushEndpoint(),
 			APILimiters:  w.limiters,

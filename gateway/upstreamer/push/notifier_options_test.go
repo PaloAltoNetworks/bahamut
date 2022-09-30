@@ -5,6 +5,7 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.aporeto.io/elemental"
 	"golang.org/x/time/rate"
 )
 
@@ -29,5 +30,14 @@ func Test_NotiferOptions(t *testing.T) {
 	Convey("Calling OptionNotifierPrefix should work", t, func() {
 		OptionNotifierPrefix("prefix")(&c)
 		So(c.prefix, ShouldEqual, "prefix")
+	})
+
+	Convey("Calling OptionNotifierAPIPrivateOverrides should work", t, func() {
+		ov := map[elemental.Identity]bool{
+			elemental.MakeIdentity("thing", "things"): true,
+		}
+		OptionNotifierPrivateAPIOverrides(ov)(&c)
+		So(c.privateOverrides, ShouldResemble, ov)
+		So(c.privateOverrides, ShouldNotEqual, ov)
 	})
 }

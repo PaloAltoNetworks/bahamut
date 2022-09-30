@@ -23,6 +23,9 @@ func TestNonNotifier(t *testing.T) {
 			),
 		)
 
+		server.RegisterProcessor(struct{}{}, testmodel.ListIdentity)
+		server.RegisterProcessor(struct{}{}, testmodel.TaskIdentity)
+
 		pubsub := bahamut.NewLocalPubSubClient()
 		if err := pubsub.Connect(context.Background()); err != nil {
 			panic(err)
@@ -43,6 +46,9 @@ func TestNonNotifier(t *testing.T) {
 				"1.1.1.1:1",
 				OptionNotifierAnnounceRateLimits(limiters),
 				OptionNotifierPingInterval(time.Second),
+				OptionNotifierPrivateAPIOverrides(map[elemental.Identity]bool{
+					testmodel.ListIdentity: true,
+				}),
 			)
 
 			Convey("Then n should be correct", func() {
@@ -54,6 +60,14 @@ func TestNonNotifier(t *testing.T) {
 				So(n.limiters, ShouldResemble, limiters)
 				So(n.prefix, ShouldEqual, "")
 			})
+
+			for _, vr := range server.RoutesInfo() {
+				for _, r := range vr {
+					// checks overrides did not change
+					// internal server data
+					So(r.Private, ShouldBeFalse)
+				}
+			}
 
 			Convey("When I call MakeStartHook and call the hook", func() {
 
@@ -88,6 +102,19 @@ func TestNonNotifier(t *testing.T) {
 					So(sping.Endpoint, ShouldEqual, "1.1.1.1:1")
 					So(sping.Status, ShouldEqual, entityStatusHello)
 					So(sping.Prefix, ShouldEqual, "")
+
+					var checked int
+					for _, vr := range sping.Routes {
+						for _, r := range vr {
+							if r.Identity == "lists" {
+								So(r.Private, ShouldBeTrue)
+							} else {
+								So(r.Private, ShouldBeFalse)
+							}
+							checked++
+						}
+					}
+					So(checked, ShouldEqual, 5)
 
 					Convey("Then I wait 1.5sec and I should get another pusb", func() {
 
