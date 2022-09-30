@@ -23,8 +23,8 @@ func TestNonNotifier(t *testing.T) {
 			),
 		)
 
-		server.RegisterProcessor(struct{}{}, testmodel.ListIdentity)
-		server.RegisterProcessor(struct{}{}, testmodel.TaskIdentity)
+		_ = server.RegisterProcessor(struct{}{}, testmodel.ListIdentity)
+		_ = server.RegisterProcessor(struct{}{}, testmodel.TaskIdentity)
 
 		pubsub := bahamut.NewLocalPubSubClient()
 		if err := pubsub.Connect(context.Background()); err != nil {

@@ -55,7 +55,7 @@ func OptionNotifierPrefix(prefix string) NotifierOption {
 	}
 }
 
-// OptionNotiferPrivateAPIOverrides allows to pass a map of identity to boolean
+// OptionNotifierPrivateAPIOverrides allows to pass a map of identity to boolean
 // that will be used to override the specificaton's "private" flag. This allows
 // the service to force a public API to be private (or vice versa).
 //
