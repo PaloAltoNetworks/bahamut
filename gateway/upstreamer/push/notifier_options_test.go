@@ -37,7 +37,6 @@ func Test_NotiferOptions(t *testing.T) {
 			elemental.MakeIdentity("thing", "things"): true,
 		}
 		OptionNotifierPrivateAPIOverrides(ov)(&c)
-		So(c.privateOverrides, ShouldResemble, ov)
-		So(c.privateOverrides, ShouldNotEqual, ov)
+		So(c.privateOverrides, ShouldResemble, map[string]bool{"things": true})
 	})
 }
