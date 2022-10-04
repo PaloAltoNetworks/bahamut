@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-var vregexp = regexp.MustCompile(`^/v/\d+`)
+var vregexp = regexp.MustCompile(`/v/\d+`)
 
-func getTargetIdentity(path string) string {
+func getTargetIdentity(path string) (string, string) {
 
 	parts := strings.Split(
 		strings.TrimPrefix(
@@ -17,14 +17,20 @@ func getTargetIdentity(path string) string {
 		"/",
 	)
 
+	prefix := ""
+	if len(parts) > 1 && parts[0][0] == '_' {
+		prefix = parts[0][1:]
+		parts = append([]string{}, parts[1:]...)
+	}
+
 	switch len(parts) {
 
 	case 1:
-		return parts[0]
+		return parts[0], prefix
 	case 2:
-		return parts[0]
+		return parts[0], prefix
 	default:
-		return parts[2]
+		return parts[2], prefix
 	}
 }
 
@@ -50,10 +56,10 @@ func handleAddServicePing(services servicesConfig, sp servicePing) bool {
 		panic("handleAddServicePing received a goodbye service ping")
 	}
 
-	srv, ok := services[sp.Name]
+	srv, ok := services[sp.Key()]
 	if !ok {
-		srv = newService(sp.Name)
-		services[sp.Name] = srv
+		srv = newService(sp.Key())
+		services[sp.Key()] = srv
 	}
 
 	// In any case we poke the endpoint. This will
@@ -81,7 +87,7 @@ func handleRemoveServicePing(services servicesConfig, sp servicePing) bool {
 		panic("handleRemoveServicePing received a hello service ping")
 	}
 
-	srv, ok := services[sp.Name]
+	srv, ok := services[sp.Key()]
 	if !ok {
 		return false
 	}
@@ -96,7 +102,7 @@ func handleRemoveServicePing(services servicesConfig, sp servicePing) bool {
 		return true
 	}
 
-	delete(services, sp.Name)
+	delete(services, sp.Key())
 
 	return true
 }
@@ -107,18 +113,32 @@ func resyncRoutes(services servicesConfig, includePrivate bool, events map[strin
 
 	for serviceName, config := range services {
 
+		name, prefix := extractPrefix(serviceName)
+
 		for _, routes := range config.routes {
 			for _, route := range routes {
 				if !route.Private || includePrivate {
-					apis[route.Identity] = append([]*endpointInfo{}, config.getEndpoints()...)
+					apis[prefix+"/"+route.Identity] = append([]*endpointInfo{}, config.getEndpoints()...)
 				}
 			}
 		}
 
-		if api, ok := events[serviceName]; ok {
-			apis[api] = append([]*endpointInfo{}, config.getEndpoints()...)
+		if api, ok := events[name]; ok {
+			apis[prefix+"/"+api] = append([]*endpointInfo{}, config.getEndpoints()...)
 		}
 	}
 
 	return apis
+}
+
+func extractPrefix(key string) (name string, prefix string) {
+
+	name = key
+
+	if parts := strings.SplitN(key, "/", 2); len(parts) == 2 {
+		prefix = parts[0]
+		name = parts[1]
+	}
+
+	return name, prefix
 }

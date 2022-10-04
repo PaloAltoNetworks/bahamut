@@ -17,15 +17,17 @@ func Test_getTargetIdentity(t *testing.T) {
 		path string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name         string
+		args         args
+		wantIdentity string
+		wantPrefix   string
 	}{
 		{
 			"/",
 			args{
 				"/",
 			},
+			"",
 			"",
 		},
 		{
@@ -34,6 +36,7 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/users",
 			},
 			"users",
+			"",
 		},
 		{
 			"/users/id",
@@ -41,6 +44,7 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/users/id",
 			},
 			"users",
+			"",
 		},
 		{
 			"/users/id/groups",
@@ -48,6 +52,7 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/users/id/groups",
 			},
 			"groups",
+			"",
 		},
 		{
 			"/v/1/users",
@@ -55,6 +60,7 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/v/1/users",
 			},
 			"users",
+			"",
 		},
 		{
 			"/v/1/users/id",
@@ -62,6 +68,7 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/v/1/users/id",
 			},
 			"users",
+			"",
 		},
 		{
 			"/v/1/users/id/groups",
@@ -69,12 +76,74 @@ func Test_getTargetIdentity(t *testing.T) {
 				"/v/1/users/id/groups",
 			},
 			"groups",
+			"",
+		},
+		// prefixed
+		{
+			"_prefix/",
+			args{
+				"_prefix/",
+			},
+			"",
+			"prefix",
+		},
+		{
+			"_prefix/users",
+			args{
+				"_prefix/users",
+			},
+			"users",
+			"prefix",
+		},
+		{
+			"_prefix/users/id",
+			args{
+				"_prefix/users/id",
+			},
+			"users",
+			"prefix",
+		},
+		{
+			"_prefix/users/id/groups",
+			args{
+				"_prefix/users/id/groups",
+			},
+			"groups",
+			"prefix",
+		},
+		{
+			"_prefix/v/1/users",
+			args{
+				"_prefix/v/1/users",
+			},
+			"users",
+			"prefix",
+		},
+		{
+			"_prefix/v/1/users/id",
+			args{
+				"_prefix/v/1/users/id",
+			},
+			"users",
+			"prefix",
+		},
+		{
+			"_prefix/v/1/users/id/groups",
+			args{
+				"_prefix/v/1/users/id/groups",
+			},
+			"groups",
+			"prefix",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getTargetIdentity(tt.args.path); got != tt.want {
-				t.Errorf("getTargetIdentity() = %v, want %v", got, tt.want)
+			identity, prefix := getTargetIdentity(tt.args.path)
+			if identity != tt.wantIdentity {
+				t.Errorf("getTargetIdentity() identity = %v, want %v", identity, tt.wantIdentity)
+			}
+			if prefix != tt.wantPrefix {
+				t.Errorf("getTargetIdentity() prefix = %v, want %v", prefix, tt.wantPrefix)
 			}
 		})
 	}
@@ -478,7 +547,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{},
 			},
 			map[string][]*endpointInfo{
-				"cats": {
+				"/cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -490,7 +559,7 @@ func Test_resyncRoutes(t *testing.T) {
 						lastLoad: 0.0,
 					},
 				},
-				"kittens": {
+				"/kittens": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -548,7 +617,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{},
 			},
 			map[string][]*endpointInfo{
-				"cats": {
+				"/cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -606,7 +675,7 @@ func Test_resyncRoutes(t *testing.T) {
 				map[string]string{"srv1": "evt1"},
 			},
 			map[string][]*endpointInfo{
-				"cats": {
+				"/cats": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,
@@ -618,7 +687,7 @@ func Test_resyncRoutes(t *testing.T) {
 						lastLoad: 0.0,
 					},
 				},
-				"evt1": {
+				"/evt1": {
 					{
 						address:  "1.1.1.1:1",
 						lastSeen: now,

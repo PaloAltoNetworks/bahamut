@@ -2,8 +2,10 @@ package push
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -84,12 +86,17 @@ func (c *Upstreamer) ExtractRates(r *http.Request) (rate.Limit, int, error) {
 // Upstream returns the upstream to go for the given path
 func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 
-	identity := getTargetIdentity(req.URL.Path)
+	identity, prefix := getTargetIdentity(req.URL.Path)
+	key := fmt.Sprintf("%s/%s", prefix, identity)
+
+	// we rewrite the request to trim the prefix out.
+	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/_"+prefix)
+	req.RequestURI = req.URL.String()
 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	l := len(c.apis[identity])
+	l := len(c.apis[key])
 
 	var n1, n2 int
 
@@ -99,7 +106,7 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 		return "", nil
 
 	case 1:
-		ep := c.apis[identity][0]
+		ep := c.apis[key][0]
 		ep.RLock()
 		defer ep.RUnlock()
 
@@ -112,8 +119,8 @@ func (c *Upstreamer) Upstream(req *http.Request) (string, error) {
 		n1, n2 = pick(c.config.randomizer, l)
 	}
 
-	epi1 := c.apis[identity][n1]
-	epi2 := c.apis[identity][n2]
+	epi1 := c.apis[key][n1]
+	epi2 := c.apis[key][n2]
 
 	addresses := [2]string{}
 	loads := [2]float64{}
@@ -354,10 +361,22 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 
 			var foundOutdated bool
 			for _, srv := range services {
+				name, prefix := extractPrefix(srv.name)
 				for _, ep := range srv.outdatedEndpoints(since) {
-					foundOutdated = foundOutdated || handleRemoveServicePing(services, servicePing{Name: srv.name, Endpoint: ep})
+					foundOutdated = foundOutdated || handleRemoveServicePing(
+						services,
+						servicePing{
+							Name:     name,
+							Prefix:   prefix,
+							Endpoint: ep,
+						},
+					)
 					c.latencies.Delete(ep)
-					zap.L().Info("Handled outdated service", zap.String("name", srv.name), zap.String("backend", ep))
+					zap.L().Info(
+						"Handled outdated service",
+						zap.String("name", srv.name),
+						zap.String("backend", ep),
+					)
 				}
 			}
 
@@ -390,7 +409,11 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 					c.lock.Lock()
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
-					zap.L().Debug("Handled service hello", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
+					zap.L().Debug(
+						"Handled service hello",
+						zap.String("key", sp.Key()),
+						zap.String("backend", sp.Endpoint),
+					)
 				}
 
 				if requiredCount > 0 && !requiredNotifSent {
@@ -413,7 +436,11 @@ func (c *Upstreamer) listenServices(ctx context.Context, ready chan struct{}) {
 					c.apis = resyncRoutes(services, c.config.exposePrivateAPIs, c.config.eventsAPIs)
 					c.lock.Unlock()
 					c.latencies.Delete(sp.Endpoint)
-					zap.L().Debug("Handled service goodbye", zap.String("name", sp.Name), zap.String("backend", sp.Endpoint))
+					zap.L().Debug(
+						"Handled service goodbye",
+						zap.String("key", sp.Key()),
+						zap.String("backend", sp.Endpoint),
+					)
 				}
 			}
 

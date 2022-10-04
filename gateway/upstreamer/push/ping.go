@@ -37,6 +37,17 @@ type servicePing struct {
 	Versions     map[string]interface{}
 	Load         float64
 	APILimiters  IdentityToAPILimitersRegistry
+	Prefix       string
+}
+
+// Key returns the key for the service.
+// This is either the name or prefix/name, if any.
+func (s *servicePing) Key() string {
+	if s.Prefix != "" {
+		return s.Prefix + "/" + s.Name
+	}
+
+	return s.Name
 }
 
 type peerPing struct {
