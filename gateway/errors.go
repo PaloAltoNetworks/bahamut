@@ -85,24 +85,21 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		return
 	}
 
+	if s.corsOriginInjector != nil {
+		s.corsOriginInjector(w, r)
+	}
+
 	switch e := err.(type) {
 
 	case net.Error:
-		if s.corsOriginInjector != nil {
-			s.corsOriginInjector(w, r)
-		}
 		if e.Timeout() {
 			writeError(w, r, errGatewayTimeout)
 			return
 		}
-
 		writeError(w, r, errBadGateway)
 		return
 
 	case *connlimit.MaxConnError:
-		if s.corsOriginInjector != nil {
-			s.corsOriginInjector(w, r)
-		}
 		writeError(w, r, errConnLimit)
 		return
 
@@ -117,16 +114,10 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 
 	switch err {
 	case io.EOF:
-		if s.corsOriginInjector != nil {
-			s.corsOriginInjector(w, r)
-		}
 		writeError(w, r, errBadGateway)
 	case context.Canceled:
 		writeError(w, r, errClientClosedConnection)
 	case errTooManyRequest:
-		if s.corsOriginInjector != nil {
-			s.corsOriginInjector(w, r)
-		}
 		writeError(w, r, errRateLimit)
 	default:
 		// the http package function MaxBytesReader is returning an error.erroString
@@ -149,6 +140,12 @@ func writeError(w http.ResponseWriter, r *http.Request, eerr elemental.Error) {
 	data, err := elemental.Encode(encoding, elemental.NewErrors(eerr))
 	if err != nil {
 		http.Error(w, "Error while encoding the error", eerr.Code)
+	}
+
+	if encoding == elemental.EncodingTypeJSON {
+		w.Header().Set("Content-Type", string(encoding)+"; charset=UTF-8")
+	} else {
+		w.Header().Set("Content-Type", string(encoding))
 	}
 
 	w.WriteHeader(eerr.Code)
