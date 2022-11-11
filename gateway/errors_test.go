@@ -51,6 +51,7 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
+				"Content-Type":                {"application/json; charset=UTF-8"},
 			})
 		})
 
@@ -75,6 +76,7 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
+				"Content-Type":                {"application/json; charset=UTF-8"},
 			})
 		})
 
@@ -88,6 +90,7 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":504,"description":"The requested service took too long to respond. Please try again in a moment.","subject":"gateway","title":"Gateway Timeout"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
+				"Content-Type":                {"application/json; charset=UTF-8"},
 			})
 		})
 
@@ -98,6 +101,7 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
+				"Content-Type":                {"application/json; charset=UTF-8"},
 			})
 		})
 
@@ -107,6 +111,7 @@ func TestErrorHandler(t *testing.T) {
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Connections"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
+				"Content-Type":                {"application/json; charset=UTF-8"},
 			})
 		})
 
