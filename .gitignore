@@ -6,7 +6,7 @@ testresults.xml
 *.lock
 vendor
 
-*.cov
+unit_coverage.out
 .idea/*
 artifacts
 remod.dev
