@@ -42,4 +42,4 @@ jobs:
         with:
           main_branch: master
           cov_file: unit_coverage.out
-          cov_threshold: "75"
+          cov_threshold: "91"
