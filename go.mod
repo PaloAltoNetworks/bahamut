@@ -10,13 +10,11 @@ require (
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/armon/go-proxyproto v0.0.0-20200108142055-f0b8253b1507
 	github.com/cespare/xxhash v1.1.0
 	github.com/go-zoo/bone v1.3.0
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/karlseguin/ccache/v2 v2.0.6
@@ -28,15 +26,14 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
-	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	github.com/vulcand/oxy v1.1.0
-	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/zap v1.19.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
