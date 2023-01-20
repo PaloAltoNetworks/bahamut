@@ -24,18 +24,15 @@ require (
 	github.com/nats-io/nats.go v1.16.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/client_golang v1.14.0
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	github.com/vulcand/oxy v1.1.0
 	go.uber.org/zap v1.19.0
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	golang.org/x/tools v0.1.2 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
