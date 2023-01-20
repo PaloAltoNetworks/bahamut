@@ -3,9 +3,9 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20220524204820-ddfa01dc1c96
-	go.aporeto.io/tg v1.34.1-0.20220107235943-7d2aaa0dc6f5
-	go.aporeto.io/wsc v1.36.1-0.20210528201141-2af38def4959
+	go.aporeto.io/elemental v1.100.1-0.20230120233255-d53c7252f28d
+	go.aporeto.io/tg v1.34.1-0.20221212183639-7b334b94e1ae
+	go.aporeto.io/wsc v1.36.1-0.20221212182835-206c1bc3fdb1
 )
 
 require (
@@ -18,7 +18,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/karlseguin/ccache/v2 v2.0.6
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
 	github.com/nats-io/nats-server/v2 v2.8.4
 	github.com/nats-io/nats.go v1.16.0
@@ -31,8 +30,6 @@ require (
 	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
 	github.com/vulcand/oxy v1.1.0
 	go.uber.org/zap v1.19.0
-	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-	golang.org/x/tools v0.1.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
