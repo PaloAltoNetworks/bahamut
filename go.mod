@@ -3,33 +3,30 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20230120233255-d53c7252f28d
+	go.aporeto.io/elemental v1.100.1-0.20230121000747-5a4669c1ae56
 	go.aporeto.io/tg v1.34.1-0.20221212183639-7b334b94e1ae
-	go.aporeto.io/wsc v1.36.1-0.20221212182835-206c1bc3fdb1
+	go.aporeto.io/wsc v1.36.1-0.20230120235706-940550d26c7c
 )
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
-	github.com/armon/go-proxyproto v0.0.0-20200108142055-f0b8253b1507
+	github.com/armon/go-proxyproto v0.0.0-20210323213023-7e956b284f0a
 	github.com/cespare/xxhash v1.1.0
 	github.com/go-zoo/bone v1.3.0
-	github.com/gofrs/uuid v3.3.0+incompatible
+	github.com/gofrs/uuid v4.3.1+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/gorilla/websocket v1.4.2
-	github.com/jonboulle/clockwork v0.2.0 // indirect
-	github.com/karlseguin/ccache/v2 v2.0.6
-	github.com/mailgun/multibuf v0.0.0-20150714184110-565402cd71fb
-	github.com/nats-io/nats-server/v2 v2.8.4
-	github.com/nats-io/nats.go v1.16.0
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/gorilla/websocket v1.5.0
+	github.com/karlseguin/ccache/v2 v2.0.8
+	github.com/mailgun/multibuf v0.1.2
+	github.com/nats-io/nats-server/v2 v2.9.11
+	github.com/nats-io/nats.go v1.23.0
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/prometheus/client_golang v1.14.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/sirupsen/logrus v1.8.1
-	github.com/smartystreets/goconvey v1.6.4
-	github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
-	github.com/vulcand/oxy v1.1.0
+	github.com/smartystreets/goconvey v1.7.2
+	github.com/valyala/tcplisten v1.0.0
+	github.com/vulcand/oxy v1.4.2
 	go.uber.org/zap v1.19.0
-	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 )
