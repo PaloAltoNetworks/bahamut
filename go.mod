@@ -3,9 +3,9 @@ module go.aporeto.io/bahamut
 go 1.13
 
 require (
-	go.aporeto.io/elemental v1.100.1-0.20230121000747-5a4669c1ae56
-	go.aporeto.io/tg v1.34.1-0.20221212183639-7b334b94e1ae
-	go.aporeto.io/wsc v1.36.1-0.20230120235706-940550d26c7c
+	go.aporeto.io/elemental v1.121.0
+	go.aporeto.io/tg v1.50.0
+	go.aporeto.io/wsc v1.50.0
 )
 
 require (
@@ -27,6 +27,6 @@ require (
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/valyala/tcplisten v1.0.0
 	github.com/vulcand/oxy v1.4.2
-	go.uber.org/zap v1.19.0
-	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
+	go.uber.org/zap v1.21.0
+	golang.org/x/time v0.1.0
 )
