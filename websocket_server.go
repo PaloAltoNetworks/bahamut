@@ -386,7 +386,7 @@ func (n *pushServer) start(ctx context.Context) {
 				}
 
 				// We prepate the event summary if needed
-				var eventSummary interface{}
+				var eventSummary any
 				if n.cfg.pushServer.dispatchHandler != nil {
 					eventSummary, err = n.cfg.pushServer.dispatchHandler.SummarizeEvent(event)
 					if err != nil {

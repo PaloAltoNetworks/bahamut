@@ -11,7 +11,7 @@ type bufferPool struct {
 func newPool(size int) *bufferPool {
 	return &bufferPool{
 		s: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return make([]byte, size)
 			},
 		},

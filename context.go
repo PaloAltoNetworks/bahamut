@@ -28,13 +28,13 @@ type bcontext struct {
 	events                elemental.Events
 	eventsLock            *sync.Mutex
 	id                    string
-	inputData             interface{}
+	inputData             any
 	messages              []string
 	messagesLock          *sync.Mutex
-	metadata              map[interface{}]interface{}
+	metadata              map[any]any
 	next                  string
 	outputCookies         []*http.Cookie
-	outputData            interface{}
+	outputData            any
 	redirect              string
 	request               *elemental.Request
 	responseWriter        ResponseWriter
@@ -84,15 +84,15 @@ func (c *bcontext) SetCount(count int) {
 	c.count = count
 }
 
-func (c *bcontext) InputData() interface{} {
+func (c *bcontext) InputData() any {
 	return c.inputData
 }
 
-func (c *bcontext) SetInputData(data interface{}) {
+func (c *bcontext) SetInputData(data any) {
 	c.inputData = data
 }
 
-func (c *bcontext) OutputData() interface{} {
+func (c *bcontext) OutputData() any {
 	return c.outputData
 }
 
@@ -100,7 +100,7 @@ func (c *bcontext) SetDisableOutputDataPush(disabled bool) {
 	c.disableOutputDataPush = disabled
 }
 
-func (c *bcontext) SetOutputData(data interface{}) {
+func (c *bcontext) SetOutputData(data any) {
 
 	if c.responseWriter != nil {
 		panic("you cannot use SetOutputData after using SetResponseWriter")
@@ -134,7 +134,7 @@ func (c *bcontext) SetRedirect(url string) {
 	c.redirect = url
 }
 
-func (c *bcontext) Metadata(key interface{}) interface{} {
+func (c *bcontext) Metadata(key any) any {
 
 	if c.metadata == nil {
 		return nil
@@ -143,10 +143,10 @@ func (c *bcontext) Metadata(key interface{}) interface{} {
 	return c.metadata[key]
 }
 
-func (c *bcontext) SetMetadata(key, value interface{}) {
+func (c *bcontext) SetMetadata(key, value any) {
 
 	if c.metadata == nil {
-		c.metadata = map[interface{}]interface{}{}
+		c.metadata = map[any]any{}
 	}
 
 	c.metadata[key] = value
@@ -221,7 +221,7 @@ func (c *bcontext) Duplicate() Context {
 	}
 
 	if c.metadata != nil {
-		c2.metadata = map[interface{}]interface{}{}
+		c2.metadata = map[any]any{}
 		for k, v := range c.metadata {
 			c2.metadata[k] = v
 		}

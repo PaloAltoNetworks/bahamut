@@ -23,7 +23,7 @@ type servicesConfig map[string]*service
 type service struct {
 	name      string
 	routes    map[int][]bahamut.RouteInfo
-	versions  map[string]interface{}
+	versions  map[string]any
 	endpoints map[string]*endpointInfo
 }
 

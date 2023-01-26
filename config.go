@@ -132,7 +132,7 @@ type config struct {
 	meta struct {
 		serviceName      string
 		serviceVersion   string
-		version          map[string]interface{}
+		version          map[string]any
 		disableMetaRoute bool
 	}
 

@@ -105,7 +105,7 @@ type mockEmptyProcessor struct{}
 // A mockProcessor is an mockable Processor.
 type mockProcessor struct {
 	err    error
-	output interface{}
+	output any
 	events []*elemental.Event
 }
 
@@ -188,7 +188,7 @@ func (t *mockSpanContext) ForeachBaggageItem(handler func(k, v string) bool) {}
 // A mockTracer is a mockable opentracing.Tracer
 type mockTracer struct {
 	currentSpan *mockSpan
-	injected    interface{}
+	injected    any
 }
 
 func (t *mockTracer) StartSpan(string, ...opentracing.StartSpanOption) opentracing.Span {
@@ -200,12 +200,12 @@ func (t *mockTracer) StartSpan(string, ...opentracing.StartSpanOption) opentraci
 	return t.currentSpan
 }
 
-func (t *mockTracer) Inject(span opentracing.SpanContext, format interface{}, carrier interface{}) error {
+func (t *mockTracer) Inject(span opentracing.SpanContext, format any, carrier any) error {
 	t.injected = carrier
 	return nil
 }
 
-func (t *mockTracer) Extract(interface{}, interface{}) (opentracing.SpanContext, error) {
+func (t *mockTracer) Extract(any, any) (opentracing.SpanContext, error) {
 
 	return &mockSpanContext{}, nil
 }
@@ -214,14 +214,14 @@ func (t *mockTracer) Extract(interface{}, interface{}) (opentracing.SpanContext,
 type mockSpan struct {
 	finished bool
 	tracer   opentracing.Tracer
-	tags     map[string]interface{}
+	tags     map[string]any
 	fields   []log.Field
 }
 
 func newMockSpan(tracer opentracing.Tracer) *mockSpan {
 	return &mockSpan{
 		tracer: tracer,
-		tags:   map[string]interface{}{},
+		tags:   map[string]any{},
 		fields: []log.Field{},
 	}
 }
@@ -243,7 +243,7 @@ func (s *mockSpan) SetOperationName(operationName string) opentracing.Span {
 	return s
 }
 
-func (s *mockSpan) SetTag(key string, value interface{}) opentracing.Span {
+func (s *mockSpan) SetTag(key string, value any) opentracing.Span {
 
 	s.tags[key] = value
 
@@ -255,7 +255,7 @@ func (s *mockSpan) LogFields(fields ...log.Field) {
 	s.fields = append(s.fields, fields...)
 }
 
-func (s *mockSpan) LogKV(alternatingKeyValues ...interface{}) {
+func (s *mockSpan) LogKV(alternatingKeyValues ...any) {
 
 }
 
@@ -275,6 +275,6 @@ func (s *mockSpan) String() string {
 	return "1234567890"
 }
 
-func (s *mockSpan) LogEvent(event string)                                 {}
-func (s *mockSpan) LogEventWithPayload(event string, payload interface{}) {}
-func (s *mockSpan) Log(data opentracing.LogData)                          {}
+func (s *mockSpan) LogEvent(event string)                         {}
+func (s *mockSpan) LogEventWithPayload(event string, payload any) {}
+func (s *mockSpan) Log(data opentracing.LogData)                  {}

@@ -47,7 +47,7 @@ type wsPushSession struct {
 	cfg                   config
 	headers               http.Header
 	id                    string
-	metadata              interface{}
+	metadata              any
 	parameters            url.Values
 	remoteAddr            string
 	conn                  wsc.Websocket
@@ -157,8 +157,8 @@ func (s *wsPushSession) Claims() []string                              { return 
 func (s *wsPushSession) Token() string                                 { return s.Parameter("token") }
 func (s *wsPushSession) Context() context.Context                      { return s.ctx }
 func (s *wsPushSession) TLSConnectionState() *tls.ConnectionState      { return s.tlsConnectionState }
-func (s *wsPushSession) Metadata() interface{}                         { return s.metadata }
-func (s *wsPushSession) SetMetadata(m interface{})                     { s.metadata = m }
+func (s *wsPushSession) Metadata() any                                 { return s.metadata }
+func (s *wsPushSession) SetMetadata(m any)                             { s.metadata = m }
 func (s *wsPushSession) ClientIP() string                              { return s.remoteAddr }
 func (s *wsPushSession) setRemoteAddress(addr string)                  { s.remoteAddr = addr }
 func (s *wsPushSession) setConn(conn wsc.Websocket)                    { s.conn = conn }
@@ -306,7 +306,7 @@ func (s *wsPushSession) listen() {
 					Title:       "Bad request",
 					Subject:     "bahamut",
 					Description: fmt.Sprintf("unable to parse identity filters: %s", err),
-					Data: map[string]interface{}{
+					Data: map[string]any{
 						"pushconfig": "filters",
 					},
 				})

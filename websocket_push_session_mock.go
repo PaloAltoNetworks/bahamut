@@ -18,7 +18,7 @@ type MockSession struct {
 	MockCookies            map[string]*http.Cookie
 	MockHeaders            map[string]string
 	MockIdentifier         string
-	MockMetadata           interface{}
+	MockMetadata           any
 	MockParameters         map[string]string
 	MockPushConfig         *elemental.PushConfig
 	MockTLSConnectionState *tls.ConnectionState
@@ -82,10 +82,10 @@ func (s *MockSession) Token() string { return s.MockToken }
 func (s *MockSession) TLSConnectionState() *tls.ConnectionState { return s.MockTLSConnectionState }
 
 // Metadata is part of the PushSession interface.
-func (s *MockSession) Metadata() interface{} { return s.MockMetadata }
+func (s *MockSession) Metadata() any { return s.MockMetadata }
 
 // SetMetadata is part of the PushSession interface.
-func (s *MockSession) SetMetadata(m interface{}) { s.MockMetadata = m }
+func (s *MockSession) SetMetadata(m any) { s.MockMetadata = m }
 
 // Context is part of the PushSession interface.
 func (s *MockSession) Context() context.Context { return context.Background() }

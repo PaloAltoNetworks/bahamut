@@ -24,7 +24,7 @@ import (
 	"go.aporeto.io/elemental"
 )
 
-func handleRecoveredPanic(ctx context.Context, r interface{}, disablePanicRecovery bool) error {
+func handleRecoveredPanic(ctx context.Context, r any, disablePanicRecovery bool) error {
 
 	if r == nil {
 		return nil

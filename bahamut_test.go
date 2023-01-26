@@ -155,7 +155,7 @@ func TestBahamut_VersionsInfo(t *testing.T) {
 	Convey("Given I have a bahamut server", t, func() {
 
 		cfg := config{}
-		cfg.meta.version = map[string]interface{}{}
+		cfg.meta.version = map[string]any{}
 
 		b := NewServer(cfg)
 

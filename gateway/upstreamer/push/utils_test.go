@@ -194,9 +194,9 @@ func TestHandleServicePings(t *testing.T) {
 				},
 			}
 
-			versions11 := map[string]interface{}{"a": 1}
-			versions12 := map[string]interface{}{"a": 2}
-			versions2 := map[string]interface{}{"b": 2}
+			versions11 := map[string]any{"a": 1}
+			versions12 := map[string]any{"a": 2}
+			versions2 := map[string]any{"b": 2}
 
 			handled := handleAddServicePing(scfg, servicePing{
 				Name:         "srv1",
@@ -526,7 +526,7 @@ func Test_resyncRoutes(t *testing.T) {
 								},
 							},
 						},
-						versions: map[string]interface{}{
+						versions: map[string]any{
 							"hello": "hey",
 						},
 						endpoints: map[string]*endpointInfo{
@@ -596,7 +596,7 @@ func Test_resyncRoutes(t *testing.T) {
 								},
 							},
 						},
-						versions: map[string]interface{}{
+						versions: map[string]any{
 							"hello": "hey",
 						},
 						endpoints: map[string]*endpointInfo{
@@ -654,7 +654,7 @@ func Test_resyncRoutes(t *testing.T) {
 								},
 							},
 						},
-						versions: map[string]interface{}{
+						versions: map[string]any{
 							"hello": "hey",
 						},
 						endpoints: map[string]*endpointInfo{

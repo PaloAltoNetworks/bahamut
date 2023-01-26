@@ -99,7 +99,7 @@ type natsPublishConfig struct {
 //
 // See: https://nats.io/documentation/concepts/nats-queueing/
 func NATSOptSubscribeQueue(queueGroup string) PubSubOptSubscribe {
-	return func(c interface{}) {
+	return func(c any) {
 		c.(*natsSubscribeConfig).queueGroup = queueGroup
 	}
 }
@@ -107,7 +107,7 @@ func NATSOptSubscribeQueue(queueGroup string) PubSubOptSubscribe {
 // NATSOptSubscribeReplyTimeout sets the duration of time to wait before giving up
 // waiting for a response to publish back to the client that is expecting a response
 func NATSOptSubscribeReplyTimeout(t time.Duration) PubSubOptSubscribe {
-	return func(c interface{}) {
+	return func(c any) {
 		c.(*natsSubscribeConfig).replyTimeout = t
 	}
 }
@@ -124,7 +124,7 @@ func NATSOptSubscribeReplyTimeout(t time.Duration) PubSubOptSubscribe {
 //
 // This option CANNOT be combined with NATSOptPublishRequireAck
 func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSubOptPublish {
-	return func(c interface{}) {
+	return func(c any) {
 		config := c.(*natsPublishConfig)
 
 		switch {
@@ -149,7 +149,7 @@ func NATSOptRespondToChannel(ctx context.Context, resp chan *Publication) PubSub
 //
 // This option CANNOT be combined with NATSOptRespondToChannel
 func NATSOptPublishRequireAck(ctx context.Context) PubSubOptPublish {
-	return func(c interface{}) {
+	return func(c any) {
 		config := c.(*natsPublishConfig)
 
 		switch {

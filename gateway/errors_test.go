@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,7 +46,7 @@ func TestErrorHandler(t *testing.T) {
 
 		Convey("When I call ServeHTTP with an io.EOF error", func() {
 			eh.ServeHTTP(w, req, io.EOF)
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
@@ -57,13 +56,13 @@ func TestErrorHandler(t *testing.T) {
 
 		Convey("When I call ServeHTTP with a context.Canceled error", func() {
 			eh.ServeHTTP(w, req, context.Canceled)
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":499,"description":"The client closed the connection before it could complete.","subject":"gateway","title":"Client Closed Connection"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a random error", func() {
 			eh.ServeHTTP(w, req, fmt.Errorf("random error"))
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":500,"description":"random error","subject":"gateway","title":"Internal Server Error"}]`)
 		})
 
@@ -72,7 +71,7 @@ func TestErrorHandler(t *testing.T) {
 				err: &ratelimit.MaxRateError{},
 			}
 			eh.ServeHTTP(w, req, ne)
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":502,"description":"The requested service is not available. Please try again in a moment.","subject":"gateway","title":"Bad Gateway"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
@@ -86,7 +85,7 @@ func TestErrorHandler(t *testing.T) {
 				timeout: true,
 			}
 			eh.ServeHTTP(w, req, ne)
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":504,"description":"The requested service took too long to respond. Please try again in a moment.","subject":"gateway","title":"Gateway Timeout"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
@@ -96,7 +95,7 @@ func TestErrorHandler(t *testing.T) {
 
 		Convey("When I call ServeHTTP with a errRateLimit", func() {
 			eh.ServeHTTP(w, req, errTooManyRequest)
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			_ = data
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Requests"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
@@ -107,7 +106,7 @@ func TestErrorHandler(t *testing.T) {
 
 		Convey("When I call ServeHTTP with a connlimit.MaxConnError", func() {
 			eh.ServeHTTP(w, req, &connlimit.MaxConnError{})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":429,"description":"Please retry in a moment.","subject":"gateway","title":"Too Many Connections"}]`)
 			So(w.Header(), ShouldResemble, http.Header{
 				"Access-Control-Allow-Origin": {"foo"},
@@ -117,19 +116,19 @@ func TestErrorHandler(t *testing.T) {
 
 		Convey("When I call ServeHTTP with a multibuf.MaxSizeReachedErrortf", func() {
 			eh.ServeHTTP(w, req, &multibuf.MaxSizeReachedError{})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":413,"description":"Payload size exceeds the maximum allowed size (0 bytes)","subject":"gateway","title":"Entity Too Large"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a error.errorString too large returned by MaxBytesReader", func() {
 			eh.ServeHTTP(w, req, errors.New("http: request body too large"))
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":413,"description":"http: request body too large","subject":"gateway","title":"Entity Too Large"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a x509.UnknownAuthorityError", func() {
 			eh.ServeHTTP(w, req, x509.UnknownAuthorityError{})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":495,"description":"x509: certificate signed by unknown authority","subject":"gateway","title":"TLS Error"}]`)
 		})
 
@@ -138,19 +137,19 @@ func TestErrorHandler(t *testing.T) {
 				Host:        "toto",
 				Certificate: &x509.Certificate{},
 			})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":495,"description":"x509: certificate is not valid for any names, but wanted to match toto","subject":"gateway","title":"TLS Error"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a x509.CertificateInvalidError", func() {
 			eh.ServeHTTP(w, req, x509.CertificateInvalidError{})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":495,"description":"x509: certificate is not authorized to sign other certificates","subject":"gateway","title":"TLS Error"}]`)
 		})
 
 		Convey("When I call ServeHTTP with a x509.ConstraintViolationError", func() {
 			eh.ServeHTTP(w, req, x509.ConstraintViolationError{})
-			data, _ := ioutil.ReadAll(w.Body)
+			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":495,"description":"x509: invalid signature: parent certificate cannot sign this kind of certificate","subject":"gateway","title":"TLS Error"}]`)
 		})
 	})
@@ -165,7 +164,7 @@ func TestWriteError(t *testing.T) {
 
 		writeError(w, req, elemental.NewError("error", "that's an error", "gateway", http.StatusNotFound))
 
-		data, _ := ioutil.ReadAll(w.Body)
+		data, _ := io.ReadAll(w.Body)
 		So(string(data), ShouldEqual, `[{"code":404,"description":"that's an error","subject":"gateway","title":"error"}]`)
 	})
 
@@ -177,7 +176,7 @@ func TestWriteError(t *testing.T) {
 
 		writeError(w, req, elemental.NewError("error", "that's an error", "gateway", http.StatusNotFound))
 
-		data, _ := ioutil.ReadAll(w.Body)
+		data, _ := io.ReadAll(w.Body)
 		So(string(data), ShouldEqual, `[{"code":404,"description":"that's an error","subject":"gateway","title":"error"}]`)
 	})
 
@@ -189,7 +188,7 @@ func TestWriteError(t *testing.T) {
 
 		writeError(w, req, elemental.NewError("error", "that's an error", "gateway", http.StatusNotFound))
 
-		data, _ := ioutil.ReadAll(w.Body)
+		data, _ := io.ReadAll(w.Body)
 		So(data, ShouldResemble, []byte{145, 134, 164, 99, 111, 100, 101, 209, 1, 148, 164, 100, 97, 116, 97, 192, 171, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 175, 116, 104, 97, 116, 39, 115, 32, 97, 110, 32, 101, 114, 114, 111, 114, 167, 115, 117, 98, 106, 101, 99, 116, 167, 103, 97, 116, 101, 119, 97, 121, 165, 116, 105, 116, 108, 101, 165, 101, 114, 114, 111, 114, 165, 116, 114, 97, 99, 101, 160})
 	})
 }

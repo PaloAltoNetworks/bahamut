@@ -98,7 +98,7 @@ func (m *MockNATSClient) Publish(subj string, data []byte) error {
 }
 
 // Publish indicates an expected call of Publish.
-func (mr *MockNATSClientMockRecorder) Publish(subj, data interface{}) *gomock.Call {
+func (mr *MockNATSClientMockRecorder) Publish(subj, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockNATSClient)(nil).Publish), subj, data)
 }
@@ -113,7 +113,7 @@ func (m *MockNATSClient) QueueSubscribe(subj, queue string, cb nats.MsgHandler) 
 }
 
 // QueueSubscribe indicates an expected call of QueueSubscribe.
-func (mr *MockNATSClientMockRecorder) QueueSubscribe(subj, queue, cb interface{}) *gomock.Call {
+func (mr *MockNATSClientMockRecorder) QueueSubscribe(subj, queue, cb any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueueSubscribe", reflect.TypeOf((*MockNATSClient)(nil).QueueSubscribe), subj, queue, cb)
 }
@@ -128,7 +128,7 @@ func (m *MockNATSClient) RequestWithContext(ctx context.Context, subj string, da
 }
 
 // RequestWithContext indicates an expected call of RequestWithContext.
-func (mr *MockNATSClientMockRecorder) RequestWithContext(ctx, subj, data interface{}) *gomock.Call {
+func (mr *MockNATSClientMockRecorder) RequestWithContext(ctx, subj, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestWithContext", reflect.TypeOf((*MockNATSClient)(nil).RequestWithContext), ctx, subj, data)
 }
@@ -143,7 +143,7 @@ func (m *MockNATSClient) Subscribe(subj string, cb nats.MsgHandler) (*nats.Subsc
 }
 
 // Subscribe indicates an expected call of Subscribe.
-func (mr *MockNATSClientMockRecorder) Subscribe(subj, cb interface{}) *gomock.Call {
+func (mr *MockNATSClientMockRecorder) Subscribe(subj, cb any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockNATSClient)(nil).Subscribe), subj, cb)
 }

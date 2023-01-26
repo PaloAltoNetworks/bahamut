@@ -28,12 +28,12 @@ type MockContext struct {
 	MockCtx                   context.Context
 	MockEvents                elemental.Events
 	MockID                    string
-	MockInputData             interface{}
+	MockInputData             any
 	MockMessages              []string
-	MockMetadata              map[interface{}]interface{}
+	MockMetadata              map[any]any
 	MockNext                  string
 	MockOutputCookies         []*http.Cookie
-	MockOutputData            interface{}
+	MockOutputData            any
 	MockRedirect              string
 	MockRequest               *elemental.Request
 	MockResponseWriter        ResponseWriter
@@ -76,17 +76,17 @@ func (c *MockContext) SetCount(count int) {
 }
 
 // InputData returns the context's input data.
-func (c *MockContext) InputData() interface{} {
+func (c *MockContext) InputData() any {
 	return c.MockInputData
 }
 
 // SetInputData sets the context's input data.
-func (c *MockContext) SetInputData(data interface{}) {
+func (c *MockContext) SetInputData(data any) {
 	c.MockInputData = data
 }
 
 // OutputData returns the context's output data.
-func (c *MockContext) OutputData() interface{} {
+func (c *MockContext) OutputData() any {
 	return c.MockOutputData
 }
 
@@ -96,7 +96,7 @@ func (c *MockContext) SetDisableOutputDataPush(disabled bool) {
 }
 
 // SetOutputData sets the context's output data.
-func (c *MockContext) SetOutputData(data interface{}) {
+func (c *MockContext) SetOutputData(data any) {
 	c.MockOutputData = data
 }
 
@@ -126,7 +126,7 @@ func (c *MockContext) SetRedirect(url string) {
 }
 
 // Metadata returtns the metadata associated to the given key.
-func (c *MockContext) Metadata(key interface{}) interface{} {
+func (c *MockContext) Metadata(key any) any {
 
 	if c.MockMetadata == nil {
 		return nil
@@ -136,10 +136,10 @@ func (c *MockContext) Metadata(key interface{}) interface{} {
 }
 
 // SetMetadata sets the metadata values for the given key.
-func (c *MockContext) SetMetadata(key, value interface{}) {
+func (c *MockContext) SetMetadata(key, value any) {
 
 	if c.MockMetadata == nil {
-		c.MockMetadata = map[interface{}]interface{}{}
+		c.MockMetadata = map[any]any{}
 	}
 
 	c.MockMetadata[key] = value
@@ -221,7 +221,7 @@ func (c *MockContext) Duplicate() Context {
 	}
 
 	if c.MockMetadata != nil {
-		c2.MockMetadata = map[interface{}]interface{}{}
+		c2.MockMetadata = map[any]any{}
 		for k, v := range c.MockMetadata {
 			c2.MockMetadata[k] = v
 		}
