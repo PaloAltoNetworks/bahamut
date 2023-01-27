@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - master
-  pull_request:
+  pull_request_target:
 
 defaults:
   run:
@@ -37,7 +37,7 @@ jobs:
         run: |
           make
 
-      - uses: PaloAltoNetworks/cov@1.0.0
+      - uses: PaloAltoNetworks/cov@2.0.0
         if: ${{matrix.go == 1.19}}
         with:
           main_branch: master
