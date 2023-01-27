@@ -335,7 +335,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 		Convey("When I call makeResponse", func() {
 
 			resp := makeResponse(ctx, response, map[elemental.Identity]CustomMarshaller{
-				testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return []byte("coucou"), nil },
+				testmodel.ListIdentity: func(*elemental.Response, any, error) ([]byte, error) { return []byte("coucou"), nil },
 			})
 
 			Convey("Then output data should be correct", func() {
@@ -364,7 +364,7 @@ func TestHandlers_makeResponse(t *testing.T) {
 
 			So(func() {
 				makeResponse(ctx, response, map[elemental.Identity]CustomMarshaller{
-					testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return nil, fmt.Errorf("boom") },
+					testmodel.ListIdentity: func(*elemental.Response, any, error) ([]byte, error) { return nil, fmt.Errorf("boom") },
 				})
 			}, ShouldPanicWith, "unable to encode output data using custom marshaller: boom")
 
@@ -421,7 +421,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 		Convey("When I call makeErrorResponse", func() {
 
 			r := makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
-				testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return []byte("coucou"), nil },
+				testmodel.ListIdentity: func(*elemental.Response, any, error) ([]byte, error) { return []byte("coucou"), nil },
 			}, nil)
 
 			Convey("Then the returned response should be the same", func() {
@@ -445,7 +445,7 @@ func TestHandlers_makeErrorResponse(t *testing.T) {
 
 			So(func() {
 				makeErrorResponse(context.Background(), resp, err, map[elemental.Identity]CustomMarshaller{
-					testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return nil, fmt.Errorf("boom") },
+					testmodel.ListIdentity: func(*elemental.Response, any, error) ([]byte, error) { return nil, fmt.Errorf("boom") },
 				}, nil)
 			}, ShouldPanicWith, "unable to encode error using custom marshaller: boom")
 		})

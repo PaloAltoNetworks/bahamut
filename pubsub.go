@@ -16,10 +16,10 @@ import (
 )
 
 // PubSubOptPublish is the type of option that can use in PubSubClient.Publish.
-type PubSubOptPublish func(interface{})
+type PubSubOptPublish func(any)
 
 // PubSubOptSubscribe is the type of option that can use in PubSubClient.Subscribe.
-type PubSubOptSubscribe func(interface{})
+type PubSubOptSubscribe func(any)
 
 // A PubSubClient is a structure that provides a publish/subscribe mechanism.
 type PubSubClient interface {

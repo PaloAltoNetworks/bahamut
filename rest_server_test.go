@@ -15,11 +15,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -37,7 +37,7 @@ func loadFixtureCertificates() (*x509.CertPool, *x509.CertPool, []tls.Certificat
 
 	systemCAPool, _ := x509.SystemCertPool()
 
-	clientCACertData, _ := ioutil.ReadFile("fixtures/certs/ca-cert.pem")
+	clientCACertData, _ := os.ReadFile("fixtures/certs/ca-cert.pem")
 	clientCAPool := x509.NewCertPool()
 	clientCAPool.AppendCertsFromPEM(clientCACertData)
 
@@ -149,7 +149,7 @@ func TestServer_RouteInstallation(t *testing.T) {
 		cfg.restServer.customRootHandlerFunc = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 		cfg.restServer.listenAddress = "address:80"
 		cfg.meta.serviceName = "hello"
-		cfg.meta.version = map[string]interface{}{}
+		cfg.meta.version = map[string]any{}
 
 		c := newRestServer(cfg, bone.New(), nil, nil, nil)
 
@@ -195,7 +195,7 @@ func TestServer_RouteInstallation(t *testing.T) {
 		cfg.restServer.customRootHandlerFunc = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 		cfg.restServer.listenAddress = "address:80"
 		cfg.meta.serviceName = "hello"
-		cfg.meta.version = map[string]interface{}{}
+		cfg.meta.version = map[string]any{}
 		customHandlerFunc := func() map[string]http.HandlerFunc {
 			return map[string]http.HandlerFunc{
 				"/saml": http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
@@ -282,7 +282,7 @@ func TestServer_Start(t *testing.T) {
 			time.Sleep(30 * time.Millisecond)
 
 			cert, _ := tls.LoadX509KeyPair("fixtures/certs/client-cert.pem", "fixtures/certs/client-key.pem")
-			cacert, _ := ioutil.ReadFile("fixtures/certs/ca-cert.pem")
+			cacert, _ := os.ReadFile("fixtures/certs/ca-cert.pem")
 			pool := x509.NewCertPool()
 			pool.AppendCertsFromPEM(cacert)
 			tlsConfig := &tls.Config{

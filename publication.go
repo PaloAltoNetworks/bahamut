@@ -78,12 +78,12 @@ func NewPublication(topic string) *Publication {
 }
 
 // Encode the given object into the publication.
-func (p *Publication) Encode(o interface{}) error {
+func (p *Publication) Encode(o any) error {
 	return p.EncodeWithEncoding(o, elemental.EncodingTypeMSGPACK)
 }
 
 // EncodeWithEncoding the given object into the publication using the given encoding.
-func (p *Publication) EncodeWithEncoding(o interface{}, encoding elemental.EncodingType) error {
+func (p *Publication) EncodeWithEncoding(o any, encoding elemental.EncodingType) error {
 
 	data, err := elemental.Encode(encoding, o)
 	if err != nil {
@@ -101,7 +101,7 @@ func (p *Publication) EncodeWithEncoding(o interface{}, encoding elemental.Encod
 }
 
 // Decode decodes the data into the given dest.
-func (p *Publication) Decode(dest interface{}) error {
+func (p *Publication) Decode(dest any) error {
 
 	if p.span != nil {
 		p.span.LogFields(log.Object("payload", string(p.Data)))

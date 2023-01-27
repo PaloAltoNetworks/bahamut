@@ -34,7 +34,7 @@ type servicePing struct {
 	PushEndpoint string
 	Status       entityStatus
 	Routes       map[int][]bahamut.RouteInfo
-	Versions     map[string]interface{}
+	Versions     map[string]any
 	Load         float64
 	APILimiters  IdentityToAPILimitersRegistry
 	Prefix       string

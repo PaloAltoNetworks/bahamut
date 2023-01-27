@@ -70,7 +70,7 @@ type mockSessionHandler struct {
 	shouldDispatchErr        error
 	relatedIdentitiesCalled  int
 	relatedIdentities        []string
-	summarizeEvent           interface{}
+	summarizeEvent           any
 	summarizeEventErr        error
 	summarizeEventCalled     int
 
@@ -107,7 +107,7 @@ func (h *mockSessionHandler) ShouldPublish(*elemental.Event) (bool, error) {
 	return h.shouldPublishOK, h.shouldPublishErr
 }
 
-func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error) {
+func (h *mockSessionHandler) ShouldDispatch(PushSession, *elemental.Event, any) (bool, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -124,7 +124,7 @@ func (h *mockSessionHandler) RelatedEventIdentities(i string) []string {
 	return h.relatedIdentities
 }
 
-func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) (interface{}, error) {
+func (h *mockSessionHandler) SummarizeEvent(evt *elemental.Event) (any, error) {
 
 	h.Lock()
 	defer h.Unlock()

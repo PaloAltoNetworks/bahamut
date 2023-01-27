@@ -14,7 +14,7 @@ package bahamut
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -259,13 +259,13 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptMarshallers should work", t, func() {
-		u := map[elemental.Identity]CustomMarshaller{testmodel.ListIdentity: func(*elemental.Response, interface{}, error) ([]byte, error) { return nil, nil }}
+		u := map[elemental.Identity]CustomMarshaller{testmodel.ListIdentity: func(*elemental.Response, any, error) ([]byte, error) { return nil, nil }}
 		OptMarshallers(u)(&c)
 		So(c.model.marshallers, ShouldResemble, u)
 	})
 
 	Convey("Calling OptServiceInfo should work", t, func() {
-		sb := map[string]interface{}{}
+		sb := map[string]any{}
 		OptServiceInfo("n", "v", sb)(&c)
 		So(c.meta.serviceName, ShouldEqual, "n")
 		So(c.meta.serviceVersion, ShouldEqual, "v")
@@ -315,7 +315,7 @@ func TestBahamut_Options(t *testing.T) {
 	})
 
 	Convey("Calling OptHTTPLogger should work", t, func() {
-		l := log.New(ioutil.Discard, "", 0)
+		l := log.New(io.Discard, "", 0)
 		OptHTTPLogger(l)(&c)
 		So(c.restServer.httpLogger, ShouldEqual, l)
 	})

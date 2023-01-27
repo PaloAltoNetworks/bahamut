@@ -80,7 +80,7 @@ type Server interface {
 	RoutesInfo() map[int][]RouteInfo
 
 	// VersionsInfo returns additional versioning info.
-	VersionsInfo() map[string]interface{}
+	VersionsInfo() map[string]any
 
 	// PushEndpoint returns the configured push endpoints.
 	// If the push server is not active, it will return an
@@ -111,19 +111,19 @@ type Context interface {
 	Request() *elemental.Request
 
 	// InputData returns the data sent by the client
-	InputData() interface{}
+	InputData() any
 
 	// SetInputData replaces the current input data.
-	SetInputData(interface{})
+	SetInputData(any)
 
 	// OutputData returns the current output data.
-	OutputData() interface{}
+	OutputData() any
 
 	// SetOutputData sets the data that will be returned to the client.
 	//
 	// If you use SetOutputData after having already used SetResponseWriter,
 	// the call will panic.
-	SetOutputData(interface{})
+	SetOutputData(any)
 
 	// SetDisableOutputDataPush will instruct the bahamut server to
 	// not automatically push the content of OutputData.
@@ -187,10 +187,10 @@ type Context interface {
 	EnqueueEvents(...*elemental.Event)
 
 	// SetMetadata sets opaque metadata that can be reteieved by Metadata().
-	SetMetadata(key, value interface{})
+	SetMetadata(key, value any)
 
 	// Metadata returns the opaque data set by using SetMetadata().
-	Metadata(key interface{}) interface{}
+	Metadata(key any) any
 
 	// outputCookies adds cookies to the response that
 	// will be returned to the client.
@@ -198,7 +198,7 @@ type Context interface {
 }
 
 // Processor is the interface for a Processor Unit
-type Processor interface{}
+type Processor any
 
 // RetrieveManyProcessor is the interface a processor must implement
 // in order to be able to manage OperationRetrieveMany.
@@ -280,7 +280,7 @@ type PushDispatchHandler interface {
 	// The last parameter will contain whatever has been returned by SummarizeEvent.
 	// It is NOT safe to modify the given *elemental.Event. This would cause
 	// race conditions. You can only safely read from it.
-	ShouldDispatch(PushSession, *elemental.Event, interface{}) (bool, error)
+	ShouldDispatch(PushSession, *elemental.Event, any) (bool, error)
 
 	// RelatedEventIdentities allows to return a list of related identities
 	// associated to the main event identity. This allows to pass filtering
@@ -292,7 +292,7 @@ type PushDispatchHandler interface {
 	// If you need to decode an event to read some information to make a
 	// dispatch decision, this is a good place as it will allow you to only
 	// do this once.
-	SummarizeEvent(event *elemental.Event) (interface{}, error)
+	SummarizeEvent(event *elemental.Event) (any, error)
 }
 
 // PushPublishHandler is the interface that must be implemented in order to
@@ -324,8 +324,8 @@ type Session interface {
 	ClaimsMap() map[string]string
 	Token() string
 	TLSConnectionState() *tls.ConnectionState
-	Metadata() interface{}
-	SetMetadata(interface{})
+	Metadata() any
+	SetMetadata(any)
 	Context() context.Context
 	ClientIP() string
 	Cookie(string) (*http.Cookie, error)

@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -276,7 +276,7 @@ func Test_circuitBreakerHandler(t *testing.T) {
 			cb.ServeHTTP(recorder, req)
 
 			Convey("Then the response should be correct", func() {
-				data, _ := ioutil.ReadAll(recorder.Body)
+				data, _ := io.ReadAll(recorder.Body)
 				So(string(data), ShouldEqual, `[{"code":503,"description":"The service is busy handling requests. Please retry in a moment","subject":"gateway","title":"Service Unavailable"}]`)
 			})
 		})

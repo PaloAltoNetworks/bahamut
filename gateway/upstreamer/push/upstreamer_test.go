@@ -127,7 +127,7 @@ func TestUpstreamer(t *testing.T) {
 						},
 					},
 				},
-				Versions: map[string]interface{}{
+				Versions: map[string]any{
 					"hello": "hey",
 				},
 				Load: 0.2,
@@ -162,7 +162,7 @@ func TestUpstreamer(t *testing.T) {
 						},
 					},
 				},
-				Versions: map[string]interface{}{
+				Versions: map[string]any{
 					"hello": "hey",
 				},
 				Load: 0.2,
@@ -374,7 +374,7 @@ func TestGlobalServiceTopic(t *testing.T) {
 						},
 					},
 				},
-				Versions: map[string]interface{}{
+				Versions: map[string]any{
 					"hello": "hey",
 				},
 				Load: 0.2,

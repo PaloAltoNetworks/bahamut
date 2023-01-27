@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sync"
@@ -60,8 +59,8 @@ func TestLimitListener(t *testing.T) {
 				}
 				return
 			}
-			defer r.Body.Close()            // nolint
-			io.Copy(ioutil.Discard, r.Body) // nolint
+			defer r.Body.Close()        // nolint
+			io.Copy(io.Discard, r.Body) // nolint
 		}()
 	}
 	wg.Wait()

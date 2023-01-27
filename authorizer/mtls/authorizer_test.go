@@ -16,8 +16,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 
@@ -29,23 +29,23 @@ import (
 func TestBahamut_MTLSAuthorizer(t *testing.T) {
 
 	Convey("Given I have a some certificates", t, func() {
-		caChainAData, _ := ioutil.ReadFile("./fixtures/ca-chain-a.pem")
+		caChainAData, _ := os.ReadFile("./fixtures/ca-chain-a.pem")
 		certPoolA := x509.NewCertPool()
 		certPoolA.AppendCertsFromPEM(caChainAData)
 
-		userCertAData, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+		userCertAData, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 		userCertABlock, _ := pem.Decode(userCertAData)
 		userCertA, _ := x509.ParseCertificate(userCertABlock.Bytes)
 
-		serverCertAData, _ := ioutil.ReadFile("./fixtures/server-a-cert.pem")
+		serverCertAData, _ := os.ReadFile("./fixtures/server-a-cert.pem")
 		serverCertABlock, _ := pem.Decode(serverCertAData)
 		serverCertA, _ := x509.ParseCertificate(serverCertABlock.Bytes)
 
-		userCertBData, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+		userCertBData, _ := os.ReadFile("./fixtures/user-b-cert.pem")
 		userCertBlock, _ := pem.Decode(userCertBData)
 		userCertB, _ := x509.ParseCertificate(userCertBlock.Bytes)
 
-		userCertExtData, _ := ioutil.ReadFile("./fixtures/user-ext-cert.pem")
+		userCertExtData, _ := os.ReadFile("./fixtures/user-ext-cert.pem")
 		userCertExtBlock, _ := pem.Decode(userCertExtData)
 		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
 
@@ -530,23 +530,23 @@ func TestBahamut_MTLSAuthorizer(t *testing.T) {
 func TestBahamut_NewMTLSRequestAuthenticator(t *testing.T) {
 
 	Convey("Given I have a some certificates", t, func() {
-		caChainAData, _ := ioutil.ReadFile("./fixtures/ca-chain-a.pem")
+		caChainAData, _ := os.ReadFile("./fixtures/ca-chain-a.pem")
 		certPoolA := x509.NewCertPool()
 		certPoolA.AppendCertsFromPEM(caChainAData)
 
-		userCertAData, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+		userCertAData, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 		userCertABlock, _ := pem.Decode(userCertAData)
 		userCertA, _ := x509.ParseCertificate(userCertABlock.Bytes)
 
-		serverCertAData, _ := ioutil.ReadFile("./fixtures/server-a-cert.pem")
+		serverCertAData, _ := os.ReadFile("./fixtures/server-a-cert.pem")
 		serverCertABlock, _ := pem.Decode(serverCertAData)
 		serverCertA, _ := x509.ParseCertificate(serverCertABlock.Bytes)
 
-		userCertBData, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+		userCertBData, _ := os.ReadFile("./fixtures/user-b-cert.pem")
 		userCertBlock, _ := pem.Decode(userCertBData)
 		userCertB, _ := x509.ParseCertificate(userCertBlock.Bytes)
 
-		userCertExtData, _ := ioutil.ReadFile("./fixtures/user-ext-cert.pem")
+		userCertExtData, _ := os.ReadFile("./fixtures/user-ext-cert.pem")
 		userCertExtBlock, _ := pem.Decode(userCertExtData)
 		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
 
@@ -950,31 +950,31 @@ func (s *mockSession) Claims() []string                         { return s.claim
 func (s *mockSession) ClaimsMap() map[string]string             { return nil }
 func (s *mockSession) Token() string                            { return "" }
 func (s *mockSession) TLSConnectionState() *tls.ConnectionState { return s.state }
-func (s *mockSession) Metadata() interface{}                    { return nil }
-func (s *mockSession) SetMetadata(interface{})                  {}
+func (s *mockSession) Metadata() any                            { return nil }
+func (s *mockSession) SetMetadata(any)                          {}
 func (s *mockSession) Context() context.Context                 { return context.Background() }
 func (s *mockSession) ClientIP() string                         { return "" }
 
 func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 
 	Convey("Given I have a some certificates", t, func() {
-		caChainAData, _ := ioutil.ReadFile("./fixtures/ca-chain-a.pem")
+		caChainAData, _ := os.ReadFile("./fixtures/ca-chain-a.pem")
 		certPoolA := x509.NewCertPool()
 		certPoolA.AppendCertsFromPEM(caChainAData)
 
-		userCertAData, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+		userCertAData, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 		userCertABlock, _ := pem.Decode(userCertAData)
 		userCertA, _ := x509.ParseCertificate(userCertABlock.Bytes)
 
-		serverCertAData, _ := ioutil.ReadFile("./fixtures/server-a-cert.pem")
+		serverCertAData, _ := os.ReadFile("./fixtures/server-a-cert.pem")
 		serverCertABlock, _ := pem.Decode(serverCertAData)
 		serverCertA, _ := x509.ParseCertificate(serverCertABlock.Bytes)
 
-		userCertBData, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+		userCertBData, _ := os.ReadFile("./fixtures/user-b-cert.pem")
 		userCertBlock, _ := pem.Decode(userCertBData)
 		userCertB, _ := x509.ParseCertificate(userCertBlock.Bytes)
 
-		userCertExtData, _ := ioutil.ReadFile("./fixtures/user-ext-cert.pem")
+		userCertExtData, _ := os.ReadFile("./fixtures/user-ext-cert.pem")
 		userCertExtBlock, _ := pem.Decode(userCertExtData)
 		userCertExt, _ := x509.ParseCertificate(userCertExtBlock.Bytes)
 
@@ -1246,11 +1246,11 @@ func TestBahamut_NewMTLSSessionAuthenticator(t *testing.T) {
 
 func TestCertificatesFromHeaderThenTLSState(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 
-	cdata2, _ := ioutil.ReadFile("./fixtures/user-b-cert.pem")
+	cdata2, _ := os.ReadFile("./fixtures/user-b-cert.pem")
 	cblock2, _ := pem.Decode(cdata2)
 	cert2, _ := x509.ParseCertificate(cblock2.Bytes)
 
@@ -1330,7 +1330,7 @@ func TestCertificatesFromHeaderThenTLSState(t *testing.T) {
 
 func TestCertificatesFromTLSStateThenHeader(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 
@@ -1410,7 +1410,7 @@ func TestCertificatesFromTLSStateThenHeader(t *testing.T) {
 
 func TestCertificatesFromTLSState(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 
@@ -1466,7 +1466,7 @@ func TestCertificatesFromTLSState(t *testing.T) {
 
 func TestCertificatesFromHeader(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 
@@ -1520,7 +1520,7 @@ func TestCertificatesFromHeader(t *testing.T) {
 
 func Test_decodeCertHeader(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/user-a-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/user-a-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 

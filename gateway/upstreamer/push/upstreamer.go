@@ -504,7 +504,7 @@ func (c *Upstreamer) listenPeers(ctx context.Context) {
 
 			now := time.Now()
 			var deleted int64
-			peers.Range(func(id, date interface{}) bool {
+			peers.Range(func(id, date any) bool {
 				if now.After(date.(time.Time).Add(c.config.peerTimeout)) {
 					peers.Delete(id)
 					deleted++

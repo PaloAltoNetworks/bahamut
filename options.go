@@ -461,7 +461,7 @@ func OptMarshallers(marshallers map[elemental.Identity]CustomMarshaller) Option 
 // ServiceVersion contains the version of the service itself.
 // Version should contain information relative to the service version.
 // like all it's libraries and things like that.
-func OptServiceInfo(name string, version string, subversions map[string]interface{}) Option {
+func OptServiceInfo(name string, version string, subversions map[string]any) Option {
 	return func(c *config) {
 		c.meta.serviceName = name
 		c.meta.serviceVersion = version

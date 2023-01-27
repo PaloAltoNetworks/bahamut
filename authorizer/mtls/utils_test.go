@@ -14,14 +14,14 @@ package mtls
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
 
 func Test_makeClaims(t *testing.T) {
 
-	cdata, _ := ioutil.ReadFile("./fixtures/claim-test-cert.pem")
+	cdata, _ := os.ReadFile("./fixtures/claim-test-cert.pem")
 	cblock, _ := pem.Decode(cdata)
 	cert, _ := x509.ParseCertificate(cblock.Bytes)
 
