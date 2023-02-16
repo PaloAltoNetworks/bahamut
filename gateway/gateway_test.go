@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -252,8 +253,8 @@ func TestGateway(t *testing.T) {
 				OptionUpstreamTLSConfig(&tls.Config{InsecureSkipVerify: true}),
 				OptionEnableProxyProtocol(true, "0.0.0.0/0"),
 				OptionSourceRateLimitingDynamic(&simpleLimiter{}),
-				OptionSetCustomRequestRewriter(func(req *http.Request, private bool) error {
-					req.Header.Add("inject", "hello")
+				OptionSetCustomRequestRewriter(func(req *httputil.ProxyRequest, private bool) error {
+					req.Out.Header.Add("inject", "hello")
 					return nil
 				}),
 				OptionSetCustomResponseRewriter(func(req *http.Response) error {

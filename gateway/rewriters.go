@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 
 	"go.aporeto.io/tg/tglib"
@@ -20,7 +21,7 @@ type requestRewriter struct {
 	trustForwardHeader bool
 }
 
-func (s *requestRewriter) Rewrite(r *http.Request) {
+func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 
 	if s.customRewriter != nil {
 		if err := s.customRewriter(r, s.private); err != nil {
@@ -30,43 +31,43 @@ func (s *requestRewriter) Rewrite(r *http.Request) {
 	}
 
 	if s.blockOpenTracing {
-		r.Header.Del("X-B3-TraceID")
-		r.Header.Del("X-B3-SpanID")
-		r.Header.Del("X-B3-ParentSpanID")
-		r.Header.Del("X-B3-Sampled")
-		r.Header.Del("Uber-Trace-ID")
-		r.Header.Del("Jaeger-Baggage")
-		r.Header.Del("TraceParent")
-		r.Header.Del("TraceState")
+		r.In.Header.Del("X-B3-TraceID")
+		r.In.Header.Del("X-B3-SpanID")
+		r.In.Header.Del("X-B3-ParentSpanID")
+		r.In.Header.Del("X-B3-Sampled")
+		r.In.Header.Del("Uber-Trace-ID")
+		r.In.Header.Del("Jaeger-Baggage")
+		r.In.Header.Del("TraceParent")
+		r.In.Header.Del("TraceState")
 	}
 
 	// Will be rewritten by the forwarder,
 	// based on proxy protocol if enabled.
 	// unless trustForwardHeader is set.
 	if !s.trustForwardHeader {
-		r.Header.Del("X-Forwarded-For")
-		r.Header.Del("X-Real-IP")
+		r.In.Header.Del("X-Forwarded-For")
+		r.In.Header.Del("X-Real-IP")
 	}
 
 	// If the request has been marked as a ws proxy, we set
 	// the X-Forwarded header ourselves, since oxy does not
 	// do it (for some reasons).
-	if r.Header.Get(internalWSMarkingHeader) != "" {
-		r.Header.Del(internalWSMarkingHeader)
-		if clientIP, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-			r.Header.Set("X-Forwarded-For", clientIP)
+	if r.In.Header.Get(internalWSMarkingHeader) != "" {
+		r.In.Header.Del(internalWSMarkingHeader)
+		if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
+			r.In.Header.Set("X-Forwarded-For", clientIP)
 		}
 	}
 
-	if r.TLS != nil && len(r.TLS.PeerCertificates) == 1 {
+	if r.In.TLS != nil && len(r.In.TLS.PeerCertificates) == 1 {
 
-		block, err := tglib.CertToPEM(r.TLS.PeerCertificates[0])
+		block, err := tglib.CertToPEM(r.In.TLS.PeerCertificates[0])
 		if err != nil {
 			zap.L().Error("Unable to handle client TLS certificate", zap.Error(err))
 			panic(fmt.Sprintf("unable to handle client TLS certificate: %s", err)) // panic are recovered from oxy
 		}
 
-		r.Header.Add("X-TLS-Client-Certificate", strings.ReplaceAll(string(pem.EncodeToMemory(block)), "\n", " "))
+		r.In.Header.Add("X-TLS-Client-Certificate", strings.ReplaceAll(string(pem.EncodeToMemory(block)), "\n", " "))
 	}
 }
 

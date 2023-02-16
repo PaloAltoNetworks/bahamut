@@ -3,6 +3,7 @@ package gateway
 import (
 	"crypto/tls"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"go.aporeto.io/bahamut"
@@ -14,7 +15,7 @@ import (
 // before it is sent to the upstream.
 // The private parameter tells if the gateway is configured or not
 // to serve the private APIs.
-type RequestRewriter func(req *http.Request, private bool) error
+type RequestRewriter func(req *httputil.ProxyRequest, private bool) error
 
 // A ResponseRewriter can be used to rewrite the response
 // before it is sent back to the client
