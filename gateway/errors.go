@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io"
@@ -107,7 +108,7 @@ func (s *errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, err err
 		writeError(w, r, makeError(http.StatusRequestEntityTooLarge, "Entity Too Large", fmt.Sprintf("Payload size exceeds the maximum allowed size (%d bytes)", e.MaxSize)))
 		return
 
-	case x509.UnknownAuthorityError, x509.HostnameError, x509.CertificateInvalidError, x509.ConstraintViolationError:
+	case x509.UnknownAuthorityError, x509.HostnameError, x509.CertificateInvalidError, x509.ConstraintViolationError, *tls.CertificateVerificationError:
 		writeError(w, r, makeError(495, "TLS Error", err.Error()))
 		return
 	}

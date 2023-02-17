@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -151,6 +152,12 @@ func TestErrorHandler(t *testing.T) {
 			eh.ServeHTTP(w, req, x509.ConstraintViolationError{})
 			data, _ := io.ReadAll(w.Body)
 			So(string(data), ShouldEqual, `[{"code":495,"description":"x509: invalid signature: parent certificate cannot sign this kind of certificate","subject":"gateway","title":"TLS Error"}]`)
+		})
+
+		Convey("When I call ServeHTTP with a tls.CertificateVerificationError", func() {
+			eh.ServeHTTP(w, req, &tls.CertificateVerificationError{})
+			data, _ := io.ReadAll(w.Body)
+			So(string(data), ShouldStartWith, `[{"code":495,"description":"tls: failed to verify certificate:`)
 		})
 	})
 }
