@@ -3,6 +3,7 @@ package gateway
 import (
 	"crypto/tls"
 	"net/http"
+	"net/http/httputil"
 	"testing"
 	"time"
 
@@ -148,7 +149,7 @@ func Test_Options(t *testing.T) {
 
 	Convey("Calling OptionSetCustomRequestRewriter should work", t, func() {
 		c := newGatewayConfig()
-		f := func(*http.Request, bool) error {
+		f := func(*httputil.ProxyRequest, bool) error {
 			return nil
 		}
 		OptionSetCustomRequestRewriter(f)(c)

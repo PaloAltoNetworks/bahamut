@@ -8,17 +8,18 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"time"
 
 	"github.com/armon/go-proxyproto"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/tcplisten"
-	"github.com/vulcand/oxy/buffer"
-	"github.com/vulcand/oxy/cbreaker"
-	"github.com/vulcand/oxy/connlimit"
-	"github.com/vulcand/oxy/forward"
-	"github.com/vulcand/oxy/utils"
+	"github.com/vulcand/oxy/v2/buffer"
+	"github.com/vulcand/oxy/v2/cbreaker"
+	"github.com/vulcand/oxy/v2/connlimit"
+	"github.com/vulcand/oxy/v2/forward"
+	"github.com/vulcand/oxy/v2/utils"
 	"go.aporeto.io/bahamut"
 	"go.uber.org/zap"
 )
@@ -28,7 +29,7 @@ type gateway struct {
 	server                 *http.Server
 	upstreamer             Upstreamer
 	upstreamerLatency      LatencyBasedUpstreamer
-	forwarder              *forward.Forwarder
+	forwarder              *httputil.ReverseProxy
 	proxyHTTPHandler       http.Handler
 	proxyWSHandler         http.Handler
 	listener               net.Listener
@@ -156,62 +157,53 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		topProxyWSHandler   http.Handler
 	)
 
-	if s.forwarder, err = forward.New(
-		forward.BufferPool(newPool(1024*1024)),
-		forward.WebsocketTLSClientConfig(cfg.upstreamTLSConfig),
-		forward.ErrorHandler(&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc}),
-		forward.Rewriter(
-			&requestRewriter{
-				blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
-				private:            cfg.exposePrivateAPIs,
-				customRewriter:     cfg.requestRewriter,
-				trustForwardHeader: cfg.trustForwardHeader,
-			},
-		),
-		forward.ResponseModifier(
-			func(resp *http.Response) error {
+	s.forwarder = forward.New(true)
+	s.forwarder.BufferPool = newPool(1024 * 1024)
+	s.forwarder.ErrorHandler = (&errorHandler{corsOriginInjector: s.corsOriginInjectorFunc}).ServeHTTP
+	s.forwarder.Director = nil
+	s.forwarder.Transport = &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		ForceAttemptHTTP2:   cfg.upstreamUseHTTP2,
+		TLSClientConfig:     cfg.upstreamTLSConfig,
+		DisableCompression:  !cfg.upstreamEnableCompression,
+		MaxConnsPerHost:     cfg.upstreamMaxConnsPerHost,
+		MaxIdleConns:        cfg.upstreamMaxIdleConns,
+		MaxIdleConnsPerHost: cfg.upstreamMaxIdleConnsPerHost,
+		TLSHandshakeTimeout: cfg.upstreamTLSHandshakeTimeout,
+		IdleConnTimeout:     cfg.upstreamIdleConnTimeout,
+	}
+	s.forwarder.Rewrite = (&requestRewriter{
+		blockOpenTracing:   (!cfg.exposePrivateAPIs && cfg.blockOpenTracingHeaders),
+		private:            cfg.exposePrivateAPIs,
+		customRewriter:     cfg.requestRewriter,
+		trustForwardHeader: cfg.trustForwardHeader,
+	}).Rewrite
+	s.forwarder.ModifyResponse = func(resp *http.Response) error {
 
-				if resp.Request == nil {
-					return nil
-				}
+		if resp.Request == nil {
+			return nil
+		}
 
-				injectGeneralHeader(resp.Header)
-				injectCORSHeader(
-					resp.Header,
-					cfg.corsOrigin,
-					cfg.additionalCorsOrigin,
-					cfg.corsAllowCredentials,
-					resp.Request.Header.Get("origin"),
-					resp.Request.Method,
-				)
+		injectGeneralHeader(resp.Header)
+		injectCORSHeader(
+			resp.Header,
+			cfg.corsOrigin,
+			cfg.additionalCorsOrigin,
+			cfg.corsAllowCredentials,
+			resp.Request.Header.Get("origin"),
+			resp.Request.Method,
+		)
 
-				if s.gatewayConfig.responseRewriter != nil {
-					if err := s.gatewayConfig.responseRewriter(resp); err != nil {
-						return fmt.Errorf("unable to execute response rewriter: %s", err)
-					}
-				}
-				return nil
-			},
-		),
-		forward.RoundTripper(
-			&http.Transport{
-				DialContext: (&net.Dialer{
-					Timeout:   30 * time.Second,
-					KeepAlive: 30 * time.Second,
-					DualStack: true,
-				}).DialContext,
-				ForceAttemptHTTP2:   cfg.upstreamUseHTTP2,
-				TLSClientConfig:     cfg.upstreamTLSConfig,
-				DisableCompression:  !cfg.upstreamEnableCompression,
-				MaxConnsPerHost:     cfg.upstreamMaxConnsPerHost,
-				MaxIdleConns:        cfg.upstreamMaxIdleConns,
-				MaxIdleConnsPerHost: cfg.upstreamMaxIdleConnsPerHost,
-				TLSHandshakeTimeout: cfg.upstreamTLSHandshakeTimeout,
-				IdleConnTimeout:     cfg.upstreamIdleConnTimeout,
-			},
-		),
-	); err != nil {
-		return nil, fmt.Errorf("unable to initialize forwarder: %s", err)
+		if s.gatewayConfig.responseRewriter != nil {
+			if err := s.gatewayConfig.responseRewriter(resp); err != nil {
+				return fmt.Errorf("unable to execute response rewriter: %s", err)
+			}
+		}
+		return nil
 	}
 
 	topProxyHTTPHandler = s.forwarder

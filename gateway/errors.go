@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/mailgun/multibuf"
-	"github.com/vulcand/oxy/connlimit"
+	"github.com/vulcand/oxy/v2/connlimit"
 	"go.aporeto.io/elemental"
 )
 
