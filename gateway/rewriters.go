@@ -31,31 +31,31 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 	}
 
 	if s.blockOpenTracing {
-		r.In.Header.Del("X-B3-TraceID")
-		r.In.Header.Del("X-B3-SpanID")
-		r.In.Header.Del("X-B3-ParentSpanID")
-		r.In.Header.Del("X-B3-Sampled")
-		r.In.Header.Del("Uber-Trace-ID")
-		r.In.Header.Del("Jaeger-Baggage")
-		r.In.Header.Del("TraceParent")
-		r.In.Header.Del("TraceState")
+		r.Out.Header.Del("X-B3-TraceID")
+		r.Out.Header.Del("X-B3-SpanID")
+		r.Out.Header.Del("X-B3-ParentSpanID")
+		r.Out.Header.Del("X-B3-Sampled")
+		r.Out.Header.Del("Uber-Trace-ID")
+		r.Out.Header.Del("Jaeger-Baggage")
+		r.Out.Header.Del("TraceParent")
+		r.Out.Header.Del("TraceState")
 	}
 
 	// Will be rewritten by the forwarder,
 	// based on proxy protocol if enabled.
 	// unless trustForwardHeader is set.
 	if !s.trustForwardHeader {
-		r.In.Header.Del("X-Forwarded-For")
-		r.In.Header.Del("X-Real-IP")
+		r.Out.Header.Del("X-Forwarded-For")
+		r.Out.Header.Del("X-Real-IP")
 	}
 
 	// If the request has been marked as a ws proxy, we set
 	// the X-Forwarded header ourselves, since oxy does not
 	// do it (for some reasons).
 	if r.In.Header.Get(internalWSMarkingHeader) != "" {
-		r.In.Header.Del(internalWSMarkingHeader)
+		r.Out.Header.Del(internalWSMarkingHeader)
 		if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
-			r.In.Header.Set("X-Forwarded-For", clientIP)
+			r.Out.Header.Set("X-Forwarded-For", clientIP)
 		}
 	}
 
@@ -67,7 +67,7 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 			panic(fmt.Sprintf("unable to handle client TLS certificate: %s", err)) // panic are recovered from oxy
 		}
 
-		r.In.Header.Add("X-TLS-Client-Certificate", strings.ReplaceAll(string(pem.EncodeToMemory(block)), "\n", " "))
+		r.Out.Header.Add("X-TLS-Client-Certificate", strings.ReplaceAll(string(pem.EncodeToMemory(block)), "\n", " "))
 	}
 }
 

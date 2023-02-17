@@ -40,7 +40,7 @@ func Test_requestRewriter(t *testing.T) {
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "private")
@@ -55,7 +55,7 @@ func Test_requestRewriter(t *testing.T) {
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "public")
@@ -70,7 +70,7 @@ func Test_requestRewriter(t *testing.T) {
 			r.Header.Set("X-Forwarded-For", "A")
 			r.Header.Set("X-Real-IP", "B")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
@@ -88,7 +88,7 @@ func Test_requestRewriter(t *testing.T) {
 			r.Header.Set("X-Forwarded-For", "A")
 			r.Header.Set("X-Real-IP", "B")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "A")
@@ -104,7 +104,7 @@ func Test_requestRewriter(t *testing.T) {
 			r.RemoteAddr = "1.1.1.1:11"
 			r.Header.Set(internalWSMarkingHeader, "1")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "1.1.1.1")
@@ -120,7 +120,7 @@ func Test_requestRewriter(t *testing.T) {
 			r.RemoteAddr = "oh no"
 			r.Header.Set(internalWSMarkingHeader, "1")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
@@ -152,7 +152,7 @@ f6eiTREm5FRLzNkfhxQ=
 				PeerCertificates: []*x509.Certificate{cert},
 			}
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-TLS-Client-Certificate"), ShouldEqual, strings.ReplaceAll(string(certData), "\n", " "))
@@ -167,7 +167,7 @@ f6eiTREm5FRLzNkfhxQ=
 			}
 
 			Convey("Then the response should be correct", func() {
-				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r}) }, ShouldPanicWith, "unable to handle client TLS certificate: nil certificate provided")
+				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r}) }, ShouldPanicWith, "unable to handle client TLS certificate: nil certificate provided")
 			})
 		})
 
@@ -185,7 +185,7 @@ f6eiTREm5FRLzNkfhxQ=
 			r.Header.Set("TraceParent", "TraceParent")
 			r.Header.Set("TraceState", "TraceState")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-B3-TraceID"), ShouldEqual, "X-B3-TraceID")
@@ -216,7 +216,7 @@ f6eiTREm5FRLzNkfhxQ=
 			r.Header.Set("TraceParent", "TraceParent")
 			r.Header.Set("TraceState", "TraceState")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-B3-TraceID"), ShouldEqual, "")
@@ -241,7 +241,7 @@ f6eiTREm5FRLzNkfhxQ=
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("yey"), ShouldEqual, "ouais")
