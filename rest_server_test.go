@@ -232,9 +232,6 @@ func TestServer_RouteInstallation(t *testing.T) {
 
 func TestServer_Start(t *testing.T) {
 
-	// yeah, well, until Go provides a way to stop an http server...
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	Convey("Given I create an api without tls server", t, func() {
 
 		Convey("When I start the server", func() {
