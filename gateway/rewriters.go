@@ -3,7 +3,6 @@ package gateway
 import (
 	"encoding/pem"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -47,6 +46,7 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 	if !s.trustForwardHeader {
 		r.Out.Header.Del("X-Forwarded-For")
 		r.Out.Header.Del("X-Real-IP")
+		r.SetXForwarded()
 	}
 
 	// If the request has been marked as a ws proxy, we set
@@ -54,9 +54,6 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 	// do it (for some reasons).
 	if r.In.Header.Get(internalWSMarkingHeader) != "" {
 		r.Out.Header.Del(internalWSMarkingHeader)
-		if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
-			r.Out.Header.Set("X-Forwarded-For", clientIP)
-		}
 	}
 
 	if r.In.TLS != nil && len(r.In.TLS.PeerCertificates) == 1 {

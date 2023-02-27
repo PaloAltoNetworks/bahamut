@@ -62,7 +62,7 @@ func Test_requestRewriter(t *testing.T) {
 			})
 		})
 
-		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP", func() {
+		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP with no client IP", func() {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
@@ -74,6 +74,26 @@ func Test_requestRewriter(t *testing.T) {
 
 			Convey("Then the response should be correct", func() {
 				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
+				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+			})
+		})
+
+		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP with client IP", func() {
+
+			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
+			r.RemoteAddr = "C:7878"
+			r.TLS = &tls.ConnectionState{}
+
+			r.Header.Set("X-Forwarded-For", "A")
+			r.Header.Set("X-Real-IP", "B")
+
+			rw.Rewrite(&httputil.ProxyRequest{
+				In:  r,
+				Out: r,
+			})
+
+			Convey("Then the response should be correct", func() {
+				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "C")
 				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
 			})
 		})
