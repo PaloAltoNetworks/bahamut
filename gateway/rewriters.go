@@ -56,7 +56,6 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 	// do it (for some reasons).
 	if r.In.Header.Get(internalWSMarkingHeader) != "" {
 		r.Out.Header.Del(internalWSMarkingHeader)
-		r.SetXForwarded()
 	}
 
 	if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
