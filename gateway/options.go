@@ -384,7 +384,7 @@ func OptionCORSAllowCredentials(allow bool) Option {
 }
 
 // OptionTrustForwardHeader configures if the gateway should strip
-// the X-Forwarded-For and X-Real-IP header or not.
+// the X-Forwarded-For header or not.
 func OptionTrustForwardHeader(trust bool) Option {
 	return func(cfg *gwconfig) {
 		cfg.trustForwardHeader = trust
