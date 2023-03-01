@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -24,9 +25,9 @@ func Test_requestRewriter(t *testing.T) {
 		customReqriter := func(req *httputil.ProxyRequest, private bool) error {
 			switch private {
 			case true:
-				req.In.Header.Add("X-Aporeto-Gateway", "private")
+				req.Out.Header.Add("X-Aporeto-Gateway", "private")
 			case false:
-				req.In.Header.Add("X-Aporeto-Gateway", "public")
+				req.Out.Header.Add("X-Aporeto-Gateway", "public")
 			}
 
 			return nil
@@ -39,11 +40,12 @@ func Test_requestRewriter(t *testing.T) {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "private")
+				So(r2.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "private")
 			})
 		})
 
@@ -54,65 +56,60 @@ func Test_requestRewriter(t *testing.T) {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "public")
+				So(r2.Header.Get("X-Aporeto-Gateway"), ShouldEqual, "public")
 			})
 		})
 
-		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP with no client IP", func() {
+		Convey("When I call Rewrite it with custom X-Forwarded-For with no client IP", func() {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
 			r.Header.Set("X-Forwarded-For", "A")
-			r.Header.Set("X-Real-IP", "B")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
-				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+				So(r2.Header.Get("X-Forwarded-For"), ShouldEqual, "")
 			})
 		})
 
-		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP with client IP", func() {
+		Convey("When I call Rewrite it with custom X-Forwarded-For and with client IP", func() {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.RemoteAddr = "C:7878"
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
 			r.Header.Set("X-Forwarded-For", "A")
-			r.Header.Set("X-Real-IP", "B")
 
-			rw.Rewrite(&httputil.ProxyRequest{
-				In:  r,
-				Out: r,
-			})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "C")
-				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+				So(r2.Header.Get("X-Forwarded-For"), ShouldEqual, "C")
 			})
 		})
 
-		Convey("When I call Rewrite it with custom X-Forwarded-For and X-Real-IP and trustForwardHeader is set", func() {
+		Convey("When I call Rewrite it with custom X-Forwarded-For and trustForwardHeader is set", func() {
 
 			rw.trustForwardHeader = true
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
 			r.Header.Set("X-Forwarded-For", "A")
-			r.Header.Set("X-Real-IP", "B")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "A")
-				So(r.Header.Get("X-Real-IP"), ShouldEqual, "B")
+				So(r2.Header.Get("X-Forwarded-For"), ShouldEqual, "A")
 			})
 		})
 
@@ -120,15 +117,15 @@ func Test_requestRewriter(t *testing.T) {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
-
 			r.RemoteAddr = "1.1.1.1:11"
+			r2 := r.Clone(context.Background())
+
 			r.Header.Set(internalWSMarkingHeader, "1")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "1.1.1.1")
-				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+				So(r2.Header.Get("X-Forwarded-For"), ShouldEqual, "1.1.1.1")
 			})
 		})
 
@@ -136,15 +133,14 @@ func Test_requestRewriter(t *testing.T) {
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
-
 			r.RemoteAddr = "oh no"
+			r2 := r.Clone(context.Background())
 			r.Header.Set(internalWSMarkingHeader, "1")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-Forwarded-For"), ShouldEqual, "")
-				So(r.Header.Get("X-Real-IP"), ShouldEqual, "")
+				So(r2.Header.Get("X-Forwarded-For"), ShouldEqual, "")
 			})
 		})
 
@@ -171,11 +167,12 @@ f6eiTREm5FRLzNkfhxQ=
 			r.TLS = &tls.ConnectionState{
 				PeerCertificates: []*x509.Certificate{cert},
 			}
+			r2 := r.Clone(context.Background())
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-TLS-Client-Certificate"), ShouldEqual, strings.ReplaceAll(string(certData), "\n", " "))
+				So(r2.Header.Get("X-TLS-Client-Certificate"), ShouldEqual, strings.ReplaceAll(string(certData), "\n", " "))
 			})
 		})
 
@@ -185,9 +182,10 @@ f6eiTREm5FRLzNkfhxQ=
 			r.TLS = &tls.ConnectionState{
 				PeerCertificates: []*x509.Certificate{nil},
 			}
+			r2 := r.Clone(context.Background())
 
 			Convey("Then the response should be correct", func() {
-				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r}) }, ShouldPanicWith, "unable to handle client TLS certificate: nil certificate provided")
+				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2}) }, ShouldPanicWith, "unable to handle client TLS certificate: nil certificate provided")
 			})
 		})
 
@@ -205,17 +203,19 @@ f6eiTREm5FRLzNkfhxQ=
 			r.Header.Set("TraceParent", "TraceParent")
 			r.Header.Set("TraceState", "TraceState")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			r2 := r.Clone(context.Background())
+
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-B3-TraceID"), ShouldEqual, "X-B3-TraceID")
-				So(r.Header.Get("X-B3-SpanID"), ShouldEqual, "X-B3-SpanID")
-				So(r.Header.Get("X-B3-ParentSpanID"), ShouldEqual, "X-B3-ParentSpanID")
-				So(r.Header.Get("X-B3-Sampled"), ShouldEqual, "X-B3-Sampled")
-				So(r.Header.Get("Uber-Trace-ID"), ShouldEqual, "Uber-Trace-ID")
-				So(r.Header.Get("Jaeger-Baggage"), ShouldEqual, "Jaeger-Baggage")
-				So(r.Header.Get("TraceParent"), ShouldEqual, "TraceParent")
-				So(r.Header.Get("TraceState"), ShouldEqual, "TraceState")
+				So(r2.Header.Get("X-B3-TraceID"), ShouldEqual, "X-B3-TraceID")
+				So(r2.Header.Get("X-B3-SpanID"), ShouldEqual, "X-B3-SpanID")
+				So(r2.Header.Get("X-B3-ParentSpanID"), ShouldEqual, "X-B3-ParentSpanID")
+				So(r2.Header.Get("X-B3-Sampled"), ShouldEqual, "X-B3-Sampled")
+				So(r2.Header.Get("Uber-Trace-ID"), ShouldEqual, "Uber-Trace-ID")
+				So(r2.Header.Get("Jaeger-Baggage"), ShouldEqual, "Jaeger-Baggage")
+				So(r2.Header.Get("TraceParent"), ShouldEqual, "TraceParent")
+				So(r2.Header.Get("TraceState"), ShouldEqual, "TraceState")
 
 			})
 		})
@@ -236,17 +236,19 @@ f6eiTREm5FRLzNkfhxQ=
 			r.Header.Set("TraceParent", "TraceParent")
 			r.Header.Set("TraceState", "TraceState")
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			r2 := r.Clone(context.Background())
+
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("X-B3-TraceID"), ShouldEqual, "")
-				So(r.Header.Get("X-B3-SpanID"), ShouldEqual, "")
-				So(r.Header.Get("X-B3-ParentSpanID"), ShouldEqual, "")
-				So(r.Header.Get("X-B3-Sampled"), ShouldEqual, "")
-				So(r.Header.Get("Uber-Trace-ID"), ShouldEqual, "")
-				So(r.Header.Get("Jaeger-Baggage"), ShouldEqual, "")
-				So(r.Header.Get("TraceParent"), ShouldEqual, "")
-				So(r.Header.Get("TraceState"), ShouldEqual, "")
+				So(r2.Header.Get("X-B3-TraceID"), ShouldEqual, "")
+				So(r2.Header.Get("X-B3-SpanID"), ShouldEqual, "")
+				So(r2.Header.Get("X-B3-ParentSpanID"), ShouldEqual, "")
+				So(r2.Header.Get("X-B3-Sampled"), ShouldEqual, "")
+				So(r2.Header.Get("Uber-Trace-ID"), ShouldEqual, "")
+				So(r2.Header.Get("Jaeger-Baggage"), ShouldEqual, "")
+				So(r2.Header.Get("TraceParent"), ShouldEqual, "")
+				So(r2.Header.Get("TraceState"), ShouldEqual, "")
 
 			})
 		})
@@ -254,32 +256,34 @@ f6eiTREm5FRLzNkfhxQ=
 		Convey("When I call Rewrite with a custom rewriter that works", func() {
 
 			rw.customRewriter = func(resp *httputil.ProxyRequest, private bool) error {
-				resp.In.Header.Set("yey", "ouais")
+				resp.Out.Header.Set("yey", "ouais")
 				return nil
 			}
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
-			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r})
+			rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2})
 
 			Convey("Then the response should be correct", func() {
-				So(r.Header.Get("yey"), ShouldEqual, "ouais")
+				So(r2.Header.Get("yey"), ShouldEqual, "ouais")
 			})
 		})
 
 		Convey("When I call Rewrite with a custom rewriter that returns an error", func() {
 
 			rw.customRewriter = func(resp *httputil.ProxyRequest, private bool) error {
-				resp.In.Header.Set("yey", "ouais")
+				resp.Out.Header.Set("yey", "ouais")
 				return fmt.Errorf("boom")
 			}
 
 			r, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1", nil)
 			r.TLS = &tls.ConnectionState{}
+			r2 := r.Clone(context.Background())
 
 			Convey("Then the response should be correct", func() {
-				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r}) }, ShouldPanicWith, "unable to rewrite request with custom rewriter: boom")
+				So(func() { rw.Rewrite(&httputil.ProxyRequest{In: r, Out: r2}) }, ShouldPanicWith, "unable to rewrite request with custom rewriter: boom")
 			})
 		})
 	})

@@ -244,8 +244,6 @@ func (n *pushServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 	var clientIP string
 	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
 		clientIP = ip
-	} else if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		clientIP = ip
 	} else {
 		clientIP = r.RemoteAddr
 	}

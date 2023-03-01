@@ -41,27 +41,30 @@ func (s *requestRewriter) Rewrite(r *httputil.ProxyRequest) {
 		r.Out.Header.Del("TraceState")
 	}
 
-	// Will be rewritten by the forwarder,
-	// based on proxy protocol if enabled.
-	// unless trustForwardHeader is set.
-	if !s.trustForwardHeader {
-		r.Out.Header.Del("X-Forwarded-For")
-		r.Out.Header.Del("X-Forwarded-Proto")
-		r.Out.Header.Del("X-Forwarded-Host")
-		r.Out.Header.Del("X-Real-IP")
+	// If we trust the forward headers, we backport the ones from
+	// the inbound request to the outbound request.
+	// Otherwise, per documentation, they have already been removed
+	// from the outbound request.
+	if s.trustForwardHeader {
+		r.Out.Header["X-Forwarded-For"] = r.In.Header["X-Forwarded-For"]
+		r.Out.Header["X-Forwarded-Proto"] = r.In.Header["X-Forwarded-Proto"]
+		r.Out.Header["X-Forwarded-Host"] = r.In.Header["X-Forwarded-Host"]
 	}
 
-	// If the request has been marked as a ws proxy, we set
-	// the X-Forwarded header ourselves, since oxy does not
-	// do it (for some reasons).
+	// Now, if we reach here, and still have no X-Forwarded-For, we set them
+	// using the inbound request client IP.
+	if r.Out.Header.Get("X-Forwarded-For") == "" {
+		if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
+			r.Out.Header.Set("X-Forwarded-For", clientIP)
+			r.Out.Header.Set("X-Forwarded-Host", r.In.Host)
+			r.Out.Header.Set("X-Forwarded-Proto", r.In.Proto)
+		}
+	}
+
+	// Here we delete the internalWSMarkingHeader if it has
+	// been set.
 	if r.In.Header.Get(internalWSMarkingHeader) != "" {
 		r.Out.Header.Del(internalWSMarkingHeader)
-	}
-
-	if clientIP, _, err := net.SplitHostPort(r.In.RemoteAddr); err == nil {
-		r.Out.Header.Set("X-Forwarded-For", clientIP)
-		r.Out.Header.Set("X-Forwarded-Host", r.In.Host)
-		r.Out.Header.Set("X-Forwarded-Proto", r.In.Proto)
 	}
 
 	if r.In.TLS != nil && len(r.In.TLS.PeerCertificates) == 1 {
