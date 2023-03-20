@@ -40,12 +40,12 @@ func (l *limitListener) Accept() (net.Conn, error) {
 			return nil, err
 		}
 
-		var new int64
+		var currentConn int64
 		if l.maxConn > 0 {
-			new = atomic.AddInt64(&l.nConn, 1)
+			currentConn = atomic.AddInt64(&l.nConn, 1)
 		}
 
-		if new > l.maxConn {
+		if currentConn > l.maxConn {
 			c.Close() // nolint: errcheck
 			l.release()
 			continue
