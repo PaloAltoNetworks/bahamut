@@ -24,6 +24,8 @@ import (
 	"go.aporeto.io/elemental"
 )
 
+const errorsOnlyFlagBaggageItem = "onlyErrors"
+
 func handleRecoveredPanic(ctx context.Context, r any, disablePanicRecovery bool) error {
 
 	if r == nil {
@@ -77,6 +79,7 @@ func processError(ctx context.Context, err error) (outError elemental.Errors) {
 		span.SetTag("error", true)
 		span.SetTag("status.code", outError.Code())
 		span.LogFields(log.Object("elemental.error", outError))
+		span.SetBaggageItem(errorsOnlyFlagBaggageItem, "true")
 	}
 
 	return outError

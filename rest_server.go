@@ -365,7 +365,7 @@ func (a *restServer) makeHandler(handler handlerFunc) http.HandlerFunc {
 		}
 
 		ctx := traceRequest(req.Context(), request, a.cfg.opentracing.tracer, a.cfg.opentracing.excludedIdentities, a.cfg.opentracing.traceCleaner)
-		defer finishTracing(ctx)
+		defer finishTracing(ctx, a.cfg.opentracing.onlyErrors)
 
 		// Global rate limiting
 		if a.cfg.rateLimiting.rateLimiter != nil {
