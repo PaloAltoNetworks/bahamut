@@ -1,0 +1,16 @@
+name: cov
+
+on:
+  workflow_run:
+    workflows: ["build-go"]
+    types:
+      - completed
+
+jobs:
+  cov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: PaloAltoNetworks/cov@split-report
+        with:
+          mode: send-status
+          workflow_run_id: ${{github.event.workflow_run.id}}

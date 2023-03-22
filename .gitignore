@@ -7,6 +7,7 @@ testresults.xml
 vendor
 
 unit_coverage.out
+cov.report
 .idea/*
 artifacts
 remod.dev

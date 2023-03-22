@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - master
-  pull_request_target:
+  pull_request:
 
 defaults:
   run:
@@ -36,9 +36,9 @@ jobs:
         run: |
           make
 
-      - uses: PaloAltoNetworks/cov@2.0.0
-        if: ${{matrix.go >= 1.20}}
+      - uses: PaloAltoNetworks/cov@split-report
         with:
           main_branch: master
           cov_file: unit_coverage.out
           cov_threshold: "91"
+          cov_mode: coverage

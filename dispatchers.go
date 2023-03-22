@@ -518,3 +518,86 @@ func logValidationError(ctx *bcontext, err error) {
 		zap.String("parentIdentity", ctx.request.ParentIdentity.Name),
 		zap.Error(err))
 }
+
+// UselessCopyForTest is useless
+func UselessCopyForTest(
+	ctx *bcontext,
+	processorFinder processorFinderFunc,
+	modelManager elemental.ModelManager,
+	unmarshaller CustomUmarshaller,
+	authenticators []RequestAuthenticator,
+	authorizers []Authorizer,
+	pusher eventPusherFunc,
+	auditer Auditer,
+	readOnlyMode bool,
+	readOnlyExclusion []elemental.Identity,
+) (err error) {
+
+	if err = CheckAuthentication(authenticators, ctx); err != nil {
+		audit(auditer, ctx, err)
+		return err
+	}
+
+	if err = CheckAuthorization(authorizers, ctx); err != nil {
+		audit(auditer, ctx, err)
+		return err
+	}
+
+	if readOnlyMode {
+		if err = makeReadOnlyError(ctx.request.Identity, readOnlyExclusion); err != nil {
+			return err
+		}
+	}
+
+	proc, _ := processorFinder(ctx.request.Identity)
+
+	if _, ok := proc.(UpdateProcessor); !ok {
+		err = notImplementedErr(ctx.request)
+		audit(auditer, ctx, err)
+		return err
+	}
+	var obj elemental.Identifiable
+
+	if unmarshaller != nil {
+		if obj, err = unmarshaller(ctx.request); err != nil {
+			audit(auditer, ctx, err)
+			return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+		}
+	} else {
+		obj = modelManager.Identifiable(ctx.request.Identity)
+		if len(ctx.Request().Data) > 0 {
+			if err := ctx.Request().Decode(obj); err != nil {
+				audit(auditer, ctx, err)
+				return elemental.NewError("Bad Request", err.Error(), "bahamut", http.StatusBadRequest)
+			}
+		}
+	}
+
+	if v, ok := obj.(elemental.Validatable); ok {
+		if err = v.Validate(); err != nil {
+			audit(auditer, ctx, err)
+			logValidationError(ctx, err)
+			return err
+		}
+	}
+
+	ctx.inputData = obj
+
+	if err = proc.(UpdateProcessor).ProcessUpdate(ctx); err != nil {
+		audit(auditer, ctx, err)
+		return err
+	}
+
+	if len(ctx.events) > 0 {
+		pusher(ctx.events...)
+	}
+
+	if o, ok := ctx.outputData.(elemental.Identifiable); ok && !ctx.disableOutputDataPush {
+		elemental.ResetSecretAttributesValues(o)
+		pusher(elemental.NewEvent(elemental.EventUpdate, o))
+	}
+
+	audit(auditer, ctx, nil)
+
+	return err
+}
