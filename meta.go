@@ -19,7 +19,7 @@ import (
 	"go.aporeto.io/elemental"
 )
 
-// A RouteInfo contains basic information about an api routes.
+// A RouteInfo contains basic information about an api route.
 type RouteInfo struct {
 	Identity string   `msgpack:"identity" json:"identity"`
 	URL      string   `msgpack:"url" json:"url"`
