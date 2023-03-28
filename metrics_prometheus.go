@@ -23,20 +23,31 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var vregexp = regexp.MustCompile(`^/v/\d+`)
+var (
+	pregexp = regexp.MustCompile(`^/_[a-zA-Z0-9-_+]+`)
+	vregexp = regexp.MustCompile(`^/v/\d+`)
+)
 
-func sanitizeURL(url string) string {
+func sanitizePath(url string) string {
 
+	prefix := "/"
+	matches := pregexp.FindAllString(url, 1)
+	if len(matches) == 1 {
+		prefix = matches[0] + "/"
+		url = strings.TrimPrefix(url, matches[0])
+	}
 	url = vregexp.ReplaceAllString(url, "")
+	url = strings.TrimPrefix(url, "/")
 
 	parts := strings.Split(url, "/")
-	if len(parts) <= 2 {
-		return url
+
+	if len(parts) <= 1 {
+		return prefix + url
 	}
 
-	parts[2] = ":id"
+	parts[1] = ":id"
 
-	return strings.Join(parts, "/")
+	return prefix + strings.Join(parts, "/")
 }
 
 type prometheusMetricsManager struct {
@@ -119,9 +130,9 @@ func newPrometheusMetricsManager(registerer prometheus.Registerer) MetricsManage
 	return mc
 }
 
-func (c *prometheusMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+func (c *prometheusMetricsManager) MeasureRequest(method string, path string) FinishMeasurementFunc {
 
-	surl := sanitizeURL(url)
+	surl := sanitizePath(path)
 
 	timer := prometheus.NewTimer(
 		prometheus.ObserverFunc(

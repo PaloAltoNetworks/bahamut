@@ -69,10 +69,53 @@ func Test_sanitizeURL(t *testing.T) {
 			},
 			"/toto/:id/titi",
 		},
+
+		{
+			"test /_prefix/toto",
+			args{
+				"/_prefix/toto",
+			},
+			"/_prefix/toto",
+		},
+		{
+			"test /_prefix/v/1/toto",
+			args{
+				"/_prefix/v/1/toto",
+			},
+			"/_prefix/toto",
+		},
+		{
+			"test /_prefix/toto/xxxxxxx",
+			args{
+				"/_prefix/toto/xxxxxxx",
+			},
+			"/_prefix/toto/:id",
+		},
+		{
+			"test /_prefix/v/1/toto/xxxxxxx",
+			args{
+				"/_prefix/v/1/toto/xxxxxxx",
+			},
+			"/_prefix/toto/:id",
+		},
+		{
+			"test /_prefix/toto/xxxxxxx/titi",
+			args{
+				"/_prefix/toto/xxxxxxx/titi",
+			},
+			"/_prefix/toto/:id/titi",
+		},
+		{
+			"test /_prefix/v/1/toto/xxxxxxx/titi",
+			args{
+				"/_prefix/v/1/toto/xxxxxxx/titi",
+			},
+			"/_prefix/toto/:id/titi",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sanitizeURL(tt.args.url); got != tt.want {
+			if got := sanitizePath(tt.args.url); got != tt.want {
 				t.Errorf("sanitizeURL() = %v, want %v", got, tt.want)
 			}
 		})
@@ -104,7 +147,7 @@ func TestMeasureRequest(t *testing.T) {
 
 		Convey("When I call measure a 502 request", func() {
 
-			f := pmm.MeasureRequest("GET", "http://toto.com/id/toto")
+			f := pmm.MeasureRequest("GET", "/toto/id")
 			f(502, nil)
 
 			data, _ := r.Gather()
@@ -114,7 +157,7 @@ func TestMeasureRequest(t *testing.T) {
 				So(data[0].GetMetric()[0].Label[0].String(), ShouldEqual, `name:"code" value:"502" `)
 				So(data[0].GetMetric()[0].Label[1].String(), ShouldEqual, `name:"method" value:"GET" `)
 				So(data[0].GetMetric()[0].Label[2].String(), ShouldEqual, `name:"trace" value:"unknown" `)
-				So(data[0].GetMetric()[0].Label[3].String(), ShouldEqual, `name:"url" value:"http://:id/id/toto" `)
+				So(data[0].GetMetric()[0].Label[3].String(), ShouldEqual, `name:"url" value:"/toto/:id" `)
 			})
 		})
 	})

@@ -23,7 +23,7 @@ type FinishMeasurementFunc func(code int, span opentracing.Span) time.Duration
 
 // A MetricsManager handles Prometheus Metrics Management
 type MetricsManager interface {
-	MeasureRequest(method string, url string) FinishMeasurementFunc
+	MeasureRequest(method string, path string) FinishMeasurementFunc
 	RegisterWSConnection()
 	UnregisterWSConnection()
 	RegisterTCPConnection()

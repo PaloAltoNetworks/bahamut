@@ -37,7 +37,7 @@ func freePort() (port int) {
 // A MetricsManager handles Prometheus Metrics Management
 type testMetricsManager struct{}
 
-func (m *testMetricsManager) MeasureRequest(method string, url string) FinishMeasurementFunc {
+func (m *testMetricsManager) MeasureRequest(method string, path string) FinishMeasurementFunc {
 	return nil
 }
 func (m *testMetricsManager) RegisterWSConnection()    {}

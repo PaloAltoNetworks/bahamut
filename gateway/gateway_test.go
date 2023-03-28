@@ -55,7 +55,7 @@ type fakeMetricManager struct {
 	unregisterTCPConnectionCalled int64
 }
 
-func (m *fakeMetricManager) MeasureRequest(method string, url string) bahamut.FinishMeasurementFunc {
+func (m *fakeMetricManager) MeasureRequest(method string, path string) bahamut.FinishMeasurementFunc {
 	return func(code int, span opentracing.Span) time.Duration { return 0 }
 }
 
