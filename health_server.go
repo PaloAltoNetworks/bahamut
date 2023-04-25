@@ -22,8 +22,8 @@ import (
 
 // an healthServer is the structure serving the health check endpoint.
 type healthServer struct {
-	cfg    config
 	server *http.Server
+	cfg    config
 }
 
 // newHealthServer returns a new healthServer.

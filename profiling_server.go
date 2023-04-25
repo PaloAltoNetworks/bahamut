@@ -22,8 +22,8 @@ import (
 
 // an profilingServer is the structure serving the profiling.
 type profilingServer struct {
-	cfg    config
 	server *http.Server
+	cfg    config
 }
 
 // newProfilingServer returns a new profilingServer.

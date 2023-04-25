@@ -11,20 +11,20 @@ import (
 type UpstreamerOption func(*upstreamConfig)
 
 type upstreamConfig struct {
-	overrideEndpointAddress     string
-	exposePrivateAPIs           bool
+	randomizer                  Randomizer
 	eventsAPIs                  map[string]string
-	latencySampleSize           int
+	overrideEndpointAddress     string
+	globalServiceTopic          string
 	requiredServices            []string
-	serviceTimeout              time.Duration
 	serviceTimeoutCheckInterval time.Duration
+	serviceTimeout              time.Duration
 	peerTimeout                 time.Duration
 	peerTimeoutCheckInterval    time.Duration
 	peerPingInterval            time.Duration
-	randomizer                  Randomizer
+	latencySampleSize           int
 	tokenLimitingBurst          int
 	tokenLimitingRPS            rate.Limit
-	globalServiceTopic          string
+	exposePrivateAPIs           bool
 }
 
 func newUpstreamConfig() upstreamConfig {

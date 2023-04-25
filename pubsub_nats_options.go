@@ -89,8 +89,8 @@ func defaultSubscribeConfig() natsSubscribeConfig {
 
 type natsPublishConfig struct {
 	ctx             context.Context
-	desiredResponse ResponseMode
 	responseCh      chan *Publication
+	desiredResponse ResponseMode
 }
 
 // NATSOptSubscribeQueue sets the NATS subscriber queue group.

@@ -112,10 +112,10 @@ type VerifierFunc func(*x509.Certificate) bool
 type DeciderFunc func(bahamut.AuthAction, bahamut.Context, bahamut.Session) bahamut.AuthAction
 
 type mtlsVerifier struct {
-	verifyOptions        x509.VerifyOptions
-	ignoredIdentities    []elemental.Identity
 	deciderFunc          DeciderFunc
 	verifier             VerifierFunc
+	ignoredIdentities    []elemental.Identity
+	verifyOptions        x509.VerifyOptions
 	certificateCheckMode CertificateCheckMode
 }
 

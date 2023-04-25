@@ -26,19 +26,19 @@ func Test_buildVersionedRoutes(t *testing.T) {
 		processorFinder processorFinderFunc
 	}
 	tests := []struct {
-		name string
 		args args
 		want map[int][]RouteInfo
+		name string
 	}{
 		{
-			"simple",
-			args{
+			name: "simple",
+			args: args{
 				map[int]elemental.ModelManager{0: testmodel.Manager(), 1: testmodel.Manager()},
 				func(identity elemental.Identity) (Processor, error) {
 					return mockProcessor{}, nil
 				},
 			},
-			map[int][]RouteInfo{
+			want: map[int][]RouteInfo{
 				0: {
 					{
 						URL:      "/lists",
@@ -176,14 +176,14 @@ func Test_buildVersionedRoutes(t *testing.T) {
 			},
 		},
 		{
-			"error retrieving processor",
-			args{
+			name: "error retrieving processor",
+			args: args{
 				map[int]elemental.ModelManager{0: testmodel.Manager(), 1: testmodel.Manager()},
 				func(identity elemental.Identity) (Processor, error) {
 					return nil, fmt.Errorf("boom")
 				},
 			},
-			map[int][]RouteInfo{0: {}, 1: {}},
+			want: map[int][]RouteInfo{0: {}, 1: {}},
 		},
 	}
 
@@ -204,16 +204,16 @@ func TestRouteInfo_String(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		fields fields
 		want   string
+		fields fields
 	}{
 		{
-			"simple",
-			fields{
+			name: "simple",
+			fields: fields{
 				URL:   "http.com",
 				Verbs: []string{"POST", "GET"},
 			},
-			"http.com -> POST, GET",
+			want: "http.com -> POST, GET",
 		},
 	}
 	for _, tt := range tests {

@@ -12,18 +12,18 @@ var _ PushSession = &MockSession{}
 
 // A MockSession can be used to mock a bahamut.Session.
 type MockSession struct {
-	MockClaims             []string
+	MockMetadata           any
 	MockClaimsMap          map[string]string
-	MockClientIP           string
 	MockCookies            map[string]*http.Cookie
 	MockHeaders            map[string]string
-	MockIdentifier         string
-	MockMetadata           any
 	MockParameters         map[string]string
 	MockPushConfig         *elemental.PushConfig
 	MockTLSConnectionState *tls.ConnectionState
-	MockToken              string
 	MockDirectPush         func(...*elemental.Event)
+	MockClientIP           string
+	MockIdentifier         string
+	MockToken              string
+	MockClaims             []string
 }
 
 // NewMockSession returns a new MockSession.

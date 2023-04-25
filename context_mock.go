@@ -22,21 +22,21 @@ import (
 // A MockContext can be used to mock a bahamut.Context
 // to help writing unit tests.
 type MockContext struct {
-	MockClaims                []string
-	MockClaimsMap             map[string]string
-	MockCount                 int
 	MockCtx                   context.Context
-	MockEvents                elemental.Events
-	MockID                    string
-	MockInputData             any
-	MockMessages              []string
-	MockMetadata              map[any]any
-	MockNext                  string
-	MockOutputCookies         []*http.Cookie
 	MockOutputData            any
-	MockRedirect              string
-	MockRequest               *elemental.Request
+	MockInputData             any
+	MockMetadata              map[any]any
+	MockClaimsMap             map[string]string
 	MockResponseWriter        ResponseWriter
+	MockRequest               *elemental.Request
+	MockRedirect              string
+	MockNext                  string
+	MockID                    string
+	MockMessages              []string
+	MockOutputCookies         []*http.Cookie
+	MockClaims                []string
+	MockEvents                elemental.Events
+	MockCount                 int
 	MockStatusCode            int
 	MockDisableOutputDataPush bool
 }

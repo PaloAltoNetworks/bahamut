@@ -496,18 +496,18 @@ func Test_resyncRoutes(t *testing.T) {
 
 	type args struct {
 		services       servicesConfig
-		includePrivate bool
 		events         map[string]string
+		includePrivate bool
 	}
 	tests := []struct {
-		name string
-		args args
 		want map[string][]*endpointInfo
+		args args
+		name string
 	}{
 		{
-			"simple",
-			args{
-				servicesConfig{
+			name: "simple",
+			args: args{
+				services: servicesConfig{
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
@@ -543,10 +543,10 @@ func Test_resyncRoutes(t *testing.T) {
 						},
 					},
 				},
-				true,
-				map[string]string{},
+				includePrivate: true,
+				events:         map[string]string{},
 			},
-			map[string][]*endpointInfo{
+			want: map[string][]*endpointInfo{
 				"/cats": {
 					{
 						address:  "1.1.1.1:1",
@@ -575,9 +575,9 @@ func Test_resyncRoutes(t *testing.T) {
 		},
 
 		{
-			"without private",
-			args{
-				servicesConfig{
+			name: "without private",
+			args: args{
+				services: servicesConfig{
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
@@ -613,10 +613,10 @@ func Test_resyncRoutes(t *testing.T) {
 						},
 					},
 				},
-				false,
-				map[string]string{},
+				includePrivate: false,
+				events:         map[string]string{},
 			},
-			map[string][]*endpointInfo{
+			want: map[string][]*endpointInfo{
 				"/cats": {
 					{
 						address:  "1.1.1.1:1",
@@ -633,9 +633,9 @@ func Test_resyncRoutes(t *testing.T) {
 		},
 
 		{
-			"with events",
-			args{
-				servicesConfig{
+			name: "with events",
+			args: args{
+				services: servicesConfig{
 					"srv1": &service{
 						name: "srv1",
 						routes: map[int][]bahamut.RouteInfo{
@@ -671,10 +671,10 @@ func Test_resyncRoutes(t *testing.T) {
 						},
 					},
 				},
-				false,
-				map[string]string{"srv1": "evt1"},
+				includePrivate: false,
+				events:         map[string]string{"srv1": "evt1"},
 			},
-			map[string][]*endpointInfo{
+			want: map[string][]*endpointInfo{
 				"/cats": {
 					{
 						address:  "1.1.1.1:1",

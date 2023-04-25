@@ -27,13 +27,13 @@ import (
 )
 
 type pushServer struct {
-	sessions        map[string]*wsPushSession
-	multiplexer     *bone.Mux
-	cfg             config
-	processorFinder processorFinderFunc
 	sessionsLock    sync.RWMutex
 	mainContext     context.Context
+	sessions        map[string]*wsPushSession
+	multiplexer     *bone.Mux
+	processorFinder processorFinderFunc
 	publications    chan *Publication
+	cfg             config
 }
 
 func newPushServer(cfg config, multiplexer *bone.Mux, processorFinder processorFinderFunc) *pushServer {

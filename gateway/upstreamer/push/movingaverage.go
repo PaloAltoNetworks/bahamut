@@ -5,8 +5,8 @@ import "fmt"
 // MovingAverage represent a moving average
 // give a sample size.
 type movingAverage struct {
-	sampleSize       int
 	ring             []float64
+	sampleSize       int
 	nextIdx          int
 	samplingComplete bool
 }

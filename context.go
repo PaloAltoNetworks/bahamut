@@ -21,23 +21,23 @@ import (
 )
 
 type bcontext struct {
-	claims                []string
-	claimsMap             map[string]string
-	count                 int
+	outputData            any
 	ctx                   context.Context
-	events                elemental.Events
-	eventsLock            *sync.Mutex
-	id                    string
 	inputData             any
-	messages              []string
+	claimsMap             map[string]string
+	responseWriter        ResponseWriter
+	request               *elemental.Request
+	eventsLock            *sync.Mutex
 	messagesLock          *sync.Mutex
 	metadata              map[any]any
-	next                  string
-	outputCookies         []*http.Cookie
-	outputData            any
+	id                    string
 	redirect              string
-	request               *elemental.Request
-	responseWriter        ResponseWriter
+	next                  string
+	messages              []string
+	outputCookies         []*http.Cookie
+	claims                []string
+	events                elemental.Events
+	count                 int
 	statusCode            int
 	disableOutputDataPush bool
 }

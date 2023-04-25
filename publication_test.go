@@ -222,9 +222,9 @@ func TestReply(t *testing.T) {
 
 	threshold := 100 * time.Millisecond
 	testCases := []struct {
-		description    string
 		setup          func() *Publication
 		response       *Publication
+		description    string
 		expectingReply bool
 		shouldError    bool
 	}{

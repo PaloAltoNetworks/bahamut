@@ -38,15 +38,15 @@ type natsClient interface {
 }
 
 type natsPubSub struct {
-	natsURL         string
 	client          natsClient
-	retryInterval   time.Duration
+	tlsConfig       *tls.Config
+	errorHandleFunc func(*nats.Conn, *nats.Subscription, error)
+	natsURL         string
 	clientID        string
 	clusterID       string
 	password        string
 	username        string
-	tlsConfig       *tls.Config
-	errorHandleFunc func(*nats.Conn, *nats.Subscription, error)
+	retryInterval   time.Duration
 }
 
 // NewNATSPubSubClient returns a new PubSubClient backend by Nats.

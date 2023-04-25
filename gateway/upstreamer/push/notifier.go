@@ -14,13 +14,13 @@ import (
 // A Notifier sends ServicePing to the Wutai gateways.
 type Notifier struct {
 	pubsub             bahamut.PubSubClient
+	limiters           IdentityToAPILimitersRegistry
+	privateOverrides   map[string]bool
 	serviceName        string
 	endpoint           string
 	serviceStatusTopic string
-	limiters           IdentityToAPILimitersRegistry
-	frequency          time.Duration
 	prefix             string
-	privateOverrides   map[string]bool
+	frequency          time.Duration
 }
 
 // NewNotifier returns a new Wutai notifier.

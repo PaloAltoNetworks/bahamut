@@ -16,11 +16,9 @@ const (
 // It is used to announce a desired rate limit for
 // inconming requests.
 type APILimiter struct {
-	// Decodable: must be public
-	Limit rate.Limit
-	Burst int
-
 	limiter *rate.Limiter
+	Limit   rate.Limit
+	Burst   int
 }
 
 // IdentityToAPILimitersRegistry is a map of elemental.Identity Name
@@ -28,16 +26,15 @@ type APILimiter struct {
 type IdentityToAPILimitersRegistry map[string]*APILimiter
 
 type servicePing struct {
-	// Decodable: must be public
+	Routes       map[int][]bahamut.RouteInfo
+	Versions     map[string]any
+	APILimiters  IdentityToAPILimitersRegistry
 	Name         string
 	Endpoint     string
 	PushEndpoint string
-	Status       entityStatus
-	Routes       map[int][]bahamut.RouteInfo
-	Versions     map[string]any
-	Load         float64
-	APILimiters  IdentityToAPILimitersRegistry
 	Prefix       string
+	Status       entityStatus
+	Load         float64
 }
 
 // Key returns the key for the service.
@@ -51,7 +48,6 @@ func (s *servicePing) Key() string {
 }
 
 type peerPing struct {
-	// Decodable: must be public
-	Status    entityStatus
 	RuntimeID string
+	Status    entityStatus
 }

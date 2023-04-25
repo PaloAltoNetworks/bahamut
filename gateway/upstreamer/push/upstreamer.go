@@ -30,16 +30,16 @@ type rateSet struct {
 // allowing to install the per token rate limiter
 // in an efficient way.
 type Upstreamer struct {
+	lock               sync.RWMutex
+	latencies          sync.Map
+	lastPeerChangeDate atomic.Value
+	lastRateSet        atomic.Value
 	pubsub             bahamut.PubSubClient
 	apis               map[string][]*endpointInfo
-	lock               sync.RWMutex
 	serviceStatusTopic string
 	peerStatusTopic    string
 	config             upstreamConfig
-	latencies          sync.Map
 	peersCount         int64
-	lastPeerChangeDate atomic.Value // time.Time
-	lastRateSet        atomic.Value // *rateSet
 }
 
 // NewUpstreamer returns a new push backed upstreamer latency based

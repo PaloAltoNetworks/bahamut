@@ -16,13 +16,13 @@ var errTooManyRequest = errors.New("Please retry in a moment")
 type sourceLimiter struct {
 	nextHTTP        http.Handler
 	nextWS          http.Handler
-	rls             *ccache.Cache
 	sourceExtractor SourceExtractor
 	rateExtractor   RateExtractor
+	metricManager   LimiterMetricManager
+	rls             *ccache.Cache
 	errorHandler    *errorHandler
 	defaultLimit    rate.Limit
 	defaultBurst    int
-	metricManager   LimiterMetricManager
 }
 
 func newSourceLimiter(

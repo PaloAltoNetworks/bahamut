@@ -33,8 +33,8 @@ func (r RouteInfo) String() string {
 
 type routeBuilder struct {
 	verbs    map[string]struct{}
-	private  bool
 	identity elemental.Identity
+	private  bool
 }
 
 func buildVersionedRoutes(modelManagers map[int]elemental.ModelManager, processorFinder processorFinderFunc) map[int][]RouteInfo {

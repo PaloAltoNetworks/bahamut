@@ -17,8 +17,8 @@ import (
 )
 
 type registration struct {
-	topic string
 	ch    chan *Publication
+	topic string
 }
 
 // localPubSub implements a PubSubClient using local channels

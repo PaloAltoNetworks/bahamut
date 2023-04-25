@@ -9,22 +9,21 @@ import (
 )
 
 type endpointInfo struct {
-	address           string
 	lastSeen          time.Time
-	lastLoad          float64
-	limiters          IdentityToAPILimitersRegistry
 	lastLimiterAdjust time.Time
-
 	sync.RWMutex
+	limiters IdentityToAPILimitersRegistry
+	address  string
+	lastLoad float64
 }
 
 type servicesConfig map[string]*service
 
 type service struct {
-	name      string
 	routes    map[int][]bahamut.RouteInfo
 	versions  map[string]any
 	endpoints map[string]*endpointInfo
+	name      string
 }
 
 // newService returns a new proxy info from the given string.

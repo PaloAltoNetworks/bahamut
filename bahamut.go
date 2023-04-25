@@ -77,11 +77,11 @@ type server struct {
 	multiplexer          *bone.Mux
 	processors           map[string]Processor
 	customRoutesHandlers map[string]http.HandlerFunc
-	cfg                  config
 	restServer           *restServer
 	pushServer           *pushServer
 	healthServer         *healthServer
 	profilingServer      *profilingServer
+	cfg                  config
 }
 
 // New returns a new bahamut Server configured with

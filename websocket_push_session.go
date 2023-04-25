@@ -36,30 +36,30 @@ const (
 type unregisterFunc func(*wsPushSession)
 
 type wsPushSession struct {
-	dataCh                chan []byte
-	pushConfig            *elemental.PushConfig
-	currentPushConfigLock sync.RWMutex
 	parametersLock        sync.RWMutex
-	errorStateActive      bool
-	errorStateLock        sync.RWMutex
-	claims                []string
-	claimsMap             map[string]string
-	cfg                   config
-	headers               http.Header
-	id                    string
-	metadata              any
-	parameters            url.Values
-	remoteAddr            string
-	conn                  wsc.Websocket
 	startTime             time.Time
-	unregister            unregisterFunc
-	tlsConnectionState    *tls.ConnectionState
+	errorStateLock        sync.RWMutex
+	currentPushConfigLock sync.RWMutex
+	metadata              any
 	ctx                   context.Context
-	cancel                context.CancelFunc
+	conn                  wsc.Websocket
+	dataCh                chan []byte
+	unregister            unregisterFunc
+	pushConfig            *elemental.PushConfig
 	closeCh               chan struct{}
-	encodingRead          elemental.EncodingType
+	claimsMap             map[string]string
+	parameters            url.Values
+	cancel                context.CancelFunc
+	headers               http.Header
+	tlsConnectionState    *tls.ConnectionState
 	encodingWrite         elemental.EncodingType
+	remoteAddr            string
+	id                    string
+	encodingRead          elemental.EncodingType
+	claims                []string
 	cookies               []*http.Cookie
+	cfg                   config
+	errorStateActive      bool
 }
 
 func newWSPushSession(

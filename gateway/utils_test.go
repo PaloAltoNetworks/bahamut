@@ -17,16 +17,16 @@ func Test_injectGeneralHeader(t *testing.T) {
 		h http.Header
 	}
 	tests := []struct {
-		name string
 		args args
 		want http.Header
+		name string
 	}{
 		{
-			"simple",
-			args{
+			name: "simple",
+			args: args{
 				http.Header{},
 			},
-			http.Header{
+			want: http.Header{
 				"Strict-Transport-Security": []string{"max-age=31536000; includeSubDomains; preload"},
 				"X-Frame-Options":           []string{"DENY"},
 				"X-Content-Type-Options":    []string{"nosniff"},
@@ -48,43 +48,43 @@ func Test_injectCORSHeader(t *testing.T) {
 	type args struct {
 		h                    http.Header
 		corsOrigin           string
-		additionalCorsOrigin []string
-		corsAllowCredentials bool
 		origin               string
 		method               string
+		additionalCorsOrigin []string
+		corsAllowCredentials bool
 	}
 	tests := []struct {
+		want http.Header
 		name string
 		args args
-		want http.Header
 	}{
 		{
-			"default",
-			args{
-				http.Header{},
-				bahamut.CORSOriginMirror,
-				nil,
-				true,
-				"chien",
-				http.MethodGet,
+			name: "default",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           bahamut.CORSOriginMirror,
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodGet,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"chien"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Credentials": {"true"},
 			},
 		},
 		{
-			"default OPTIONS",
-			args{
-				http.Header{},
-				bahamut.CORSOriginMirror,
-				nil,
-				true,
-				"chien",
-				http.MethodOptions,
+			name: "default OPTIONS",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           bahamut.CORSOriginMirror,
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodOptions,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"chien"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Methods":     {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
@@ -94,32 +94,32 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"dev",
-			args{
-				http.Header{},
-				"dog",
-				nil,
-				true,
-				"chien",
-				http.MethodGet,
+			name: "dev",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           "dog",
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodGet,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"dog"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Credentials": {"true"},
 			},
 		},
 		{
-			"dev OPTIONS",
-			args{
-				http.Header{},
-				"dog",
-				nil,
-				true,
-				"chien",
-				http.MethodOptions,
+			name: "dev OPTIONS",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           "dog",
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodOptions,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"dog"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Methods":     {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
@@ -129,32 +129,32 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"additional origin",
-			args{
-				http.Header{},
-				"dog",
-				[]string{"chien"},
-				true,
-				"chien",
-				http.MethodGet,
+			name: "additional origin",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           "dog",
+				additionalCorsOrigin: []string{"chien"},
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodGet,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"chien"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Credentials": {"true"},
 			},
 		},
 		{
-			"additional origin OPTIONS",
-			args{
-				http.Header{},
-				"dog",
-				[]string{"chien"},
-				true,
-				"chien",
-				http.MethodOptions,
+			name: "additional origin OPTIONS",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           "dog",
+				additionalCorsOrigin: []string{"chien"},
+				corsAllowCredentials: true,
+				origin:               "chien",
+				method:               http.MethodOptions,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":      {"chien"},
 				"Access-Control-Expose-Headers":    {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Methods":     {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
@@ -164,30 +164,30 @@ func Test_injectCORSHeader(t *testing.T) {
 			},
 		},
 		{
-			"default empty origin",
-			args{
-				http.Header{},
-				bahamut.CORSOriginMirror,
-				nil,
-				true,
-				"",
-				http.MethodGet,
+			name: "default empty origin",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           bahamut.CORSOriginMirror,
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "",
+				method:               http.MethodGet,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 			},
 		},
 		{
-			"default empty OPTIONS",
-			args{
-				http.Header{},
-				bahamut.CORSOriginMirror,
-				nil,
-				true,
-				"",
-				http.MethodOptions,
+			name: "default empty OPTIONS",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           bahamut.CORSOriginMirror,
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "",
+				method:               http.MethodOptions,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Methods":  {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},
 				"Access-Control-Allow-Headers":  {"Authorization, Accept, Content-Type, Cache-Control, Cookie, If-Modified-Since, X-Requested-With, X-Count-Total, X-Namespace, X-External-Tracking-Type, X-External-Tracking-ID, X-TLS-Client-Certificate, Accept-Encoding, X-Fields, X-Read-Consistency, X-Write-Consistency, Idempotency-Key"},
@@ -196,16 +196,16 @@ func Test_injectCORSHeader(t *testing.T) {
 		},
 
 		{
-			"star with credential set to true (should be ignored)",
-			args{
-				http.Header{},
-				"*",
-				nil,
-				true,
-				"",
-				http.MethodOptions,
+			name: "star with credential set to true (should be ignored)",
+			args: args{
+				h:                    http.Header{},
+				corsOrigin:           "*",
+				additionalCorsOrigin: nil,
+				corsAllowCredentials: true,
+				origin:               "",
+				method:               http.MethodOptions,
 			},
-			http.Header{
+			want: http.Header{
 				"Access-Control-Allow-Origin":   {"*"},
 				"Access-Control-Expose-Headers": {"X-Requested-With, X-Count-Total, X-Namespace, X-Messages, X-Fields, X-Next"},
 				"Access-Control-Allow-Methods":  {"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"},

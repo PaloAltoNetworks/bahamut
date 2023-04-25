@@ -17,12 +17,12 @@ import (
 )
 
 type errorPubSubClient struct {
+	sync.Mutex
 	publishError    error
 	connectError    error
 	disconnectError error
 	pubs            chan *bahamut.Publication
 	errs            chan error
-	sync.Mutex
 }
 
 func (p *errorPubSubClient) Publish(publication *bahamut.Publication, opts ...bahamut.PubSubOptPublish) error {

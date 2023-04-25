@@ -14,14 +14,13 @@ const CORSOriginMirror = "_mirror_"
 // CORSPolicy allows to configure
 // CORS Access Control header of a response.
 type CORSPolicy struct {
-	AllowHeaders     []string
-	AllowMethods     []string
-	MaxAge           int
-	AllowOrigin      string
-	ExposeHeaders    []string
-	AllowCredentials bool
-
 	additionalOrigins map[string]struct{}
+	AllowOrigin       string
+	AllowHeaders      []string
+	AllowMethods      []string
+	ExposeHeaders     []string
+	MaxAge            int
+	AllowCredentials  bool
 }
 
 type corsPolicyController struct {

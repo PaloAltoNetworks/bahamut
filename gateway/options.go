@@ -62,54 +62,50 @@ const (
 )
 
 type gwconfig struct {
-	requestRewriter         RequestRewriter
-	responseRewriter        ResponseRewriter
-	blockOpenTracingHeaders bool
-	exactInterceptors       map[string]InterceptorFunc
-	exposePrivateAPIs       bool
-	httpDisableKeepAlive    bool
-	httpIdleTimeout         time.Duration
-	httpReadTimeout         time.Duration
-	httpWriteTimeout        time.Duration
-	maintenance             bool
-	metricsManager          bahamut.MetricsManager
-	prefixInterceptors      map[string]InterceptorFunc
-	suffixInterceptors      map[string]InterceptorFunc
-	proxyProtocolEnabled    bool
-	proxyProtocolSubnet     string
-
-	sourceExtractor                 SourceExtractor
-	sourceRateLimitingBurst         int
-	sourceRateLimitingRPS           rate.Limit
-	sourceRateLimitingEnabled       bool
-	sourceRateExtractor             RateExtractor
-	sourceRateLimitingMetricManager LimiterMetricManager
-
-	tcpClientMaxConnectionsEnabled bool
-	tcpClientMaxConnections        int
-	tcpClientSourceExtractor       SourceExtractor
-
+	sourceExtractor                    SourceExtractor
+	metricsManager                     bahamut.MetricsManager
+	sourceRateLimitingMetricManager    LimiterMetricManager
+	tcpClientSourceExtractor           SourceExtractor
+	sourceRateExtractor                RateExtractor
+	tcpGlobalRateLimitingMetricManager LimiterMetricManager
+	exactInterceptors                  map[string]InterceptorFunc
+	requestRewriter                    RequestRewriter
+	upstreamTLSConfig                  *tls.Config
+	serverTLSConfig                    *tls.Config
+	responseRewriter                   ResponseRewriter
+	prefixInterceptors                 map[string]InterceptorFunc
+	suffixInterceptors                 map[string]InterceptorFunc
+	corsOrigin                         string
+	proxyProtocolSubnet                string
+	upstreamCircuitBreakerCond         string
+	upstreamURLScheme                  string
+	additionalCorsOrigin               []string
+	tcpClientMaxConnections            int
+	upstreamIdleConnTimeout            time.Duration
+	sourceRateLimitingRPS              rate.Limit
+	httpIdleTimeout                    time.Duration
+	sourceRateLimitingBurst            int
+	upstreamTLSHandshakeTimeout        time.Duration
 	tcpGlobalRateLimitingBurst         int
 	tcpGlobalRateLimitingCPS           rate.Limit
+	httpReadTimeout                    time.Duration
+	upstreamMaxIdleConnsPerHost        int
+	upstreamMaxIdleConns               int
+	upstreamMaxConnsPerHost            int
+	httpWriteTimeout                   time.Duration
+	tcpClientMaxConnectionsEnabled     bool
+	upstreamUseHTTP2                   bool
+	trace                              bool
+	maintenance                        bool
 	tcpGlobalRateLimitingEnabled       bool
-	tcpGlobalRateLimitingMetricManager LimiterMetricManager
-
-	trace                       bool
-	upstreamUseHTTP2            bool
-	upstreamCircuitBreakerCond  string
-	upstreamIdleConnTimeout     time.Duration
-	upstreamMaxConnsPerHost     int
-	upstreamMaxIdleConns        int
-	upstreamMaxIdleConnsPerHost int
-	upstreamURLScheme           string
-	upstreamTLSHandshakeTimeout time.Duration
-	upstreamTLSConfig           *tls.Config
-	upstreamEnableCompression   bool
-	serverTLSConfig             *tls.Config
-	corsOrigin                  string
-	corsAllowCredentials        bool
-	additionalCorsOrigin        []string
-	trustForwardHeader          bool
+	proxyProtocolEnabled               bool
+	sourceRateLimitingEnabled          bool
+	upstreamEnableCompression          bool
+	httpDisableKeepAlive               bool
+	exposePrivateAPIs                  bool
+	corsAllowCredentials               bool
+	blockOpenTracingHeaders            bool
+	trustForwardHeader                 bool
 }
 
 func newGatewayConfig() *gwconfig {

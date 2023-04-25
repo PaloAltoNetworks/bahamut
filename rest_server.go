@@ -42,12 +42,12 @@ var (
 
 // an restServer is the structure serving the api routes.
 type restServer struct {
-	cfg             config
 	multiplexer     *bone.Mux
 	server          *http.Server
 	processorFinder processorFinderFunc
 	pusher          eventPusherFunc
 	customHandlers  retrieveHandlersFunc
+	cfg             config
 }
 
 // newRestServer returns a new apiServer.

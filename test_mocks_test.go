@@ -23,9 +23,8 @@ import (
 
 // A counter is a concurency safe count holder.
 type counter struct {
-	count int
-
 	sync.Mutex
+	count int
 }
 
 func (c *counter) Add(i int) {
@@ -46,9 +45,8 @@ func (c *counter) Value() int {
 
 // A mockAuditer is a mockable auditer
 type mockAuditer struct {
-	nbCalls int
-
 	sync.Mutex
+	nbCalls int
 }
 
 func (p *mockAuditer) Audit(Context, error) {
@@ -70,9 +68,9 @@ func (p *mockAuditer) GetCallCount() int {
 
 // A mockAuth is a mockable Authorizer or Authenticator.
 type mockAuth struct {
+	err     error
 	action  AuthAction
 	errored bool
-	err     error
 }
 
 func (a *mockAuth) AuthenticateRequest(ctx Context) (AuthAction, error) {
@@ -167,8 +165,8 @@ func (p *mockProcessor) ProcessInfo(ctx Context) error {
 
 // A mockPusher is a mockable implementation of a Pusher.
 type mockPusher struct {
-	events []*elemental.Event
 	sync.Mutex
+	events []*elemental.Event
 }
 
 func (f *mockPusher) Push(evt ...*elemental.Event) {
@@ -212,10 +210,10 @@ func (t *mockTracer) Extract(any, any) (opentracing.SpanContext, error) {
 
 // A mockSpan is a mockable opentracing.Span
 type mockSpan struct {
-	finished bool
 	tracer   opentracing.Tracer
 	tags     map[string]any
 	fields   []log.Field
+	finished bool
 }
 
 func newMockSpan(tracer opentracing.Tracer) *mockSpan {

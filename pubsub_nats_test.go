@@ -81,12 +81,12 @@ func TestPublish(t *testing.T) {
 	natsURL := "nats://localhost:4222"
 
 	tests := []struct {
-		description             string
-		setup                   func(t *testing.T, mockClient *MockNATSClient, pub *Publication)
 		expectedErrType         error
+		setup                   func(t *testing.T, mockClient *MockNATSClient, pub *Publication)
 		publication             *Publication
-		natsOptions             []NATSOption
 		publishOptionsGenerator func(t *testing.T) ([]PubSubOptPublish, func())
+		description             string
+		natsOptions             []NATSOption
 	}{
 		{
 			description: "should successfully publish publication",
@@ -373,19 +373,13 @@ func TestSubscribe(t *testing.T) {
 	serverAddr := srv.Addr().(*net.TCPAddr)
 
 	var tests = []struct {
-		description string
-		// the publication that will be sent to the publication channel
-		expectedPublication *Publication
-		// the error that will be sent to the errors channel
-		expectedError error
-		// this callback is called right after the call to Subscribe has been made. this is opportunity for you
-		// to setup mocks and mimic client behaviour by making actual publications to the test topic
-		setup func(t *testing.T, pub *Publication, client PubSubClient)
-		// this callback is called in the event that a publication was sent to the configured publication channel.
-		// you use this as an opportunity to reply back to the publication using the `Reply` method
+		expectedError        error
+		expectedPublication  *Publication
+		setup                func(t *testing.T, pub *Publication, client PubSubClient)
 		replier              func(t *testing.T, pub *Publication, client PubSubClient) bool
-		subscribeOptions     []PubSubOptSubscribe
 		natsOptionsGenerator func() ([]NATSOption, func())
+		description          string
+		subscribeOptions     []PubSubOptSubscribe
 	}{
 		{
 			description: "should successfully subscribe to topic and receive a publication in provided channel",

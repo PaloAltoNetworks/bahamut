@@ -53,19 +53,18 @@ const (
 
 // Publication is a structure that can be published to a PublishServer.
 type Publication struct {
-	Data         []byte                     `msgpack:"data,omitempty" json:"data,omitempty"`
-	Topic        string                     `msgpack:"topic,omitempty" json:"topic,omitempty"`
-	Partition    int32                      `msgpack:"partition,omitempty" json:"partition,omitempty"`
-	TrackingName string                     `msgpack:"trackingName,omitempty" json:"trackingName,omitempty"`
+	mux          sync.Mutex
+	span         opentracing.Span
 	TrackingData opentracing.TextMapCarrier `msgpack:"trackingData,omitempty" json:"trackingData,omitempty"`
-	Encoding     elemental.EncodingType     `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
-	ResponseMode ResponseMode               `msgpack:"responseMode,omitempty" json:"responseMode,omitempty"`
-
-	replyCh  chan *Publication
-	replied  bool
-	timedOut bool
-	mux      sync.Mutex
-	span     opentracing.Span
+	replyCh      chan *Publication
+	Topic        string                 `msgpack:"topic,omitempty" json:"topic,omitempty"`
+	TrackingName string                 `msgpack:"trackingName,omitempty" json:"trackingName,omitempty"`
+	Encoding     elemental.EncodingType `msgpack:"encoding,omitempty" json:"encoding,omitempty"`
+	Data         []byte                 `msgpack:"data,omitempty" json:"data,omitempty"`
+	ResponseMode ResponseMode           `msgpack:"responseMode,omitempty" json:"responseMode,omitempty"`
+	Partition    int32                  `msgpack:"partition,omitempty" json:"partition,omitempty"`
+	replied      bool
+	timedOut     bool
 }
 
 // NewPublication returns a new Publication.

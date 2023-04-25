@@ -49,102 +49,89 @@ type apiRateLimit struct {
 
 // A config represents the configuration of Bahamut.
 type config struct {
-	general struct {
-		panicRecoveryDisabled bool
-	}
-
-	restServer struct {
-		listenAddress         string
-		readTimeout           time.Duration
-		writeTimeout          time.Duration
-		idleTimeout           time.Duration
-		disableCompression    bool
-		disableKeepalive      bool
-		enabled               bool
-		customRootHandlerFunc http.HandlerFunc
-		customListener        net.Listener
-		maxConnection         int
-		httpLogger            *log.Logger
-		customRoutePrefix     string
-		apiPrefix             string
-	}
-
-	pushServer struct {
-		service                   PubSubClient
-		topic                     string
-		endpoint                  string
-		dispatchHandler           PushDispatchHandler
-		publishHandler            PushPublishHandler
-		enabled                   bool
-		subjectHierarchiesEnabled bool
-		publishEnabled            bool
-		dispatchEnabled           bool
-	}
-
-	healthServer struct {
-		listenAddress  string
-		healthHandler  HealthServerFunc
-		readTimeout    time.Duration
-		writeTimeout   time.Duration
-		idleTimeout    time.Duration
-		enabled        bool
-		customStats    map[string]HealthStatFunc
-		metricsManager MetricsManager
-	}
-
-	profilingServer struct {
-		listenAddress string
-		enabled       bool
-	}
-
-	tls struct {
-		clientCAPool                    *x509.CertPool
-		authType                        tls.ClientAuthType
-		serverCertificates              []tls.Certificate
-		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
-		peerCertificateVerifyFunc       func([][]byte, [][]*x509.Certificate) error
-		disableSessionTicket            bool
-		nextProtos                      []string
-	}
-
-	security struct {
-		requestAuthenticators []RequestAuthenticator
-		sessionAuthenticators []SessionAuthenticator
-		authorizers           []Authorizer
-		auditer               Auditer
-		corsController        CORSPolicyController
-	}
-
-	rateLimiting struct {
-		rateLimiter     *rate.Limiter
-		apiRateLimiters map[elemental.Identity]apiRateLimit
-	}
-
-	model struct {
-		modelManagers              map[int]elemental.ModelManager
-		readOnly                   bool
-		readOnlyExcludedIdentities []elemental.Identity
-		unmarshallers              map[elemental.Identity]CustomUmarshaller
-		marshallers                map[elemental.Identity]CustomMarshaller
-		retriever                  IdentifiableRetriever
-	}
-
-	meta struct {
-		serviceName      string
-		serviceVersion   string
-		version          map[string]any
-		disableMetaRoute bool
-	}
-
 	opentracing struct {
 		tracer             opentracing.Tracer
 		excludedIdentities map[string]struct{}
 		traceCleaner       TraceCleaner
 	}
-
 	hooks struct {
 		postStart        func(Server) error
 		preStop          func(Server) error
 		errorTransformer func(error) error
 	}
+	rateLimiting struct {
+		rateLimiter     *rate.Limiter
+		apiRateLimiters map[elemental.Identity]apiRateLimit
+	}
+	security struct {
+		auditer               Auditer
+		corsController        CORSPolicyController
+		requestAuthenticators []RequestAuthenticator
+		sessionAuthenticators []SessionAuthenticator
+		authorizers           []Authorizer
+	}
+	pushServer struct {
+		service                   PubSubClient
+		dispatchHandler           PushDispatchHandler
+		publishHandler            PushPublishHandler
+		topic                     string
+		endpoint                  string
+		enabled                   bool
+		subjectHierarchiesEnabled bool
+		publishEnabled            bool
+		dispatchEnabled           bool
+	}
+	meta struct {
+		version          map[string]any
+		serviceName      string
+		serviceVersion   string
+		disableMetaRoute bool
+	}
+	profilingServer struct {
+		listenAddress string
+		enabled       bool
+	}
+	model struct {
+		modelManagers              map[int]elemental.ModelManager
+		unmarshallers              map[elemental.Identity]CustomUmarshaller
+		marshallers                map[elemental.Identity]CustomMarshaller
+		retriever                  IdentifiableRetriever
+		readOnlyExcludedIdentities []elemental.Identity
+		readOnly                   bool
+	}
+	tls struct {
+		clientCAPool                    *x509.CertPool
+		serverCertificatesRetrieverFunc func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+		peerCertificateVerifyFunc       func([][]byte, [][]*x509.Certificate) error
+		serverCertificates              []tls.Certificate
+		nextProtos                      []string
+		authType                        tls.ClientAuthType
+		disableSessionTicket            bool
+	}
+	healthServer struct {
+		metricsManager MetricsManager
+		healthHandler  HealthServerFunc
+		customStats    map[string]HealthStatFunc
+		listenAddress  string
+		readTimeout    time.Duration
+		writeTimeout   time.Duration
+		idleTimeout    time.Duration
+		enabled        bool
+	}
+	restServer struct {
+		customListener        net.Listener
+		customRootHandlerFunc http.HandlerFunc
+		httpLogger            *log.Logger
+		apiPrefix             string
+		customRoutePrefix     string
+		listenAddress         string
+		maxConnection         int
+		idleTimeout           time.Duration
+		writeTimeout          time.Duration
+		readTimeout           time.Duration
+		enabled               bool
+		disableKeepalive      bool
+		disableCompression    bool
+	}
+	general struct{ panicRecoveryDisabled bool }
 }

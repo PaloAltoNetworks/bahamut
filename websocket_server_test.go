@@ -31,8 +31,8 @@ import (
 )
 
 type mockPubSubServer struct {
-	publications []*Publication
 	PublishErr   error
+	publications []*Publication
 }
 
 func (p *mockPubSubServer) Connect(context.Context) error { return nil }
@@ -48,8 +48,8 @@ func (p *mockPubSubServer) Subscribe(pubs chan *Publication, errors chan error, 
 }
 
 type mockSessionAuthenticator struct {
-	action AuthAction
 	err    error
+	action AuthAction
 }
 
 func (a *mockSessionAuthenticator) AuthenticateSession(Session) (AuthAction, error) {
@@ -57,24 +57,23 @@ func (a *mockSessionAuthenticator) AuthenticateSession(Session) (AuthAction, err
 }
 
 type mockSessionHandler struct {
-	onPushSessionInitCalled  int
-	onPushSessionInitOK      bool
-	onPushSessionInitErr     error
-	onPushSessionStartCalled int
-	onPushSessionStopCalled  int
-	shouldPublishCalled      int
-	shouldPublishOK          bool
-	shouldPublishErr         error
-	shouldDispatchCalled     int
-	shouldDispatchOK         bool
-	shouldDispatchErr        error
-	relatedIdentitiesCalled  int
-	relatedIdentities        []string
-	summarizeEvent           any
-	summarizeEventErr        error
-	summarizeEventCalled     int
-
 	sync.Mutex
+	shouldPublishErr         error
+	onPushSessionInitErr     error
+	summarizeEventErr        error
+	summarizeEvent           any
+	shouldDispatchErr        error
+	relatedIdentities        []string
+	onPushSessionStopCalled  int
+	shouldDispatchCalled     int
+	relatedIdentitiesCalled  int
+	shouldPublishCalled      int
+	onPushSessionInitCalled  int
+	onPushSessionStartCalled int
+	summarizeEventCalled     int
+	shouldDispatchOK         bool
+	shouldPublishOK          bool
+	onPushSessionInitOK      bool
 }
 
 func (h *mockSessionHandler) OnPushSessionInit(PushSession) (bool, error) {
@@ -1306,63 +1305,63 @@ func Test_prepareEventData(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
 		args        args
+		checkErr    func(error) (bool, string)
+		name        string
 		wantMSGPACK string
 		wantJSON    string
-		checkErr    func(error) (bool, string)
 	}{
 		{
-			"msgpack event",
-			args{
+			name: "msgpack event",
+			args: args{
 				pristineEvent,
 			},
-			string(msgpackEventData),
-			string(jsonEventData),
-			func(err error) (bool, string) {
+			wantMSGPACK: string(msgpackEventData),
+			wantJSON:    string(jsonEventData),
+			checkErr: func(err error) (bool, string) {
 				return false, ""
 			},
 		},
 		{
-			"unencodable msgpack event",
-			args{
+			name: "unencodable msgpack event",
+			args: args{
 				func() *elemental.Event {
 					dupe := pristineEvent.Duplicate()
 					dupe.RawData = []byte("broken")
 					return dupe
 				}(),
 			},
-			"",
-			"",
-			func(err error) (bool, string) {
+			wantMSGPACK: "",
+			wantJSON:    "",
+			checkErr: func(err error) (bool, string) {
 				return true, "unable to convert original msgpack encoding to json: unable to decode application/msgpack: msgpack decode error [pos 1]: cannot read container length: unrecognized descriptor byte: hex: 62, decimal: 98"
 			},
 		},
 
 		{
-			"json event",
-			args{
+			name: "json event",
+			args: args{
 				event,
 			},
-			string(msgpackEventData),
-			string(jsonEventData),
-			func(err error) (bool, string) {
+			wantMSGPACK: string(msgpackEventData),
+			wantJSON:    string(jsonEventData),
+			checkErr: func(err error) (bool, string) {
 				return false, ""
 			},
 		},
 
 		{
-			"unencodable json event",
-			args{
+			name: "unencodable json event",
+			args: args{
 				func() *elemental.Event {
 					dupe := event.Duplicate()
 					dupe.JSONData = []byte("broken")
 					return dupe
 				}(),
 			},
-			"",
-			"",
-			func(err error) (bool, string) {
+			wantMSGPACK: "",
+			wantJSON:    "",
+			checkErr: func(err error) (bool, string) {
 				return true, "unable to convert original json encoding to msgpack: unable to decode application/json: json decode error [pos 1]: read map - expect char '{' but got char 'b'"
 			},
 		},

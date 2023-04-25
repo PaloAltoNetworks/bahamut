@@ -53,10 +53,10 @@ func (l *fakeListener) Close() error {
 }
 
 type fakeListenerLimiterMetricManager struct {
+	sync.Mutex
 	accepted int
 	rejected int
 	total    int
-	sync.Mutex
 }
 
 func (m *fakeListenerLimiterMetricManager) RegisterAcceptedConnection() {

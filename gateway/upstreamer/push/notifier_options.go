@@ -8,9 +8,9 @@ import (
 
 type notifierConfig struct {
 	rateLimits       IdentityToAPILimitersRegistry
-	pingInterval     time.Duration
-	prefix           string
 	privateOverrides map[string]bool
+	prefix           string
+	pingInterval     time.Duration
 }
 
 func newNotifierConfig() notifierConfig {
