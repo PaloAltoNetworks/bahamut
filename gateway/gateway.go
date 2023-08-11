@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/armon/go-proxyproto"
-	"github.com/sirupsen/logrus"
 	"github.com/valyala/tcplisten"
 	"github.com/vulcand/oxy/v2/buffer"
 	"github.com/vulcand/oxy/v2/cbreaker"
@@ -102,12 +101,6 @@ func New(listenAddr string, upstreamer Upstreamer, options ...Option) (Gateway, 
 		if err != nil {
 			return nil, fmt.Errorf("unable create zap std logger: %s", err)
 		}
-	}
-
-	if !cfg.trace {
-		logrus.SetLevel(logrus.PanicLevel)
-	} else {
-		logrus.SetLevel(logrus.TraceLevel)
 	}
 
 	s := &gateway{
