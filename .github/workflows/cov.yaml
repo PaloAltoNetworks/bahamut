@@ -10,7 +10,7 @@ jobs:
   cov:
     runs-on: ubuntu-latest
     steps:
-      - uses: PaloAltoNetworks/cov@3.0.0
+      - uses: PaloAltoNetworks/cov@3.2.0
         with:
           cov_mode: send-status
           workflow_run_id: ${{github.event.workflow_run.id}}

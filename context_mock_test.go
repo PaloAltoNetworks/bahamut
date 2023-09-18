@@ -28,7 +28,7 @@ func TestMockContext_NewMockContext(t *testing.T) {
 		c := NewMockContext(context.Background())
 
 		Convey("Then it should be correctly initialized", func() {
-			So(c.MockCtx, ShouldEqual, context.Background())
+			So(c.MockCtx, ShouldResemble, context.Background())
 			So(c.Metadata("hello"), ShouldBeNil)
 			So(c, ShouldImplement, (*Context)(nil))
 		})
@@ -100,7 +100,7 @@ func TestMockContext_Duplicate(t *testing.T) {
 			ctx2 := ctx.Duplicate()
 
 			Convey("Then the duplicated context should be correct", func() {
-				So(ctx.MockCtx, ShouldEqual, ctx2.Context())
+				So(ctx.MockCtx, ShouldResemble, ctx2.Context())
 				So(ctx.MockCount, ShouldEqual, ctx2.Count())
 				So(ctx.Metadata("hello").(string), ShouldEqual, "world")
 				So(ctx.MockInputData, ShouldEqual, ctx2.InputData())

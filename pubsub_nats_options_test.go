@@ -79,7 +79,7 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 
 		Convey("Calling NATSOptPublishRequireAck should work", func() {
 			NATSOptPublishRequireAck(context.TODO())(&c)
-			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.ctx, ShouldResemble, context.TODO())
 			So(c.desiredResponse, ShouldEqual, ResponseModeACK)
 		})
 
@@ -100,7 +100,7 @@ func TestBahamut_PubSubNatsOptionsPublish(t *testing.T) {
 		Convey("Calling NATSOptRespondToChannel should work", func() {
 			respCh := make(chan *Publication)
 			NATSOptRespondToChannel(context.TODO(), respCh)(&c)
-			So(c.ctx, ShouldEqual, context.TODO())
+			So(c.ctx, ShouldResemble, context.TODO())
 			So(c.responseCh, ShouldEqual, respCh)
 			So(c.desiredResponse, ShouldEqual, ResponseModePublication)
 		})

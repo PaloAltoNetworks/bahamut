@@ -40,7 +40,7 @@ func TestContext_NewContext(t *testing.T) {
 
 			So(c.request.Page, ShouldEqual, 1)
 			So(c.request.PageSize, ShouldEqual, 10)
-			So(c.ctx, ShouldEqual, context.Background())
+			So(c.ctx, ShouldResemble, context.Background())
 			So(c, ShouldImplement, (*Context)(nil))
 		})
 	})
@@ -68,7 +68,7 @@ func TestContext_NewContext(t *testing.T) {
 
 			So(c.Request().Page, ShouldEqual, 1)
 			So(c.Request().PageSize, ShouldEqual, 10)
-			So(c.Context(), ShouldEqual, context.Background())
+			So(c.Context(), ShouldResemble, context.Background())
 			So(c.Metadata("hello"), ShouldBeNil)
 		})
 	})

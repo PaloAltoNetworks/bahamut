@@ -45,7 +45,7 @@ func TestMockSession(t *testing.T) {
 		So(s.Token(), ShouldEqual, "token")
 		So(s.TLSConnectionState(), ShouldNotBeNil)
 		So(s.Metadata(), ShouldEqual, "mischief")
-		So(s.Context(), ShouldEqual, context.Background())
+		So(s.Context(), ShouldResemble, context.Background())
 		So(s.ClientIP(), ShouldEqual, "1.1.1.1")
 
 		cc, err := s.Cookie("c")

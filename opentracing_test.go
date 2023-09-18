@@ -222,7 +222,7 @@ func TestTracing_traceRequest(t *testing.T) {
 			tctx := traceRequest(ctx, req, nil, nil, nil)
 
 			Convey("Then the returned context should should be the same", func() {
-				So(tctx, ShouldEqual, ctx)
+				So(tctx, ShouldResemble, ctx)
 			})
 		})
 
@@ -230,7 +230,7 @@ func TestTracing_traceRequest(t *testing.T) {
 			tctx := traceRequest(ctx, req, tracer, map[string]struct{}{"user": {}}, nil)
 
 			Convey("Then the returned context should should be the same", func() {
-				So(tctx, ShouldEqual, ctx)
+				So(tctx, ShouldResemble, ctx)
 			})
 		})
 
