@@ -52,6 +52,7 @@ type config struct {
 	opentracing struct {
 		tracer             opentracing.Tracer
 		excludedIdentities map[string]struct{}
+		onlyErrors         bool
 		traceCleaner       TraceCleaner
 	}
 	hooks struct {
