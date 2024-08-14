@@ -14,10 +14,12 @@ package bahamut
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
 
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"
@@ -608,7 +610,7 @@ func TestDispatchers_dispatchCreateOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf(expectedError)
+				return nil, fmt.Errorf(expectedError) //nolint:staticcheck
 			},
 			nil,
 			nil,
@@ -1051,7 +1053,7 @@ func TestDispatchers_dispatchUpdateOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf(expectedError)
+				return nil, fmt.Errorf(expectedError) //nolint:staticcheck
 			},
 			nil,
 			nil,
@@ -1628,7 +1630,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 			processorFinder,
 			testmodel.Manager(),
 			func(*elemental.Request) (elemental.Identifiable, error) {
-				return nil, fmt.Errorf(expectedError)
+				return nil, fmt.Errorf(expectedError) //nolint:staticcheck
 			},
 			nil,
 			nil,
@@ -1746,7 +1748,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 		var retrieverCalled int
 		retriever := func(req *elemental.Request) (elemental.Identifiable, error) {
 			retrieverCalled++
-			return nil, fmt.Errorf("oh noes")
+			return nil, errors.New("oh noes")
 		}
 
 		auditer := &mockAuditer{}
@@ -1854,7 +1856,7 @@ func TestDispatchers_dispatchPatchOperation(t *testing.T) {
 
 		processorFinder := func(identity elemental.Identity) (Processor, error) {
 			return &mockProcessor{
-				err: fmt.Errorf("this is an error"),
+				err: errors.New("this is an error"),
 			}, nil
 		}
 

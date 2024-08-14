@@ -14,6 +14,7 @@ package bahamut
 import (
 	"testing"
 
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 )
 

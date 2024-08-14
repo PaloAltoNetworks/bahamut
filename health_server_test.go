@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 )
 

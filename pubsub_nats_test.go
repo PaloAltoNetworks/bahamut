@@ -26,6 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	nats "github.com/nats-io/nats.go"
+
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 )
