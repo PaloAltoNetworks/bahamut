@@ -33,8 +33,8 @@ func Test_RetrieveHealthStatus(t *testing.T) {
 	Convey("Given the following pingers", t, func() {
 		pingers := map[string]Pinger{
 			"p1": MockPinger{PingStatus: nil},
-			"p2": MockPinger{PingStatus: fmt.Errorf(PingStatusTimeout)},
-			"p3": MockPinger{PingStatus: fmt.Errorf("Another status")},
+			"p2": MockPinger{PingStatus: fmt.Errorf(PingStatusTimeout)}, //nolint:staticcheck
+			"p3": MockPinger{PingStatus: fmt.Errorf("Another status")},  //nolint:staticcheck
 		}
 		results := RetrieveHealthStatus(time.Second, pingers)
 
@@ -61,7 +61,7 @@ func Test_stringifyStatus(t *testing.T) {
 
 	Convey("Given the stringifyStatus method", t, func() {
 		So(stringifyStatus(nil), ShouldEqual, PingStatusOK)
-		So(stringifyStatus(fmt.Errorf(PingStatusTimeout)), ShouldEqual, PingStatusTimeout)
-		So(stringifyStatus(fmt.Errorf("Another status")), ShouldEqual, PingStatusError)
+		So(stringifyStatus(fmt.Errorf(PingStatusTimeout)), ShouldEqual, PingStatusTimeout) //nolint:staticcheck
+		So(stringifyStatus(fmt.Errorf("Another status")), ShouldEqual, PingStatusError)    //nolint:staticcheck
 	})
 }
