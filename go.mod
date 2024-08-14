@@ -1,9 +1,11 @@
 module go.aporeto.io/bahamut
 
-go 1.20
+go 1.22
+
+toolchain go1.22.2
 
 require (
-	go.aporeto.io/elemental v1.123.0
+	go.aporeto.io/elemental v1.123.1-0.20240809200241-2b9ea91cbcca
 	go.aporeto.io/tg v1.50.0
 	go.aporeto.io/wsc v1.51.0
 )
@@ -36,7 +38,6 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
@@ -63,11 +64,12 @@ require (
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	github.com/vulcand/predicate v1.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.mongodb.org/mongo-driver v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/term v0.19.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
