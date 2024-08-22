@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	go.aporeto.io/elemental v1.123.1-0.20240809200241-2b9ea91cbcca
+	go.aporeto.io/elemental v1.123.1-0.20240822212917-6f8c7be6698c
 	go.aporeto.io/tg v1.50.0
 	go.aporeto.io/wsc v1.51.0
 )

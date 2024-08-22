@@ -821,8 +821,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yusufpapurcu/wmi v1.2.2 h1:KBNDSne4vP5mbSWnJbO+51IMOXJB67QiYCSBrubbPRg=
 github.com/yusufpapurcu/wmi v1.2.2/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-go.aporeto.io/elemental v1.123.1-0.20240809200241-2b9ea91cbcca h1:MYidpT0S+PNNZtfzk4THxbQNntNVI3x+ErAFXtxmriY=
-go.aporeto.io/elemental v1.123.1-0.20240809200241-2b9ea91cbcca/go.mod h1:vqhSZ25rw+2HyAwZbqCHO3LRuI3YTMtTxrSIuhvIFuU=
+go.aporeto.io/elemental v1.123.1-0.20240822212917-6f8c7be6698c h1:goT+BIlOoWKa4j4PLmVkqX4mk+YqnDw5SA74oen5YQA=
+go.aporeto.io/elemental v1.123.1-0.20240822212917-6f8c7be6698c/go.mod h1:vqhSZ25rw+2HyAwZbqCHO3LRuI3YTMtTxrSIuhvIFuU=
 go.aporeto.io/tg v1.50.0 h1:WOtzxPJpPkIx3+OBmUuZIclTZgvTrIIEg7uzstWucTk=
 go.aporeto.io/tg v1.50.0/go.mod h1:LkCXFWQN6LGrp4alU+qzNXoq/nkouQKsOzsjidoKbBc=
 go.aporeto.io/wsc v1.51.0 h1:xbbsfRGtUWAqTiT9ubK6TKi2+nABNf656XxnEweynRM=
