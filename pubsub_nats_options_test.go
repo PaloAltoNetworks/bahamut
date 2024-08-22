@@ -18,6 +18,7 @@ import (
 	"time"
 
 	nats "github.com/nats-io/nats.go"
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -27,6 +27,8 @@ import (
 
 	"github.com/go-zoo/bone"
 	opentracing "github.com/opentracing/opentracing-go"
+
+	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	testmodel "go.aporeto.io/elemental/test/model"

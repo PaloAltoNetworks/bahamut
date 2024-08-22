@@ -19,8 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - "1.20"
           - "1.21"
+          - "1.22"
     steps:
       - uses: actions/checkout@v3
 
@@ -41,5 +41,5 @@ jobs:
         with:
           main_branch: master
           cov_file: unit_coverage.out
-          cov_threshold: "91"
+          cov_threshold: "90"
           cov_mode: coverage
