@@ -14,8 +14,8 @@ import (
 	"github.com/mailgun/multibuf"
 	// nolint:revive // Allow dot imports for readability in tests
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/vulcand/oxy/ratelimit"
 	"github.com/vulcand/oxy/v2/connlimit"
+	"github.com/vulcand/oxy/v2/ratelimit"
 	"go.aporeto.io/elemental"
 )
 
