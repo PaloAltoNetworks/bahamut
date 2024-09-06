@@ -83,13 +83,12 @@ func TestNonNotifier(t *testing.T) {
 					So(err, ShouldBeNil)
 				})
 
-				var p *bahamut.Publication
-				select {
-				case <-time.After(300 * time.Millisecond):
-				case p = <-pubCh:
-				}
-
 				Convey("Then the pubsub should have received a push", func() {
+					var p *bahamut.Publication
+					select {
+					case <-time.After(300 * time.Millisecond):
+					case p = <-pubCh:
+					}
 
 					So(p, ShouldNotBeNil)
 
@@ -117,7 +116,7 @@ func TestNonNotifier(t *testing.T) {
 					}
 					So(checked, ShouldEqual, 5)
 
-					Convey("Then I wait 1.5sec and I should get another pusb", func() {
+					Convey("Then I wait 1.5sec and I should get another push", func() {
 
 						var p *bahamut.Publication
 						select {
@@ -253,7 +252,7 @@ func TestPrefixedNotifier(t *testing.T) {
 					So(sping.Status, ShouldEqual, entityStatusHello)
 					So(sping.Prefix, ShouldEqual, "prefix")
 
-					Convey("Then I wait 1.5sec and I should get another pusb", func() {
+					Convey("Then I wait 1.5sec and I should get another push", func() {
 
 						var p *bahamut.Publication
 						select {

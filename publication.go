@@ -83,6 +83,8 @@ func (p *Publication) Encode(o any) error {
 
 // EncodeWithEncoding the given object into the publication using the given encoding.
 func (p *Publication) EncodeWithEncoding(o any, encoding elemental.EncodingType) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
 	data, err := elemental.Encode(encoding, o)
 	if err != nil {
@@ -147,6 +149,8 @@ func (p *Publication) Span() opentracing.Span {
 
 // Duplicate returns a copy of the publication
 func (p *Publication) Duplicate() *Publication {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 
 	pub := NewPublication(p.Topic)
 	pub.Data = p.Data
