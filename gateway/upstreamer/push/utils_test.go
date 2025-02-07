@@ -732,9 +732,9 @@ func TestPick(t *testing.T) {
 	r1 := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	Convey("calling pick with len lesser than 2 should panic", t, func() {
-		So(func() { pick(r1, -1) }, ShouldPanicWith, "pick: len must be greater than 2")
-		So(func() { pick(r1, 0) }, ShouldPanicWith, "pick: len must be greater than 2")
-		So(func() { pick(r1, 1) }, ShouldPanicWith, "pick: len must be greater than 2")
+		So(func() { pick(r1, -1) }, ShouldPanicWith, "pick: length must be greater than 2")
+		So(func() { pick(r1, 0) }, ShouldPanicWith, "pick: length must be greater than 2")
+		So(func() { pick(r1, 1) }, ShouldPanicWith, "pick: length must be greater than 2")
 	})
 
 	// Since this function is random by nature, these tests
