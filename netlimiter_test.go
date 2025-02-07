@@ -19,9 +19,9 @@ import (
 const defaultMaxOpenFiles = 256
 
 func TestLimitListener(t *testing.T) {
-	const max = 5
+	const maximum = 5
 
-	attempts := (defaultMaxOpenFiles - max) / 2
+	attempts := (defaultMaxOpenFiles - maximum) / 2
 	if attempts > 256 { // maximum length of accept queue is 128 by default
 		attempts = 256
 	}
@@ -31,13 +31,13 @@ func TestLimitListener(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer l.Close() // nolint
-	l = newListener(l, max)
+	l = newListener(l, maximum)
 
 	var open int32
 	// nolint
 	go http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if n := atomic.AddInt32(&open, 1); n > max {
-			t.Errorf("%d open connections, want <= %d", n, max)
+		if n := atomic.AddInt32(&open, 1); n > maximum {
+			t.Errorf("%d open connections, want <= %d", n, maximum)
 		}
 		defer atomic.AddInt32(&open, -1)
 		time.Sleep(10 * time.Millisecond)
