@@ -37,7 +37,7 @@ jobs:
         run: |
           make
 
-      - uses: PaloAltoNetworks/cov@5fdbbf3eb7869a1eba70575a484d58ec1f65a88c # 3.2.0
+      - uses: PaloAltoNetworks/cov@d48812e1c0a3f4f056c104411b410b2957c51f91 # 3.2.1
         with:
           main_branch: master
           cov_file: unit_coverage.out
