@@ -40,7 +40,7 @@ func pick(randomizer Randomizer, length int) (int, int) {
 		panic("pick: len must be greater than 2")
 	}
 
-	idxs := make([]int, len)
+	idxs := make([]int, length)
 	for i := 0; i < length; i++ {
 		idxs[i] = i
 	}
