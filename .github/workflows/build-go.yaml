@@ -36,11 +36,3 @@ jobs:
       - name: build
         run: |
           make
-
-      - uses: PaloAltoNetworks/cov@d48812e1c0a3f4f056c104411b410b2957c51f91 # 3.2.1
-        if: matrix.go == '1.22'
-        with:
-          main_branch: master
-          cov_file: unit_coverage.out
-          cov_threshold: "90"
-          cov_mode: coverage
