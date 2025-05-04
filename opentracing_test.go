@@ -14,6 +14,7 @@ package bahamut
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -321,7 +322,44 @@ func TestTracing_finishTracing(t *testing.T) {
 
 		Convey("When I call finishTracing", func() {
 
-			finishTracing(ctx)
+			finishTracing(ctx, false)
+
+			Convey("Then my span should be finished", func() {
+				So(ts.finished, ShouldBeTrue)
+			})
+		})
+
+		Convey("When I call finishTracing for error only", func() {
+
+			finishTracing(ctx, true)
+
+			Convey("Then my span should not be finished", func() {
+				So(ts.finished, ShouldBeFalse)
+			})
+		})
+	})
+
+	Convey("Given I have a context with a span in error", t, func() {
+
+		tracer := &mockTracer{}
+		ts := newMockSpan(tracer)
+
+		ctx := opentracing.ContextWithSpan(context.Background(), ts)
+
+		_ = processError(ctx, fmt.Errorf("an error"))
+
+		Convey("When I call finishTracing", func() {
+
+			finishTracing(ctx, false)
+
+			Convey("Then my span should be finished", func() {
+				So(ts.finished, ShouldBeTrue)
+			})
+		})
+
+		Convey("When I call finishTracing for error only", func() {
+
+			finishTracing(ctx, false)
 
 			Convey("Then my span should be finished", func() {
 				So(ts.finished, ShouldBeTrue)
@@ -336,7 +374,7 @@ func TestTracing_finishTracing(t *testing.T) {
 		Convey("When I call finishTracing", func() {
 
 			Convey("Then it should not panic", func() {
-				So(func() { finishTracing(ctx) }, ShouldNotPanic)
+				So(func() { finishTracing(ctx, false) }, ShouldNotPanic)
 			})
 		})
 	})

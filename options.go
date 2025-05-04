@@ -493,6 +493,13 @@ func OptOpentracingExcludedIdentities(identities []elemental.Identity) Option {
 	}
 }
 
+// OptOpentracingTraceOnlyErrors only send trace on errors.
+func OptOpentracingTraceOnlyErrors(onlyErrors bool) Option {
+	return func(c *config) {
+		c.opentracing.onlyErrors = onlyErrors
+	}
+}
+
 // OptPostStartHook registers a function that will be executed right after the server is started.
 func OptPostStartHook(hook func(Server) error) Option {
 	return func(c *config) {

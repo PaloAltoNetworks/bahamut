@@ -162,10 +162,14 @@ func traceRequest(ctx context.Context, r *elemental.Request, tracer opentracing.
 	return trackingCtx
 }
 
-func finishTracing(ctx context.Context) {
+func finishTracing(ctx context.Context, onlyErrors bool) {
 
 	span := opentracing.SpanFromContext(ctx)
 	if span == nil {
+		return
+	}
+
+	if span.BaggageItem(errorsOnlyFlagBaggageItem) == "" && onlyErrors {
 		return
 	}
 
